@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sortitout.in/schemas/theme-config.schema.json",
+  "title": "SortItOut Storefront Theme Configuration",
+  "type": "object",
+  "required": ["version", "brand", "layout"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "brand": {
+      "type": "object",
+      "required": ["colors", "typography"],
+      "properties": {
+        "logoUrl": { "type": "string", "format": "uri" },
+        "faviconUrl": { "type": "string", "format": "uri" },
+        "colors": {
+          "type": "object",
+          "required": ["primary", "secondary", "accent", "background", "text"],
+          "properties": {
+            "primary":    { "type": "string", "pattern": "^#([0-9a-fA-F]{3}){1,2}$" },
+            "secondary":  { "type": "string", "pattern": "^#([0-9a-fA-F]{3}){1,2}$" },
+            "accent":     { "type": "string", "pattern": "^#([0-9a-fA-F]{3}){1,2}$" },
+            "background": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}){1,2}$" },
+            "text":       { "type": "string", "pattern": "^#([0-9a-fA-F]{3}){1,2}$" },
+            "saleBadge":  { "type": "string", "pattern": "^#([0-9a-fA-F]{3}){1,2}$", "default": "#e11d48" }
+          }
+        },
+        "typography": {
+          "type": "object",
+          "required": ["headingFont", "bodyFont"],
+          "properties": {
+            "headingFont": { "type": "string", "enum": ["Poppins", "Playfair Display", "Marcellus", "Cormorant Garamond", "Inter"] },
+            "bodyFont":    { "type": "string", "enum": ["Inter", "Noto Sans", "Mukta", "Hind", "Rubik"] },
+            "baseSizePx":  { "type": "integer", "minimum": 12, "maximum": 20, "default": 16 }
+          }
+        },
+        "borderRadiusScale": { "type": "string", "enum": ["sharp", "soft", "pill"], "default": "soft" }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "required": ["gridStyle", "sectionOrder"],
+      "properties": {
+        "gridStyle": { "type": "string", "enum": ["2-col", "3-col", "4-col", "list"], "default": "3-col" },
+        "sectionOrder": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["hero", "liveSaleStrip", "featuredCollection", "categoryNav", "newArrivals", "testimonials", "storeInfo"] },
+          "minItems": 1
+        },
+        "heroCarousel": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "required": ["imageUrl"],
+            "properties": {
+              "imageUrl": { "type": "string", "format": "uri" },
+              "altText": { "type": "string" },
+              "ctaLabel": { "type": "string" },
+              "ctaLink": { "type": "string" }
+            }
+          }
+        },
+        "featuredCollection": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "categoryId": { "type": "string", "format": "uuid" },
+            "maxItems": { "type": "integer", "default": 8 }
+          }
+        }
+      }
+    },
+    "liveSale": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "countdownStyle": { "type": "string", "enum": ["digital", "text", "none"], "default": "digital" },
+        "badgeText": { "type": "string", "default": "LIVE SALE" }
+      }
+    },
+    "locale": {
+      "type": "object",
+      "properties": {
+        "defaultLocale": { "type": "string", "enum": ["en", "hi", "mr", "ta", "te", "bn", "gu"] },
+        "supportedLocales": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["en", "hi", "mr", "ta", "te", "bn", "gu"] }
+        }
+      }
+    }
+  }
+}

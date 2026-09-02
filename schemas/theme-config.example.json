@@ -1,0 +1,47 @@
+{
+  "version": 3,
+  "brand": {
+    "logoUrl": "https://cdn.sortitout.in/stores/urban-vogue/logo.webp",
+    "faviconUrl": "https://cdn.sortitout.in/stores/urban-vogue/favicon.png",
+    "colors": {
+      "primary": "#7c2d12",
+      "secondary": "#f5deb3",
+      "accent": "#d97706",
+      "background": "#fffaf0",
+      "text": "#1c1917",
+      "saleBadge": "#e11d48"
+    },
+    "typography": {
+      "headingFont": "Playfair Display",
+      "bodyFont": "Mukta",
+      "baseSizePx": 16
+    },
+    "borderRadiusScale": "soft"
+  },
+  "layout": {
+    "gridStyle": "3-col",
+    "sectionOrder": ["hero", "liveSaleStrip", "featuredCollection", "categoryNav", "newArrivals", "storeInfo"],
+    "heroCarousel": [
+      {
+        "imageUrl": "https://cdn.sortitout.in/stores/urban-vogue/banner1.webp",
+        "altText": "Festive ethnic collection",
+        "ctaLabel": "Shop Festive Wear",
+        "ctaLink": "/store/urban-vogue/category/ethnic"
+      }
+    ],
+    "featuredCollection": {
+      "title": "This Week's Picks",
+      "categoryId": "b3f1c1a0-1111-4a2b-9c3d-000000000001",
+      "maxItems": 8
+    }
+  },
+  "liveSale": {
+    "enabled": true,
+    "countdownStyle": "digital",
+    "badgeText": "FLAT 40% OFF — TODAY ONLY"
+  },
+  "locale": {
+    "defaultLocale": "en",
+    "supportedLocales": ["en", "hi", "mr"]
+  }
+}
