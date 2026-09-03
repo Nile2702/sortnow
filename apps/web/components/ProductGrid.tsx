@@ -38,7 +38,7 @@ export async function ProductGrid({ storeId, gridStyle, title, categoryId, sort,
         {products.map((p: any) => (
           <a
             key={p.id}
-            href={`/store/${p.storeSlug}/product/${p.id}`}
+            href={`/product/${p.id}`}
             style={{ textDecoration: "none", color: "inherit", borderRadius: "var(--sio-radius)", overflow: "hidden" }}
           >
             <img src={p.images?.[0]?.url} alt={p.title} loading="lazy" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />

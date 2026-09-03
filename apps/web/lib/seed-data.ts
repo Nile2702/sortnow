@@ -183,9 +183,12 @@ export interface Product {
   storeSlug: string;
   categoryId: string;
   title: string;
+  description?: string;
+  fabric?: string;
   basePrice: number;
   compareAtPrice?: number;
   images: { url: string }[];
+  sizes: string[];
   stockRemaining?: number;
   createdAt: string;
 }
@@ -197,9 +200,12 @@ export const products: Product[] = [
     storeSlug: "urban-vogue",
     categoryId: "cat-sarees",
     title: "Banarasi Silk Saree — Maroon",
+    description: "Handwoven Banarasi silk saree with a zari border, unstitched blouse piece included.",
+    fabric: "Silk",
     basePrice: 2499,
     compareAtPrice: 3999,
     images: [{ url: placeholderImage("Banarasi Silk Saree", "#7c2d12", "#f5deb3") }],
+    sizes: ["Free Size"],
     stockRemaining: 3,
     createdAt: "2026-08-30",
   },
@@ -209,8 +215,11 @@ export const products: Product[] = [
     storeSlug: "urban-vogue",
     categoryId: "cat-kurtis",
     title: "Cotton Anarkali Kurti — Mustard",
+    description: "Breathable cotton Anarkali kurti, machine embroidery on the yoke.",
+    fabric: "Cotton",
     basePrice: 899,
     images: [{ url: placeholderImage("Anarkali Kurti", "#d97706", "#fffaf0") }],
+    sizes: ["S", "M", "L", "XL"],
     stockRemaining: 12,
     createdAt: "2026-08-28",
   },
@@ -220,9 +229,12 @@ export const products: Product[] = [
     storeSlug: "urban-vogue",
     categoryId: "cat-lehengas",
     title: "Bridal Lehenga — Wine Red",
+    description: "Heavy zardozi bridal lehenga with dupatta, fully lined.",
+    fabric: "Velvet",
     basePrice: 8999,
     compareAtPrice: 12999,
     images: [{ url: placeholderImage("Bridal Lehenga", "#9f1239", "#fce7f3") }],
+    sizes: ["S", "M", "L"],
     stockRemaining: 2,
     createdAt: "2026-08-20",
   },
@@ -232,8 +244,11 @@ export const products: Product[] = [
     storeSlug: "urban-vogue",
     categoryId: "cat-kurtis",
     title: "Chikankari Straight Kurti — White",
+    description: "Lucknowi chikankari hand-embroidered straight kurti.",
+    fabric: "Cotton",
     basePrice: 1299,
     images: [{ url: placeholderImage("Chikankari Kurti", "#f5deb3", "#7c2d12") }],
+    sizes: ["S", "M", "L", "XL", "XXL"],
     stockRemaining: 8,
     createdAt: "2026-09-01",
   },
@@ -243,9 +258,12 @@ export const products: Product[] = [
     storeSlug: "south-silk-house",
     categoryId: "cat-silk-sarees",
     title: "Kanjivaram Silk Saree — Emerald & Gold",
+    description: "Pure Kanjivaram silk with a temple-design gold zari border.",
+    fabric: "Silk",
     basePrice: 5999,
     compareAtPrice: 7999,
     images: [{ url: placeholderImage("Kanjivaram Silk Saree", "#7a1f3d", "#ffe9d6") }],
+    sizes: ["Free Size"],
     stockRemaining: 4,
     createdAt: "2026-08-25",
   },
@@ -255,8 +273,11 @@ export const products: Product[] = [
     storeSlug: "south-silk-house",
     categoryId: "cat-cotton-sarees",
     title: "Handloom Cotton Saree — Indigo",
+    description: "Everyday handloom cotton saree, pre-washed, easy drape.",
+    fabric: "Cotton",
     basePrice: 1499,
     images: [{ url: placeholderImage("Handloom Cotton Saree", "#c98a2c", "#fffdf8") }],
+    sizes: ["Free Size"],
     stockRemaining: 15,
     createdAt: "2026-08-29",
   },
@@ -266,9 +287,12 @@ export const products: Product[] = [
     storeSlug: "denim-district",
     categoryId: "cat-jeans",
     title: "Slim Fit Stretch Jeans — Indigo",
+    description: "4-way stretch slim fit denim, mid-rise.",
+    fabric: "Denim",
     basePrice: 1799,
     compareAtPrice: 2399,
     images: [{ url: placeholderImage("Slim Fit Jeans", "#1e3a8a", "#e5e7eb") }],
+    sizes: ["30", "32", "34", "36"],
     stockRemaining: 20,
     createdAt: "2026-08-27",
   },
@@ -278,8 +302,11 @@ export const products: Product[] = [
     storeSlug: "denim-district",
     categoryId: "cat-jackets",
     title: "Oversized Denim Jacket",
+    description: "Washed oversized denim jacket with contrast stitching.",
+    fabric: "Denim",
     basePrice: 2299,
     images: [{ url: placeholderImage("Denim Jacket", "#2563eb", "#f8fafc") }],
+    sizes: ["S", "M", "L", "XL"],
     stockRemaining: 6,
     createdAt: "2026-09-01",
   },
@@ -313,6 +340,57 @@ export const pinCodeIndex: Record<string, { lat: number; lng: number; city: stri
   "560001": { lat: 12.9822, lng: 77.6086, city: "Bengaluru" },
   "110006": { lat: 28.6506, lng: 77.2303, city: "Delhi (Chandni Chowk)" },
 };
+
+// Cross-store hyperlocal product search — the backbone of "sort and shop in
+// sort": a shopper filters once (category, price, size, radius) and shops
+// directly from the matching products across every nearby store, rather
+// than picking one store first. See docs/01-product-and-personas.md §3.
+export function searchProducts(opts: {
+  pincode?: string;
+  radiusKm?: number;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  size?: string;
+  sort?: string;
+}) {
+  const { pincode, radiusKm = 10, category, minPrice, maxPrice, size, sort } = opts;
+  const origin = pincode ? pinCodeIndex[pincode] : undefined;
+
+  const storesById = new Map(stores.map((s) => [s.id, s]));
+
+  let results = products
+    .map((p) => {
+      const store = storesById.get(p.storeId)!;
+      const distanceKm = origin
+        ? Math.round(haversineKm(origin.lat, origin.lng, store.latitude, store.longitude) * 10) / 10
+        : null;
+      return {
+        ...p,
+        storeName: store.name,
+        storeCategory: store.category,
+        storeCity: store.city,
+        storeLocalMarket: store.localMarket,
+        distanceKm,
+        hasLiveSale: Boolean(liveSales[store.id]),
+      };
+    })
+    .filter((p) => storesById.get(p.storeId)?.status === "active")
+    .filter((p) => !origin || p.distanceKm === null || p.distanceKm <= radiusKm)
+    .filter((p) => !category || category === "all" || p.storeCategory === category)
+    .filter((p) => minPrice == null || p.basePrice >= minPrice)
+    .filter((p) => maxPrice == null || p.basePrice <= maxPrice)
+    .filter((p) => !size || p.sizes.includes(size));
+
+  if (sort === "price_asc") results = [...results].sort((a, b) => a.basePrice - b.basePrice);
+  else if (sort === "price_desc") results = [...results].sort((a, b) => b.basePrice - a.basePrice);
+  else if (sort === "newest") results = [...results].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  else results = [...results].sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
+
+  return results;
+}
+
+export const ALL_SIZES = ["S", "M", "L", "XL", "XXL", "Free Size", "30", "32", "34", "36"];
 
 export function discoverStores(opts: { pincode?: string; radiusKm?: number; category?: string }) {
   const { pincode, radiusKm = 10, category } = opts;
