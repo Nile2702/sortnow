@@ -33,6 +33,15 @@ function SearchIcon() {
   );
 }
 
+function ReceiptIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z" />
+      <path d="M9 8h6M9 12h6" />
+    </svg>
+  );
+}
+
 function LogoMark() {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round">
@@ -137,6 +146,9 @@ export function SiteHeader() {
           <Link href="/cart" style={{ position: "relative", color: "#334155", display: "flex" }} aria-label="Cart">
             <BagIcon />
             {cartN > 0 && <CountBadge n={cartN} />}
+          </Link>
+          <Link href="/orders" style={{ color: "#334155", display: "flex" }} aria-label="Orders">
+            <ReceiptIcon />
           </Link>
           <Link
             href="/account"

@@ -15,6 +15,7 @@ const COLUMNS = [
     links: [
       { label: "Wishlist", href: "/wishlist" },
       { label: "Cart", href: "/cart" },
+      { label: "Order History", href: "/orders" },
       { label: "Sign in", href: "/account" },
     ],
   },
@@ -24,6 +25,13 @@ const COLUMNS = [
       { label: "Bandra, Mumbai", href: "/?pincode=400050" },
       { label: "Commercial Street, Bengaluru", href: "/?pincode=560001" },
       { label: "T. Nagar, Chennai", href: "/?pincode=600017" },
+    ],
+  },
+  {
+    title: "For Merchants",
+    links: [
+      { label: "Seller Portal", href: "/seller" },
+      { label: "List Your Store", href: "/seller/onboarding" },
     ],
   },
 ];

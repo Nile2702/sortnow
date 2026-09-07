@@ -488,3 +488,106 @@ export function discoverStores(opts: { pincode?: string; radiusKm?: number; gend
     .filter((s) => !origin || s.distanceKm === null || s.distanceKm <= radiusKm)
     .sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
 }
+
+// ---------------------------------------------------------------------
+// Seller Portal: catalog + theme mutations.
+// In-memory only (resets on server restart) - stands in for the Catalog
+// Service's writes in database/schema.sql (`products`, `theme_configurations`)
+// until a real backend exists. Good enough to demo add/edit/delete end to end.
+// ---------------------------------------------------------------------
+let productSeq = products.length;
+
+export function createProduct(storeId: string, input: Partial<Product>): Product {
+  const store = stores.find((s) => s.id === storeId);
+  productSeq += 1;
+  const product: Product = {
+    id: `p-custom-${productSeq}`,
+    storeId,
+    storeSlug: store?.slug ?? "",
+    categoryId: input.categoryId ?? "cat-custom",
+    gender: (input.gender as Gender) ?? "women",
+    subCategory: input.subCategory ?? "Other",
+    title: input.title ?? "Untitled product",
+    description: input.description,
+    fabric: input.fabric,
+    basePrice: input.basePrice ?? 0,
+    compareAtPrice: input.compareAtPrice,
+    images: input.images?.length ? input.images : [{ url: placeholderImage(input.title ?? "New product", "#334155", "#f1f5f9") }],
+    sizes: input.sizes?.length ? input.sizes : ["Free Size"],
+    stockRemaining: input.stockRemaining ?? 10,
+    createdAt: new Date().toISOString(),
+  };
+  products.unshift(product);
+  return product;
+}
+
+export function updateProduct(id: string, patch: Partial<Product>): Product | null {
+  const product = products.find((p) => p.id === id);
+  if (!product) return null;
+  Object.assign(product, patch);
+  return product;
+}
+
+export function deleteProduct(id: string): boolean {
+  const idx = products.findIndex((p) => p.id === id);
+  if (idx === -1) return false;
+  products.splice(idx, 1);
+  return true;
+}
+
+export function getStoreProducts(storeId: string): Product[] {
+  return products.filter((p) => p.storeId === storeId);
+}
+
+export function updateStoreTheme(storeId: string, patch: { primary?: string; accent?: string; heroTitle?: string; heroSubtitle?: string }) {
+  const theme = themes[storeId];
+  if (!theme) return null;
+  if (patch.primary) theme.brand.colors.primary = patch.primary;
+  if (patch.accent) theme.brand.colors.accent = patch.accent;
+  if (theme.layout.heroCarousel?.[0]) {
+    if (patch.heroTitle) theme.layout.heroCarousel[0].title = patch.heroTitle;
+    if (patch.heroSubtitle) theme.layout.heroCarousel[0].subtitle = patch.heroSubtitle;
+  }
+  return theme;
+}
+
+// ---------------------------------------------------------------------
+// Orders - created at checkout, stands in for the (not-yet-modeled) orders
+// table. In-memory only; a shopper's own order ids are kept client-side in
+// localStorage (lib/orders.ts) since there's no auth to scope a query by.
+// ---------------------------------------------------------------------
+export interface OrderItem {
+  productId: string;
+  title: string;
+  storeName: string;
+  size: string;
+  price: number;
+  quantity: number;
+  imageUrl: string;
+}
+
+export interface Order {
+  id: string;
+  items: OrderItem[];
+  total: number;
+  status: "placed" | "confirmed";
+  createdAt: string;
+}
+
+export const orders: Order[] = [];
+
+export function createOrder(items: OrderItem[]): Order {
+  const order: Order = {
+    id: `SIO-${Date.now().toString(36).toUpperCase()}`,
+    items,
+    total: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+    status: "confirmed",
+    createdAt: new Date().toISOString(),
+  };
+  orders.unshift(order);
+  return order;
+}
+
+export function getOrder(id: string): Order | undefined {
+  return orders.find((o) => o.id === id);
+}

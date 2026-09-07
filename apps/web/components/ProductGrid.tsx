@@ -21,7 +21,7 @@ async function fetchProducts(storeId: string, opts: { categoryId?: string; sort?
   params.set("limit", String(opts.limit ?? 8));
 
   const res = await fetch(`${process.env.INTERNAL_API_URL}/v1/stores/${storeId}/products?${params}`, {
-    next: { revalidate: 60 },
+    next: { revalidate: 60, tags: [`products:${storeId}`] },
   });
   if (!res.ok) return [];
   return res.json();
