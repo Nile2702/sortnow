@@ -28,7 +28,22 @@ export interface Store {
   longitude: number;
 }
 
-export const stores: Store[] = [
+// Next.js dev-mode compiles route handlers on demand, which can give
+// separately-compiled routes their own instance of this module until the
+// module graph converges - so a plain `export const products = [...]`
+// mutated by one route handler can appear unchanged to another. Anchoring
+// the mutable state on `globalThis` (a true process-wide singleton,
+// unaffected by per-route module duplication) is the standard fix, same
+// pattern as the usual "globalThis.prisma" trick for dev-mode singletons.
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioStores: Store[] | undefined;
+  var __sioThemes: Record<string, any> | undefined;
+  var __sioProducts: Product[] | undefined;
+  var __sioOrders: Order[] | undefined;
+}
+
+const INITIAL_STORES: Store[] = [
   {
     id: "store-urban-vogue",
     slug: "urban-vogue",
@@ -66,8 +81,9 @@ export const stores: Store[] = [
     longitude: 77.6086,
   },
 ];
+export const stores: Store[] = globalThis.__sioStores ?? (globalThis.__sioStores = INITIAL_STORES);
 
-export const themes: Record<string, any> = {
+const INITIAL_THEMES: Record<string, any> = {
   "store-urban-vogue": {
     version: 3,
     brand: {
@@ -159,6 +175,7 @@ export const themes: Record<string, any> = {
     },
   },
 };
+export const themes: Record<string, any> = globalThis.__sioThemes ?? (globalThis.__sioThemes = INITIAL_THEMES);
 
 export const categories: Record<string, { id: string; name: string }[]> = {
   "store-urban-vogue": [
@@ -199,7 +216,7 @@ export interface Product {
   createdAt: string;
 }
 
-export const products: Product[] = [
+const INITIAL_PRODUCTS: Product[] = [
   {
     id: "p-uv-1",
     storeId: "store-urban-vogue",
@@ -366,6 +383,7 @@ export const products: Product[] = [
     createdAt: "2026-09-02",
   },
 ];
+export const products: Product[] = globalThis.__sioProducts ?? (globalThis.__sioProducts = INITIAL_PRODUCTS);
 
 const EARTH_RADIUS_KM = 6371;
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -495,13 +513,10 @@ export function discoverStores(opts: { pincode?: string; radiusKm?: number; gend
 // Service's writes in database/schema.sql (`products`, `theme_configurations`)
 // until a real backend exists. Good enough to demo add/edit/delete end to end.
 // ---------------------------------------------------------------------
-let productSeq = products.length;
-
 export function createProduct(storeId: string, input: Partial<Product>): Product {
   const store = stores.find((s) => s.id === storeId);
-  productSeq += 1;
   const product: Product = {
-    id: `p-custom-${productSeq}`,
+    id: `p-custom-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     storeId,
     storeSlug: store?.slug ?? "",
     categoryId: input.categoryId ?? "cat-custom",
@@ -574,11 +589,11 @@ export interface Order {
   createdAt: string;
 }
 
-export const orders: Order[] = [];
+export const orders: Order[] = globalThis.__sioOrders ?? (globalThis.__sioOrders = []);
 
 export function createOrder(items: OrderItem[]): Order {
   const order: Order = {
-    id: `SIO-${Date.now().toString(36).toUpperCase()}`,
+    id: `SIO-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
     items,
     total: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
     status: "confirmed",
