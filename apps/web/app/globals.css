@@ -77,3 +77,22 @@
   background-size: 800px 100%;
   animation: sio-shimmer 1.4s linear infinite;
 }
+
+@keyframes sio-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sio-dropdown {
+  animation: sio-dropdown-in 0.12s ease both;
+}
+
+.sio-dropdown-link:hover {
+  background: #f1f5f9;
+}
