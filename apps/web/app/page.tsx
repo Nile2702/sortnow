@@ -7,6 +7,7 @@ import { ALL_SIZES, CATEGORY_TREE } from "../lib/seed-data";
 import { saveSmartSort } from "../lib/smart-sorts";
 import { toggleWishlist, isWishlisted } from "../lib/wishlist";
 import { HeroSlider } from "../components/HeroSlider";
+import { CategoryTiles } from "../components/CategoryTiles";
 
 interface DiscoveredStore {
   id: string;
@@ -188,6 +189,7 @@ function DiscoverPageInner() {
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 16px 40px" }}>
       <HeroSlider />
+      <CategoryTiles />
 
       {q && (
         <div style={{ marginBottom: 16, fontSize: 14, color: "#475569" }}>

@@ -15,15 +15,6 @@ function HeartIcon() {
   );
 }
 
-function UserIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" />
-    </svg>
-  );
-}
-
 function BagIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -38,6 +29,16 @@ function SearchIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="11" cy="11" r="7" />
       <path d="M21 21l-4.3-4.3" />
+    </svg>
+  );
+}
+
+function LogoMark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round">
+      <path d="M4 6h16" />
+      <path d="M6 12h12" />
+      <path d="M9 18h6" />
     </svg>
   );
 }
@@ -73,29 +74,52 @@ export function SiteHeader() {
     <div style={{ position: "sticky", top: 0, zIndex: 20, background: "#fff", boxShadow: "0 1px 2px rgba(15,23,42,0.06)" }}>
       <div
         style={{
-          maxWidth: 1100,
+          maxWidth: 1200,
           margin: "0 auto",
-          padding: "14px 16px",
+          padding: "14px 20px",
           display: "flex",
           alignItems: "center",
-          gap: 20,
+          gap: 16,
         }}
       >
-        <Link href="/" style={{ fontSize: 20, fontWeight: 800, textDecoration: "none", color: "#0f172a", whiteSpace: "nowrap" }}>
-          SORT IT <span style={{ color: "#2563eb" }}>OUT</span>
+        <Link
+          href="/"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontFamily: "var(--site-font-heading)",
+            fontSize: 19,
+            fontWeight: 700,
+            textDecoration: "none",
+            color: "#0f172a",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <LogoMark />
+          SORT IT OUT
         </Link>
 
-        <form onSubmit={handleSearch} style={{ flex: 1, position: "relative", maxWidth: 480 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}>
+        <nav className="sio-header-nav">
+          {CATEGORY_TREE.map((c) => (
+            <CategoryMenu key={c.value} gender={c.value} label={c.label} subCategories={c.subCategories} />
+          ))}
+          <Link href="/" style={{ color: "#334155", textDecoration: "none", whiteSpace: "nowrap", padding: "8px 10px" }}>
+            Shops
+          </Link>
+        </nav>
+
+        <form onSubmit={handleSearch} style={{ flex: "1 1 100px", minWidth: 0, position: "relative" }}>
+          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}>
             <SearchIcon />
           </span>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search sarees, kurtis, denim…"
+            placeholder="Search for products…"
             style={{
               width: "100%",
-              padding: "10px 14px 10px 36px",
+              padding: "10px 14px 10px 38px",
               borderRadius: 999,
               border: "1px solid #e2e8f0",
               background: "#f8fafc",
@@ -105,48 +129,33 @@ export function SiteHeader() {
           />
         </form>
 
-        <nav style={{ display: "flex", gap: 20, alignItems: "center", fontSize: 12, color: "#334155", marginLeft: "auto" }}>
-          <Link href="/account" style={navIconStyle}>
-            <UserIcon />
-            <span>Account</span>
+        <nav style={{ display: "flex", gap: 18, alignItems: "center", whiteSpace: "nowrap" }}>
+          <Link href="/wishlist" style={{ position: "relative", color: "#334155", display: "flex" }} aria-label="Wishlist">
+            <HeartIcon />
+            {wishN > 0 && <CountBadge n={wishN} />}
           </Link>
-          <Link href="/wishlist" style={navIconStyle}>
-            <span style={{ position: "relative" }}>
-              <HeartIcon />
-              {wishN > 0 && <CountBadge n={wishN} />}
-            </span>
-            <span>Wishlist</span>
+          <Link href="/cart" style={{ position: "relative", color: "#334155", display: "flex" }} aria-label="Cart">
+            <BagIcon />
+            {cartN > 0 && <CountBadge n={cartN} />}
           </Link>
-          <Link href="/cart" style={navIconStyle}>
-            <span style={{ position: "relative" }}>
-              <BagIcon />
-              {cartN > 0 && <CountBadge n={cartN} />}
-            </span>
-            <span>Cart</span>
+          <Link
+            href="/account"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              borderRadius: 999,
+              background: "#0f172a",
+              color: "#fff",
+              textDecoration: "none",
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            Login / Sign Up
           </Link>
         </nav>
-      </div>
-
-      <div style={{ borderTop: "1px solid #f1f5f9" }}>
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-            padding: "10px 16px",
-            display: "flex",
-            gap: 4,
-            alignItems: "center",
-            fontSize: 13,
-            flexWrap: "wrap",
-          }}
-        >
-          <Link href="/" style={{ color: "#475569", textDecoration: "none", whiteSpace: "nowrap", padding: "8px 12px" }}>
-            All
-          </Link>
-          {CATEGORY_TREE.map((c) => (
-            <CategoryMenu key={c.value} gender={c.value} label={c.label} subCategories={c.subCategories} />
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -285,11 +294,3 @@ function CountBadge({ n }: { n: number }) {
   );
 }
 
-const navIconStyle: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 2,
-  color: "#334155",
-  textDecoration: "none",
-};

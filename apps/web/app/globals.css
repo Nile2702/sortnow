@@ -2,6 +2,25 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+.sio-header-nav {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 14px;
+}
+
+@media (max-width: 860px) {
+  .sio-header-nav {
+    display: none;
+  }
+}
+
 h1,
 h2,
 h3 {

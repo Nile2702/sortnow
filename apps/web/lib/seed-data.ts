@@ -445,6 +445,22 @@ export const CATEGORY_TREE: { label: string; value: Gender; subCategories: strin
   { label: "Kids", value: "kids", subCategories: ["Boys", "Girls", "Infant"] },
 ];
 
+// Featured category tiles for the homepage "Browse by Category" strip.
+// Counts are computed live from the seed catalog rather than hardcoded.
+export const CATEGORY_TILES: { label: string; gender: Gender; subCategory: string; icon: string; bg: string; fg: string }[] = [
+  { label: "Sarees", gender: "women", subCategory: "Sarees", icon: "👗", bg: "#fde2e7", fg: "#9d174d" },
+  { label: "Kurtis", gender: "women", subCategory: "Kurtis", icon: "👚", bg: "#ffe8d6", fg: "#9a3412" },
+  { label: "Jeans", gender: "men", subCategory: "Jeans", icon: "👖", bg: "#fef3c7", fg: "#92400e" },
+  { label: "Kids Wear", gender: "kids", subCategory: "", icon: "🧸", bg: "#d6f0ee", fg: "#0f766e" },
+];
+
+export function getCategoryTileCounts() {
+  return CATEGORY_TILES.map((tile) => ({
+    ...tile,
+    count: products.filter((p) => p.gender === tile.gender && (!tile.subCategory || p.subCategory === tile.subCategory)).length,
+  }));
+}
+
 export function discoverStores(opts: { pincode?: string; radiusKm?: number; gender?: string; subCategory?: string }) {
   const { pincode, radiusKm = 10, gender, subCategory } = opts;
   const origin = pincode ? pinCodeIndex[pincode] : undefined;

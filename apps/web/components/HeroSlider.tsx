@@ -4,38 +4,38 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 interface Slide {
-  storeSlug: string;
+  href: string;
+  eyebrow: string;
   title: string;
   subtitle: string;
   cta: string;
   bg: string;
-  fg: string;
 }
 
 const SLIDES: Slide[] = [
   {
-    storeSlug: "urban-vogue",
+    href: "/",
+    eyebrow: "SORT IT OUT",
+    title: "Curated Styles, Just For You",
+    subtitle: "Our fashion experts hand-pick every item to ensure quality and style.",
+    cta: "Explore All Shops",
+    bg: "linear-gradient(140deg, #1c1917 0%, #3f2d1f 55%, #1c1917 100%)",
+  },
+  {
+    href: "/",
+    eyebrow: "HYPERLOCAL DISCOVERY",
+    title: "Local Flair, Global Style",
+    subtitle: "Find the best boutiques in your city. We bring them to your fingertips.",
+    cta: "Explore All Shops",
+    bg: "linear-gradient(140deg, #1e1b2e 0%, #3b2645 55%, #1e1b2e 100%)",
+  },
+  {
+    href: "/store/urban-vogue",
+    eyebrow: "LIVE NOW · URBAN VOGUE",
     title: "Flat 40% Off — Festive Ethnic",
-    subtitle: "Urban Vogue, Bandra · Festive collection",
+    subtitle: "Handpicked festive wear from Bandra's favourite ethnic boutique.",
     cta: "Shop Urban Vogue",
-    bg: "linear-gradient(135deg, #7c2d12, #d97706)",
-    fg: "#fff7ed",
-  },
-  {
-    storeSlug: "south-silk-house",
-    title: "Signature Kanjivaram Silks",
-    subtitle: "South Silk House, T. Nagar · New arrivals",
-    cta: "Explore Silk Sarees",
-    bg: "linear-gradient(135deg, #7a1f3d, #c98a2c)",
-    fg: "#fff8f0",
-  },
-  {
-    storeSlug: "denim-district",
-    title: "Weekend Denim Sale — 25% Off",
-    subtitle: "Denim District, Commercial Street",
-    cta: "Shop New Denim",
-    bg: "linear-gradient(135deg, #1e3a8a, #2563eb)",
-    fg: "#eff6ff",
+    bg: "linear-gradient(140deg, #2a1409 0%, #7c2d12 55%, #2a1409 100%)",
   },
 ];
 
@@ -45,7 +45,7 @@ export function HeroSlider() {
 
   useEffect(() => {
     if (paused) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % SLIDES.length), 4000);
+    const id = setInterval(() => setIndex((i) => (i + 1) % SLIDES.length), 4500);
     return () => clearInterval(id);
   }, [paused]);
 
@@ -57,55 +57,93 @@ export function HeroSlider() {
       onMouseLeave={() => setPaused(false)}
       style={{
         position: "relative",
-        borderRadius: 16,
+        borderRadius: 20,
         overflow: "hidden",
-        marginBottom: 24,
-        height: 260,
+        marginBottom: 32,
+        height: 380,
+        boxShadow: "0 20px 40px rgba(15,23,42,0.18)",
       }}
     >
       <Link
-        key={slide.storeSlug + index}
-        href={`/store/${slide.storeSlug}`}
+        key={slide.href + index}
+        href={slide.href}
         className="sio-slide-in"
         style={{
+          position: "relative",
           display: "flex",
           flexDirection: "column",
+          alignItems: "center",
           justifyContent: "center",
+          textAlign: "center",
           height: "100%",
-          padding: "0 48px",
+          padding: "0 32px",
           background: slide.bg,
-          color: slide.fg,
+          color: "#fff",
           textDecoration: "none",
         }}
       >
-        <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, letterSpacing: 0.5, fontWeight: 500 }}>{slide.subtitle}</div>
-        <h2 style={{ fontSize: 34, margin: 0, marginBottom: 18, maxWidth: 520, fontFamily: "var(--site-font-heading)", fontWeight: 700 }}>
-          {slide.title}
-        </h2>
-        <span
+        {/* Subtle vignette + spotlight to read as a photographic backdrop rather than a flat gradient */}
+        <div
+          aria-hidden
           style={{
-            alignSelf: "flex-start",
-            padding: "11px 22px",
-            borderRadius: 999,
-            background: "rgba(255,255,255,0.2)",
-            border: "1px solid rgba(255,255,255,0.55)",
-            fontSize: 14,
-            fontWeight: 600,
-            backdropFilter: "blur(4px)",
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.12), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.55), transparent 60%)",
+          }}
+        />
+
+        <div
+          style={{
+            position: "relative",
+            fontSize: 12,
+            letterSpacing: 2,
+            fontWeight: 700,
+            opacity: 0.75,
+            marginBottom: 14,
+            textTransform: "uppercase",
           }}
         >
-          {slide.cta} →
+          {slide.eyebrow}
+        </div>
+        <h1
+          style={{
+            position: "relative",
+            fontSize: 44,
+            margin: 0,
+            marginBottom: 14,
+            maxWidth: 640,
+            fontFamily: "var(--site-font-heading)",
+            fontWeight: 700,
+            lineHeight: 1.15,
+          }}
+        >
+          {slide.title}
+        </h1>
+        <p style={{ position: "relative", fontSize: 15, opacity: 0.85, marginBottom: 26, maxWidth: 460 }}>{slide.subtitle}</p>
+        <span
+          style={{
+            position: "relative",
+            padding: "13px 30px",
+            borderRadius: 999,
+            background: "#ec4899",
+            fontSize: 14,
+            fontWeight: 700,
+            boxShadow: "0 8px 20px rgba(236,72,153,0.45)",
+          }}
+        >
+          {slide.cta}
         </span>
       </Link>
 
-      <div style={{ position: "absolute", bottom: 16, right: 24, display: "flex", gap: 8 }}>
+      <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8 }}>
         {SLIDES.map((_, i) => (
           <button
             key={i}
             aria-label={`Slide ${i + 1}`}
             onClick={() => setIndex(i)}
             style={{
-              width: i === index ? 22 : 8,
+              width: i === index ? 24 : 8,
               height: 8,
               borderRadius: 999,
               border: "none",
@@ -135,15 +173,15 @@ function arrowStyle(side: "left" | "right"): React.CSSProperties {
   return {
     position: "absolute",
     top: "50%",
-    [side]: 12,
+    [side]: 16,
     transform: "translateY(-50%)",
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: "50%",
     border: "none",
-    background: "rgba(255,255,255,0.25)",
+    background: "rgba(255,255,255,0.15)",
     color: "#fff",
-    fontSize: 20,
+    fontSize: 22,
     cursor: "pointer",
     lineHeight: 1,
   };
