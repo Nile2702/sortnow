@@ -39,6 +39,7 @@ export async function ProductGrid({ storeId, gridStyle, title, categoryId, sort,
           <a
             key={p.id}
             href={`/product/${p.id}`}
+            className="sio-card sio-fade-in"
             style={{ textDecoration: "none", color: "inherit", borderRadius: "var(--sio-radius)", overflow: "hidden" }}
           >
             <img src={p.images?.[0]?.url} alt={p.title} loading="lazy" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />

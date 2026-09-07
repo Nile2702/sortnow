@@ -1,0 +1,79 @@
+* {
+  box-sizing: border-box;
+}
+
+@keyframes sio-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sio-slide-in {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sio-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(225, 29, 72, 0);
+  }
+}
+
+@keyframes sio-shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.sio-fade-in {
+  animation: sio-fade-in 0.5s ease both;
+}
+
+.sio-slide-in {
+  animation: sio-slide-in 0.6s ease both;
+}
+
+.sio-live-dot {
+  animation: sio-pulse 1.8s infinite;
+}
+
+.sio-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sio-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.sio-heart-btn {
+  transition: transform 0.15s ease;
+}
+
+.sio-heart-btn:active {
+  transform: scale(1.3);
+}
+
+.sio-skeleton {
+  background: linear-gradient(90deg, #eef2f7 0px, #f8fafc 40px, #eef2f7 80px);
+  background-size: 800px 100%;
+  animation: sio-shimmer 1.4s linear infinite;
+}

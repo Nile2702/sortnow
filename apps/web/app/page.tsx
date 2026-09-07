@@ -3,8 +3,10 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ALL_SIZES } from "../lib/seed-data";
+import { ALL_SIZES, NAV_CATEGORIES } from "../lib/seed-data";
 import { saveSmartSort } from "../lib/smart-sorts";
+import { toggleWishlist, isWishlisted } from "../lib/wishlist";
+import { HeroSlider } from "../components/HeroSlider";
 
 interface DiscoveredStore {
   id: string;
@@ -36,11 +38,54 @@ const QUICK_MARKETS = [
   { label: "Chandni Chowk, Delhi", pincode: "110006" },
 ];
 
-const CATEGORIES = [
-  { label: "All", value: "all" },
-  { label: "Ethnic", value: "ethnic" },
-  { label: "Western", value: "western" },
-];
+function SkeletonCard({ height = 220 }: { height?: number }) {
+  return <div className="sio-skeleton" style={{ borderRadius: 12, height }} />;
+}
+
+function HeartButton({ product, size = 18 }: { product: SearchProduct; size?: number }) {
+  const [on, setOn] = useState(false);
+
+  useEffect(() => setOn(isWishlisted(product.id)), [product.id]);
+
+  return (
+    <button
+      className="sio-heart-btn"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const nowOn = toggleWishlist({
+          productId: product.id,
+          title: product.title,
+          storeSlug: product.storeSlug,
+          storeName: product.storeName,
+          price: product.basePrice,
+          imageUrl: product.images?.[0]?.url ?? "",
+        });
+        setOn(nowOn);
+      }}
+      aria-label="Toggle wishlist"
+      style={{
+        position: "absolute",
+        top: 8,
+        right: 8,
+        width: 30,
+        height: 30,
+        borderRadius: "50%",
+        border: "none",
+        background: "rgba(255,255,255,0.9)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        color: on ? "#e11d48" : "#94a3b8",
+      }}
+    >
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+        <path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2 4.5 5.6 4c2-.3 3.8.7 4.9 2.4C11.6 4.7 13.4 3.7 15.4 4c3.6.5 5.3 4.1 3.6 7.7C19.5 16.4 12 21 12 21z" />
+      </svg>
+    </button>
+  );
+}
 
 function DiscoverPageInner() {
   const searchParams = useSearchParams();
@@ -52,6 +97,8 @@ function DiscoverPageInner() {
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") ?? "");
   const [size, setSize] = useState(searchParams.get("size") ?? "");
   const [sortBy, setSortBy] = useState(searchParams.get("sort") ?? "distance");
+  const [q] = useState(searchParams.get("q") ?? "");
+  const [liveOnly, setLiveOnly] = useState(searchParams.get("liveOnly") === "true");
 
   const [stores, setStores] = useState<DiscoveredStore[]>([]);
   const [sortedProducts, setSortedProducts] = useState<SearchProduct[]>([]);
@@ -59,15 +106,14 @@ function DiscoverPageInner() {
   const [saveName, setSaveName] = useState("");
   const [savedMsg, setSavedMsg] = useState("");
 
-  const hasAdvancedFilters = Boolean(minPrice || maxPrice || size || sortBy !== "distance");
-
   useEffect(() => {
     setLoading(true);
-    const storeParams = new URLSearchParams({ pincode, radius: String(radius), category });
-    const productParams = new URLSearchParams({ pincode, radius: String(radius), category, sort: sortBy });
+    const storeParams = new URLSearchParams({ pincode, radius: String(radius), category, liveOnly: String(liveOnly) });
+    const productParams = new URLSearchParams({ pincode, radius: String(radius), category, sort: sortBy, liveOnly: String(liveOnly) });
     if (minPrice) productParams.set("minPrice", minPrice);
     if (maxPrice) productParams.set("maxPrice", maxPrice);
     if (size) productParams.set("size", size);
+    if (q) productParams.set("q", q);
 
     Promise.all([
       fetch(`/api/v1/discover?${storeParams}`).then((r) => r.json()),
@@ -78,7 +124,7 @@ function DiscoverPageInner() {
         setSortedProducts(productResults);
       })
       .finally(() => setLoading(false));
-  }, [pincode, radius, category, minPrice, maxPrice, size, sortBy]);
+  }, [pincode, radius, category, minPrice, maxPrice, size, sortBy, q, liveOnly]);
 
   function handleSaveSort() {
     if (!saveName.trim()) return;
@@ -97,10 +143,41 @@ function DiscoverPageInner() {
   }
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "8px 16px 40px" }}>
-      <header style={{ marginBottom: 24 }}>
-        <p style={{ color: "#475569", marginTop: 4 }}>Find apparel near you. Sort it. Shop it — online or in the store.</p>
-      </header>
+    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 16px 40px" }}>
+      <HeroSlider />
+
+      {q && (
+        <div style={{ marginBottom: 16, fontSize: 14, color: "#475569" }}>
+          Showing results for <strong>&ldquo;{q}&rdquo;</strong>
+        </div>
+      )}
+
+      {liveOnly && (
+        <div
+          className="sio-fade-in"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 16,
+            padding: "10px 14px",
+            background: "#fff1f2",
+            border: "1px solid #fecdd3",
+            borderRadius: 10,
+            fontSize: 13,
+            color: "#be123c",
+          }}
+        >
+          <span className="sio-live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#e11d48", display: "inline-block" }} />
+          Showing only stores &amp; products with a live sale right now.
+          <button
+            onClick={() => setLiveOnly(false)}
+            style={{ marginLeft: "auto", border: "none", background: "none", color: "#be123c", textDecoration: "underline", cursor: "pointer" }}
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       <section
         style={{
@@ -138,8 +215,8 @@ function DiscoverPageInner() {
           </select>
         </label>
 
-        <div style={{ display: "flex", gap: 6 }}>
-          {CATEGORIES.map((c) => (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {NAV_CATEGORIES.map((c) => (
             <button
               key={c.value}
               onClick={() => setCategory(c.value)}
@@ -183,17 +260,20 @@ function DiscoverPageInner() {
 
       <h2 style={{ fontSize: 18, marginBottom: 12 }}>Stores near you</h2>
       {loading ? (
-        <p>Loading nearby stores…</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 40 }}>
+          {[1, 2, 3].map((i) => (
+            <SkeletonCard key={i} height={110} />
+          ))}
+        </div>
       ) : stores.length === 0 ? (
-        <p>
-          No stores found within {radius} km of {pincode}. Try widening the radius.
-        </p>
+        <p>No stores found matching these filters. Try widening the radius or clearing a filter.</p>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 40 }}>
-          {stores.map((s) => (
+          {stores.map((s, i) => (
             <Link
               key={s.id}
               href={`/store/${s.slug}`}
+              className="sio-card sio-fade-in"
               style={{
                 display: "block",
                 background: "#fff",
@@ -202,12 +282,14 @@ function DiscoverPageInner() {
                 textDecoration: "none",
                 color: "inherit",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                animationDelay: `${i * 60}ms`,
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                 <h3 style={{ margin: 0, fontSize: 18 }}>{s.name}</h3>
                 {s.hasLiveSale && (
-                  <span style={{ background: "#e11d48", color: "#fff", fontSize: 11, padding: "3px 8px", borderRadius: 999 }}>
+                  <span style={{ background: "#e11d48", color: "#fff", fontSize: 11, padding: "3px 8px", borderRadius: 999, display: "flex", alignItems: "center", gap: 4 }}>
+                    <span className="sio-live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff", display: "inline-block" }} />
                     LIVE SALE
                   </span>
                 )}
@@ -258,7 +340,7 @@ function DiscoverPageInner() {
           </select>
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20, flexWrap: "wrap" }}>
           <input
             placeholder="Name this sort, e.g. 'Cotton kurtis under 1500 near home'"
             value={saveName}
@@ -279,33 +361,58 @@ function DiscoverPageInner() {
           >
             Save this Sort
           </button>
-          {savedMsg && <span style={{ fontSize: 13, color: "#16a34a" }}>{savedMsg}</span>}
+          {savedMsg && (
+            <span className="sio-fade-in" style={{ fontSize: 13, color: "#16a34a" }}>
+              {savedMsg}
+            </span>
+          )}
         </div>
 
-        {!loading && sortedProducts.length === 0 && <p style={{ color: "#64748b" }}>No products match this sort yet.</p>}
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14 }}>
-          {sortedProducts.map((p) => (
-            <Link
-              key={p.id}
-              href={`/product/${p.id}`}
-              style={{ textDecoration: "none", color: "inherit", borderRadius: 10, overflow: "hidden", border: "1px solid #f1f5f9" }}
-            >
-              <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />
-              <div style={{ padding: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{p.title}</div>
-                <div style={{ fontSize: 12, color: "#64748b" }}>{p.storeName}</div>
-                <div style={{ marginTop: 4 }}>
-                  ₹{p.basePrice}
-                  {p.compareAtPrice && (
-                    <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.6, fontSize: 12 }}>₹{p.compareAtPrice}</span>
-                  )}
+        {loading ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14 }}>
+            {[1, 2, 3, 4].map((i) => (
+              <SkeletonCard key={i} height={260} />
+            ))}
+          </div>
+        ) : sortedProducts.length === 0 ? (
+          <p style={{ color: "#64748b" }}>No products match this sort yet.</p>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14 }}>
+            {sortedProducts.map((p, i) => (
+              <Link
+                key={p.id}
+                href={`/product/${p.id}`}
+                className="sio-card sio-fade-in"
+                style={{
+                  position: "relative",
+                  textDecoration: "none",
+                  color: "inherit",
+                  borderRadius: 10,
+                  overflow: "hidden",
+                  border: "1px solid #f1f5f9",
+                  background: "#fff",
+                  animationDelay: `${i * 40}ms`,
+                }}
+              >
+                <div style={{ position: "relative" }}>
+                  <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />
+                  <HeartButton product={p} />
                 </div>
-                {p.hasLiveSale && <div style={{ fontSize: 11, color: "#e11d48", marginTop: 2 }}>LIVE SALE</div>}
-              </div>
-            </Link>
-          ))}
-        </div>
+                <div style={{ padding: 10 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{p.title}</div>
+                  <div style={{ fontSize: 12, color: "#64748b" }}>{p.storeName}</div>
+                  <div style={{ marginTop: 4 }}>
+                    ₹{p.basePrice}
+                    {p.compareAtPrice && (
+                      <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.6, fontSize: 12 }}>₹{p.compareAtPrice}</span>
+                    )}
+                  </div>
+                  {p.hasLiveSale && <div style={{ fontSize: 11, color: "#e11d48", marginTop: 2 }}>LIVE SALE</div>}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );

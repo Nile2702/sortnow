@@ -353,9 +353,12 @@ export function searchProducts(opts: {
   maxPrice?: number;
   size?: string;
   sort?: string;
+  q?: string;
+  liveOnly?: boolean;
 }) {
-  const { pincode, radiusKm = 10, category, minPrice, maxPrice, size, sort } = opts;
+  const { pincode, radiusKm = 10, category, minPrice, maxPrice, size, sort, q, liveOnly } = opts;
   const origin = pincode ? pinCodeIndex[pincode] : undefined;
+  const query = q?.trim().toLowerCase();
 
   const storesById = new Map(stores.map((s) => [s.id, s]));
 
@@ -380,7 +383,9 @@ export function searchProducts(opts: {
     .filter((p) => !category || category === "all" || p.storeCategory === category)
     .filter((p) => minPrice == null || p.basePrice >= minPrice)
     .filter((p) => maxPrice == null || p.basePrice <= maxPrice)
-    .filter((p) => !size || p.sizes.includes(size));
+    .filter((p) => !size || p.sizes.includes(size))
+    .filter((p) => !liveOnly || p.hasLiveSale)
+    .filter((p) => !query || p.title.toLowerCase().includes(query) || p.fabric?.toLowerCase().includes(query));
 
   if (sort === "price_asc") results = [...results].sort((a, b) => a.basePrice - b.basePrice);
   else if (sort === "price_desc") results = [...results].sort((a, b) => b.basePrice - a.basePrice);
@@ -392,8 +397,17 @@ export function searchProducts(opts: {
 
 export const ALL_SIZES = ["S", "M", "L", "XL", "XXL", "Free Size", "30", "32", "34", "36"];
 
-export function discoverStores(opts: { pincode?: string; radiusKm?: number; category?: string }) {
-  const { pincode, radiusKm = 10, category } = opts;
+export const NAV_CATEGORIES = [
+  { label: "All", value: "all" },
+  { label: "Ethnic", value: "ethnic" },
+  { label: "Western", value: "western" },
+  { label: "Footwear", value: "footwear" },
+  { label: "Accessories", value: "accessories" },
+  { label: "Kidswear", value: "kidswear" },
+];
+
+export function discoverStores(opts: { pincode?: string; radiusKm?: number; category?: string; liveOnly?: boolean }) {
+  const { pincode, radiusKm = 10, category, liveOnly } = opts;
   const origin = pincode ? pinCodeIndex[pincode] : undefined;
 
   return stores
@@ -405,5 +419,6 @@ export function discoverStores(opts: { pincode?: string; radiusKm?: number; cate
       hasLiveSale: Boolean(liveSales[s.id]),
     }))
     .filter((s) => !origin || s.distanceKm === null || s.distanceKm <= radiusKm)
+    .filter((s) => !liveOnly || s.hasLiveSale)
     .sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
 }
