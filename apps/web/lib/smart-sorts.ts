@@ -8,7 +8,8 @@
 export interface SmartSortFilters {
   pincode: string;
   radiusKm: number;
-  category: string;
+  gender: string;
+  subCategory?: string;
   minPrice?: number;
   maxPrice?: number;
   size?: string;
@@ -50,7 +51,8 @@ export function filtersToQuery(filters: SmartSortFilters): string {
   const params = new URLSearchParams();
   params.set("pincode", filters.pincode);
   params.set("radius", String(filters.radiusKm));
-  params.set("category", filters.category);
+  params.set("gender", filters.gender);
+  if (filters.subCategory) params.set("subCategory", filters.subCategory);
   if (filters.minPrice != null) params.set("minPrice", String(filters.minPrice));
   if (filters.maxPrice != null) params.set("maxPrice", String(filters.maxPrice));
   if (filters.size) params.set("size", filters.size);

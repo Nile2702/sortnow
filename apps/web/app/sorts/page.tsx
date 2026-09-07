@@ -49,8 +49,8 @@ export default function MySortsPage() {
               <div>
                 <div style={{ fontWeight: 600 }}>{s.name}</div>
                 <div style={{ fontSize: 13, color: "#64748b" }}>
-                  {s.filters.category !== "all" ? s.filters.category : "All categories"} · PIN {s.filters.pincode} ·{" "}
-                  {s.filters.radiusKm} km
+                  {s.filters.gender !== "all" ? s.filters.gender : "All"}
+                  {s.filters.subCategory ? ` · ${s.filters.subCategory}` : ""} · PIN {s.filters.pincode} · {s.filters.radiusKm} km
                   {s.filters.minPrice != null || s.filters.maxPrice != null
                     ? ` · ₹${s.filters.minPrice ?? 0}–${s.filters.maxPrice ?? "∞"}`
                     : ""}

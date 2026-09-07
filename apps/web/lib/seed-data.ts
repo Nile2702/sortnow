@@ -165,6 +165,7 @@ export const categories: Record<string, { id: string; name: string }[]> = {
     { id: "cat-sarees", name: "Sarees" },
     { id: "cat-kurtis", name: "Kurtis" },
     { id: "cat-lehengas", name: "Lehengas" },
+    { id: "cat-kids-ethnic", name: "Kids Ethnic" },
   ],
   "store-south-silk-house": [
     { id: "cat-silk-sarees", name: "Silk Sarees" },
@@ -174,14 +175,19 @@ export const categories: Record<string, { id: string; name: string }[]> = {
     { id: "cat-jeans", name: "Jeans" },
     { id: "cat-jackets", name: "Jackets" },
     { id: "cat-tshirts", name: "T-Shirts" },
+    { id: "cat-kids-denim", name: "Kids Denim" },
   ],
 };
+
+export type Gender = "men" | "women" | "kids";
 
 export interface Product {
   id: string;
   storeId: string;
   storeSlug: string;
   categoryId: string;
+  gender: Gender;
+  subCategory: string;
   title: string;
   description?: string;
   fabric?: string;
@@ -199,6 +205,8 @@ export const products: Product[] = [
     storeId: "store-urban-vogue",
     storeSlug: "urban-vogue",
     categoryId: "cat-sarees",
+    gender: "women",
+    subCategory: "Sarees",
     title: "Banarasi Silk Saree — Maroon",
     description: "Handwoven Banarasi silk saree with a zari border, unstitched blouse piece included.",
     fabric: "Silk",
@@ -214,6 +222,8 @@ export const products: Product[] = [
     storeId: "store-urban-vogue",
     storeSlug: "urban-vogue",
     categoryId: "cat-kurtis",
+    gender: "women",
+    subCategory: "Kurtis",
     title: "Cotton Anarkali Kurti — Mustard",
     description: "Breathable cotton Anarkali kurti, machine embroidery on the yoke.",
     fabric: "Cotton",
@@ -228,6 +238,8 @@ export const products: Product[] = [
     storeId: "store-urban-vogue",
     storeSlug: "urban-vogue",
     categoryId: "cat-lehengas",
+    gender: "women",
+    subCategory: "Lehengas",
     title: "Bridal Lehenga — Wine Red",
     description: "Heavy zardozi bridal lehenga with dupatta, fully lined.",
     fabric: "Velvet",
@@ -243,6 +255,8 @@ export const products: Product[] = [
     storeId: "store-urban-vogue",
     storeSlug: "urban-vogue",
     categoryId: "cat-kurtis",
+    gender: "women",
+    subCategory: "Kurtis",
     title: "Chikankari Straight Kurti — White",
     description: "Lucknowi chikankari hand-embroidered straight kurti.",
     fabric: "Cotton",
@@ -257,6 +271,8 @@ export const products: Product[] = [
     storeId: "store-south-silk-house",
     storeSlug: "south-silk-house",
     categoryId: "cat-silk-sarees",
+    gender: "women",
+    subCategory: "Sarees",
     title: "Kanjivaram Silk Saree — Emerald & Gold",
     description: "Pure Kanjivaram silk with a temple-design gold zari border.",
     fabric: "Silk",
@@ -272,6 +288,8 @@ export const products: Product[] = [
     storeId: "store-south-silk-house",
     storeSlug: "south-silk-house",
     categoryId: "cat-cotton-sarees",
+    gender: "women",
+    subCategory: "Sarees",
     title: "Handloom Cotton Saree — Indigo",
     description: "Everyday handloom cotton saree, pre-washed, easy drape.",
     fabric: "Cotton",
@@ -286,6 +304,8 @@ export const products: Product[] = [
     storeId: "store-denim-district",
     storeSlug: "denim-district",
     categoryId: "cat-jeans",
+    gender: "men",
+    subCategory: "Jeans",
     title: "Slim Fit Stretch Jeans — Indigo",
     description: "4-way stretch slim fit denim, mid-rise.",
     fabric: "Denim",
@@ -301,6 +321,8 @@ export const products: Product[] = [
     storeId: "store-denim-district",
     storeSlug: "denim-district",
     categoryId: "cat-jackets",
+    gender: "men",
+    subCategory: "Jackets",
     title: "Oversized Denim Jacket",
     description: "Washed oversized denim jacket with contrast stitching.",
     fabric: "Denim",
@@ -309,6 +331,39 @@ export const products: Product[] = [
     sizes: ["S", "M", "L", "XL"],
     stockRemaining: 6,
     createdAt: "2026-09-01",
+  },
+  {
+    id: "p-uv-5",
+    storeId: "store-urban-vogue",
+    storeSlug: "urban-vogue",
+    categoryId: "cat-kids-ethnic",
+    gender: "kids",
+    subCategory: "Girls",
+    title: "Kids Ethnic Kurta Set — Pink",
+    description: "Festive kurta and sharara set for girls, soft cotton blend.",
+    fabric: "Cotton Blend",
+    basePrice: 799,
+    compareAtPrice: 1099,
+    images: [{ url: placeholderImage("Kids Kurta Set", "#db2777", "#fdf2f8") }],
+    sizes: ["2-3Y", "4-5Y", "6-7Y", "8-9Y"],
+    stockRemaining: 10,
+    createdAt: "2026-08-31",
+  },
+  {
+    id: "p-dd-3",
+    storeId: "store-denim-district",
+    storeSlug: "denim-district",
+    categoryId: "cat-kids-denim",
+    gender: "kids",
+    subCategory: "Boys",
+    title: "Kids Denim Dungaree — Blue",
+    description: "Adjustable-strap denim dungaree with a printed tee.",
+    fabric: "Denim",
+    basePrice: 999,
+    images: [{ url: placeholderImage("Kids Dungaree", "#1e40af", "#dbeafe") }],
+    sizes: ["2-3Y", "4-5Y", "6-7Y"],
+    stockRemaining: 14,
+    createdAt: "2026-09-02",
   },
 ];
 
@@ -348,7 +403,8 @@ export const pinCodeIndex: Record<string, { lat: number; lng: number; city: stri
 export function searchProducts(opts: {
   pincode?: string;
   radiusKm?: number;
-  category?: string;
+  gender?: string;
+  subCategory?: string;
   minPrice?: number;
   maxPrice?: number;
   size?: string;
@@ -356,7 +412,7 @@ export function searchProducts(opts: {
   q?: string;
   liveOnly?: boolean;
 }) {
-  const { pincode, radiusKm = 10, category, minPrice, maxPrice, size, sort, q, liveOnly } = opts;
+  const { pincode, radiusKm = 10, gender, subCategory, minPrice, maxPrice, size, sort, q, liveOnly } = opts;
   const origin = pincode ? pinCodeIndex[pincode] : undefined;
   const query = q?.trim().toLowerCase();
 
@@ -371,7 +427,6 @@ export function searchProducts(opts: {
       return {
         ...p,
         storeName: store.name,
-        storeCategory: store.category,
         storeCity: store.city,
         storeLocalMarket: store.localMarket,
         distanceKm,
@@ -380,7 +435,8 @@ export function searchProducts(opts: {
     })
     .filter((p) => storesById.get(p.storeId)?.status === "active")
     .filter((p) => !origin || p.distanceKm === null || p.distanceKm <= radiusKm)
-    .filter((p) => !category || category === "all" || p.storeCategory === category)
+    .filter((p) => !gender || gender === "all" || p.gender === gender)
+    .filter((p) => !subCategory || p.subCategory === subCategory)
     .filter((p) => minPrice == null || p.basePrice >= minPrice)
     .filter((p) => maxPrice == null || p.basePrice <= maxPrice)
     .filter((p) => !size || p.sizes.includes(size))
@@ -395,24 +451,40 @@ export function searchProducts(opts: {
   return results;
 }
 
-export const ALL_SIZES = ["S", "M", "L", "XL", "XXL", "Free Size", "30", "32", "34", "36"];
+export const ALL_SIZES = ["S", "M", "L", "XL", "XXL", "Free Size", "30", "32", "34", "36", "2-3Y", "4-5Y", "6-7Y", "8-9Y"];
 
-export const NAV_CATEGORIES = [
-  { label: "All", value: "all" },
-  { label: "Ethnic", value: "ethnic" },
-  { label: "Western", value: "western" },
-  { label: "Footwear", value: "footwear" },
-  { label: "Accessories", value: "accessories" },
-  { label: "Kidswear", value: "kidswear" },
+// Two-level nav taxonomy: gender (top-level tab) -> subCategory (product-level
+// attribute). Mirrors what `product_categories` + a `gender` facet would look
+// like as a real per-tenant catalog taxonomy (docs/03-multi-tenant-storefront.md).
+export const CATEGORY_TREE: { label: string; value: Gender; subCategories: string[] }[] = [
+  { label: "Men", value: "men", subCategories: ["Jeans", "Jackets", "Shirts", "T-Shirts"] },
+  { label: "Women", value: "women", subCategories: ["Sarees", "Kurtis", "Lehengas", "Western Wear"] },
+  { label: "Kids", value: "kids", subCategories: ["Boys", "Girls", "Infant"] },
 ];
 
-export function discoverStores(opts: { pincode?: string; radiusKm?: number; category?: string; liveOnly?: boolean }) {
-  const { pincode, radiusKm = 10, category, liveOnly } = opts;
+export function discoverStores(opts: {
+  pincode?: string;
+  radiusKm?: number;
+  gender?: string;
+  subCategory?: string;
+  liveOnly?: boolean;
+}) {
+  const { pincode, radiusKm = 10, gender, subCategory, liveOnly } = opts;
   const origin = pincode ? pinCodeIndex[pincode] : undefined;
+
+  const matchingStoreIds =
+    gender && gender !== "all"
+      ? new Set(
+          products
+            .filter((p) => p.gender === gender)
+            .filter((p) => !subCategory || p.subCategory === subCategory)
+            .map((p) => p.storeId)
+        )
+      : null;
 
   return stores
     .filter((s) => s.status === "active")
-    .filter((s) => !category || category === "all" || s.category === category)
+    .filter((s) => !matchingStoreIds || matchingStoreIds.has(s.id))
     .map((s) => ({
       ...s,
       distanceKm: origin ? Math.round(haversineKm(origin.lat, origin.lng, s.latitude, s.longitude) * 10) / 10 : null,

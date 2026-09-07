@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCart, cartCount } from "../lib/cart";
 import { getWishlist } from "../lib/wishlist";
-import { NAV_CATEGORIES } from "../lib/seed-data";
+import { CATEGORY_TREE } from "../lib/seed-data";
 
 function HeartIcon() {
   return (
@@ -134,20 +134,17 @@ export function SiteHeader() {
             margin: "0 auto",
             padding: "10px 16px",
             display: "flex",
-            gap: 22,
+            gap: 4,
             alignItems: "center",
             fontSize: 13,
             overflowX: "auto",
           }}
         >
-          {NAV_CATEGORIES.map((c) => (
-            <Link
-              key={c.value}
-              href={c.value === "all" ? "/" : `/?category=${c.value}`}
-              style={{ color: "#475569", textDecoration: "none", whiteSpace: "nowrap" }}
-            >
-              {c.label}
-            </Link>
+          <Link href="/" style={{ color: "#475569", textDecoration: "none", whiteSpace: "nowrap", padding: "8px 12px" }}>
+            All
+          </Link>
+          {CATEGORY_TREE.map((c) => (
+            <CategoryMenu key={c.value} gender={c.value} label={c.label} subCategories={c.subCategories} />
           ))}
           <Link
             href="/?liveOnly=true"
@@ -160,6 +157,7 @@ export function SiteHeader() {
               fontWeight: 700,
               textDecoration: "none",
               whiteSpace: "nowrap",
+              padding: "8px 12px",
             }}
           >
             <span className="sio-live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#e11d48", display: "inline-block" }} />
@@ -167,6 +165,67 @@ export function SiteHeader() {
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CategoryMenu({ gender, label, subCategories }: { gender: string; label: string; subCategories: string[] }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      style={{ position: "relative" }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <Link
+        href={`/?gender=${gender}`}
+        style={{
+          display: "block",
+          color: "#475569",
+          textDecoration: "none",
+          whiteSpace: "nowrap",
+          padding: "8px 12px",
+          fontWeight: open ? 700 : 400,
+        }}
+      >
+        {label}
+      </Link>
+
+      {open && (
+        <div
+          className="sio-fade-in"
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            background: "#fff",
+            border: "1px solid #e2e8f0",
+            borderRadius: 10,
+            boxShadow: "0 12px 24px rgba(15,23,42,0.12)",
+            padding: 10,
+            minWidth: 180,
+            zIndex: 30,
+            animationDuration: "0.15s",
+          }}
+        >
+          <Link
+            href={`/?gender=${gender}`}
+            style={{ display: "block", padding: "6px 10px", borderRadius: 6, color: "#0f172a", fontWeight: 600, textDecoration: "none", fontSize: 13 }}
+          >
+            All {label}
+          </Link>
+          {subCategories.map((sc) => (
+            <Link
+              key={sc}
+              href={`/?gender=${gender}&subCategory=${encodeURIComponent(sc)}`}
+              style={{ display: "block", padding: "6px 10px", borderRadius: 6, color: "#475569", textDecoration: "none", fontSize: 13 }}
+            >
+              {sc}
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

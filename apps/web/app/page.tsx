@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ALL_SIZES, NAV_CATEGORIES } from "../lib/seed-data";
+import { ALL_SIZES, CATEGORY_TREE } from "../lib/seed-data";
 import { saveSmartSort } from "../lib/smart-sorts";
 import { toggleWishlist, isWishlisted } from "../lib/wishlist";
 import { HeroSlider } from "../components/HeroSlider";
@@ -92,12 +92,13 @@ function DiscoverPageInner() {
 
   const [pincode, setPincode] = useState(searchParams.get("pincode") ?? "400050");
   const [radius, setRadius] = useState(Number(searchParams.get("radius") ?? 10));
-  const [category, setCategory] = useState(searchParams.get("category") ?? "all");
+  const [gender, setGender] = useState(searchParams.get("gender") ?? "all");
+  const [subCategory, setSubCategory] = useState(searchParams.get("subCategory") ?? "");
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") ?? "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") ?? "");
   const [size, setSize] = useState(searchParams.get("size") ?? "");
   const [sortBy, setSortBy] = useState(searchParams.get("sort") ?? "distance");
-  const [q] = useState(searchParams.get("q") ?? "");
+  const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [liveOnly, setLiveOnly] = useState(searchParams.get("liveOnly") === "true");
 
   const [stores, setStores] = useState<DiscoveredStore[]>([]);
@@ -106,10 +107,30 @@ function DiscoverPageInner() {
   const [saveName, setSaveName] = useState("");
   const [savedMsg, setSavedMsg] = useState("");
 
+  // Clicking a header link (category, Live Sales) or a saved Smart Sort
+  // changes the URL but stays on this same route, so it doesn't remount the
+  // component — sync local filter state whenever the query string changes.
+  useEffect(() => {
+    setPincode(searchParams.get("pincode") ?? "400050");
+    setRadius(Number(searchParams.get("radius") ?? 10));
+    setGender(searchParams.get("gender") ?? "all");
+    setSubCategory(searchParams.get("subCategory") ?? "");
+    setMinPrice(searchParams.get("minPrice") ?? "");
+    setMaxPrice(searchParams.get("maxPrice") ?? "");
+    setSize(searchParams.get("size") ?? "");
+    setSortBy(searchParams.get("sort") ?? "distance");
+    setQ(searchParams.get("q") ?? "");
+    setLiveOnly(searchParams.get("liveOnly") === "true");
+  }, [searchParams]);
+
   useEffect(() => {
     setLoading(true);
-    const storeParams = new URLSearchParams({ pincode, radius: String(radius), category, liveOnly: String(liveOnly) });
-    const productParams = new URLSearchParams({ pincode, radius: String(radius), category, sort: sortBy, liveOnly: String(liveOnly) });
+    const storeParams = new URLSearchParams({ pincode, radius: String(radius), gender, liveOnly: String(liveOnly) });
+    const productParams = new URLSearchParams({ pincode, radius: String(radius), gender, sort: sortBy, liveOnly: String(liveOnly) });
+    if (subCategory) {
+      storeParams.set("subCategory", subCategory);
+      productParams.set("subCategory", subCategory);
+    }
     if (minPrice) productParams.set("minPrice", minPrice);
     if (maxPrice) productParams.set("maxPrice", maxPrice);
     if (size) productParams.set("size", size);
@@ -124,14 +145,17 @@ function DiscoverPageInner() {
         setSortedProducts(productResults);
       })
       .finally(() => setLoading(false));
-  }, [pincode, radius, category, minPrice, maxPrice, size, sortBy, q, liveOnly]);
+  }, [pincode, radius, gender, subCategory, minPrice, maxPrice, size, sortBy, q, liveOnly]);
+
+  const activeSubCategories = CATEGORY_TREE.find((c) => c.value === gender)?.subCategories ?? [];
 
   function handleSaveSort() {
     if (!saveName.trim()) return;
     saveSmartSort(saveName.trim(), {
       pincode,
       radiusKm: radius,
-      category,
+      gender,
+      subCategory: subCategory || undefined,
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       size: size || undefined,
@@ -216,16 +240,36 @@ function DiscoverPageInner() {
         </label>
 
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {NAV_CATEGORIES.map((c) => (
+          <button
+            onClick={() => {
+              setGender("all");
+              setSubCategory("");
+            }}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: "1px solid #cbd5e1",
+              background: gender === "all" ? "#0f172a" : "#fff",
+              color: gender === "all" ? "#fff" : "#0f172a",
+              cursor: "pointer",
+              fontSize: 14,
+            }}
+          >
+            All
+          </button>
+          {CATEGORY_TREE.map((c) => (
             <button
               key={c.value}
-              onClick={() => setCategory(c.value)}
+              onClick={() => {
+                setGender(c.value);
+                setSubCategory("");
+              }}
               style={{
                 padding: "8px 14px",
                 borderRadius: 999,
                 border: "1px solid #cbd5e1",
-                background: category === c.value ? "#0f172a" : "#fff",
-                color: category === c.value ? "#fff" : "#0f172a",
+                background: gender === c.value ? "#0f172a" : "#fff",
+                color: gender === c.value ? "#fff" : "#0f172a",
                 cursor: "pointer",
                 fontSize: 14,
               }}
@@ -234,6 +278,28 @@ function DiscoverPageInner() {
             </button>
           ))}
         </div>
+
+        {activeSubCategories.length > 0 && (
+          <div className="sio-fade-in" style={{ display: "flex", gap: 6, flexWrap: "wrap", width: "100%", marginTop: 4 }}>
+            {activeSubCategories.map((sc) => (
+              <button
+                key={sc}
+                onClick={() => setSubCategory(subCategory === sc ? "" : sc)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: "1px solid #e2e8f0",
+                  background: subCategory === sc ? "#e0e7ff" : "#f8fafc",
+                  color: subCategory === sc ? "#1e3a8a" : "#475569",
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                {sc}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <section style={{ marginBottom: 24 }}>
