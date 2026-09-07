@@ -6,14 +6,30 @@ async function fetchCategories(storeId: string) {
   return res.json();
 }
 
+// Pill style matches the homepage's subcategory chips - only the hover/active
+// tint comes from the store's own accent color (--store-accent).
 export async function CategoryNav({ storeId }: { storeId: string }) {
   const categories = await fetchCategories(storeId);
   if (!categories.length) return null;
 
   return (
-    <nav style={{ display: "flex", gap: 16, overflowX: "auto", padding: "12px 16px", fontFamily: "var(--sio-font-body)" }}>
+    <nav style={{ maxWidth: 1100, margin: "0 auto", display: "flex", gap: 8, overflowX: "auto", padding: "16px" }}>
       {categories.map((c: any) => (
-        <a key={c.id} href={`?category=${c.id}`} style={{ whiteSpace: "nowrap", color: "var(--sio-color-primary)", textDecoration: "none" }}>
+        <a
+          key={c.id}
+          href={`?category=${c.id}`}
+          className="sio-category-pill"
+          style={{
+            whiteSpace: "nowrap",
+            textDecoration: "none",
+            color: "#334155",
+            background: "#f1f5f9",
+            padding: "8px 16px",
+            borderRadius: 999,
+            fontSize: 13,
+            fontWeight: 500,
+          }}
+        >
           {c.name}
         </a>
       ))}

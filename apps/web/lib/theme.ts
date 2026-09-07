@@ -23,7 +23,7 @@ export interface ThemeConfig {
   layout: {
     gridStyle: "2-col" | "3-col" | "4-col" | "list";
     sectionOrder: string[];
-    heroCarousel?: Array<{ imageUrl: string; altText?: string; ctaLabel?: string; ctaLink?: string }>;
+    heroCarousel?: Array<{ eyebrow?: string; title: string; subtitle?: string; ctaLabel?: string; ctaLink?: string }>;
     featuredCollection?: { title?: string; categoryId?: string; maxItems?: number };
   };
   locale?: { defaultLocale?: string; supportedLocales?: string[] };
@@ -58,24 +58,19 @@ export const getLiveTheme = cache(async (storeId: string): Promise<ThemeConfig> 
   return res.json();
 });
 
-/** Maps theme JSON tokens to CSS custom properties for SSR injection - no FOUC. */
+/**
+ * Maps a store's theme to a narrow accent-only set of CSS custom properties.
+ * The platform's fonts, spacing, card style, and header/footer are uniform
+ * across every page (site-wide design system) - a store's theme only tints
+ * its own hero background and CTA/accent touches, so stores stay visually
+ * distinguishable without turning into a completely different-looking site.
+ */
 export function themeToCssVariables(theme: ThemeConfig): string {
   const { colors } = theme.brand;
-  const radiusMap = { sharp: "2px", soft: "10px", pill: "999px" };
-  const radius = radiusMap[theme.brand.borderRadiusScale ?? "soft"];
-
   return `
     :root {
-      --sio-color-primary: ${colors.primary};
-      --sio-color-secondary: ${colors.secondary};
-      --sio-color-accent: ${colors.accent};
-      --sio-color-background: ${colors.background};
-      --sio-color-text: ${colors.text};
-      --sio-color-sale-badge: ${colors.saleBadge ?? "#e11d48"};
-      --sio-font-heading: "${theme.brand.typography.headingFont}", sans-serif;
-      --sio-font-body: "${theme.brand.typography.bodyFont}", sans-serif;
-      --sio-font-base-size: ${theme.brand.typography.baseSizePx ?? 16}px;
-      --sio-radius: ${radius};
+      --store-primary: ${colors.primary};
+      --store-accent: ${colors.accent};
     }
   `.trim();
 }

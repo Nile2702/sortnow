@@ -19,9 +19,10 @@ export default async function StorefrontPage({ params }: Props) {
   const theme = await getLiveTheme(store.id);
   const css = themeToCssVariables(theme);
 
-  // Every section in sectionOrder maps to a shared component - the ONLY thing
-  // that differs per tenant is theme.config (colors/fonts/order), never the
-  // component code itself.
+  // Every section in sectionOrder maps to a shared component - the same
+  // components and design system the homepage uses. Only the store's
+  // primary/accent color (--store-primary / --store-accent, injected below)
+  // differs per tenant, not the fonts, spacing, or layout.
   const sectionComponents: Record<string, JSX.Element | null> = {
     hero: theme.layout.heroCarousel ? <HeroCarousel slides={theme.layout.heroCarousel} /> : null,
     categoryNav: <CategoryNav storeId={store.id} />,
@@ -39,16 +40,20 @@ export default async function StorefrontPage({ params }: Props) {
 
   return (
     <>
-      {/* SSR-injected theme - renders with correct branding on first paint, no client flash */}
+      {/* Only sets --store-primary / --store-accent - see lib/theme.ts */}
       <style dangerouslySetInnerHTML={{ __html: css }} />
-      <main
-        style={{ background: "var(--sio-color-background)", color: "var(--sio-color-text)", fontFamily: "var(--sio-font-body)" }}
-      >
-        {theme.layout.sectionOrder.map((key) => (
-          <section key={key} data-section={key}>
-            {sectionComponents[key] ?? null}
-          </section>
-        ))}
+      <main>
+        {theme.layout.sectionOrder.map((key, i) =>
+          key === "hero" ? (
+            <div key={key} data-section={key} style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 16px 0" }}>
+              {sectionComponents[key]}
+            </div>
+          ) : (
+            <section key={key} data-section={key}>
+              {sectionComponents[key] ?? null}
+            </section>
+          )
+        )}
       </main>
     </>
   );

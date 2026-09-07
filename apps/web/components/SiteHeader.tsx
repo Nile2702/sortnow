@@ -180,49 +180,54 @@ function ChevronIcon({ open }: { open: boolean }) {
 function CategoryMenu({ gender, label, subCategories }: { gender: string; label: string; subCategories: string[] }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function openNow() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpen(true);
+  }
+
+  // Small delay before closing so crossing the gap between the trigger and
+  // the panel (or a brief cursor overshoot) doesn't flicker the menu shut -
+  // this is what makes hover-to-open actually reliable.
+  function closeSoon() {
+    closeTimer.current = setTimeout(() => setOpen(false), 150);
+  }
 
   useEffect(() => {
     if (!open) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
     function handleEscape(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
-    document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [open]);
 
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
+
   return (
-    <div ref={containerRef} style={{ position: "relative" }}>
-      <button
-        onClick={() => setOpen((o) => !o)}
+    <div ref={containerRef} style={{ position: "relative" }} onMouseEnter={openNow} onMouseLeave={closeSoon}>
+      <Link
+        href={`/?gender=${gender}`}
         aria-expanded={open}
         aria-haspopup="true"
         style={{
           display: "flex",
           alignItems: "center",
           gap: 4,
-          background: "none",
-          border: "none",
-          cursor: "pointer",
           color: open ? "#0f172a" : "#475569",
           whiteSpace: "nowrap",
           padding: "8px 10px",
           fontWeight: open ? 700 : 400,
           fontSize: 13,
-          fontFamily: "inherit",
+          textDecoration: "none",
         }}
       >
         {label}
         <ChevronIcon open={open} />
-      </button>
+      </Link>
 
       {open && (
         <div

@@ -88,8 +88,9 @@ export const themes: Record<string, any> = {
       sectionOrder: ["hero", "categoryNav", "featuredCollection", "newArrivals"],
       heroCarousel: [
         {
-          imageUrl: placeholderImage("Urban Vogue — Festive Collection", "#7c2d12", "#f5deb3", 1200, 480),
-          altText: "Festive ethnic collection",
+          eyebrow: "Urban Vogue · Bandra",
+          title: "Festive Ethnic, Curated For You",
+          subtitle: "Handpicked sarees, kurtis and lehengas from Bandra's favourite ethnic boutique.",
           ctaLabel: "Shop Festive Wear",
           ctaLink: "/store/urban-vogue",
         },
@@ -117,8 +118,9 @@ export const themes: Record<string, any> = {
       sectionOrder: ["hero", "categoryNav", "featuredCollection", "newArrivals"],
       heroCarousel: [
         {
-          imageUrl: placeholderImage("South Silk House — Kanjivaram", "#7a1f3d", "#ffe9d6", 1200, 480),
-          altText: "Kanjivaram silk sarees",
+          eyebrow: "South Silk House · T. Nagar",
+          title: "Signature Kanjivaram Silks",
+          subtitle: "Pure zari-bordered silk sarees, woven by Kanchipuram's master weavers.",
           ctaLabel: "Explore Silk Sarees",
           ctaLink: "/store/south-silk-house",
         },
@@ -146,8 +148,9 @@ export const themes: Record<string, any> = {
       sectionOrder: ["hero", "featuredCollection", "categoryNav", "newArrivals"],
       heroCarousel: [
         {
-          imageUrl: placeholderImage("Denim District — New Arrivals", "#1e3a8a", "#e5e7eb", 1200, 480),
-          altText: "New denim arrivals",
+          eyebrow: "Denim District · Commercial Street",
+          title: "New Denim, Just Dropped",
+          subtitle: "Slim fits, oversized jackets, and everyday essentials for men.",
           ctaLabel: "Shop New Denim",
           ctaLink: "/store/denim-district",
         },

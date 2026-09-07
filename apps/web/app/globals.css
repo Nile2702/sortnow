@@ -114,3 +114,8 @@ body {
 .sio-dropdown-link:hover {
   background: #f1f5f9;
 }
+
+.sio-category-pill:hover {
+  background: var(--store-accent, #2563eb) !important;
+  color: #fff !important;
+}
