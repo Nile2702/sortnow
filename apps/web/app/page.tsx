@@ -16,7 +16,6 @@ interface DiscoveredStore {
   city: string;
   localMarket: string;
   distanceKm: number | null;
-  hasLiveSale: boolean;
 }
 
 interface SearchProduct {
@@ -28,7 +27,6 @@ interface SearchProduct {
   storeSlug: string;
   storeName: string;
   distanceKm: number | null;
-  hasLiveSale: boolean;
 }
 
 const QUICK_MARKETS = [
@@ -39,7 +37,29 @@ const QUICK_MARKETS = [
 ];
 
 function SkeletonCard({ height = 220 }: { height?: number }) {
-  return <div className="sio-skeleton" style={{ borderRadius: 12, height }} />;
+  return <div className="sio-skeleton" style={{ borderRadius: 14, height }} />;
+}
+
+function DiscountBadge({ basePrice, compareAtPrice }: { basePrice: number; compareAtPrice?: number }) {
+  if (!compareAtPrice || compareAtPrice <= basePrice) return null;
+  const pct = Math.round(((compareAtPrice - basePrice) / compareAtPrice) * 100);
+  return (
+    <span
+      style={{
+        position: "absolute",
+        top: 8,
+        left: 8,
+        background: "#16a34a",
+        color: "#fff",
+        fontSize: 11,
+        fontWeight: 700,
+        padding: "3px 8px",
+        borderRadius: 999,
+      }}
+    >
+      {pct}% OFF
+    </span>
+  );
 }
 
 function HeartButton({ product, size = 18 }: { product: SearchProduct; size?: number }) {
@@ -72,7 +92,8 @@ function HeartButton({ product, size = 18 }: { product: SearchProduct; size?: nu
         height: 30,
         borderRadius: "50%",
         border: "none",
-        background: "rgba(255,255,255,0.9)",
+        background: "rgba(255,255,255,0.92)",
+        boxShadow: "0 2px 6px rgba(15,23,42,0.15)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -99,7 +120,6 @@ function DiscoverPageInner() {
   const [size, setSize] = useState(searchParams.get("size") ?? "");
   const [sortBy, setSortBy] = useState(searchParams.get("sort") ?? "distance");
   const [q, setQ] = useState(searchParams.get("q") ?? "");
-  const [liveOnly, setLiveOnly] = useState(searchParams.get("liveOnly") === "true");
 
   const [stores, setStores] = useState<DiscoveredStore[]>([]);
   const [sortedProducts, setSortedProducts] = useState<SearchProduct[]>([]);
@@ -107,9 +127,9 @@ function DiscoverPageInner() {
   const [saveName, setSaveName] = useState("");
   const [savedMsg, setSavedMsg] = useState("");
 
-  // Clicking a header link (category, Live Sales) or a saved Smart Sort
-  // changes the URL but stays on this same route, so it doesn't remount the
-  // component — sync local filter state whenever the query string changes.
+  // Clicking a header category link or a saved Smart Sort changes the URL but
+  // stays on this same route, so it doesn't remount the component — sync
+  // local filter state whenever the query string changes.
   useEffect(() => {
     setPincode(searchParams.get("pincode") ?? "400050");
     setRadius(Number(searchParams.get("radius") ?? 10));
@@ -120,13 +140,12 @@ function DiscoverPageInner() {
     setSize(searchParams.get("size") ?? "");
     setSortBy(searchParams.get("sort") ?? "distance");
     setQ(searchParams.get("q") ?? "");
-    setLiveOnly(searchParams.get("liveOnly") === "true");
   }, [searchParams]);
 
   useEffect(() => {
     setLoading(true);
-    const storeParams = new URLSearchParams({ pincode, radius: String(radius), gender, liveOnly: String(liveOnly) });
-    const productParams = new URLSearchParams({ pincode, radius: String(radius), gender, sort: sortBy, liveOnly: String(liveOnly) });
+    const storeParams = new URLSearchParams({ pincode, radius: String(radius), gender });
+    const productParams = new URLSearchParams({ pincode, radius: String(radius), gender, sort: sortBy });
     if (subCategory) {
       storeParams.set("subCategory", subCategory);
       productParams.set("subCategory", subCategory);
@@ -145,7 +164,7 @@ function DiscoverPageInner() {
         setSortedProducts(productResults);
       })
       .finally(() => setLoading(false));
-  }, [pincode, radius, gender, subCategory, minPrice, maxPrice, size, sortBy, q, liveOnly]);
+  }, [pincode, radius, gender, subCategory, minPrice, maxPrice, size, sortBy, q]);
 
   const activeSubCategories = CATEGORY_TREE.find((c) => c.value === gender)?.subCategories ?? [];
 
@@ -176,44 +195,19 @@ function DiscoverPageInner() {
         </div>
       )}
 
-      {liveOnly && (
-        <div
-          className="sio-fade-in"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 16,
-            padding: "10px 14px",
-            background: "#fff1f2",
-            border: "1px solid #fecdd3",
-            borderRadius: 10,
-            fontSize: 13,
-            color: "#be123c",
-          }}
-        >
-          <span className="sio-live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#e11d48", display: "inline-block" }} />
-          Showing only stores &amp; products with a live sale right now.
-          <button
-            onClick={() => setLiveOnly(false)}
-            style={{ marginLeft: "auto", border: "none", background: "none", color: "#be123c", textDecoration: "underline", cursor: "pointer" }}
-          >
-            Clear
-          </button>
-        </div>
-      )}
-
       <section
+        className="sio-card"
         style={{
           display: "flex",
           flexWrap: "wrap",
           gap: 12,
           alignItems: "center",
           background: "#fff",
-          padding: 16,
-          borderRadius: 12,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-          marginBottom: 16,
+          padding: 18,
+          borderRadius: 16,
+          boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
+          border: "1px solid #f1f5f9",
+          marginBottom: 20,
         }}
       >
         <input
@@ -221,7 +215,7 @@ function DiscoverPageInner() {
           onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
           placeholder="Enter 6-digit PIN code"
           maxLength={6}
-          style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 16, width: 200 }}
+          style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 16, width: 200 }}
         />
 
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
@@ -229,7 +223,7 @@ function DiscoverPageInner() {
           <select
             value={radius}
             onChange={(e) => setRadius(Number(e.target.value))}
-            style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1" }}
+            style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}
           >
             {[1, 3, 5, 10, 15, 25].map((r) => (
               <option key={r} value={r}>
@@ -245,15 +239,7 @@ function DiscoverPageInner() {
               setGender("all");
               setSubCategory("");
             }}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 999,
-              border: "1px solid #cbd5e1",
-              background: gender === "all" ? "#0f172a" : "#fff",
-              color: gender === "all" ? "#fff" : "#0f172a",
-              cursor: "pointer",
-              fontSize: 14,
-            }}
+            style={pillStyle(gender === "all")}
           >
             All
           </button>
@@ -264,15 +250,7 @@ function DiscoverPageInner() {
                 setGender(c.value);
                 setSubCategory("");
               }}
-              style={{
-                padding: "8px 14px",
-                borderRadius: 999,
-                border: "1px solid #cbd5e1",
-                background: gender === c.value ? "#0f172a" : "#fff",
-                color: gender === c.value ? "#fff" : "#0f172a",
-                cursor: "pointer",
-                fontSize: 14,
-              }}
+              style={pillStyle(gender === c.value)}
             >
               {c.label}
             </button>
@@ -302,8 +280,8 @@ function DiscoverPageInner() {
         )}
       </section>
 
-      <section style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 8 }}>Popular markets</div>
+      <section style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 8, fontWeight: 600 }}>📍 Popular markets</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {QUICK_MARKETS.map((m) => (
             <button
@@ -314,6 +292,7 @@ function DiscoverPageInner() {
                 borderRadius: 8,
                 border: "1px solid #e2e8f0",
                 background: pincode === m.pincode ? "#e0e7ff" : "#fff",
+                color: pincode === m.pincode ? "#1e3a8a" : "#334155",
                 cursor: "pointer",
                 fontSize: 13,
               }}
@@ -324,73 +303,87 @@ function DiscoverPageInner() {
         </div>
       </section>
 
-      <h2 style={{ fontSize: 18, marginBottom: 12 }}>Stores near you</h2>
+      <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>Stores near you</h2>
       {loading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 40 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 44 }}>
           {[1, 2, 3].map((i) => (
             <SkeletonCard key={i} height={110} />
           ))}
         </div>
       ) : stores.length === 0 ? (
-        <p>No stores found matching these filters. Try widening the radius or clearing a filter.</p>
+        <p style={{ color: "#64748b" }}>No stores found matching these filters. Try widening the radius or clearing a filter.</p>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 40 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 44 }}>
           {stores.map((s, i) => (
             <Link
               key={s.id}
               href={`/store/${s.slug}`}
               className="sio-card sio-fade-in"
               style={{
-                display: "block",
+                display: "flex",
+                gap: 14,
+                alignItems: "center",
                 background: "#fff",
-                borderRadius: 12,
+                borderRadius: 14,
                 padding: 16,
                 textDecoration: "none",
                 color: "inherit",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                border: "1px solid #f1f5f9",
+                boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
                 animationDelay: `${i * 60}ms`,
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                <h3 style={{ margin: 0, fontSize: 18 }}>{s.name}</h3>
-                {s.hasLiveSale && (
-                  <span style={{ background: "#e11d48", color: "#fff", fontSize: 11, padding: "3px 8px", borderRadius: 999, display: "flex", alignItems: "center", gap: 4 }}>
-                    <span className="sio-live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff", display: "inline-block" }} />
-                    LIVE SALE
-                  </span>
-                )}
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: `hsl(${(s.name.charCodeAt(0) * 37) % 360}, 60%, 92%)`,
+                  color: `hsl(${(s.name.charCodeAt(0) * 37) % 360}, 45%, 35%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 700,
+                  fontSize: 16,
+                  flexShrink: 0,
+                }}
+              >
+                {s.name.charAt(0)}
               </div>
-              <div style={{ color: "#64748b", fontSize: 14, marginTop: 4 }}>
-                {s.localMarket}, {s.city} · {s.category}
+              <div style={{ minWidth: 0 }}>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{s.name}</h3>
+                <div style={{ color: "#64748b", fontSize: 13, marginTop: 2 }}>
+                  {s.localMarket}, {s.city}
+                </div>
+                {s.distanceKm != null && <div style={{ fontSize: 12, marginTop: 4, color: "#2563eb", fontWeight: 600 }}>{s.distanceKm} km away</div>}
               </div>
-              {s.distanceKm != null && <div style={{ fontSize: 13, marginTop: 8, color: "#2563eb" }}>{s.distanceKm} km away</div>}
             </Link>
           ))}
         </div>
       )}
 
-      <section style={{ background: "#fff", borderRadius: 12, padding: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
-        <h2 style={{ fontSize: 18, marginBottom: 4 }}>Shop in Sort</h2>
-        <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
+      <section style={{ background: "#fff", borderRadius: 18, padding: 24, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", border: "1px solid #f1f5f9" }}>
+        <h2 style={{ fontSize: 20, marginBottom: 4, fontWeight: 700 }}>🧭 Shop in Sort</h2>
+        <p style={{ fontSize: 13, color: "#64748b", marginBottom: 18 }}>
           Sort products across every nearby store at once, then save the sort to shop it again later.
         </p>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
           <input
             type="number"
             placeholder="Min ₹"
             value={minPrice}
             onChange={(e) => setMinPrice(e.target.value)}
-            style={{ width: 100, padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1" }}
+            style={{ width: 100, padding: "9px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}
           />
           <input
             type="number"
             placeholder="Max ₹"
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
-            style={{ width: 100, padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1" }}
+            style={{ width: 100, padding: "9px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}
           />
-          <select value={size} onChange={(e) => setSize(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1" }}>
+          <select value={size} onChange={(e) => setSize(e.target.value)} style={{ padding: "9px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
             <option value="">Any size</option>
             {ALL_SIZES.map((sz) => (
               <option key={sz} value={sz}>
@@ -398,7 +391,7 @@ function DiscoverPageInner() {
               </option>
             ))}
           </select>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #cbd5e1" }}>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ padding: "9px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
             <option value="distance">Nearest first</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
@@ -406,23 +399,24 @@ function DiscoverPageInner() {
           </select>
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 22, flexWrap: "wrap" }}>
           <input
             placeholder="Name this sort, e.g. 'Cotton kurtis under 1500 near home'"
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
-            style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", minWidth: 220 }}
+            style={{ flex: 1, padding: "9px 12px", borderRadius: 10, border: "1px solid #e2e8f0", minWidth: 220 }}
           />
           <button
             onClick={handleSaveSort}
             disabled={!saveName.trim()}
             style={{
-              padding: "8px 16px",
-              borderRadius: 8,
+              padding: "9px 18px",
+              borderRadius: 10,
               border: "none",
-              background: saveName.trim() ? "#0f172a" : "#cbd5e1",
+              background: saveName.trim() ? "#0f172a" : "#e2e8f0",
               color: "#fff",
               cursor: saveName.trim() ? "pointer" : "not-allowed",
+              fontWeight: 600,
             }}
           >
             Save this Sort
@@ -435,7 +429,7 @@ function DiscoverPageInner() {
         </div>
 
         {loading ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
             {[1, 2, 3, 4].map((i) => (
               <SkeletonCard key={i} height={260} />
             ))}
@@ -443,7 +437,7 @@ function DiscoverPageInner() {
         ) : sortedProducts.length === 0 ? (
           <p style={{ color: "#64748b" }}>No products match this sort yet.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
             {sortedProducts.map((p, i) => (
               <Link
                 key={p.id}
@@ -453,7 +447,7 @@ function DiscoverPageInner() {
                   position: "relative",
                   textDecoration: "none",
                   color: "inherit",
-                  borderRadius: 10,
+                  borderRadius: 14,
                   overflow: "hidden",
                   border: "1px solid #f1f5f9",
                   background: "#fff",
@@ -462,18 +456,18 @@ function DiscoverPageInner() {
               >
                 <div style={{ position: "relative" }}>
                   <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />
+                  <DiscountBadge basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} />
                   <HeartButton product={p} />
                 </div>
-                <div style={{ padding: 10 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{p.title}</div>
-                  <div style={{ fontSize: 12, color: "#64748b" }}>{p.storeName}</div>
-                  <div style={{ marginTop: 4 }}>
-                    ₹{p.basePrice}
+                <div style={{ padding: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>{p.title}</div>
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{p.storeName}</div>
+                  <div style={{ marginTop: 6 }}>
+                    <span style={{ fontWeight: 700 }}>₹{p.basePrice}</span>
                     {p.compareAtPrice && (
-                      <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.6, fontSize: 12 }}>₹{p.compareAtPrice}</span>
+                      <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{p.compareAtPrice}</span>
                     )}
                   </div>
-                  {p.hasLiveSale && <div style={{ fontSize: 11, color: "#e11d48", marginTop: 2 }}>LIVE SALE</div>}
                 </div>
               </Link>
             ))}
@@ -482,6 +476,19 @@ function DiscoverPageInner() {
       </section>
     </main>
   );
+}
+
+function pillStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: "8px 16px",
+    borderRadius: 999,
+    border: active ? "1px solid #0f172a" : "1px solid #e2e8f0",
+    background: active ? "#0f172a" : "#fff",
+    color: active ? "#fff" : "#0f172a",
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 500,
+  };
 }
 
 export default function DiscoverPage() {

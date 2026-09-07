@@ -7,8 +7,7 @@ export async function GET(req: NextRequest) {
   const radiusKm = searchParams.get("radius") ? Number(searchParams.get("radius")) : undefined;
   const gender = searchParams.get("gender") ?? undefined;
   const subCategory = searchParams.get("subCategory") ?? undefined;
-  const liveOnly = searchParams.get("liveOnly") === "true";
 
-  const results = discoverStores({ pincode, radiusKm, gender, subCategory, liveOnly });
+  const results = discoverStores({ pincode, radiusKm, gender, subCategory });
   return NextResponse.json(results);
 }

@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { getStoreBySlug, getLiveTheme, themeToCssVariables } from "../../../lib/theme";
 import { HeroCarousel } from "../../../components/HeroCarousel";
-import { LiveSaleBanner } from "../../../components/LiveSaleBanner";
 import { ProductGrid } from "../../../components/ProductGrid";
 import { CategoryNav } from "../../../components/CategoryNav";
 
@@ -25,7 +24,6 @@ export default async function StorefrontPage({ params }: Props) {
   // component code itself.
   const sectionComponents: Record<string, JSX.Element | null> = {
     hero: theme.layout.heroCarousel ? <HeroCarousel slides={theme.layout.heroCarousel} /> : null,
-    liveSaleStrip: theme.liveSale?.enabled ? <LiveSaleBanner storeId={store.id} config={theme.liveSale} /> : null,
     categoryNav: <CategoryNav storeId={store.id} />,
     featuredCollection: (
       <ProductGrid

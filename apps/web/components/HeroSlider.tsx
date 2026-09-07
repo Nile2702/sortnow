@@ -16,7 +16,7 @@ const SLIDES: Slide[] = [
   {
     storeSlug: "urban-vogue",
     title: "Flat 40% Off — Festive Ethnic",
-    subtitle: "Urban Vogue, Bandra · Live sale ends tonight",
+    subtitle: "Urban Vogue, Bandra · Festive collection",
     cta: "Shop Urban Vogue",
     bg: "linear-gradient(135deg, #7c2d12, #d97706)",
     fg: "#fff7ed",
@@ -78,16 +78,20 @@ export function HeroSlider() {
           textDecoration: "none",
         }}
       >
-        <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 8, letterSpacing: 0.5 }}>{slide.subtitle}</div>
-        <h2 style={{ fontSize: 32, margin: 0, marginBottom: 16, maxWidth: 520 }}>{slide.title}</h2>
+        <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, letterSpacing: 0.5, fontWeight: 500 }}>{slide.subtitle}</div>
+        <h2 style={{ fontSize: 34, margin: 0, marginBottom: 18, maxWidth: 520, fontFamily: "var(--site-font-heading)", fontWeight: 700 }}>
+          {slide.title}
+        </h2>
         <span
           style={{
             alignSelf: "flex-start",
-            padding: "10px 20px",
+            padding: "11px 22px",
             borderRadius: 999,
-            background: "rgba(255,255,255,0.18)",
-            border: "1px solid rgba(255,255,255,0.5)",
+            background: "rgba(255,255,255,0.2)",
+            border: "1px solid rgba(255,255,255,0.55)",
             fontSize: 14,
+            fontWeight: 600,
+            backdropFilter: "blur(4px)",
           }}
         >
           {slide.cta} →

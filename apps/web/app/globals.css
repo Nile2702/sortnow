@@ -2,6 +2,19 @@
   box-sizing: border-box;
 }
 
+h1,
+h2,
+h3 {
+  font-family: var(--site-font-heading), sans-serif;
+  letter-spacing: -0.01em;
+}
+
+body {
+  background-image: radial-gradient(circle at 15% 0%, rgba(37, 99, 235, 0.06), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(219, 39, 119, 0.05), transparent 40%);
+  background-attachment: fixed;
+}
+
 @keyframes sio-fade-in {
   from {
     opacity: 0;
@@ -24,16 +37,6 @@
   }
 }
 
-@keyframes sio-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 0 6px rgba(225, 29, 72, 0);
-  }
-}
-
 @keyframes sio-shimmer {
   0% {
     background-position: -400px 0;
@@ -49,10 +52,6 @@
 
 .sio-slide-in {
   animation: sio-slide-in 0.6s ease both;
-}
-
-.sio-live-dot {
-  animation: sio-pulse 1.8s infinite;
 }
 
 .sio-card {

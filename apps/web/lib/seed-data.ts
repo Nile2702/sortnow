@@ -85,7 +85,7 @@ export const themes: Record<string, any> = {
     },
     layout: {
       gridStyle: "3-col",
-      sectionOrder: ["hero", "liveSaleStrip", "categoryNav", "featuredCollection", "newArrivals"],
+      sectionOrder: ["hero", "categoryNav", "featuredCollection", "newArrivals"],
       heroCarousel: [
         {
           imageUrl: placeholderImage("Urban Vogue — Festive Collection", "#7c2d12", "#f5deb3", 1200, 480),
@@ -96,7 +96,6 @@ export const themes: Record<string, any> = {
       ],
       featuredCollection: { title: "This Week's Picks", maxItems: 8 },
     },
-    liveSale: { enabled: true, countdownStyle: "digital", badgeText: "FLAT 40% OFF — TODAY ONLY" },
   },
   "store-south-silk-house": {
     version: 1,
@@ -126,7 +125,6 @@ export const themes: Record<string, any> = {
       ],
       featuredCollection: { title: "Signature Kanjivaram", maxItems: 8 },
     },
-    liveSale: { enabled: false },
   },
   "store-denim-district": {
     version: 2,
@@ -145,7 +143,7 @@ export const themes: Record<string, any> = {
     },
     layout: {
       gridStyle: "3-col",
-      sectionOrder: ["hero", "liveSaleStrip", "featuredCollection", "categoryNav", "newArrivals"],
+      sectionOrder: ["hero", "featuredCollection", "categoryNav", "newArrivals"],
       heroCarousel: [
         {
           imageUrl: placeholderImage("Denim District — New Arrivals", "#1e3a8a", "#e5e7eb", 1200, 480),
@@ -156,7 +154,6 @@ export const themes: Record<string, any> = {
       ],
       featuredCollection: { title: "Fresh Fits", maxItems: 8 },
     },
-    liveSale: { enabled: true, countdownStyle: "text", badgeText: "WEEKEND SALE — 25% OFF DENIM" },
   },
 };
 
@@ -367,17 +364,6 @@ export const products: Product[] = [
   },
 ];
 
-export const liveSales: Record<string, { title: string; endsAt: string }> = {
-  "store-urban-vogue": {
-    title: "FLAT 40% OFF — TODAY ONLY",
-    endsAt: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-  },
-  "store-denim-district": {
-    title: "WEEKEND SALE — 25% OFF DENIM",
-    endsAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-};
-
 const EARTH_RADIUS_KM = 6371;
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -410,9 +396,8 @@ export function searchProducts(opts: {
   size?: string;
   sort?: string;
   q?: string;
-  liveOnly?: boolean;
 }) {
-  const { pincode, radiusKm = 10, gender, subCategory, minPrice, maxPrice, size, sort, q, liveOnly } = opts;
+  const { pincode, radiusKm = 10, gender, subCategory, minPrice, maxPrice, size, sort, q } = opts;
   const origin = pincode ? pinCodeIndex[pincode] : undefined;
   const query = q?.trim().toLowerCase();
 
@@ -430,7 +415,6 @@ export function searchProducts(opts: {
         storeCity: store.city,
         storeLocalMarket: store.localMarket,
         distanceKm,
-        hasLiveSale: Boolean(liveSales[store.id]),
       };
     })
     .filter((p) => storesById.get(p.storeId)?.status === "active")
@@ -440,7 +424,6 @@ export function searchProducts(opts: {
     .filter((p) => minPrice == null || p.basePrice >= minPrice)
     .filter((p) => maxPrice == null || p.basePrice <= maxPrice)
     .filter((p) => !size || p.sizes.includes(size))
-    .filter((p) => !liveOnly || p.hasLiveSale)
     .filter((p) => !query || p.title.toLowerCase().includes(query) || p.fabric?.toLowerCase().includes(query));
 
   if (sort === "price_asc") results = [...results].sort((a, b) => a.basePrice - b.basePrice);
@@ -462,14 +445,8 @@ export const CATEGORY_TREE: { label: string; value: Gender; subCategories: strin
   { label: "Kids", value: "kids", subCategories: ["Boys", "Girls", "Infant"] },
 ];
 
-export function discoverStores(opts: {
-  pincode?: string;
-  radiusKm?: number;
-  gender?: string;
-  subCategory?: string;
-  liveOnly?: boolean;
-}) {
-  const { pincode, radiusKm = 10, gender, subCategory, liveOnly } = opts;
+export function discoverStores(opts: { pincode?: string; radiusKm?: number; gender?: string; subCategory?: string }) {
+  const { pincode, radiusKm = 10, gender, subCategory } = opts;
   const origin = pincode ? pinCodeIndex[pincode] : undefined;
 
   const matchingStoreIds =
@@ -488,9 +465,7 @@ export function discoverStores(opts: {
     .map((s) => ({
       ...s,
       distanceKm: origin ? Math.round(haversineKm(origin.lat, origin.lng, s.latitude, s.longitude) * 10) / 10 : null,
-      hasLiveSale: Boolean(liveSales[s.id]),
     }))
     .filter((s) => !origin || s.distanceKm === null || s.distanceKm <= radiusKm)
-    .filter((s) => !liveOnly || s.hasLiveSale)
     .sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
 }

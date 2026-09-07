@@ -26,7 +26,6 @@ export interface ThemeConfig {
     heroCarousel?: Array<{ imageUrl: string; altText?: string; ctaLabel?: string; ctaLink?: string }>;
     featuredCollection?: { title?: string; categoryId?: string; maxItems?: number };
   };
-  liveSale?: { enabled?: boolean; countdownStyle?: "digital" | "text" | "none"; badgeText?: string };
   locale?: { defaultLocale?: string; supportedLocales?: string[] };
 }
 

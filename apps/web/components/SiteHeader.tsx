@@ -146,23 +146,6 @@ export function SiteHeader() {
           {CATEGORY_TREE.map((c) => (
             <CategoryMenu key={c.value} gender={c.value} label={c.label} subCategories={c.subCategories} />
           ))}
-          <Link
-            href="/?liveOnly=true"
-            style={{
-              marginLeft: "auto",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              color: "#e11d48",
-              fontWeight: 700,
-              textDecoration: "none",
-              whiteSpace: "nowrap",
-              padding: "8px 12px",
-            }}
-          >
-            <span className="sio-live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#e11d48", display: "inline-block" }} />
-            Live Sales
-          </Link>
         </div>
       </div>
     </div>
