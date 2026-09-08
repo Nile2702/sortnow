@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getStoreBySlug, getLiveTheme, themeToCssVariables } from "../../../lib/theme";
 import { HeroCarousel } from "../../../components/HeroCarousel";
 import { ProductGrid } from "../../../components/ProductGrid";
 import { CategoryNav } from "../../../components/CategoryNav";
+import { TrackPageView } from "../../../components/TrackPageView";
 
 interface Props {
   params: { slug: string };
@@ -42,6 +44,9 @@ export default async function StorefrontPage({ params }: Props) {
     <>
       {/* Only sets --store-primary / --store-accent - see lib/theme.ts */}
       <style dangerouslySetInnerHTML={{ __html: css }} />
+      <Suspense fallback={null}>
+        <TrackPageView storeSlug={store.slug} />
+      </Suspense>
       <main>
         {theme.layout.sectionOrder.map((key, i) =>
           key === "hero" ? (

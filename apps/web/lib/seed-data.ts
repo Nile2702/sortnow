@@ -731,3 +731,56 @@ export function getInvoicesForStore(storeId: string): GstInvoice[] {
     computeGstInvoice(storeId, plan.monthlyPrice, stateCode, new Date(Date.now() - monthsAgo * 30 * 24 * 60 * 60 * 1000).toISOString())
   );
 }
+
+// ---------------------------------------------------------------------
+// Analytics: mirrors `store_analytics_events` in database/schema.sql.
+// Tracks page views (with src/pos query params, for QR-vs-online
+// attribution per docs/03-multi-tenant-storefront.md §4) so the Seller
+// Portal's Analytics tab has real numbers instead of placeholders.
+// ---------------------------------------------------------------------
+export interface AnalyticsEvent {
+  storeId: string;
+  eventType: "page_view" | "qr_scan";
+  qrPosition?: string;
+  occurredAt: string;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioAnalyticsEvents: AnalyticsEvent[] | undefined;
+}
+
+export const analyticsEvents: AnalyticsEvent[] = globalThis.__sioAnalyticsEvents ?? (globalThis.__sioAnalyticsEvents = []);
+
+export function trackPageView(storeId: string, qrPosition?: string) {
+  const now = new Date().toISOString();
+  analyticsEvents.push({ storeId, eventType: "page_view", occurredAt: now });
+  if (qrPosition) analyticsEvents.push({ storeId, eventType: "qr_scan", qrPosition, occurredAt: now });
+}
+
+export function getStoreAnalytics(storeId: string) {
+  const events = analyticsEvents.filter((e) => e.storeId === storeId);
+  const pageViews = events.filter((e) => e.eventType === "page_view");
+  const qrScans = events.filter((e) => e.eventType === "qr_scan");
+
+  const byPosition: Record<string, number> = {};
+  for (const e of qrScans) {
+    const key = e.qrPosition ?? "Unknown";
+    byPosition[key] = (byPosition[key] ?? 0) + 1;
+  }
+
+  const last7Days = Array.from({ length: 7 }).map((_, i) => {
+    const day = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000);
+    const key = day.toISOString().slice(0, 10);
+    const count = events.filter((e) => e.occurredAt.slice(0, 10) === key).length;
+    return { date: key, count };
+  });
+
+  return {
+    totalPageViews: pageViews.length,
+    totalQrScans: qrScans.length,
+    onlineViews: pageViews.length - qrScans.length,
+    byPosition,
+    last7Days,
+  };
+}
