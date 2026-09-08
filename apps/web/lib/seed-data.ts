@@ -803,3 +803,142 @@ export function getStoreAnalytics(storeId: string) {
     last7Days,
   };
 }
+
+// ---------------------------------------------------------------------
+// Product reviews & similar products - powers the product detail page.
+// ---------------------------------------------------------------------
+export interface Review {
+  id: string;
+  productId: string;
+  authorName: string;
+  rating: number; // 1-5
+  title?: string;
+  comment: string;
+  verifiedPurchase: boolean;
+  createdAt: string;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioReviews: Review[] | undefined;
+}
+
+const SEED_REVIEWS: Review[] = [
+  {
+    id: "rev-1",
+    productId: "p-uv-1",
+    authorName: "Priya S.",
+    rating: 5,
+    title: "Gorgeous saree, exactly as pictured",
+    comment: "The zari work is stunning and the fabric drapes beautifully. Got so many compliments at a wedding. Delivery from the store was quick too.",
+    verifiedPurchase: true,
+    createdAt: "2026-08-15T10:00:00.000Z",
+  },
+  {
+    id: "rev-2",
+    productId: "p-uv-1",
+    authorName: "Ananya R.",
+    rating: 4,
+    title: "Beautiful but runs slightly heavy",
+    comment: "Color and border are exactly as shown. Only reason for 4 stars is the saree is a bit heavier than I expected, but great for winter functions.",
+    verifiedPurchase: true,
+    createdAt: "2026-08-22T14:30:00.000Z",
+  },
+  {
+    id: "rev-3",
+    productId: "p-uv-2",
+    authorName: "Meera K.",
+    rating: 5,
+    title: "Perfect everyday kurti",
+    comment: "Very comfortable cotton fabric, true to size, and the mustard color is vibrant without being loud. Ordering another one in a different color.",
+    verifiedPurchase: true,
+    createdAt: "2026-08-10T09:15:00.000Z",
+  },
+  {
+    id: "rev-4",
+    productId: "p-uv-2",
+    authorName: "Kavya J.",
+    rating: 4,
+    comment: "Good quality for the price. Embroidery on the yoke is neat. Runs true to size.",
+    verifiedPurchase: false,
+    createdAt: "2026-08-29T18:45:00.000Z",
+  },
+  {
+    id: "rev-5",
+    productId: "p-dd-1",
+    authorName: "Rohan M.",
+    rating: 5,
+    title: "Best fit I've found",
+    comment: "Finally a slim fit that doesn't feel restrictive. The stretch fabric moves with you. Ordered a second pair in a different wash.",
+    verifiedPurchase: true,
+    createdAt: "2026-08-18T11:20:00.000Z",
+  },
+  {
+    id: "rev-6",
+    productId: "p-dd-1",
+    authorName: "Arjun P.",
+    rating: 3,
+    comment: "Decent jeans but the color faded slightly after the second wash. Fit is great though.",
+    verifiedPurchase: true,
+    createdAt: "2026-09-01T08:00:00.000Z",
+  },
+  {
+    id: "rev-7",
+    productId: "p-ssh-1",
+    authorName: "Lakshmi V.",
+    rating: 5,
+    title: "Authentic Kanjivaram quality",
+    comment: "You can tell this is genuine pure silk - the weight, the sheen, the zari. Worth every rupee. Packaging was also very secure.",
+    verifiedPurchase: true,
+    createdAt: "2026-08-12T16:00:00.000Z",
+  },
+];
+
+export const reviews: Review[] = globalThis.__sioReviews ?? (globalThis.__sioReviews = SEED_REVIEWS);
+
+export function getProductReviews(productId: string): Review[] {
+  return reviews.filter((r) => r.productId === productId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+export function getRatingSummary(productId: string) {
+  const productReviews = getProductReviews(productId);
+  const count = productReviews.length;
+  const average = count === 0 ? 0 : Math.round((productReviews.reduce((sum, r) => sum + r.rating, 0) / count) * 10) / 10;
+  const breakdown = [5, 4, 3, 2, 1].map((star) => ({
+    star,
+    count: productReviews.filter((r) => r.rating === star).length,
+  }));
+  return { average, count, breakdown };
+}
+
+export function addReview(productId: string, input: { authorName: string; rating: number; title?: string; comment: string }): Review {
+  const review: Review = {
+    id: `rev-custom-${Date.now().toString(36)}`,
+    productId,
+    authorName: input.authorName || "Anonymous",
+    rating: Math.min(5, Math.max(1, input.rating)),
+    title: input.title,
+    comment: input.comment,
+    verifiedPurchase: false,
+    createdAt: new Date().toISOString(),
+  };
+  reviews.unshift(review);
+  return review;
+}
+
+// Similar products - same gender + subCategory, excluding the product itself,
+// nearest-priced first so recommendations feel relevant rather than random.
+export function getSimilarProducts(productId: string, limit = 4) {
+  const product = products.find((p) => p.id === productId);
+  if (!product) return [];
+
+  const storesById = new Map(stores.map((s) => [s.id, s]));
+
+  return products
+    .filter((p) => p.id !== productId)
+    .filter((p) => p.gender === product.gender && p.subCategory === product.subCategory)
+    .filter((p) => storesById.get(p.storeId)?.status === "active")
+    .sort((a, b) => Math.abs(a.basePrice - product.basePrice) - Math.abs(b.basePrice - product.basePrice))
+    .slice(0, limit)
+    .map((p) => ({ ...p, storeName: storesById.get(p.storeId)?.name ?? "" }));
+}
