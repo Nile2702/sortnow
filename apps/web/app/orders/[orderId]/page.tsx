@@ -14,11 +14,20 @@ interface OrderItem {
   imageUrl: string;
 }
 
+interface ShippingAddress {
+  fullName: string;
+  phone: string;
+  line1: string;
+  city: string;
+  pincode: string;
+}
+
 interface Order {
   id: string;
   items: OrderItem[];
   total: number;
   status: string;
+  shippingAddress?: ShippingAddress;
   createdAt: string;
 }
 
@@ -96,6 +105,17 @@ export default function OrderConfirmationPage() {
           <span>₹{order.total}</span>
         </div>
       </div>
+
+      {order.shippingAddress && (
+        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16, marginTop: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#64748b" }}>SHIPPING ADDRESS</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>{order.shippingAddress.fullName}</div>
+          <div style={{ fontSize: 13, color: "#475569", marginTop: 2 }}>
+            {order.shippingAddress.line1}, {order.shippingAddress.city} — {order.shippingAddress.pincode}
+          </div>
+          <div style={{ fontSize: 13, color: "#475569" }}>Phone: {order.shippingAddress.phone}</div>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 12, marginTop: 24, justifyContent: "center" }}>
         <Link

@@ -581,22 +581,32 @@ export interface OrderItem {
   imageUrl: string;
 }
 
+export interface ShippingAddress {
+  fullName: string;
+  phone: string;
+  line1: string;
+  city: string;
+  pincode: string;
+}
+
 export interface Order {
   id: string;
   items: OrderItem[];
   total: number;
   status: "placed" | "confirmed";
+  shippingAddress?: ShippingAddress;
   createdAt: string;
 }
 
 export const orders: Order[] = globalThis.__sioOrders ?? (globalThis.__sioOrders = []);
 
-export function createOrder(items: OrderItem[]): Order {
+export function createOrder(items: OrderItem[], shippingAddress?: ShippingAddress): Order {
   const order: Order = {
     id: `SIO-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
     items,
     total: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
     status: "confirmed",
+    shippingAddress,
     createdAt: new Date().toISOString(),
   };
   orders.unshift(order);

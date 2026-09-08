@@ -4,12 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CartItem, getCart, removeFromCart, updateQuantity, cartTotal } from "../../lib/cart";
-import { addMyOrderId } from "../../lib/orders";
 
 export default function CartPage() {
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
-  const [placing, setPlacing] = useState(false);
 
   useEffect(() => {
     setItems(getCart());
@@ -17,33 +15,6 @@ export default function CartPage() {
 
   function refresh() {
     setItems(getCart());
-  }
-
-  async function handleCheckout() {
-    // No real payment gateway wired up - see docs/04-monetization-and-billing.md
-    // for the Razorpay/Cashfree flow this stands in for. The order itself is
-    // real (server-side, in-memory) so the confirmation/history pages work.
-    setPlacing(true);
-    const res = await fetch("/api/v1/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: items.map((i) => ({
-          productId: i.productId,
-          title: i.title,
-          storeName: i.storeName,
-          size: i.size,
-          price: i.price,
-          quantity: i.quantity,
-          imageUrl: i.imageUrl,
-        })),
-      }),
-    });
-    const order = await res.json();
-    addMyOrderId(order.id);
-    window.localStorage.setItem("sio:cart", "[]");
-    window.dispatchEvent(new Event("sio:cart-updated"));
-    router.push(`/orders/${order.id}`);
   }
 
   return (
@@ -101,20 +72,19 @@ export default function CartPage() {
           <div style={{ marginTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ fontSize: 20, fontWeight: 700 }}>Total: ₹{cartTotal(items)}</div>
             <button
-              onClick={handleCheckout}
-              disabled={placing}
+              onClick={() => router.push("/checkout")}
               style={{
                 padding: "14px 28px",
                 borderRadius: 999,
                 border: "none",
-                background: placing ? "#94a3b8" : "#0f172a",
+                background: "#0f172a",
                 color: "#fff",
                 fontSize: 16,
                 fontWeight: 600,
-                cursor: placing ? "default" : "pointer",
+                cursor: "pointer",
               }}
             >
-              {placing ? "Placing order…" : "Checkout"}
+              Checkout
             </button>
           </div>
         </>
