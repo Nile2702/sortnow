@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { getCart, cartCount } from "../lib/cart";
 import { getWishlist } from "../lib/wishlist";
 import { CATEGORY_TREE } from "../lib/seed-data";
+import { LogoBadge } from "./LogoBadge";
 
 function HeartIcon() {
   return (
@@ -54,16 +55,6 @@ function CloseIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  );
-}
-
-function LogoMark() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--sio-bronze)" strokeWidth="1.6" strokeLinecap="round">
-      <path d="M4 6h16" />
-      <path d="M6 12h12" />
-      <path d="M9 18h6" />
     </svg>
   );
 }
@@ -132,7 +123,7 @@ export function SiteHeader() {
             whiteSpace: "nowrap",
           }}
         >
-          <LogoMark />
+          <LogoBadge size={40} />
           SORT IT OUT
         </Link>
 

@@ -3,15 +3,17 @@
 }
 
 :root {
-  /* Premium, muted palette - warm ink and cream with a restrained bronze
-     accent, in place of the earlier bright blue/pink/pastel scheme. */
+  /* Premium, muted palette - warm ink and cream base, accented with the
+     brand's teal (from the logo mark) instead of the earlier yellow/amber
+     star-rating color and bronze accent. Variable names kept as -bronze*
+     to avoid touching every call site; only the values changed. */
   --sio-ink: #16140f;
   --sio-ink-soft: #3a362e;
   --sio-cream: #faf8f4;
   --sio-paper: #ffffff;
   --sio-line: #e7e1d6;
-  --sio-bronze: #a9803f;
-  --sio-bronze-dark: #8a6a34;
+  --sio-bronze: #0d9488;
+  --sio-bronze-dark: #0f766e;
   --sio-muted: #7a7468;
 }
 
