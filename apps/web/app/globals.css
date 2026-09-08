@@ -2,6 +2,19 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* Premium, muted palette - warm ink and cream with a restrained bronze
+     accent, in place of the earlier bright blue/pink/pastel scheme. */
+  --sio-ink: #16140f;
+  --sio-ink-soft: #3a362e;
+  --sio-cream: #faf8f4;
+  --sio-paper: #ffffff;
+  --sio-line: #e7e1d6;
+  --sio-bronze: #a9803f;
+  --sio-bronze-dark: #8a6a34;
+  --sio-muted: #7a7468;
+}
+
 html,
 body {
   overflow-x: hidden;
@@ -12,7 +25,7 @@ body {
   display: flex;
   gap: 4px;
   align-items: center;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .sio-mobile-menu-btn {
@@ -40,20 +53,21 @@ body {
 h1,
 h2,
 h3 {
-  font-family: var(--site-font-heading), sans-serif;
-  letter-spacing: -0.01em;
+  font-family: var(--site-font-heading), serif;
+  letter-spacing: 0;
+  font-weight: 600;
 }
 
 body {
-  background-image: radial-gradient(circle at 15% 0%, rgba(37, 99, 235, 0.06), transparent 45%),
-    radial-gradient(circle at 85% 10%, rgba(219, 39, 119, 0.05), transparent 40%);
+  background-image: radial-gradient(circle at 12% 0%, rgba(169, 128, 63, 0.05), transparent 45%),
+    radial-gradient(circle at 88% 8%, rgba(22, 20, 15, 0.03), transparent 40%);
   background-attachment: fixed;
 }
 
 @keyframes sio-fade-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -64,7 +78,7 @@ body {
 @keyframes sio-slide-in {
   from {
     opacity: 0;
-    transform: scale(1.03);
+    transform: scale(1.02);
   }
   to {
     opacity: 1;
@@ -82,32 +96,33 @@ body {
 }
 
 .sio-fade-in {
-  animation: sio-fade-in 0.5s ease both;
+  animation: sio-fade-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .sio-slide-in {
-  animation: sio-slide-in 0.6s ease both;
+  animation: sio-slide-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .sio-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .sio-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(22, 20, 15, 0.08);
+  border-color: var(--sio-bronze) !important;
 }
 
 .sio-heart-btn {
-  transition: transform 0.15s ease;
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .sio-heart-btn:active {
-  transform: scale(1.3);
+  transform: scale(1.15);
 }
 
 .sio-skeleton {
-  background: linear-gradient(90deg, #eef2f7 0px, #f8fafc 40px, #eef2f7 80px);
+  background: linear-gradient(90deg, #f1ede4 0px, #faf8f4 40px, #f1ede4 80px);
   background-size: 800px 100%;
   animation: sio-shimmer 1.4s linear infinite;
 }
@@ -124,14 +139,67 @@ body {
 }
 
 .sio-dropdown {
-  animation: sio-dropdown-in 0.12s ease both;
+  animation: sio-dropdown-in 0.15s ease both;
 }
 
 .sio-dropdown-link:hover {
-  background: #f1f5f9;
+  background: var(--sio-cream);
 }
 
 .sio-category-pill:hover {
-  background: var(--store-accent, #2563eb) !important;
+  background: var(--store-accent, var(--sio-ink)) !important;
   color: #fff !important;
+}
+
+.sio-zoom-hover {
+  overflow: hidden;
+}
+
+.sio-zoom-hover img {
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sio-zoom-hover:hover img {
+  transform: scale(1.05);
+}
+
+/* Understated emphasis for low-stock / live notices - a slow, subtle
+   opacity breathe rather than a bouncy scale pulse. */
+@keyframes sio-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.sio-breathe {
+  animation: sio-breathe 2.4s ease-in-out infinite;
+}
+
+.sio-btn-primary {
+  transition: background 0.25s ease, transform 0.15s ease, box-shadow 0.25s ease;
+}
+
+.sio-btn-primary:hover {
+  background: var(--sio-ink-soft) !important;
+  box-shadow: 0 8px 20px rgba(22, 20, 15, 0.18);
+}
+
+.sio-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.sio-hero-cta {
+  color: #fff;
+  background: transparent;
+  transition: background 0.3s ease, color 0.3s ease;
+  display: inline-block;
+}
+
+.sio-hero-cta:hover {
+  background: #fff;
+  color: var(--sio-ink);
 }

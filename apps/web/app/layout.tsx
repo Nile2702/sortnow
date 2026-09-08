@@ -1,9 +1,9 @@
-import { Poppins, Inter } from "next/font/google";
+import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "../components/SiteHeader";
 import { Footer } from "../components/Footer";
 
-const heading = Poppins({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--site-font-heading" });
+const heading = Cormorant_Garamond({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--site-font-heading" });
 const body = Inter({ subsets: ["latin"], variable: "--site-font-body" });
 
 export const metadata = {
@@ -18,8 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         style={{
           margin: 0,
           fontFamily: "var(--site-font-body), system-ui, sans-serif",
-          background: "#f7f7fb",
-          color: "#0f172a",
+          background: "var(--sio-cream)",
+          color: "var(--sio-ink)",
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",

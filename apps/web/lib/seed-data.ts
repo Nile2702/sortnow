@@ -468,11 +468,11 @@ export const CATEGORY_TREE: { label: string; value: Gender; subCategories: strin
 
 // Featured category tiles for the homepage "Browse by Category" strip.
 // Counts are computed live from the seed catalog rather than hardcoded.
-export const CATEGORY_TILES: { label: string; gender: Gender; subCategory: string; icon: string; bg: string; fg: string }[] = [
-  { label: "Sarees", gender: "women", subCategory: "Sarees", icon: "👗", bg: "#fde2e7", fg: "#9d174d" },
-  { label: "Kurtis", gender: "women", subCategory: "Kurtis", icon: "👚", bg: "#ffe8d6", fg: "#9a3412" },
-  { label: "Jeans", gender: "men", subCategory: "Jeans", icon: "👖", bg: "#fef3c7", fg: "#92400e" },
-  { label: "Kids Wear", gender: "kids", subCategory: "", icon: "🧸", bg: "#d6f0ee", fg: "#0f766e" },
+export const CATEGORY_TILES: { label: string; gender: Gender; subCategory: string }[] = [
+  { label: "Sarees", gender: "women", subCategory: "Sarees" },
+  { label: "Kurtis", gender: "women", subCategory: "Kurtis" },
+  { label: "Jeans", gender: "men", subCategory: "Jeans" },
+  { label: "Kids Wear", gender: "kids", subCategory: "" },
 ];
 
 export function getCategoryTileCounts() {

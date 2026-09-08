@@ -57,11 +57,9 @@ export function HeroSlider() {
       onMouseLeave={() => setPaused(false)}
       style={{
         position: "relative",
-        borderRadius: 20,
         overflow: "hidden",
-        marginBottom: 32,
-        height: 380,
-        boxShadow: "0 20px 40px rgba(15,23,42,0.18)",
+        marginBottom: 40,
+        height: 400,
       }}
     >
       <Link
@@ -96,11 +94,11 @@ export function HeroSlider() {
         <div
           style={{
             position: "relative",
-            fontSize: 12,
-            letterSpacing: 2,
-            fontWeight: 700,
-            opacity: 0.75,
-            marginBottom: 14,
+            fontSize: 11,
+            letterSpacing: "0.22em",
+            fontWeight: 500,
+            opacity: 0.8,
+            marginBottom: 18,
             textTransform: "uppercase",
           }}
         >
@@ -109,27 +107,28 @@ export function HeroSlider() {
         <h1
           style={{
             position: "relative",
-            fontSize: 44,
+            fontSize: 48,
             margin: 0,
-            marginBottom: 14,
+            marginBottom: 18,
             maxWidth: 640,
             fontFamily: "var(--site-font-heading)",
-            fontWeight: 700,
+            fontWeight: 600,
             lineHeight: 1.15,
           }}
         >
           {slide.title}
         </h1>
-        <p style={{ position: "relative", fontSize: 15, opacity: 0.85, marginBottom: 26, maxWidth: 460 }}>{slide.subtitle}</p>
+        <p style={{ position: "relative", fontSize: 15, opacity: 0.8, marginBottom: 30, maxWidth: 440, fontWeight: 300 }}>{slide.subtitle}</p>
         <span
+          className="sio-hero-cta"
           style={{
             position: "relative",
-            padding: "13px 30px",
-            borderRadius: 999,
-            background: "#ec4899",
-            fontSize: 14,
-            fontWeight: 700,
-            boxShadow: "0 8px 20px rgba(236,72,153,0.45)",
+            padding: "14px 34px",
+            border: "1px solid rgba(255,255,255,0.55)",
+            fontSize: 12,
+            fontWeight: 500,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
           }}
         >
           {slide.cta}

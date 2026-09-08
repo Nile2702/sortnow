@@ -60,7 +60,7 @@ function CloseIcon() {
 
 function LogoMark() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--sio-bronze)" strokeWidth="1.6" strokeLinecap="round">
       <path d="M4 6h16" />
       <path d="M6 12h12" />
       <path d="M9 18h6" />
@@ -97,22 +97,22 @@ export function SiteHeader() {
   }
 
   return (
-    <div style={{ position: "sticky", top: 0, zIndex: 20, background: "#fff", boxShadow: "0 1px 2px rgba(15,23,42,0.06)" }}>
+    <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--sio-paper)", borderBottom: "1px solid var(--sio-line)" }}>
       <div
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "14px 20px",
+          padding: "16px 20px",
           display: "flex",
           alignItems: "center",
-          gap: 16,
+          gap: 20,
         }}
       >
         <button
           className="sio-mobile-menu-btn"
           onClick={() => setMobileOpen((o) => !o)}
           aria-label="Menu"
-          style={{ background: "none", border: "none", color: "#0f172a", cursor: "pointer", padding: 4 }}
+          style={{ background: "none", border: "none", color: "var(--sio-ink)", cursor: "pointer", padding: 4 }}
         >
           {mobileOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
@@ -124,10 +124,11 @@ export function SiteHeader() {
             alignItems: "center",
             gap: 8,
             fontFamily: "var(--site-font-heading)",
-            fontSize: 19,
-            fontWeight: 700,
+            fontSize: 22,
+            fontWeight: 600,
+            letterSpacing: "0.03em",
             textDecoration: "none",
-            color: "#0f172a",
+            color: "var(--sio-ink)",
             whiteSpace: "nowrap",
           }}
         >
@@ -139,13 +140,13 @@ export function SiteHeader() {
           {CATEGORY_TREE.map((c) => (
             <CategoryMenu key={c.value} gender={c.value} label={c.label} subCategories={c.subCategories} />
           ))}
-          <Link href="/shops" style={{ color: "#334155", textDecoration: "none", whiteSpace: "nowrap", padding: "8px 10px" }}>
+          <Link href="/shops" style={{ color: "var(--sio-ink-soft)", textDecoration: "none", whiteSpace: "nowrap", padding: "8px 10px", fontSize: 13 }}>
             Shops
           </Link>
         </nav>
 
         <form onSubmit={handleSearch} style={{ flex: "1 1 100px", minWidth: 0, position: "relative" }}>
-          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}>
+          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--sio-muted)" }}>
             <SearchIcon />
           </span>
           <input
@@ -155,40 +156,41 @@ export function SiteHeader() {
             style={{
               width: "100%",
               padding: "10px 14px 10px 38px",
-              borderRadius: 999,
-              border: "1px solid #e2e8f0",
-              background: "#f8fafc",
+              border: "1px solid var(--sio-line)",
+              background: "var(--sio-cream)",
               fontSize: 14,
               outline: "none",
             }}
           />
         </form>
 
-        <nav style={{ display: "flex", gap: 18, alignItems: "center", whiteSpace: "nowrap" }}>
-          <Link href="/wishlist" style={{ position: "relative", color: "#334155", display: "flex" }} aria-label="Wishlist">
+        <nav style={{ display: "flex", gap: 20, alignItems: "center", whiteSpace: "nowrap" }}>
+          <Link href="/wishlist" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex" }} aria-label="Wishlist">
             <HeartIcon />
             {wishN > 0 && <CountBadge n={wishN} />}
           </Link>
-          <Link href="/cart" style={{ position: "relative", color: "#334155", display: "flex" }} aria-label="Cart">
+          <Link href="/cart" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex" }} aria-label="Cart">
             <BagIcon />
             {cartN > 0 && <CountBadge n={cartN} />}
           </Link>
-          <Link href="/orders" style={{ color: "#334155", display: "flex" }} aria-label="Orders">
+          <Link href="/orders" style={{ color: "var(--sio-ink-soft)", display: "flex" }} aria-label="Orders">
             <ReceiptIcon />
           </Link>
           <Link
             href="/account"
+            className="sio-btn-primary"
             style={{
               display: "flex",
               alignItems: "center",
               gap: 6,
-              padding: "8px 16px",
-              borderRadius: 999,
-              background: "#0f172a",
+              padding: "10px 20px",
+              background: "var(--sio-ink)",
               color: "#fff",
               textDecoration: "none",
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 600,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
             }}
           >
             Login / Sign Up
@@ -205,9 +207,9 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
-    <div className="sio-mobile-menu sio-fade-in" style={{ borderTop: "1px solid #f1f5f9", background: "#fff" }}>
+    <div className="sio-mobile-menu sio-fade-in" style={{ borderTop: "1px solid var(--sio-line)", background: "var(--sio-paper)" }}>
       {CATEGORY_TREE.map((c) => (
-        <div key={c.value} style={{ borderBottom: "1px solid #f8fafc" }}>
+        <div key={c.value} style={{ borderBottom: "1px solid var(--sio-line)" }}>
           <button
             onClick={() => setExpanded(expanded === c.value ? null : c.value)}
             style={{
@@ -220,7 +222,7 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
               border: "none",
               fontSize: 15,
               fontWeight: 600,
-              color: "#0f172a",
+              color: "var(--sio-ink)",
               cursor: "pointer",
             }}
           >
@@ -244,11 +246,11 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
       <Link href="/shops" onClick={onNavigate} style={{ ...mobileLinkStyle(true), padding: "14px 20px" }}>
         Shops
       </Link>
-      <div style={{ display: "flex", gap: 10, padding: "16px 20px", borderTop: "1px solid #f1f5f9" }}>
+      <div style={{ display: "flex", gap: 10, padding: "16px 20px", borderTop: "1px solid var(--sio-line)" }}>
         <Link
           href="/account"
           onClick={onNavigate}
-          style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 999, background: "#0f172a", color: "#fff", textDecoration: "none", fontSize: 13, fontWeight: 600 }}
+          style={{ flex: 1, textAlign: "center", padding: "12px", background: "var(--sio-ink)", color: "#fff", textDecoration: "none", fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}
         >
           Login / Sign Up
         </Link>
@@ -261,7 +263,7 @@ function mobileLinkStyle(bold: boolean): React.CSSProperties {
   return {
     display: "block",
     padding: "10px 20px 10px 32px",
-    color: bold ? "#0f172a" : "#475569",
+    color: bold ? "var(--sio-ink)" : "var(--sio-muted)",
     fontWeight: bold ? 600 : 400,
     fontSize: 14,
     textDecoration: "none",
@@ -324,10 +326,10 @@ function CategoryMenu({ gender, label, subCategories }: { gender: string; label:
           display: "flex",
           alignItems: "center",
           gap: 4,
-          color: open ? "#0f172a" : "#475569",
+          color: open ? "var(--sio-ink)" : "var(--sio-ink-soft)",
           whiteSpace: "nowrap",
           padding: "8px 10px",
-          fontWeight: open ? 700 : 400,
+          fontWeight: open ? 600 : 400,
           fontSize: 13,
           textDecoration: "none",
         }}
@@ -343,10 +345,9 @@ function CategoryMenu({ gender, label, subCategories }: { gender: string; label:
             position: "absolute",
             top: "100%",
             left: 0,
-            background: "#fff",
-            border: "1px solid #e2e8f0",
-            borderRadius: 10,
-            boxShadow: "0 12px 24px rgba(15,23,42,0.14)",
+            background: "var(--sio-paper)",
+            border: "1px solid var(--sio-line)",
+            boxShadow: "0 16px 32px rgba(22,20,15,0.1)",
             padding: 8,
             minWidth: 190,
             zIndex: 30,
@@ -355,7 +356,7 @@ function CategoryMenu({ gender, label, subCategories }: { gender: string; label:
           <Link href={`/category/${gender}`} className="sio-dropdown-link" style={dropdownLinkStyle(true)} onClick={() => setOpen(false)}>
             All {label}
           </Link>
-          <div style={{ height: 1, background: "#f1f5f9", margin: "4px 0" }} />
+          <div style={{ height: 1, background: "var(--sio-line)", margin: "4px 0" }} />
           {subCategories.map((sc) => (
             <Link
               key={sc}
@@ -377,8 +378,7 @@ function dropdownLinkStyle(bold: boolean): React.CSSProperties {
   return {
     display: "block",
     padding: "8px 10px",
-    borderRadius: 6,
-    color: bold ? "#0f172a" : "#475569",
+    color: bold ? "var(--sio-ink)" : "var(--sio-ink-soft)",
     fontWeight: bold ? 600 : 400,
     textDecoration: "none",
     fontSize: 13,
@@ -392,9 +392,9 @@ function CountBadge({ n }: { n: number }) {
         position: "absolute",
         top: -8,
         right: -10,
-        background: "#e11d48",
+        background: "var(--sio-bronze-dark)",
         color: "#fff",
-        borderRadius: 999,
+        borderRadius: "50%",
         fontSize: 10,
         padding: "1px 5px",
         minWidth: 14,
