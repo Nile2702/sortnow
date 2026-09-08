@@ -30,7 +30,7 @@ export function CategoryTiles() {
         {tiles.map((tile, i) => (
           <Link
             key={tile.label}
-            href={`/?gender=${tile.gender}${tile.subCategory ? `&subCategory=${encodeURIComponent(tile.subCategory)}` : ""}`}
+            href={`/category/${tile.gender}${tile.subCategory ? `?subCategory=${encodeURIComponent(tile.subCategory)}` : ""}`}
             className="sio-card sio-fade-in"
             style={{
               display: "block",

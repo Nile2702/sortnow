@@ -14,7 +14,7 @@ interface Slide {
 
 const SLIDES: Slide[] = [
   {
-    href: "/",
+    href: "/shops",
     eyebrow: "SORT IT OUT",
     title: "Curated Styles, Just For You",
     subtitle: "Our fashion experts hand-pick every item to ensure quality and style.",
@@ -22,7 +22,7 @@ const SLIDES: Slide[] = [
     bg: "linear-gradient(140deg, #1c1917 0%, #3f2d1f 55%, #1c1917 100%)",
   },
   {
-    href: "/",
+    href: "/shops",
     eyebrow: "HYPERLOCAL DISCOVERY",
     title: "Local Flair, Global Style",
     subtitle: "Find the best boutiques in your city. We bring them to your fingertips.",

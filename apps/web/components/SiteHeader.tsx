@@ -139,7 +139,7 @@ export function SiteHeader() {
           {CATEGORY_TREE.map((c) => (
             <CategoryMenu key={c.value} gender={c.value} label={c.label} subCategories={c.subCategories} />
           ))}
-          <Link href="/" style={{ color: "#334155", textDecoration: "none", whiteSpace: "nowrap", padding: "8px 10px" }}>
+          <Link href="/shops" style={{ color: "#334155", textDecoration: "none", whiteSpace: "nowrap", padding: "8px 10px" }}>
             Shops
           </Link>
         </nav>
@@ -229,11 +229,11 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
           </button>
           {expanded === c.value && (
             <div style={{ paddingBottom: 8 }}>
-              <Link href={`/?gender=${c.value}`} onClick={onNavigate} style={mobileLinkStyle(true)}>
+              <Link href={`/category/${c.value}`} onClick={onNavigate} style={mobileLinkStyle(true)}>
                 All {c.label}
               </Link>
               {c.subCategories.map((sc) => (
-                <Link key={sc} href={`/?gender=${c.value}&subCategory=${encodeURIComponent(sc)}`} onClick={onNavigate} style={mobileLinkStyle(false)}>
+                <Link key={sc} href={`/category/${c.value}?subCategory=${encodeURIComponent(sc)}`} onClick={onNavigate} style={mobileLinkStyle(false)}>
                   {sc}
                 </Link>
               ))}
@@ -241,7 +241,7 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
           )}
         </div>
       ))}
-      <Link href="/" onClick={onNavigate} style={{ ...mobileLinkStyle(true), padding: "14px 20px" }}>
+      <Link href="/shops" onClick={onNavigate} style={{ ...mobileLinkStyle(true), padding: "14px 20px" }}>
         Shops
       </Link>
       <div style={{ display: "flex", gap: 10, padding: "16px 20px", borderTop: "1px solid #f1f5f9" }}>
@@ -317,7 +317,7 @@ function CategoryMenu({ gender, label, subCategories }: { gender: string; label:
   return (
     <div ref={containerRef} style={{ position: "relative" }} onMouseEnter={openNow} onMouseLeave={closeSoon}>
       <Link
-        href={`/?gender=${gender}`}
+        href={`/category/${gender}`}
         aria-expanded={open}
         aria-haspopup="true"
         style={{
@@ -352,14 +352,14 @@ function CategoryMenu({ gender, label, subCategories }: { gender: string; label:
             zIndex: 30,
           }}
         >
-          <Link href={`/?gender=${gender}`} className="sio-dropdown-link" style={dropdownLinkStyle(true)} onClick={() => setOpen(false)}>
+          <Link href={`/category/${gender}`} className="sio-dropdown-link" style={dropdownLinkStyle(true)} onClick={() => setOpen(false)}>
             All {label}
           </Link>
           <div style={{ height: 1, background: "#f1f5f9", margin: "4px 0" }} />
           {subCategories.map((sc) => (
             <Link
               key={sc}
-              href={`/?gender=${gender}&subCategory=${encodeURIComponent(sc)}`}
+              href={`/category/${gender}?subCategory=${encodeURIComponent(sc)}`}
               className="sio-dropdown-link"
               style={dropdownLinkStyle(false)}
               onClick={() => setOpen(false)}

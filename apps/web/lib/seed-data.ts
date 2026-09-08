@@ -507,6 +507,15 @@ export function discoverStores(opts: { pincode?: string; radiusKm?: number; gend
     .sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
 }
 
+// Full store directory for the standalone /shops page - unfiltered by
+// geography, unlike discoverStores() which is scoped to a shopper's PIN
+// code + radius.
+export function getAllShops() {
+  return stores
+    .filter((s) => s.status === "active")
+    .map((s) => ({ ...s, productCount: products.filter((p) => p.storeId === s.id).length }));
+}
+
 // ---------------------------------------------------------------------
 // Seller Portal: catalog + theme mutations.
 // In-memory only (resets on server restart) - stands in for the Catalog
