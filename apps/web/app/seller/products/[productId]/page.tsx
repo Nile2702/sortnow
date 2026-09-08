@@ -16,6 +16,7 @@ interface Product {
   compareAtPrice?: number;
   sizes: string[];
   stockRemaining?: number;
+  images: { url: string }[];
 }
 
 export default function EditProductPage() {
@@ -40,6 +41,7 @@ export default function EditProductPage() {
       <ProductForm
         storeId={store.id}
         mode="edit"
+        initialImageUrl={product.images?.[0]?.url}
         initial={{
           id: product.id,
           title: product.title,

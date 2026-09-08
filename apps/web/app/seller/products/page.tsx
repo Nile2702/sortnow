@@ -50,12 +50,20 @@ export default function SellerProductsPage() {
           <h1 style={{ fontSize: 24, fontWeight: 700 }}>Products</h1>
           <p style={{ color: "#64748b", fontSize: 14 }}>{store.name} · {products.length} SKUs</p>
         </div>
-        <Link
-          href="/seller/products/new"
-          style={{ padding: "10px 20px", borderRadius: 999, background: "#0f172a", color: "#fff", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
-        >
-          + Add Product
-        </Link>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Link
+            href="/seller/products/bulk"
+            style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid #e2e8f0", color: "#0f172a", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
+          >
+            Bulk Upload
+          </Link>
+          <Link
+            href="/seller/products/new"
+            style={{ padding: "10px 20px", borderRadius: 999, background: "#0f172a", color: "#fff", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
+          >
+            + Add Product
+          </Link>
+        </div>
       </div>
 
       {loading ? (

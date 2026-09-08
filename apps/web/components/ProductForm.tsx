@@ -35,9 +35,21 @@ function labelStyle(): React.CSSProperties {
   return { fontSize: 13, fontWeight: 600, marginBottom: 6, display: "block" };
 }
 
-export function ProductForm({ storeId, initial, mode }: { storeId: string; initial?: Partial<ProductFormData>; mode: "create" | "edit" }) {
+export function ProductForm({
+  storeId,
+  initial,
+  initialImageUrl,
+  mode,
+}: {
+  storeId: string;
+  initial?: Partial<ProductFormData>;
+  initialImageUrl?: string;
+  mode: "create" | "edit";
+}) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(initialImageUrl ?? null);
+  const [uploadError, setUploadError] = useState("");
   const [form, setForm] = useState<ProductFormData>({
     title: initial?.title ?? "",
     description: initial?.description ?? "",
@@ -59,6 +71,23 @@ export function ProductForm({ storeId, initial, mode }: { storeId: string; initi
     setForm((f) => ({ ...f, sizes: f.sizes.includes(size) ? f.sizes.filter((s) => s !== size) : [...f.sizes, size] }));
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError("");
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please choose an image file.");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setUploadError("Image is too large — please choose one under 3MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setUploadedImage(reader.result as string);
+    reader.readAsDataURL(file);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -72,7 +101,7 @@ export function ProductForm({ storeId, initial, mode }: { storeId: string; initi
       compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : undefined,
       sizes: form.sizes,
       stockRemaining: Number(form.stockRemaining),
-      images: [{ url: placeholderDataUrl(form.title || "Product", form.imageColor) }],
+      images: [{ url: uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor) }],
     };
 
     if (mode === "create") {
@@ -189,26 +218,65 @@ export function ProductForm({ storeId, initial, mode }: { storeId: string; initi
       </div>
 
       <div>
-        <label style={labelStyle()}>Product image color (demo placeholder)</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          {SWATCHES.map((sw) => (
-            <button
-              type="button"
-              key={sw}
-              onClick={() => update("imageColor", sw)}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                background: sw,
-                border: form.imageColor === sw ? "3px solid #0f172a" : "1px solid #e2e8f0",
-                cursor: "pointer",
-              }}
-            />
-          ))}
+        <label style={labelStyle()}>Product photo</label>
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+          {uploadedImage && (
+            <div style={{ position: "relative" }}>
+              <img src={uploadedImage} alt="Preview" style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10, border: "1px solid #e2e8f0" }} />
+              <button
+                type="button"
+                onClick={() => setUploadedImage(null)}
+                aria-label="Remove photo"
+                style={{
+                  position: "absolute",
+                  top: -8,
+                  right: -8,
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  border: "none",
+                  background: "#0f172a",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <div style={{ flex: 1 }}>
+            <input type="file" accept="image/*" onChange={handleFileChange} style={{ fontSize: 13 }} />
+            {uploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{uploadError}</p>}
+
+            {!uploadedImage && (
+              <>
+                <div style={{ fontSize: 12, color: "#94a3b8", margin: "10px 0 6px" }}>Or pick a placeholder color:</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {SWATCHES.map((sw) => (
+                    <button
+                      type="button"
+                      key={sw}
+                      onClick={() => update("imageColor", sw)}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        background: sw,
+                        border: form.imageColor === sw ? "3px solid #0f172a" : "1px solid #e2e8f0",
+                        cursor: "pointer",
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
-        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>
-          Real deployments upload photos through the Media Pipeline (docs/02-system-architecture.md); this demo generates a colored placeholder instead.
+        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>
+          Uploaded photos are kept in-memory for this demo (resets on server restart). Real deployments run uploads through the Media
+          Pipeline / CDN (docs/02-system-architecture.md).
         </p>
       </div>
 
