@@ -606,3 +606,128 @@ export function createOrder(items: OrderItem[]): Order {
 export function getOrder(id: string): Order | undefined {
   return orders.find((o) => o.id === id);
 }
+
+// ---------------------------------------------------------------------
+// Billing: plans, subscriptions, GST invoices - matches
+// docs/04-monetization-and-billing.md and the `plans`/`subscriptions`/
+// `gst_invoices` tables in database/schema.sql. No real PSP (Razorpay/
+// Cashfree) is called - "subscribing" just flips the in-memory plan.
+// ---------------------------------------------------------------------
+export interface Plan {
+  code: "lite" | "pro" | "max";
+  name: string;
+  skuLimit: number;
+  monthlyPrice: number;
+  features: string[];
+}
+
+export const PLANS: Plan[] = [
+  { code: "lite", name: "Lite", skuLimit: 100, monthlyPrice: 499, features: ["1 theme", "Path-based URL", "Basic analytics"] },
+  {
+    code: "pro",
+    name: "Pro",
+    skuLimit: 2500,
+    monthlyPrice: 1999,
+    features: ["Full Theme Studio", "Subdomain", "QR standee generator", "WhatsApp notifications"],
+  },
+  {
+    code: "max",
+    name: "Max",
+    skuLimit: 25000,
+    monthlyPrice: 6999,
+    features: ["Custom domain", "Multi-store", "Bulk CSV import", "Priority search ranking"],
+  },
+];
+
+interface Subscription {
+  storeId: string;
+  planCode: Plan["code"];
+  status: "active" | "past_due";
+  currentPeriodEnd: string;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioSubscriptions: Record<string, Subscription> | undefined;
+}
+
+const INITIAL_SUBSCRIPTIONS: Record<string, Subscription> = {
+  "store-urban-vogue": { storeId: "store-urban-vogue", planCode: "pro", status: "active", currentPeriodEnd: futureDate(18) },
+  "store-south-silk-house": { storeId: "store-south-silk-house", planCode: "lite", status: "active", currentPeriodEnd: futureDate(9) },
+  "store-denim-district": { storeId: "store-denim-district", planCode: "max", status: "active", currentPeriodEnd: futureDate(25) },
+};
+export const subscriptions: Record<string, Subscription> = globalThis.__sioSubscriptions ?? (globalThis.__sioSubscriptions = INITIAL_SUBSCRIPTIONS);
+
+function futureDate(days: number): string {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+export function getSubscription(storeId: string): Subscription {
+  return subscriptions[storeId] ?? { storeId, planCode: "lite", status: "active", currentPeriodEnd: futureDate(30) };
+}
+
+export function changePlan(storeId: string, planCode: Plan["code"]): Subscription {
+  const sub = getSubscription(storeId);
+  sub.planCode = planCode;
+  sub.status = "active";
+  subscriptions[storeId] = sub;
+  return sub;
+}
+
+// Platform is registered in Maharashtra (state code 27) for this demo -
+// mirrors fn_compute_gst_split() in database/schema.sql.
+const PLATFORM_STATE_CODE = "27";
+const GST_RATE = 18;
+
+export interface GstInvoice {
+  id: string;
+  storeId: string;
+  planCode: string;
+  taxableValue: number;
+  placeOfSupplyStateCode: string;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  total: number;
+  issuedAt: string;
+}
+
+function computeGstInvoice(storeId: string, taxableValue: number, placeOfSupplyStateCode: string, issuedAt: string): GstInvoice {
+  const sameState = placeOfSupplyStateCode === PLATFORM_STATE_CODE;
+  const cgst = sameState ? Math.round((taxableValue * GST_RATE) / 200) : 0;
+  const sgst = sameState ? Math.round((taxableValue * GST_RATE) / 200) : 0;
+  const igst = sameState ? 0 : Math.round((taxableValue * GST_RATE) / 100);
+  return {
+    id: `INV-${new Date(issuedAt).getFullYear()}-${Math.abs(hashCode(storeId + issuedAt)) % 100000}`,
+    storeId,
+    planCode: subscriptions[storeId]?.planCode ?? "lite",
+    taxableValue,
+    placeOfSupplyStateCode,
+    cgst,
+    sgst,
+    igst,
+    total: taxableValue + cgst + sgst + igst,
+    issuedAt,
+  };
+}
+
+function hashCode(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i);
+  return h;
+}
+
+// Maharashtra (Urban Vogue) -> CGST+SGST; Tamil Nadu & Karnataka -> IGST.
+const STORE_STATE_CODES: Record<string, string> = {
+  "store-urban-vogue": "27",
+  "store-south-silk-house": "33",
+  "store-denim-district": "29",
+};
+
+export function getInvoicesForStore(storeId: string): GstInvoice[] {
+  const plan = PLANS.find((p) => p.code === getSubscription(storeId).planCode) ?? PLANS[0];
+  const stateCode = STORE_STATE_CODES[storeId] ?? PLATFORM_STATE_CODE;
+  return [1, 2, 3].map((monthsAgo) =>
+    computeGstInvoice(storeId, plan.monthlyPrice, stateCode, new Date(Date.now() - monthsAgo * 30 * 24 * 60 * 60 * 1000).toISOString())
+  );
+}

@@ -13,12 +13,16 @@ interface Product {
 export default function SellerDashboard() {
   const { store, loading } = useSellerStore();
   const [products, setProducts] = useState<Product[]>([]);
+  const [planName, setPlanName] = useState<string | null>(null);
 
   useEffect(() => {
     if (!store) return;
     fetch(`/api/v1/seller/stores/${store.id}/products`)
       .then((r) => r.json())
       .then(setProducts);
+    fetch(`/api/v1/seller/stores/${store.id}/billing`)
+      .then((r) => r.json())
+      .then((d) => setPlanName(d.plans.find((p: any) => p.code === d.subscription.planCode)?.name ?? null));
   }, [store]);
 
   if (loading || !store) {
@@ -30,7 +34,7 @@ export default function SellerDashboard() {
   const stats = [
     { label: "Total Products", value: products.length, icon: "📦" },
     { label: "Low Stock Alerts", value: lowStock, icon: "⚠️" },
-    { label: "Plan", value: "Pro", icon: "⭐" },
+    { label: "Plan", value: planName ?? "…", icon: "⭐" },
     { label: "Store Status", value: store.status, icon: "🟢" },
   ];
 
@@ -57,6 +61,7 @@ export default function SellerDashboard() {
           { href: "/seller/products/new", label: "Add a product", desc: "List a new SKU with sizes, price, and photos.", icon: "➕" },
           { href: "/seller/theme", label: "Customize your storefront", desc: "Pick your brand colors and hero message.", icon: "🎨" },
           { href: "/seller/qr", label: "Generate a QR standee", desc: "Print-ready QR linking shoppers to your catalog.", icon: "📱" },
+          { href: "/seller/billing", label: "Manage billing", desc: "Switch plans, check SKU usage, download GST invoices.", icon: "💳" },
           { href: `/store/${store.slug}`, label: "View live storefront", desc: "See exactly what shoppers see right now.", icon: "👁️" },
         ].map((a) => (
           <Link

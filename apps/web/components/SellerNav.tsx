@@ -10,6 +10,7 @@ const TABS = [
   { label: "Products", href: "/seller/products" },
   { label: "Theme Studio", href: "/seller/theme" },
   { label: "QR Marketing", href: "/seller/qr" },
+  { label: "Billing", href: "/seller/billing" },
   { label: "Onboarding", href: "/seller/onboarding" },
 ];
 
