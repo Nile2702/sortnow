@@ -42,6 +42,22 @@ function ReceiptIcon() {
   );
 }
 
+function MenuIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 function LogoMark() {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round">
@@ -57,6 +73,7 @@ export function SiteHeader() {
   const [cartN, setCartN] = useState(0);
   const [wishN, setWishN] = useState(0);
   const [query, setQuery] = useState("");
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const refresh = () => {
@@ -91,6 +108,15 @@ export function SiteHeader() {
           gap: 16,
         }}
       >
+        <button
+          className="sio-mobile-menu-btn"
+          onClick={() => setMobileOpen((o) => !o)}
+          aria-label="Menu"
+          style={{ background: "none", border: "none", color: "#0f172a", cursor: "pointer", padding: 4 }}
+        >
+          {mobileOpen ? <CloseIcon /> : <MenuIcon />}
+        </button>
+
         <Link
           href="/"
           style={{
@@ -169,8 +195,77 @@ export function SiteHeader() {
           </Link>
         </nav>
       </div>
+
+      {mobileOpen && <MobileMenu onNavigate={() => setMobileOpen(false)} />}
     </div>
   );
+}
+
+function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  return (
+    <div className="sio-mobile-menu sio-fade-in" style={{ borderTop: "1px solid #f1f5f9", background: "#fff" }}>
+      {CATEGORY_TREE.map((c) => (
+        <div key={c.value} style={{ borderBottom: "1px solid #f8fafc" }}>
+          <button
+            onClick={() => setExpanded(expanded === c.value ? null : c.value)}
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "14px 20px",
+              background: "none",
+              border: "none",
+              fontSize: 15,
+              fontWeight: 600,
+              color: "#0f172a",
+              cursor: "pointer",
+            }}
+          >
+            {c.label}
+            <ChevronIcon open={expanded === c.value} />
+          </button>
+          {expanded === c.value && (
+            <div style={{ paddingBottom: 8 }}>
+              <Link href={`/?gender=${c.value}`} onClick={onNavigate} style={mobileLinkStyle(true)}>
+                All {c.label}
+              </Link>
+              {c.subCategories.map((sc) => (
+                <Link key={sc} href={`/?gender=${c.value}&subCategory=${encodeURIComponent(sc)}`} onClick={onNavigate} style={mobileLinkStyle(false)}>
+                  {sc}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+      <Link href="/" onClick={onNavigate} style={{ ...mobileLinkStyle(true), padding: "14px 20px" }}>
+        Shops
+      </Link>
+      <div style={{ display: "flex", gap: 10, padding: "16px 20px", borderTop: "1px solid #f1f5f9" }}>
+        <Link
+          href="/account"
+          onClick={onNavigate}
+          style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 999, background: "#0f172a", color: "#fff", textDecoration: "none", fontSize: 13, fontWeight: 600 }}
+        >
+          Login / Sign Up
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function mobileLinkStyle(bold: boolean): React.CSSProperties {
+  return {
+    display: "block",
+    padding: "10px 20px 10px 32px",
+    color: bold ? "#0f172a" : "#475569",
+    fontWeight: bold ? 600 : 400,
+    fontSize: 14,
+    textDecoration: "none",
+  };
 }
 
 function ChevronIcon({ open }: { open: boolean }) {

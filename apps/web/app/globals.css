@@ -15,9 +15,25 @@ body {
   font-size: 14px;
 }
 
+.sio-mobile-menu-btn {
+  display: none;
+}
+
+.sio-mobile-menu {
+  display: none;
+}
+
 @media (max-width: 860px) {
   .sio-header-nav {
     display: none;
+  }
+
+  .sio-mobile-menu-btn {
+    display: flex;
+  }
+
+  .sio-mobile-menu {
+    display: block;
   }
 }
 
