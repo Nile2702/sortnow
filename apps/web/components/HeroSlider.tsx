@@ -37,6 +37,14 @@ const SLIDES: Slide[] = [
     cta: "Shop Urban Vogue",
     bg: "linear-gradient(140deg, #2a1409 0%, #7c2d12 55%, #2a1409 100%)",
   },
+  {
+    href: "/store/sole-street",
+    eyebrow: "NEW CITY · SOLE STREET, PUNE",
+    title: "Sneakers & Streetwear, Sorted",
+    subtitle: "Fresh drops for campus life, now shoppable near FC Road.",
+    cta: "Shop Sole Street",
+    bg: "linear-gradient(140deg, #0f172a 0%, #1e293b 55%, #0f172a 100%)",
+  },
 ];
 
 export function HeroSlider() {
