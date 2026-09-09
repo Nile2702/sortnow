@@ -130,7 +130,7 @@ export default function ReservationDetailPage() {
           </div>
         ))}
         <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 16, fontSize: 18, fontWeight: 700 }}>
-          <span>Total (pay at store)</span>
+          <span>Total (pay at store if purchased)</span>
           <span>₹{reservation.total}</span>
         </div>
       </div>

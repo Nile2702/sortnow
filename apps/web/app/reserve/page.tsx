@@ -145,7 +145,7 @@ export default function ReservePage() {
             {reserving ? "Reserving…" : "Confirm Reservation"}
           </button>
           <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 10, textAlign: "center" }}>
-            No payment is taken now — pay the store when you pick it up.
+            No payment is taken now — pay at store if purchased.
           </p>
         </form>
 
