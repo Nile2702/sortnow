@@ -10,7 +10,7 @@ const body = Inter({ subsets: ["latin"], variable: "--site-font-body" });
 
 export const metadata = {
   title: "SORT IT OUT — Find fashion near you",
-  description: "Discover apparel from stores near you, sort by what matters, shop online or in-store.",
+  description: "Discover apparel from stores near you, sort by what matters, and walk into the store to try it on or buy.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -50,7 +50,7 @@ export function Footer() {
             SORT IT <span style={{ color: "var(--sio-bronze)" }}>OUT</span>
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.7, color: "#a39d8f", maxWidth: 260 }}>
-            Find apparel near you, sort it your way, and shop it online or walk into the store.
+            Find apparel near you, sort it online and walk into the store.
           </p>
         </div>
 

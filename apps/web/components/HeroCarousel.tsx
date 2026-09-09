@@ -6,13 +6,15 @@ interface Slide {
   eyebrow?: string;
   title: string;
   subtitle?: string;
-  ctaLabel?: string;
-  ctaLink?: string;
 }
 
 // Same structure and visual language as the homepage HeroSlider - a store's
-// theme only tints the gradient and CTA with its own primary/accent color,
-// so every storefront reads as part of one site instead of a different one.
+// theme only tints the gradient with its own primary color, so every
+// storefront reads as part of one site instead of a different one. No CTA
+// button here (unlike the homepage slider) - a shopper viewing a store's own
+// page is already there, so a "Shop X" button pointing at the same page
+// would be redundant; the category nav and product grid right below serve
+// that purpose instead.
 export function HeroCarousel({ slides }: { slides: Slide[] }) {
   const [active, setActive] = useState(0);
   if (!slides?.length) return null;
@@ -68,24 +70,7 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
         >
           {slide.title}
         </h1>
-        {slide.subtitle && <p style={{ fontSize: 15, opacity: 0.85, marginBottom: 22, maxWidth: 440 }}>{slide.subtitle}</p>}
-        {slide.ctaLabel && (
-          <a
-            href={slide.ctaLink ?? "#"}
-            style={{
-              padding: "12px 26px",
-              borderRadius: 999,
-              background: "var(--store-accent, #2563eb)",
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 700,
-              textDecoration: "none",
-              boxShadow: "0 8px 20px rgba(0,0,0,0.25)",
-            }}
-          >
-            {slide.ctaLabel}
-          </a>
-        )}
+        {slide.subtitle && <p style={{ fontSize: 15, opacity: 0.85, maxWidth: 440 }}>{slide.subtitle}</p>}
       </div>
 
       {slides.length > 1 && (
