@@ -71,7 +71,7 @@ export default async function StorefrontPage({ params }: Props) {
               {sectionComponents[key]}
             </div>
           ) : (
-            <section key={key} data-section={key}>
+            <section key={key} id={key === "featuredCollection" ? "shop" : undefined} data-section={key}>
               {sectionComponents[key] ?? null}
             </section>
           )
