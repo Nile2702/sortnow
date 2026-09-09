@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { addToCart } from "../../../lib/cart";
 import { toggleWishlist, isWishlisted } from "../../../lib/wishlist";
+import { getShopperSession } from "../../../lib/shopper-session";
 
 interface ProductDetail {
   id: string;
@@ -83,6 +84,11 @@ export default function ProductDetailPage() {
   const [deliveryMsg, setDeliveryMsg] = useState("");
 
   const [reviewForm, setReviewForm] = useState({ authorName: "", rating: 5, title: "", comment: "" });
+
+  useEffect(() => {
+    const shopper = getShopperSession();
+    if (shopper) setReviewForm((f) => (f.authorName ? f : { ...f, authorName: shopper.name }));
+  }, []);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 

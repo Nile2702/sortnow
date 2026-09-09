@@ -7,6 +7,7 @@ import { getCart, cartCount } from "../lib/cart";
 import { getWishlist } from "../lib/wishlist";
 import { CATEGORY_TREE } from "../lib/seed-data";
 import { LogoBadge } from "./LogoBadge";
+import { getShopperSession, onShopperSessionChange, ShopperSession } from "../lib/shopper-session";
 
 function HeartIcon() {
   return (
@@ -65,6 +66,7 @@ export function SiteHeader() {
   const [wishN, setWishN] = useState(0);
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [shopper, setShopper] = useState<ShopperSession | null>(null);
 
   useEffect(() => {
     const refresh = () => {
@@ -80,6 +82,11 @@ export function SiteHeader() {
       window.removeEventListener("sio:wishlist-updated", refresh);
       window.removeEventListener("storage", refresh);
     };
+  }, []);
+
+  useEffect(() => {
+    setShopper(getShopperSession());
+    return onShopperSessionChange(() => setShopper(getShopperSession()));
   }, []);
 
   function handleSearch(e: React.FormEvent) {
@@ -167,34 +174,66 @@ export function SiteHeader() {
           <Link href="/orders" style={{ color: "var(--sio-ink-soft)", display: "flex" }} aria-label="Orders">
             <ReceiptIcon />
           </Link>
-          <Link
-            href="/account"
-            className="sio-btn-primary"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "10px 20px",
-              background: "var(--sio-ink)",
-              color: "#fff",
-              textDecoration: "none",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-            }}
-          >
-            Login / Sign Up
-          </Link>
+          {shopper ? (
+            <Link
+              href="/account"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                textDecoration: "none",
+                color: "var(--sio-ink)",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              <span
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: "var(--sio-ink)",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12,
+                }}
+              >
+                {shopper.name.trim().charAt(0).toUpperCase()}
+              </span>
+              <span style={{ whiteSpace: "nowrap" }}>Hi, {shopper.name.split(" ")[0]}</span>
+            </Link>
+          ) : (
+            <Link
+              href="/account"
+              className="sio-btn-primary"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "10px 20px",
+                background: "var(--sio-ink)",
+                color: "#fff",
+                textDecoration: "none",
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              Login / Sign Up
+            </Link>
+          )}
         </nav>
       </div>
 
-      {mobileOpen && <MobileMenu onNavigate={() => setMobileOpen(false)} />}
+      {mobileOpen && <MobileMenu onNavigate={() => setMobileOpen(false)} shopper={shopper} />}
     </div>
   );
 }
 
-function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
+function MobileMenu({ onNavigate, shopper }: { onNavigate: () => void; shopper: ShopperSession | null }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
@@ -243,7 +282,7 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
           onClick={onNavigate}
           style={{ flex: 1, textAlign: "center", padding: "12px", background: "var(--sio-ink)", color: "#fff", textDecoration: "none", fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}
         >
-          Login / Sign Up
+          {shopper ? `Hi, ${shopper.name.split(" ")[0]}` : "Login / Sign Up"}
         </Link>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CartItem, getCart, cartTotal } from "../../lib/cart";
 import { addMyOrderId } from "../../lib/orders";
 import { getSavedAddress, saveAddress, ShippingAddress } from "../../lib/address";
+import { getShopperSession } from "../../lib/shopper-session";
 
 const EMPTY_ADDRESS: ShippingAddress = { fullName: "", phone: "", line1: "", city: "", pincode: "" };
 
@@ -18,7 +19,13 @@ export default function CheckoutPage() {
   useEffect(() => {
     const cart = getCart();
     setItems(cart);
-    setAddress(getSavedAddress() ?? EMPTY_ADDRESS);
+    const saved = getSavedAddress();
+    if (saved) {
+      setAddress(saved);
+    } else {
+      const shopper = getShopperSession();
+      if (shopper) setAddress((a) => ({ ...a, fullName: shopper.name, phone: shopper.phone }));
+    }
     if (cart.length === 0) router.replace("/cart");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
