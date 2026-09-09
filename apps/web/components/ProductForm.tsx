@@ -18,12 +18,12 @@ interface ProductFormData {
 }
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = {
-  men: ["Jeans", "Jackets", "Shirts", "T-Shirts"],
+  men: ["Jeans", "Jackets", "Shirts", "T-Shirts", "Footwear"],
   women: ["Sarees", "Kurtis", "Lehengas", "Western Wear"],
   kids: ["Boys", "Girls", "Infant"],
 };
 
-const ALL_SIZE_OPTIONS = ["S", "M", "L", "XL", "XXL", "Free Size", "28", "30", "32", "34", "36", "2-3Y", "4-5Y", "6-7Y", "8-9Y"];
+const ALL_SIZE_OPTIONS = ["S", "M", "L", "XL", "XXL", "Free Size", "28", "30", "32", "34", "36", "7", "8", "9", "10", "2-3Y", "4-5Y", "6-7Y", "8-9Y"];
 
 const SWATCHES = ["#7c2d12", "#1e3a8a", "#9f1239", "#166534", "#7a1f3d", "#0f172a", "#b45309", "#4c1d95"];
 

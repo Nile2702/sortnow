@@ -35,6 +35,9 @@ const QUICK_MARKETS = [
   { label: "Commercial Street, Bengaluru", pincode: "560001" },
   { label: "T. Nagar, Chennai", pincode: "600017" },
   { label: "Chandni Chowk, Delhi", pincode: "110006" },
+  { label: "Charminar, Hyderabad", pincode: "500002" },
+  { label: "FC Road, Pune", pincode: "411005" },
+  { label: "Gariahat, Kolkata", pincode: "700019" },
 ];
 
 function SkeletonCard({ height = 220 }: { height?: number }) {

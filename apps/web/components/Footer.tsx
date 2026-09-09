@@ -26,6 +26,10 @@ const COLUMNS = [
       { label: "Bandra, Mumbai", href: "/?pincode=400050" },
       { label: "Commercial Street, Bengaluru", href: "/?pincode=560001" },
       { label: "T. Nagar, Chennai", href: "/?pincode=600017" },
+      { label: "Chandni Chowk, Delhi", href: "/?pincode=110006" },
+      { label: "Charminar, Hyderabad", href: "/?pincode=500002" },
+      { label: "FC Road, Pune", href: "/?pincode=411005" },
+      { label: "Gariahat, Kolkata", href: "/?pincode=700019" },
     ],
   },
   {
