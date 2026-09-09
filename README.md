@@ -29,6 +29,11 @@ cd apps/web && npm install && npm run dev
   stay distinguishable without looking like different products.
 - Wishlist, cart, checkout → real order creation → order confirmation and
   history (`/orders`), all working end to end.
+- **Shopper login** (`/account`) — mocked OTP sign-in (any 10-digit number,
+  demo OTP is always shown on screen); once signed in, the header greets you
+  by name and checkout/reviews prefill from the session.
+- 7 seed stores across 7 cities (Mumbai, Chennai, Bengaluru, Delhi,
+  Hyderabad, Pune, Kolkata) spanning ethnic wear, denim, and streetwear/footwear.
 
 **Seller Portal** (`/seller`) — pick a demo store from the switcher (no auth
 in this build) and manage it:
@@ -45,10 +50,10 @@ in this build) and manage it:
 
 **What's mocked, on purpose:** there's no real database (in-memory data,
 seeded from [lib/seed-data.ts](apps/web/lib/seed-data.ts), resets on server
-restart), no real auth (the seller "session" is just a localStorage store
-picker), and no real payments (checkout and plan changes don't call
-Razorpay/Cashfree). Everything else — routing, filtering, CRUD, caching,
-cache invalidation, GST math — is real.
+restart), no real OTP/SMS delivery (shopper login and the seller "session"
+are both localStorage-backed, no JWT/session service), and no real payments
+(checkout and plan changes don't call Razorpay/Cashfree). Everything else —
+routing, filtering, CRUD, caching, cache invalidation, GST math — is real.
 
 ## Repo map
 
