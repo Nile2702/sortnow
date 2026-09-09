@@ -4,12 +4,9 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { toggleWishlist, isWishlisted } from "../../../lib/wishlist";
+import { CATEGORY_TREE } from "../../../lib/seed-data";
 
-const SUBCATEGORIES: Record<string, string[]> = {
-  men: ["Jeans", "Jackets", "Shirts", "T-Shirts"],
-  women: ["Sarees", "Kurtis", "Lehengas", "Western Wear"],
-  kids: ["Boys", "Girls", "Infant"],
-};
+const SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
 
 const GENDER_LABELS: Record<string, string> = { men: "Men", women: "Women", kids: "Kids" };
 

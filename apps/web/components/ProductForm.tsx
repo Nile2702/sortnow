@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { CATEGORY_TREE } from "../lib/seed-data";
 
 interface ProductFormData {
   id?: string;
@@ -17,11 +18,7 @@ interface ProductFormData {
   imageColor: string;
 }
 
-const GENDER_SUBCATEGORIES: Record<string, string[]> = {
-  men: ["Jeans", "Jackets", "Shirts", "T-Shirts", "Footwear"],
-  women: ["Sarees", "Kurtis", "Lehengas", "Western Wear"],
-  kids: ["Boys", "Girls", "Infant"],
-};
+const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
 
 const ALL_SIZE_OPTIONS = ["S", "M", "L", "XL", "XXL", "Free Size", "28", "30", "32", "34", "36", "7", "8", "9", "10", "2-3Y", "4-5Y", "6-7Y", "8-9Y"];
 
