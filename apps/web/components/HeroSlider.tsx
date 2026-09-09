@@ -47,6 +47,15 @@ const SLIDES: Slide[] = [
   },
 ];
 
+const PARTICLE_SPECS = [
+  { size: 5, left: "12%", top: "22%", delay: "0s", duration: "6.5s" },
+  { size: 3, left: "78%", top: "18%", delay: "1.2s", duration: "8s" },
+  { size: 4, left: "88%", top: "62%", delay: "0.6s", duration: "7.2s" },
+  { size: 3, left: "20%", top: "72%", delay: "2s", duration: "9s" },
+  { size: 6, left: "55%", top: "12%", delay: "0.4s", duration: "6s" },
+  { size: 3, left: "40%", top: "80%", delay: "1.6s", duration: "7.8s" },
+];
+
 export function HeroSlider() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -98,14 +107,24 @@ export function HeroSlider() {
               "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.12), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.55), transparent 60%)",
           }}
         />
+        <div className="sio-grid-overlay" aria-hidden />
+        <div className="sio-scanline" aria-hidden />
+        {PARTICLE_SPECS.map((p, i) => (
+          <span
+            key={i}
+            className="sio-particle"
+            aria-hidden
+            style={{ width: p.size, height: p.size, left: p.left, top: p.top, animationDelay: p.delay, animationDuration: p.duration }}
+          />
+        ))}
 
         <div
+          className="sio-neon-text"
           style={{
             position: "relative",
             fontSize: 11,
             letterSpacing: "0.22em",
-            fontWeight: 500,
-            opacity: 0.8,
+            fontWeight: 700,
             marginBottom: 18,
             textTransform: "uppercase",
           }}
@@ -128,7 +147,7 @@ export function HeroSlider() {
         </h1>
         <p style={{ position: "relative", fontSize: 15, opacity: 0.8, marginBottom: 30, maxWidth: 440, fontWeight: 300 }}>{slide.subtitle}</p>
         <span
-          className="sio-hero-cta"
+          className="sio-hero-cta sio-shine-btn sio-glow-ring"
           style={{
             position: "relative",
             padding: "14px 34px",
@@ -137,6 +156,7 @@ export function HeroSlider() {
             fontWeight: 500,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
+            borderRadius: 2,
           }}
         >
           {slide.cta}

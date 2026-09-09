@@ -309,7 +309,7 @@ export default function ProductDetailPage() {
           <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
             <button
               onClick={handleAddToCart}
-              className="sio-btn-primary"
+              className="sio-btn-primary sio-shine-btn"
               style={{
                 flex: 1,
                 padding: "16px 24px",
@@ -539,7 +539,7 @@ export default function ProductDetailPage() {
               <button
                 type="submit"
                 disabled={submittingReview}
-                className="sio-btn-primary"
+                className="sio-btn-primary sio-shine-btn"
                 style={{ padding: "13px 22px", border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", alignSelf: "flex-start" }}
               >
                 {submittingReview ? "Submitting…" : "Submit Review"}

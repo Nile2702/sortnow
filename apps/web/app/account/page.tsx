@@ -81,7 +81,7 @@ export default function AccountPage() {
 
         <button
           onClick={handleSignOut}
-          className="sio-btn-primary"
+          className="sio-btn-primary sio-shine-btn"
           style={{
             marginTop: 24,
             width: "100%",
@@ -126,7 +126,7 @@ export default function AccountPage() {
             />
           </div>
           {error && <p style={{ color: "#b91c1c", fontSize: 13 }}>{error}</p>}
-          <button type="submit" className="sio-btn-primary" style={buttonStyle}>
+          <button type="submit" className="sio-btn-primary sio-shine-btn" style={buttonStyle}>
             Send OTP
           </button>
         </form>
@@ -143,7 +143,7 @@ export default function AccountPage() {
             autoFocus
           />
           {error && <p style={{ color: "#b91c1c", fontSize: 13 }}>{error}</p>}
-          <button type="submit" className="sio-btn-primary" style={buttonStyle}>
+          <button type="submit" className="sio-btn-primary sio-shine-btn" style={buttonStyle}>
             Verify &amp; Sign In
           </button>
           <button

@@ -96,7 +96,19 @@ export function SiteHeader() {
   }
 
   return (
-    <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--sio-paper)", borderBottom: "1px solid var(--sio-line)" }}>
+    <div
+      className="sio-glass"
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 20,
+        borderLeft: "none",
+        borderRight: "none",
+        borderTop: "none",
+        borderBottomWidth: 1,
+        borderBottomStyle: "solid",
+      }}
+    >
       <div
         style={{
           maxWidth: 1200,
@@ -208,7 +220,7 @@ export function SiteHeader() {
           ) : (
             <Link
               href="/account"
-              className="sio-btn-primary"
+              className="sio-btn-primary sio-shine-btn"
               style={{
                 display: "flex",
                 alignItems: "center",

@@ -15,6 +15,14 @@
   --sio-bronze: #0d9488;
   --sio-bronze-dark: #0f766e;
   --sio-muted: #7a7468;
+
+  /* Futuristic layer: neon glow + glass tokens, additive on top of the
+     premium palette above (nothing here overrides -ink/-cream semantics,
+     so existing dual-use buttons stay legible). */
+  --sio-glow: #2dd4bf;
+  --sio-glow-2: #a78bfa;
+  --sio-glass-bg: rgba(255, 255, 255, 0.62);
+  --sio-glass-border: rgba(45, 212, 191, 0.28);
 }
 
 html,
@@ -203,4 +211,209 @@ body {
 .sio-hero-cta:hover {
   background: #fff;
   color: var(--sio-ink);
+}
+
+/* =======================================================================
+   Futuristic layer - glass surfaces, neon glow, scroll-reveal, particles,
+   tilt cards, shine sweeps. Additive utility classes; nothing here mutates
+   existing component colors or layout.
+   ======================================================================= */
+
+@keyframes sio-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px var(--sio-glass-border), 0 0 18px 0 rgba(45, 212, 191, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.55), 0 0 32px 4px rgba(45, 212, 191, 0.32);
+  }
+}
+
+@keyframes sio-gradient-x {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes sio-float {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  33% {
+    transform: translateY(-14px) translateX(6px);
+  }
+  66% {
+    transform: translateY(8px) translateX(-8px);
+  }
+}
+
+@keyframes sio-scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sio-shine-sweep {
+  0% {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+
+@keyframes sio-reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sio-spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Glassmorphic surface - frosted, translucent, neon-rimmed. */
+.sio-glass {
+  background: var(--sio-glass-bg);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--sio-glass-border);
+}
+
+/* Animated glowing border/ring, breathes on its own - use on hero CTAs,
+   featured cards, "live" indicators. */
+.sio-glow-ring {
+  animation: sio-glow-pulse 3s ease-in-out infinite;
+}
+
+/* Gradient text that slowly drifts through the brand's teal/violet duotone. */
+.sio-neon-text {
+  background: linear-gradient(90deg, var(--sio-glow), var(--sio-glow-2), var(--sio-glow));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sio-gradient-x 6s linear infinite;
+}
+
+/* Button shine sweep - a soft diagonal highlight that sweeps across on
+   hover, layered on top of existing button colors/backgrounds. */
+.sio-shine-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.sio-shine-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-120%) skewX(-20deg);
+  pointer-events: none;
+}
+
+.sio-shine-btn:hover::after {
+  animation: sio-shine-sweep 0.9s ease;
+}
+
+/* Scroll-reveal: elements start hidden/offset, and get `.sio-revealed`
+   added by a tiny IntersectionObserver mounted once in layout.tsx. */
+.sio-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+.sio-reveal.sio-revealed {
+  animation: sio-reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Floating ambient particle dots - purely decorative, absolutely
+   positioned by the component that renders them. */
+.sio-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--sio-glow), transparent 70%);
+  opacity: 0.5;
+  animation: sio-float 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Faint animated grid overlay, for hero/dark surfaces. */
+.sio-grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(45, 212, 191, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 212, 191, 0.14) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 75%);
+}
+
+/* Diagonal scanline sweep, for hero surfaces wanting a sci-fi glint. */
+.sio-scanline {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sio-scanline::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, transparent, rgba(45, 212, 191, 0.09), transparent);
+  animation: sio-scan 5s linear infinite;
+}
+
+/* 3D tilt card wrapper - JS sets --rx/--ry via mousemove; falls back to
+   flat when unset. */
+.sio-tilt {
+  transform: perspective(800px) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg));
+  transition: transform 0.15s ease-out;
+  will-change: transform;
+}
+
+/* Cursor-following ambient glow, fixed full-viewport, mounted once. */
+.sio-cursor-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(600px circle at var(--cx, 50%) var(--cy, 50%), rgba(45, 212, 191, 0.06), transparent 70%);
+  transition: background 0.1s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sio-reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .sio-glow-ring,
+  .sio-neon-text,
+  .sio-particle,
+  .sio-scanline::before {
+    animation: none !important;
+  }
 }

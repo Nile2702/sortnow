@@ -8,6 +8,7 @@ import { saveSmartSort } from "../lib/smart-sorts";
 import { toggleWishlist, isWishlisted } from "../lib/wishlist";
 import { HeroSlider } from "../components/HeroSlider";
 import { CategoryTiles } from "../components/CategoryTiles";
+import { TiltCard } from "../components/TiltCard";
 
 interface DiscoveredStore {
   id: string;
@@ -462,37 +463,40 @@ function DiscoverPageInner() {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
             {sortedProducts.map((p, i) => (
-              <Link
-                key={p.id}
-                href={`/product/${p.id}`}
-                className="sio-card sio-fade-in"
-                style={{
-                  position: "relative",
-                  textDecoration: "none",
-                  color: "inherit",
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  border: "1px solid #f1f5f9",
-                  background: "#fff",
-                  animationDelay: `${i * 40}ms`,
-                }}
-              >
-                <div style={{ position: "relative" }}>
-                  <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />
-                  <DiscountBadge basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} />
-                  <HeartButton product={p} />
-                </div>
-                <div style={{ padding: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>{p.title}</div>
-                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{p.storeName}</div>
-                  <div style={{ marginTop: 6 }}>
-                    <span style={{ fontWeight: 700 }}>₹{p.basePrice}</span>
-                    {p.compareAtPrice && (
-                      <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{p.compareAtPrice}</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
+              <div key={p.id} className="sio-fade-in" style={{ animationDelay: `${i * 40}ms` }}>
+                <TiltCard>
+                  <Link
+                    href={`/product/${p.id}`}
+                    className="sio-card"
+                    style={{
+                      position: "relative",
+                      display: "block",
+                      textDecoration: "none",
+                      color: "inherit",
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      border: "1px solid #f1f5f9",
+                      background: "#fff",
+                    }}
+                  >
+                    <div style={{ position: "relative" }}>
+                      <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />
+                      <DiscountBadge basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} />
+                      <HeartButton product={p} />
+                    </div>
+                    <div style={{ padding: 12 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>{p.title}</div>
+                      <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{p.storeName}</div>
+                      <div style={{ marginTop: 6 }}>
+                        <span style={{ fontWeight: 700 }}>₹{p.basePrice}</span>
+                        {p.compareAtPrice && (
+                          <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{p.compareAtPrice}</span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </TiltCard>
+              </div>
             ))}
           </div>
         )}

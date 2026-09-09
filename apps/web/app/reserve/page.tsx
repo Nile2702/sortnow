@@ -129,6 +129,7 @@ export default function ReservePage() {
           <button
             type="submit"
             disabled={!isValid || reserving}
+            className="sio-shine-btn"
             style={{
               marginTop: 24,
               width: "100%",

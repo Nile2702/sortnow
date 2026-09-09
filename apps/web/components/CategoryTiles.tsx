@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { TiltCard } from "./TiltCard";
 
 interface Tile {
   label: string;
@@ -28,44 +29,47 @@ export function CategoryTiles() {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20 }}>
         {tiles.map((tile, i) => (
-          <Link
-            key={tile.label}
-            href={`/category/${tile.gender}${tile.subCategory ? `?subCategory=${encodeURIComponent(tile.subCategory)}` : ""}`}
-            className="sio-card sio-fade-in"
-            style={{
-              display: "block",
-              background: "var(--sio-paper)",
-              border: "1px solid var(--sio-line)",
-              padding: 24,
-              textDecoration: "none",
-              animationDelay: `${i * 60}ms`,
-            }}
-          >
-            <div
+          <div key={tile.label} className="sio-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
+          <TiltCard>
+            <Link
+              href={`/category/${tile.gender}${tile.subCategory ? `?subCategory=${encodeURIComponent(tile.subCategory)}` : ""}`}
+              className="sio-card"
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: "50%",
-                border: "1px solid var(--sio-bronze)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 17,
-                fontFamily: "var(--site-font-heading)",
-                color: "var(--sio-bronze)",
-                marginBottom: 18,
+                display: "block",
+                background: "var(--sio-paper)",
+                border: "1px solid var(--sio-line)",
+                padding: 24,
+                textDecoration: "none",
               }}
             >
-              {tile.label.charAt(0)}
-            </div>
-            <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 19, color: "var(--sio-ink)", marginBottom: 4 }}>
-              {tile.label}
-            </div>
-            <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 14 }}>{tile.count} items available</div>
-            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--sio-bronze-dark)", display: "flex", alignItems: "center", gap: 6 }}>
-              Browse Collection <span>→</span>
-            </div>
-          </Link>
+              <div
+                className="sio-glow-ring"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  border: "1px solid var(--sio-bronze)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 17,
+                  fontFamily: "var(--site-font-heading)",
+                  color: "var(--sio-bronze)",
+                  marginBottom: 18,
+                }}
+              >
+                {tile.label.charAt(0)}
+              </div>
+              <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 19, color: "var(--sio-ink)", marginBottom: 4 }}>
+                {tile.label}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 14 }}>{tile.count} items available</div>
+              <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--sio-bronze-dark)", display: "flex", alignItems: "center", gap: 6 }}>
+                Browse Collection <span>→</span>
+              </div>
+            </Link>
+          </TiltCard>
+          </div>
         ))}
       </div>
     </section>
