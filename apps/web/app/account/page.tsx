@@ -74,7 +74,7 @@ export default function AccountPage() {
         <p style={{ color: "var(--sio-muted)", marginBottom: 28, fontSize: 14 }}>+91 {session.phone}</p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, textAlign: "left" }}>
-          <AccountLink href="/orders" label="Order History" desc="Track and review your past orders." />
+          <AccountLink href="/reservations" label="My Reservations" desc="Track pickup holds you've reserved at nearby stores." />
           <AccountLink href="/wishlist" label="Wishlist" desc="Items you've saved for later." />
           <AccountLink href="/sorts" label="My Sorts" desc="Saved filters across nearby stores." />
         </div>

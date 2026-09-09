@@ -48,7 +48,6 @@ declare global {
   var __sioStores: Store[] | undefined;
   var __sioThemes: Record<string, any> | undefined;
   var __sioProducts: Product[] | undefined;
-  var __sioOrders: Order[] | undefined;
 }
 
 const INITIAL_STORES: Store[] = [
@@ -999,54 +998,91 @@ export function isLiveSaleActive(liveSale?: LiveSale | null): liveSale is LiveSa
 }
 
 // ---------------------------------------------------------------------
-// Orders - created at checkout, stands in for the (not-yet-modeled) orders
-// table. In-memory only; a shopper's own order ids are kept client-side in
-// localStorage (lib/orders.ts) since there's no auth to scope a query by.
+// Reservations - this platform doesn't sell online; a shopper "sorts"
+// (picks out) items near them, then reserves them at one store for a fixed
+// window so the seller can hold them for an in-person pickup. Stands in for
+// the (not-yet-modeled) reservations table. In-memory only; a shopper's own
+// reservation ids are kept client-side in localStorage (lib/reservations.ts)
+// since there's no auth to scope a query by.
 // ---------------------------------------------------------------------
-export interface OrderItem {
+export interface ReservationItem {
   productId: string;
   title: string;
-  storeName: string;
   size: string;
   price: number;
   quantity: number;
   imageUrl: string;
 }
 
-export interface ShippingAddress {
-  fullName: string;
-  phone: string;
-  line1: string;
-  city: string;
-  pincode: string;
-}
+export type ReservationStatus = "pending" | "fulfilled" | "cancelled" | "expired";
 
-export interface Order {
+export interface Reservation {
   id: string;
-  items: OrderItem[];
+  storeId: string;
+  storeName: string;
+  storeSlug: string;
+  items: ReservationItem[];
   total: number;
-  status: "placed" | "confirmed";
-  shippingAddress?: ShippingAddress;
+  shopperName: string;
+  shopperPhone: string;
+  status: "pending" | "fulfilled" | "cancelled";
+  reservedUntil: string;
   createdAt: string;
 }
 
-export const orders: Order[] = globalThis.__sioOrders ?? (globalThis.__sioOrders = []);
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioReservations: Reservation[] | undefined;
+}
+export const reservations: Reservation[] = globalThis.__sioReservations ?? (globalThis.__sioReservations = []);
 
-export function createOrder(items: OrderItem[], shippingAddress?: ShippingAddress): Order {
-  const order: Order = {
-    id: `SIO-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
-    items,
-    total: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
-    status: "confirmed",
-    shippingAddress,
-    createdAt: new Date().toISOString(),
+export function createReservation(input: {
+  storeId: string;
+  items: ReservationItem[];
+  shopperName: string;
+  shopperPhone: string;
+  durationMinutes: number;
+}): Reservation | null {
+  const store = stores.find((s) => s.id === input.storeId);
+  if (!store) return null;
+  const now = new Date();
+  const reservation: Reservation = {
+    id: `RSV-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
+    storeId: store.id,
+    storeName: store.name,
+    storeSlug: store.slug,
+    items: input.items,
+    total: input.items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+    shopperName: input.shopperName,
+    shopperPhone: input.shopperPhone,
+    status: "pending",
+    reservedUntil: new Date(now.getTime() + input.durationMinutes * 60_000).toISOString(),
+    createdAt: now.toISOString(),
   };
-  orders.unshift(order);
-  return order;
+  reservations.unshift(reservation);
+  return reservation;
 }
 
-export function getOrder(id: string): Order | undefined {
-  return orders.find((o) => o.id === id);
+export function getReservation(id: string): Reservation | undefined {
+  return reservations.find((r) => r.id === id);
+}
+
+export function getStoreReservations(storeId: string): Reservation[] {
+  return reservations.filter((r) => r.storeId === storeId);
+}
+
+export function updateReservationStatus(id: string, status: "fulfilled" | "cancelled"): Reservation | null {
+  const reservation = reservations.find((r) => r.id === id);
+  if (!reservation) return null;
+  reservation.status = status;
+  return reservation;
+}
+
+// A pending reservation past its window is effectively expired - derived
+// rather than stored, so nothing needs to poll and flip it server-side.
+export function effectiveReservationStatus(r: Reservation): ReservationStatus {
+  if (r.status === "pending" && new Date(r.reservedUntil).getTime() < Date.now()) return "expired";
+  return r.status;
 }
 
 // ---------------------------------------------------------------------

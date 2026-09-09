@@ -8,6 +8,7 @@ import { getSellerStoreSlug, setSellerStoreSlug } from "../lib/seller-session";
 const TABS = [
   { label: "Dashboard", href: "/seller" },
   { label: "Products", href: "/seller/products" },
+  { label: "Reservations", href: "/seller/reservations" },
   { label: "Theme Studio", href: "/seller/theme" },
   { label: "QR Marketing", href: "/seller/qr" },
   { label: "Analytics", href: "/seller/analytics" },

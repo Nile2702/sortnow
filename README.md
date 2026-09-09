@@ -27,11 +27,18 @@ cd apps/web && npm install && npm run dev
   header, fonts, spacing, and card style are uniform site-wide; each store's
   theme only tints its own hero gradient and CTA/accent color, so stores
   stay distinguishable without looking like different products.
-- Wishlist, cart, checkout → real order creation → order confirmation and
-  history (`/orders`), all working end to end.
+- This platform doesn't sell online — it's O2O discovery. Wishlist items and
+  picks go into **Your Sort** (`/cart`), then **Reserve for Pickup**
+  (`/reserve`) holds them at that store for a chosen window (30 min–4 hr) so
+  a shopper can walk in and try/buy in person; the seller is notified and
+  sees it live in their Reservations tab. Track holds in **My Reservations**
+  (`/reservations`), including a live pickup countdown.
+- **Live Sale** — a seller can flag their store as running a flash sale
+  right now (headline, discount, duration); shoppers see a live badge on the
+  storefront, `/shops`, and homepage "Stores near you".
 - **Shopper login** (`/account`) — mocked OTP sign-in (any 10-digit number,
   demo OTP is always shown on screen); once signed in, the header greets you
-  by name and checkout/reviews prefill from the session.
+  by name and the reservation form/reviews prefill from the session.
 - 7 seed stores across 7 cities (Mumbai, Chennai, Bengaluru, Delhi,
   Hyderabad, Pune, Kolkata) spanning ethnic wear, denim, and streetwear/footwear.
 
@@ -46,14 +53,18 @@ in this build) and manage it:
   (shop window, table, etc.), tagged for footfall attribution.
 - **Billing** — Lite/Pro/Max plans, SKU usage, and GST invoices computed
   with real CGST/SGST-vs-IGST split logic.
+- **Reservations** — incoming pickup holds for the store, with a live
+  countdown, shopper contact info, and Mark Picked Up / Cancel actions.
 - **Onboarding** — mocked GSTIN/PAN/UPI verification wizard.
 
 **What's mocked, on purpose:** there's no real database (in-memory data,
 seeded from [lib/seed-data.ts](apps/web/lib/seed-data.ts), resets on server
-restart), no real OTP/SMS delivery (shopper login and the seller "session"
-are both localStorage-backed, no JWT/session service), and no real payments
-(checkout and plan changes don't call Razorpay/Cashfree). Everything else —
-routing, filtering, CRUD, caching, cache invalidation, GST math — is real.
+restart), no real OTP/SMS delivery (shopper login, the seller "session", and
+the "seller notified" step for a new reservation are all local, no push/SMS
+service), and no real payments (plan changes don't call Razorpay/Cashfree —
+reservations were never meant to take payment; that happens at the store).
+Everything else — routing, filtering, CRUD, caching, cache invalidation, GST
+math — is real.
 
 ## Repo map
 

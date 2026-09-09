@@ -51,7 +51,7 @@ export default function WishlistPage() {
                     }
                     style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontSize: 13 }}
                   >
-                    Add to Cart
+                    Add to Sort
                   </button>
                   <button
                     onClick={() => {

@@ -323,7 +323,7 @@ export default function ProductDetailPage() {
                 cursor: "pointer",
               }}
             >
-              {added ? "Added to Cart" : "Add to Cart"}
+              {added ? "Added to Sort" : "Add to Sort"}
             </button>
             <button
               onClick={handleToggleWishlist}

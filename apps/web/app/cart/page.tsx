@@ -19,11 +19,14 @@ export default function CartPage() {
 
   return (
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "8px 16px 40px" }}>
-      <h1 style={{ fontSize: 24, marginBottom: 20, fontWeight: 700 }}>Your Cart</h1>
+      <h1 style={{ fontSize: 24, marginBottom: 4, fontWeight: 700 }}>Your Sort</h1>
+      <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>
+        Pick out what you want, then reserve it at the store for a set time so it's held for you to walk in and try on or buy.
+      </p>
 
       {items.length === 0 ? (
         <p>
-          Your cart is empty.{" "}
+          Your sort is empty.{" "}
           <Link href="/" style={{ color: "#2563eb" }}>
             Go find something nearby
           </Link>
@@ -69,10 +72,17 @@ export default function CartPage() {
             ))}
           </div>
 
+          {new Set(items.map((i) => i.storeSlug)).size > 1 && (
+            <p style={{ fontSize: 12, color: "#b45309", marginTop: 16 }}>
+              These items are from {new Set(items.map((i) => i.storeSlug)).size} different stores — reserving will create a separate reservation at
+              each store, since you'll need to visit each in person.
+            </p>
+          )}
+
           <div style={{ marginTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ fontSize: 20, fontWeight: 700 }}>Total: ₹{cartTotal(items)}</div>
             <button
-              onClick={() => router.push("/checkout")}
+              onClick={() => router.push("/reserve")}
               style={{
                 padding: "14px 28px",
                 borderRadius: 999,
@@ -84,7 +94,7 @@ export default function CartPage() {
                 cursor: "pointer",
               }}
             >
-              Checkout
+              Reserve for Pickup
             </button>
           </div>
         </>

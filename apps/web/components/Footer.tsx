@@ -15,8 +15,8 @@ const COLUMNS = [
     title: "Account",
     links: [
       { label: "Wishlist", href: "/wishlist" },
-      { label: "Cart", href: "/cart" },
-      { label: "Order History", href: "/orders" },
+      { label: "Your Sort", href: "/cart" },
+      { label: "My Reservations", href: "/reservations" },
       { label: "Sign in", href: "/account" },
     ],
   },

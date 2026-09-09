@@ -24,6 +24,7 @@ export default function SellerDashboard() {
   const [liveSale, setLiveSale] = useState<LiveSale | null>(null);
   const [saleForm, setSaleForm] = useState({ headline: "Flash Sale — Today Only", discountLabel: "Flat 30% Off", durationHours: 4 });
   const [savingSale, setSavingSale] = useState(false);
+  const [pendingReservations, setPendingReservations] = useState(0);
 
   useEffect(() => {
     if (!store) return;
@@ -36,6 +37,9 @@ export default function SellerDashboard() {
     fetch(`/api/v1/stores/${store.id}`)
       .then((r) => r.json())
       .then((d) => setLiveSale(d.liveSale ?? null));
+    fetch(`/api/v1/seller/stores/${store.id}/reservations`)
+      .then((r) => r.json())
+      .then((list) => setPendingReservations(list.filter((r: any) => r.status === "pending").length));
   }, [store]);
 
   const saleIsActive = !!liveSale && new Date(liveSale.endsAt).getTime() > Date.now();
@@ -69,6 +73,7 @@ export default function SellerDashboard() {
 
   const stats = [
     { label: "Total Products", value: products.length, icon: "📦" },
+    { label: "Pending Reservations", value: pendingReservations, icon: "🕐" },
     { label: "Low Stock Alerts", value: lowStock, icon: "⚠️" },
     { label: "Plan", value: planName ?? "…", icon: "⭐" },
     { label: "Store Status", value: store.status, icon: "🟢" },
@@ -162,6 +167,7 @@ export default function SellerDashboard() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
         {[
           { href: "/seller/products/new", label: "Add a product", desc: "List a new SKU with sizes, price, and photos.", icon: "➕" },
+          { href: "/seller/reservations", label: "View reservations", desc: "See who's coming to pick up what they've reserved.", icon: "🕐" },
           { href: "/seller/theme", label: "Customize your storefront", desc: "Pick your brand colors and hero message.", icon: "🎨" },
           { href: "/seller/qr", label: "Generate a QR standee", desc: "Print-ready QR linking shoppers to your catalog.", icon: "📱" },
           { href: "/seller/billing", label: "Manage billing", desc: "Switch plans, check SKU usage, download GST invoices.", icon: "💳" },

@@ -167,11 +167,11 @@ export function SiteHeader() {
             <HeartIcon />
             {wishN > 0 && <CountBadge n={wishN} />}
           </Link>
-          <Link href="/cart" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex" }} aria-label="Cart">
+          <Link href="/cart" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex" }} aria-label="Your Sort">
             <BagIcon />
             {cartN > 0 && <CountBadge n={cartN} />}
           </Link>
-          <Link href="/orders" style={{ color: "var(--sio-ink-soft)", display: "flex" }} aria-label="Orders">
+          <Link href="/reservations" style={{ color: "var(--sio-ink-soft)", display: "flex" }} aria-label="My Reservations">
             <ReceiptIcon />
           </Link>
           {shopper ? (
