@@ -20,6 +20,7 @@ export default async function StorefrontPage({ params }: Props) {
 
   const theme = await getLiveTheme(store.id);
   const css = themeToCssVariables(theme);
+  const saleActive = !!store.liveSale && new Date(store.liveSale.endsAt).getTime() > Date.now();
 
   // Every section in sectionOrder maps to a shared component - the same
   // components and design system the homepage uses. Only the store's
@@ -48,6 +49,22 @@ export default async function StorefrontPage({ params }: Props) {
         <TrackPageView storeSlug={store.slug} />
       </Suspense>
       <main>
+        {saleActive && store.liveSale && (
+          <div
+            style={{
+              background: "#dc2626",
+              color: "#fff",
+              textAlign: "center",
+              padding: "10px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: "0.02em",
+            }}
+          >
+            <span className="sio-breathe" style={{ display: "inline-block", marginRight: 8 }}>●</span>
+            LIVE SALE — {store.liveSale.headline} · {store.liveSale.discountLabel}
+          </div>
+        )}
         {theme.layout.sectionOrder.map((key, i) =>
           key === "hero" ? (
             <div key={key} data-section={key} style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 16px 0" }}>

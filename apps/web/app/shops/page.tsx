@@ -12,6 +12,11 @@ interface Shop {
   pincode: string;
   localMarket: string;
   productCount: number;
+  liveSale?: { headline: string; discountLabel: string; endsAt: string } | null;
+}
+
+function isSaleActive(sale?: Shop["liveSale"]) {
+  return !!sale && new Date(sale.endsAt).getTime() > Date.now();
 }
 
 function SkeletonCard() {
@@ -127,13 +132,26 @@ export default function ShopsPage() {
                 {s.name.charAt(0)}
               </div>
               <div style={{ minWidth: 0 }}>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{s.name}</h3>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{s.name}</h3>
+                  {isSaleActive(s.liveSale) && (
+                    <span
+                      className="sio-breathe"
+                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "#dc2626", border: "1px solid #dc2626", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
+                    >
+                      ● Live
+                    </span>
+                  )}
+                </div>
                 <div style={{ color: "#64748b", fontSize: 13, marginTop: 2 }}>
                   {s.localMarket}, {s.city}
                 </div>
                 <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4, textTransform: "capitalize" }}>
                   {s.category} · {s.productCount} products
                 </div>
+                {isSaleActive(s.liveSale) && (
+                  <div style={{ fontSize: 12, color: "#dc2626", marginTop: 4, fontWeight: 600 }}>{s.liveSale!.discountLabel}</div>
+                )}
               </div>
             </Link>
           ))}

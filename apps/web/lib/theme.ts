@@ -34,6 +34,7 @@ export interface StoreRecord {
   slug: string;
   name: string;
   status: string;
+  liveSale?: { headline: string; discountLabel: string; startedAt: string; endsAt: string } | null;
 }
 
 /**

@@ -15,6 +15,13 @@ function placeholderImage(label: string, bg: string, fg = "#ffffff", w = 600, h 
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
 
+export interface LiveSale {
+  headline: string;
+  discountLabel: string;
+  startedAt: string;
+  endsAt: string;
+}
+
 export interface Store {
   id: string;
   slug: string;
@@ -26,6 +33,7 @@ export interface Store {
   localMarket: string;
   latitude: number;
   longitude: number;
+  liveSale?: LiveSale | null;
 }
 
 // Next.js dev-mode compiles route handlers on demand, which can give
@@ -961,6 +969,33 @@ export function updateStoreTheme(storeId: string, patch: { primary?: string; acc
     if (patch.heroSubtitle) theme.layout.heroCarousel[0].subtitle = patch.heroSubtitle;
   }
   return theme;
+}
+
+// Live Sale: lets a merchant flag their store as running a flash sale right
+// now, with an end time - shown as a badge on /shops, /store/[slug], and the
+// homepage "Stores near you" list so nearby shoppers can catch it in time.
+export function setStoreLiveSale(storeId: string, input: { headline: string; discountLabel: string; durationHours: number }) {
+  const store = stores.find((s) => s.id === storeId);
+  if (!store) return null;
+  const now = new Date();
+  store.liveSale = {
+    headline: input.headline,
+    discountLabel: input.discountLabel,
+    startedAt: now.toISOString(),
+    endsAt: new Date(now.getTime() + input.durationHours * 60 * 60 * 1000).toISOString(),
+  };
+  return store.liveSale;
+}
+
+export function clearStoreLiveSale(storeId: string) {
+  const store = stores.find((s) => s.id === storeId);
+  if (!store) return null;
+  store.liveSale = null;
+  return true;
+}
+
+export function isLiveSaleActive(liveSale?: LiveSale | null): liveSale is LiveSale {
+  return !!liveSale && new Date(liveSale.endsAt).getTime() > Date.now();
 }
 
 // ---------------------------------------------------------------------
