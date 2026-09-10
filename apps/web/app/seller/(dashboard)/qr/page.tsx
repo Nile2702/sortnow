@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { useSellerStore } from "../../../lib/use-seller-store";
+import { useSellerStore } from "../../../../lib/use-seller-store";
 
 const LABELS = ["Shop Window", "Billing Counter", "Table 1", "Table 2", "Trial Room"];
 

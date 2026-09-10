@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createProduct, stores } from "../../../../../../../../lib/seed-data";
+import { requireSellerForStore } from "../../../../../../../../lib/auth/require-seller";
 
 // Synchronous stand-in for the async `bulk_import_jobs` flow in
 // database/schema.sql - real bulk imports (thousands of rows) go through a
@@ -8,6 +9,8 @@ import { createProduct, stores } from "../../../../../../../../lib/seed-data";
 export async function POST(req: NextRequest, { params }: { params: { storeId: string } }) {
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const denied = requireSellerForStore(store.id, store.slug);
+  if (denied) return denied;
 
   const { rows } = await req.json();
   if (!Array.isArray(rows)) return NextResponse.json({ error: "invalid_payload" }, { status: 400 });

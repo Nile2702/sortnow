@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useSellerStore } from "../../../../lib/use-seller-store";
-import { ProductForm } from "../../../../components/ProductForm";
+import { useSellerStore } from "../../../../../lib/use-seller-store";
+import { ProductForm } from "../../../../../components/ProductForm";
 
 interface Product {
   id: string;

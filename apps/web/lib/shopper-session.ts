@@ -2,7 +2,7 @@
 
 // No real auth service in this demo (see database/schema.sql · shoppers table
 // for the intended model) - this mocks OTP login and remembers the shopper
-// in localStorage, same pattern as seller-session.ts for the merchant side.
+// in localStorage.
 
 const STORAGE_KEY = "sio:shopper";
 const EVENT = "sio:shopper-session-changed";

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSellerStore } from "../../../lib/use-seller-store";
+import { useSellerStore } from "../../../../lib/use-seller-store";
 
 interface Product {
   id: string;

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSellerStore } from "../../lib/use-seller-store";
-import { showToast } from "../../lib/toast";
+import { useSellerStore } from "../../../lib/use-seller-store";
+import { showToast } from "../../../lib/toast";
 
 interface Product {
   id: string;

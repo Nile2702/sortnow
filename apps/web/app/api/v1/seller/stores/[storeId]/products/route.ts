@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getStoreProducts, createProduct, stores } from "../../../../../../../lib/seed-data";
+import { requireSellerForStore } from "../../../../../../../lib/auth/require-seller";
 
 // Seller-facing catalog endpoint: unlike the public /v1/stores/[id]/products
 // route (capped, filtered for shoppers), this returns the full unfiltered
@@ -8,12 +9,16 @@ import { getStoreProducts, createProduct, stores } from "../../../../../../../li
 export async function GET(_req: NextRequest, { params }: { params: { storeId: string } }) {
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json([], { status: 404 });
+  const denied = requireSellerForStore(store.id, store.slug);
+  if (denied) return denied;
   return NextResponse.json(getStoreProducts(store.id));
 }
 
 export async function POST(req: NextRequest, { params }: { params: { storeId: string } }) {
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const denied = requireSellerForStore(store.id, store.slug);
+  if (denied) return denied;
 
   const body = await req.json();
   const product = createProduct(store.id, body);

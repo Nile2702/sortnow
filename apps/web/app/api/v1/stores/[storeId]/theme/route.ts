@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { themes, stores, updateStoreTheme } from "../../../../../../lib/seed-data";
+import { requireSellerForStore } from "../../../../../../lib/auth/require-seller";
 
 export async function GET(req: NextRequest, { params }: { params: { storeId: string } }) {
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
@@ -14,6 +15,8 @@ export async function GET(req: NextRequest, { params }: { params: { storeId: str
 export async function PATCH(req: NextRequest, { params }: { params: { storeId: string } }) {
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const denied = requireSellerForStore(store.id, store.slug);
+  if (denied) return denied;
 
   const body = await req.json();
   const updated = updateStoreTheme(store.id, body);

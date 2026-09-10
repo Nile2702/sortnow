@@ -1,7 +1,7 @@
 "use client";
 
-import { useSellerStore } from "../../../../lib/use-seller-store";
-import { ProductForm } from "../../../../components/ProductForm";
+import { useSellerStore } from "../../../../../lib/use-seller-store";
+import { ProductForm } from "../../../../../components/ProductForm";
 
 export default function NewProductPage() {
   const { store, loading } = useSellerStore();

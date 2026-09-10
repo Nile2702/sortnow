@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSellerStore } from "../../../../lib/use-seller-store";
-import { parseCsv, SAMPLE_CSV } from "../../../../lib/csv";
+import { useSellerStore } from "../../../../../lib/use-seller-store";
+import { parseCsv, SAMPLE_CSV } from "../../../../../lib/csv";
 
 interface ImportResult {
   totalRows: number;

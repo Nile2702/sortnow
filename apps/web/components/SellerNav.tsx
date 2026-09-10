@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { getSellerStoreSlug, setSellerStoreSlug } from "../lib/seller-session";
+import { usePathname, useRouter } from "next/navigation";
+import { useSellerStore } from "../lib/use-seller-store";
 
 const TABS = [
   { label: "Dashboard", href: "/seller" },
@@ -18,15 +17,14 @@ const TABS = [
 
 export function SellerNav() {
   const pathname = usePathname();
-  const [stores, setStores] = useState<{ id: string; slug: string; name: string }[]>([]);
-  const [selected, setSelected] = useState("");
+  const router = useRouter();
+  const { store } = useSellerStore();
 
-  useEffect(() => {
-    setSelected(getSellerStoreSlug());
-    fetch("/api/v1/seller/stores")
-      .then((r) => r.json())
-      .then(setStores);
-  }, []);
+  async function handleLogout() {
+    await fetch("/api/v1/seller/auth/logout", { method: "POST" });
+    router.push("/seller/login");
+    router.refresh();
+  }
 
   return (
     <div style={{ background: "#0f172a", color: "#fff" }}>
@@ -35,27 +33,9 @@ export function SellerNav() {
           🏪 Seller Portal
         </div>
 
-        <select
-          value={selected}
-          onChange={(e) => {
-            setSelected(e.target.value);
-            setSellerStoreSlug(e.target.value);
-          }}
-          style={{
-            padding: "6px 10px",
-            borderRadius: 8,
-            border: "1px solid rgba(255,255,255,0.2)",
-            background: "rgba(255,255,255,0.08)",
-            color: "#fff",
-            fontSize: 13,
-          }}
-        >
-          {stores.map((s) => (
-            <option key={s.slug} value={s.slug} style={{ color: "#0f172a" }}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+        {store && (
+          <div style={{ fontSize: 13, color: "#cbd5e1", whiteSpace: "nowrap" }}>{store.name}</div>
+        )}
 
         <nav style={{ display: "flex", gap: 4, marginLeft: "auto", flexWrap: "wrap" }}>
           {TABS.map((tab) => {
@@ -80,6 +60,23 @@ export function SellerNav() {
             );
           })}
         </nav>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: "8px 14px",
+            borderRadius: 999,
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#cbd5e1",
+            background: "transparent",
+            border: "1px solid rgba(255,255,255,0.2)",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Sign out
+        </button>
 
         <Link href="/" style={{ fontSize: 13, color: "#94a3b8", textDecoration: "none", whiteSpace: "nowrap" }}>
           ← Back to site

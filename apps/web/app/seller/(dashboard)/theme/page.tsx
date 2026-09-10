@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSellerStore } from "../../../lib/use-seller-store";
+import { useSellerStore } from "../../../../lib/use-seller-store";
 
 interface Theme {
   brand: { colors: { primary: string; accent: string } };

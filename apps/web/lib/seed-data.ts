@@ -8,6 +8,7 @@
 // what this does and doesn't guarantee.
 import { loadPersisted, persist } from "./persist";
 import { Gender, ALL_SIZES, CATEGORY_TREE } from "./catalog-constants";
+import { hashPassword, verifyPassword } from "./auth/password";
 
 export type { Gender };
 export { ALL_SIZES, CATEGORY_TREE };
@@ -146,6 +147,38 @@ const INITIAL_STORES: Store[] = [
   },
 ];
 export const stores: Store[] = globalThis.__sioStores ?? (globalThis.__sioStores = loadPersisted("stores", INITIAL_STORES));
+
+// ---------------------------------------------------------------------
+// Seller credentials: real per-store password hashes (scrypt, see
+// lib/auth/password.ts), replacing the old "pick any store from a
+// dropdown, no password" seller session. Every seed store shares the same
+// demo password so the Seller Portal is still one-click to try - see the
+// login page for the actual value. A real deployment would let each
+// merchant set their own during onboarding instead of seeding one.
+// ---------------------------------------------------------------------
+export const DEMO_SELLER_PASSWORD = "sortitout123";
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioSellerCredentials: Record<string, string> | undefined;
+}
+
+function buildInitialSellerCredentials(): Record<string, string> {
+  const creds: Record<string, string> = {};
+  for (const store of INITIAL_STORES) creds[store.id] = hashPassword(DEMO_SELLER_PASSWORD);
+  return creds;
+}
+
+const sellerCredentials: Record<string, string> =
+  globalThis.__sioSellerCredentials ?? (globalThis.__sioSellerCredentials = loadPersisted("sellerCredentials", buildInitialSellerCredentials()));
+
+export function verifySellerLogin(storeSlug: string, password: string): Store | null {
+  const store = stores.find((s) => s.slug === storeSlug);
+  if (!store) return null;
+  const hash = sellerCredentials[store.id];
+  if (!hash || !verifyPassword(password, hash)) return null;
+  return store;
+}
 
 const INITIAL_THEMES: Record<string, any> = {
   "store-urban-vogue": {

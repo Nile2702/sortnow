@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSellerStoreSlug } from "./seller-session";
+import { useRouter } from "next/navigation";
 
 export interface SellerStore {
   id: string;
@@ -13,23 +13,30 @@ export interface SellerStore {
   localMarket: string;
 }
 
-/** Resolves the seller's currently-selected store, re-fetching when they switch it. */
+/** Resolves the signed-in seller's store from their session cookie, redirecting to login if absent. */
 export function useSellerStore() {
+  const router = useRouter();
   const [store, setStore] = useState<SellerStore | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    function load() {
-      setLoading(true);
-      fetch(`/api/v1/stores/${getSellerStoreSlug()}`)
-        .then((r) => r.json())
-        .then(setStore)
-        .finally(() => setLoading(false));
-    }
-    load();
-    window.addEventListener("sio:seller-store-changed", load);
-    return () => window.removeEventListener("sio:seller-store-changed", load);
-  }, []);
+    fetch("/api/v1/seller/auth/me")
+      .then((r) => {
+        if (!r.ok) {
+          router.push("/seller/login");
+          setLoading(false);
+          return null;
+        }
+        return r.json();
+      })
+      .then((me) => {
+        if (!me) return;
+        fetch(`/api/v1/stores/${me.slug}`)
+          .then((r) => r.json())
+          .then(setStore)
+          .finally(() => setLoading(false));
+      });
+  }, [router]);
 
   return { store, loading };
 }

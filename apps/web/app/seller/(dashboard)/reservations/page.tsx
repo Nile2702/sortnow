@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSellerStore } from "../../../lib/use-seller-store";
-import { showToast } from "../../../lib/toast";
+import { useSellerStore } from "../../../../lib/use-seller-store";
+import { showToast } from "../../../../lib/toast";
 
 interface ReservationItem {
   productId: string;
