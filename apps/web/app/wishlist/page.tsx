@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WishlistItem, getWishlist, removeFromWishlist } from "../../lib/wishlist";
 import { addToCart } from "../../lib/cart";
+import { showToast } from "../../lib/toast";
 
 export default function WishlistPage() {
   const [items, setItems] = useState<WishlistItem[]>([]);
@@ -37,7 +38,7 @@ export default function WishlistPage() {
                 <div style={{ fontWeight: 700, marginBottom: 10 }}>₹{item.price}</div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
-                    onClick={() =>
+                    onClick={() => {
                       addToCart({
                         productId: item.productId,
                         title: item.title,
@@ -47,8 +48,10 @@ export default function WishlistPage() {
                         price: item.price,
                         imageUrl: item.imageUrl,
                         quantity: 1,
-                      })
-                    }
+                      });
+                      showToast(`Added to Sort — ${item.title}`, "success");
+                    }}
+                    className="sio-shine-btn"
                     style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontSize: 13 }}
                   >
                     Add to Sort
@@ -57,6 +60,7 @@ export default function WishlistPage() {
                     onClick={() => {
                       removeFromWishlist(item.productId);
                       setItems(getWishlist());
+                      showToast("Removed from Wishlist");
                     }}
                     style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 13 }}
                   >

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { addToCart } from "../../../lib/cart";
 import { toggleWishlist, isWishlisted } from "../../../lib/wishlist";
+import { showToast } from "../../../lib/toast";
 import { getShopperSession } from "../../../lib/shopper-session";
 
 interface ProductDetail {
@@ -140,20 +141,21 @@ export default function ProductDetailPage() {
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+    showToast(`Added to Sort — ${product.title}`, "success");
   }
 
   function handleToggleWishlist() {
     if (!product) return;
-    setWishlisted(
-      toggleWishlist({
-        productId: product.id,
-        title: product.title,
-        storeSlug: product.storeSlug,
-        storeName: product.store.name,
-        price: product.basePrice,
-        imageUrl: product.images[0]?.url ?? "",
-      })
-    );
+    const nowWishlisted = toggleWishlist({
+      productId: product.id,
+      title: product.title,
+      storeSlug: product.storeSlug,
+      storeName: product.store.name,
+      price: product.basePrice,
+      imageUrl: product.images[0]?.url ?? "",
+    });
+    setWishlisted(nowWishlisted);
+    showToast(nowWishlisted ? "Saved to Wishlist" : "Removed from Wishlist");
   }
 
   function handleCheckDelivery() {

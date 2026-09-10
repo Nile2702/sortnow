@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSellerStore } from "../../lib/use-seller-store";
+import { showToast } from "../../lib/toast";
 
 interface Product {
   id: string;
@@ -55,6 +56,7 @@ export default function SellerDashboard() {
     });
     setLiveSale(await res.json());
     setSavingSale(false);
+    showToast("Live Sale started — shoppers will see it now", "success");
   }
 
   async function handleEndSale() {
@@ -63,6 +65,7 @@ export default function SellerDashboard() {
     await fetch(`/api/v1/stores/${store.id}/live-sale`, { method: "DELETE" });
     setLiveSale(null);
     setSavingSale(false);
+    showToast("Live Sale ended");
   }
 
   if (loading || !store) {

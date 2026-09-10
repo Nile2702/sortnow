@@ -4,6 +4,7 @@ import { SiteHeader } from "../components/SiteHeader";
 import { Footer } from "../components/Footer";
 import { CursorGlow } from "../components/CursorGlow";
 import { ScrollRevealInit } from "../components/ScrollRevealInit";
+import { ToastHost } from "../components/ToastHost";
 
 const heading = Cormorant_Garamond({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--site-font-heading" });
 const body = Inter({ subsets: ["latin"], variable: "--site-font-body" });
@@ -11,6 +12,16 @@ const body = Inter({ subsets: ["latin"], variable: "--site-font-body" });
 export const metadata = {
   title: "SORT IT OUT — Find fashion near you",
   description: "Discover apparel from stores near you, sort by what matters, and walk into the store to try it on or buy.",
+  metadataBase: new URL("https://sortitout.in"),
+  openGraph: {
+    title: "SORT IT OUT — Find fashion near you",
+    description: "Discover apparel from stores near you, sort by what matters, and walk into the store to try it on or buy.",
+    type: "website",
+  },
+};
+
+export const viewport = {
+  themeColor: "#16140f",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -29,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <CursorGlow />
         <ScrollRevealInit />
+        <ToastHost />
         <SiteHeader />
         <div style={{ flex: 1, position: "relative" }}>{children}</div>
         <Footer />

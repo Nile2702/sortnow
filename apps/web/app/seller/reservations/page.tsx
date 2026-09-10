@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSellerStore } from "../../../lib/use-seller-store";
+import { showToast } from "../../../lib/toast";
 
 interface ReservationItem {
   productId: string;
@@ -63,6 +64,7 @@ export default function SellerReservationsPage() {
     });
     load();
     setUpdating(null);
+    showToast(status === "fulfilled" ? "Marked as picked up" : "Reservation cancelled", status === "fulfilled" ? "success" : "default");
   }
 
   if (loading || !store) {
