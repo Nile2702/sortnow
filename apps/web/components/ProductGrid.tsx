@@ -1,4 +1,5 @@
 import { TiltCard } from "./TiltCard";
+import { ProductCardInfo } from "./ProductCardInfo";
 
 interface Props {
   storeId: string;
@@ -57,18 +58,7 @@ export async function ProductGrid({ storeId, gridStyle, title, categoryId, sort,
                 }}
               >
                 <img src={p.images?.[0]?.url} alt={p.title} loading="lazy" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />
-                <div style={{ padding: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>{p.title}</div>
-                  <div style={{ marginTop: 6 }}>
-                    <span style={{ fontWeight: 700 }}>₹{p.basePrice}</span>
-                    {p.compareAtPrice && (
-                      <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{p.compareAtPrice}</span>
-                    )}
-                  </div>
-                  {p.stockRemaining != null && p.stockRemaining <= 5 && (
-                    <div style={{ fontSize: 12, color: "#e11d48", marginTop: 4 }}>Only {p.stockRemaining} left</div>
-                  )}
-                </div>
+                <ProductCardInfo title={p.title} basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} stockRemaining={p.stockRemaining} />
               </a>
             </TiltCard>
           </div>

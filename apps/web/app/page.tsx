@@ -9,6 +9,7 @@ import { toggleWishlist, isWishlisted } from "../lib/wishlist";
 import { HeroSlider } from "../components/HeroSlider";
 import { CategoryTiles } from "../components/CategoryTiles";
 import { TiltCard } from "../components/TiltCard";
+import { ProductCardInfo } from "../components/ProductCardInfo";
 
 interface DiscoveredStore {
   id: string;
@@ -34,6 +35,7 @@ interface SearchProduct {
   storeSlug: string;
   storeName: string;
   distanceKm: number | null;
+  stockRemaining?: number;
 }
 
 const QUICK_MARKETS = [
@@ -484,16 +486,7 @@ function DiscoverPageInner() {
                       <DiscountBadge basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} />
                       <HeartButton product={p} />
                     </div>
-                    <div style={{ padding: 12 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>{p.title}</div>
-                      <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{p.storeName}</div>
-                      <div style={{ marginTop: 6 }}>
-                        <span style={{ fontWeight: 700 }}>₹{p.basePrice}</span>
-                        {p.compareAtPrice && (
-                          <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{p.compareAtPrice}</span>
-                        )}
-                      </div>
-                    </div>
+                    <ProductCardInfo title={p.title} storeName={p.storeName} basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} stockRemaining={p.stockRemaining} />
                   </Link>
                 </TiltCard>
               </div>

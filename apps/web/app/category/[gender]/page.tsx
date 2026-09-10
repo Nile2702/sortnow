@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { toggleWishlist, isWishlisted } from "../../../lib/wishlist";
 import { CATEGORY_TREE } from "../../../lib/seed-data";
+import { ProductCardInfo } from "../../../components/ProductCardInfo";
 
 const SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
 
@@ -18,6 +19,7 @@ interface Product {
   images: { url: string }[];
   storeSlug: string;
   storeName: string;
+  stockRemaining?: number;
 }
 
 function SkeletonCard() {
@@ -172,14 +174,7 @@ function CategoryPageInner() {
                 <DiscountBadge basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} />
                 <HeartButton product={p} />
               </div>
-              <div style={{ padding: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>{p.title}</div>
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{p.storeName}</div>
-                <div style={{ marginTop: 6 }}>
-                  <span style={{ fontWeight: 700 }}>₹{p.basePrice}</span>
-                  {p.compareAtPrice && <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{p.compareAtPrice}</span>}
-                </div>
-              </div>
+              <ProductCardInfo title={p.title} storeName={p.storeName} basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} stockRemaining={p.stockRemaining} />
             </Link>
           ))}
         </div>
