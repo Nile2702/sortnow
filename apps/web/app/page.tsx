@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ALL_SIZES, CATEGORY_TREE } from "../lib/seed-data";
+import { ALL_SIZES, CATEGORY_TREE } from "../lib/catalog-constants";
 import { saveSmartSort } from "../lib/smart-sorts";
 import { toggleWishlist, isWishlisted } from "../lib/wishlist";
 import { HeroSlider } from "../components/HeroSlider";

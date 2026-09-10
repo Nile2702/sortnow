@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CATEGORY_TREE } from "../lib/seed-data";
+import { CATEGORY_TREE } from "../lib/catalog-constants";
 
 interface ProductFormData {
   id?: string;

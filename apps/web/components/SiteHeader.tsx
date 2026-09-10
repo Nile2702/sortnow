@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getCart, cartCount } from "../lib/cart";
 import { getWishlist } from "../lib/wishlist";
-import { CATEGORY_TREE } from "../lib/seed-data";
+import { CATEGORY_TREE } from "../lib/catalog-constants";
 import { LogoBadge } from "./LogoBadge";
 import { getShopperSession, onShopperSessionChange, ShopperSession } from "../lib/shopper-session";
 

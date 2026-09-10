@@ -2,6 +2,15 @@
 // during local development. Every /api/v1/* route reads from this module.
 // Swap this file for real service calls once the backend exists — the shape
 // mirrors database/schema.sql exactly so the swap is mechanical.
+//
+// State is mirrored to .data/db.json via lib/persist.ts so a server restart
+// doesn't wipe every store edit, reservation, and review - see that file for
+// what this does and doesn't guarantee.
+import { loadPersisted, persist } from "./persist";
+import { Gender, ALL_SIZES, CATEGORY_TREE } from "./catalog-constants";
+
+export type { Gender };
+export { ALL_SIZES, CATEGORY_TREE };
 
 // Self-contained placeholder images (no external network dependency) so the
 // demo renders identically offline. Swap for real CDN-hosted product/banner
@@ -136,7 +145,7 @@ const INITIAL_STORES: Store[] = [
     longitude: 88.3654,
   },
 ];
-export const stores: Store[] = globalThis.__sioStores ?? (globalThis.__sioStores = INITIAL_STORES);
+export const stores: Store[] = globalThis.__sioStores ?? (globalThis.__sioStores = loadPersisted("stores", INITIAL_STORES));
 
 const INITIAL_THEMES: Record<string, any> = {
   "store-urban-vogue": {
@@ -336,7 +345,7 @@ const INITIAL_THEMES: Record<string, any> = {
     },
   },
 };
-export const themes: Record<string, any> = globalThis.__sioThemes ?? (globalThis.__sioThemes = INITIAL_THEMES);
+export const themes: Record<string, any> = globalThis.__sioThemes ?? (globalThis.__sioThemes = loadPersisted("themes", INITIAL_THEMES));
 
 export const categories: Record<string, { id: string; name: string }[]> = {
   "store-urban-vogue": [
@@ -375,7 +384,6 @@ export const categories: Record<string, { id: string; name: string }[]> = {
   ],
 };
 
-export type Gender = "men" | "women" | "kids";
 
 export interface Product {
   id: string;
@@ -761,7 +769,7 @@ const INITIAL_PRODUCTS: Product[] = [
     createdAt: "2026-09-01",
   },
 ];
-export const products: Product[] = globalThis.__sioProducts ?? (globalThis.__sioProducts = INITIAL_PRODUCTS);
+export const products: Product[] = globalThis.__sioProducts ?? (globalThis.__sioProducts = loadPersisted("products", INITIAL_PRODUCTS));
 
 const EARTH_RADIUS_KM = 6371;
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -836,16 +844,6 @@ export function searchProducts(opts: {
   return results;
 }
 
-export const ALL_SIZES = ["S", "M", "L", "XL", "XXL", "Free Size", "30", "32", "34", "36", "2-3Y", "4-5Y", "6-7Y", "8-9Y"];
-
-// Two-level nav taxonomy: gender (top-level tab) -> subCategory (product-level
-// attribute). Mirrors what `product_categories` + a `gender` facet would look
-// like as a real per-tenant catalog taxonomy (docs/03-multi-tenant-storefront.md).
-export const CATEGORY_TREE: { label: string; value: Gender; subCategories: string[] }[] = [
-  { label: "Men", value: "men", subCategories: ["Jeans", "Jackets", "Shirts", "T-Shirts", "Footwear"] },
-  { label: "Women", value: "women", subCategories: ["Sarees", "Kurtis", "Lehengas", "Western Wear"] },
-  { label: "Kids", value: "kids", subCategories: ["Boys", "Girls", "Infant"] },
-];
 
 // Featured category tiles for the homepage "Browse by Category" strip.
 // Counts are computed live from the seed catalog rather than hardcoded.
@@ -923,6 +921,7 @@ export function createProduct(storeId: string, input: Partial<Product>): Product
     createdAt: new Date().toISOString(),
   };
   products.unshift(product);
+  persist("products", products);
   return product;
 }
 
@@ -930,6 +929,7 @@ export function updateProduct(id: string, patch: Partial<Product>): Product | nu
   const product = products.find((p) => p.id === id);
   if (!product) return null;
   Object.assign(product, patch);
+  persist("products", products);
   return product;
 }
 
@@ -937,6 +937,7 @@ export function deleteProduct(id: string): boolean {
   const idx = products.findIndex((p) => p.id === id);
   if (idx === -1) return false;
   products.splice(idx, 1);
+  persist("products", products);
   return true;
 }
 
@@ -953,6 +954,7 @@ export function updateStoreTheme(storeId: string, patch: { primary?: string; acc
     if (patch.heroTitle) theme.layout.heroCarousel[0].title = patch.heroTitle;
     if (patch.heroSubtitle) theme.layout.heroCarousel[0].subtitle = patch.heroSubtitle;
   }
+  persist("themes", themes);
   return theme;
 }
 
@@ -969,6 +971,7 @@ export function setStoreLiveSale(storeId: string, input: { headline: string; dis
     startedAt: now.toISOString(),
     endsAt: new Date(now.getTime() + input.durationHours * 60 * 60 * 1000).toISOString(),
   };
+  persist("stores", stores);
   return store.liveSale;
 }
 
@@ -976,6 +979,7 @@ export function clearStoreLiveSale(storeId: string) {
   const store = stores.find((s) => s.id === storeId);
   if (!store) return null;
   store.liveSale = null;
+  persist("stores", stores);
   return true;
 }
 
@@ -1020,7 +1024,7 @@ declare global {
   // eslint-disable-next-line no-var
   var __sioReservations: Reservation[] | undefined;
 }
-export const reservations: Reservation[] = globalThis.__sioReservations ?? (globalThis.__sioReservations = []);
+export const reservations: Reservation[] = globalThis.__sioReservations ?? (globalThis.__sioReservations = loadPersisted("reservations", [] as Reservation[]));
 
 export function createReservation(input: {
   storeId: string;
@@ -1046,6 +1050,7 @@ export function createReservation(input: {
     createdAt: now.toISOString(),
   };
   reservations.unshift(reservation);
+  persist("reservations", reservations);
   return reservation;
 }
 
@@ -1061,6 +1066,7 @@ export function updateReservationStatus(id: string, status: "fulfilled" | "cance
   const reservation = reservations.find((r) => r.id === id);
   if (!reservation) return null;
   reservation.status = status;
+  persist("reservations", reservations);
   return reservation;
 }
 
@@ -1120,7 +1126,7 @@ const INITIAL_SUBSCRIPTIONS: Record<string, Subscription> = {
   "store-south-silk-house": { storeId: "store-south-silk-house", planCode: "lite", status: "active", currentPeriodEnd: futureDate(9) },
   "store-denim-district": { storeId: "store-denim-district", planCode: "max", status: "active", currentPeriodEnd: futureDate(25) },
 };
-export const subscriptions: Record<string, Subscription> = globalThis.__sioSubscriptions ?? (globalThis.__sioSubscriptions = INITIAL_SUBSCRIPTIONS);
+export const subscriptions: Record<string, Subscription> = globalThis.__sioSubscriptions ?? (globalThis.__sioSubscriptions = loadPersisted("subscriptions", INITIAL_SUBSCRIPTIONS));
 
 function futureDate(days: number): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
@@ -1135,6 +1141,7 @@ export function changePlan(storeId: string, planCode: Plan["code"]): Subscriptio
   sub.planCode = planCode;
   sub.status = "active";
   subscriptions[storeId] = sub;
+  persist("subscriptions", subscriptions);
   return sub;
 }
 
@@ -1214,12 +1221,13 @@ declare global {
   var __sioAnalyticsEvents: AnalyticsEvent[] | undefined;
 }
 
-export const analyticsEvents: AnalyticsEvent[] = globalThis.__sioAnalyticsEvents ?? (globalThis.__sioAnalyticsEvents = []);
+export const analyticsEvents: AnalyticsEvent[] = globalThis.__sioAnalyticsEvents ?? (globalThis.__sioAnalyticsEvents = loadPersisted("analyticsEvents", [] as AnalyticsEvent[]));
 
 export function trackPageView(storeId: string, qrPosition?: string) {
   const now = new Date().toISOString();
   analyticsEvents.push({ storeId, eventType: "page_view", occurredAt: now });
   if (qrPosition) analyticsEvents.push({ storeId, eventType: "qr_scan", qrPosition, occurredAt: now });
+  persist("analyticsEvents", analyticsEvents);
 }
 
 export function getStoreAnalytics(storeId: string) {
@@ -1415,7 +1423,7 @@ const SEED_REVIEWS: Review[] = [
   },
 ];
 
-export const reviews: Review[] = globalThis.__sioReviews ?? (globalThis.__sioReviews = SEED_REVIEWS);
+export const reviews: Review[] = globalThis.__sioReviews ?? (globalThis.__sioReviews = loadPersisted("reviews", SEED_REVIEWS));
 
 export function getProductReviews(productId: string): Review[] {
   return reviews.filter((r) => r.productId === productId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -1444,6 +1452,7 @@ export function addReview(productId: string, input: { authorName: string; rating
     createdAt: new Date().toISOString(),
   };
   reviews.unshift(review);
+  persist("reviews", reviews);
   return review;
 }
 

@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { toggleWishlist, isWishlisted } from "../../../lib/wishlist";
-import { CATEGORY_TREE } from "../../../lib/seed-data";
+import { CATEGORY_TREE } from "../../../lib/catalog-constants";
 import { ProductCardInfo } from "../../../components/ProductCardInfo";
 
 const SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
