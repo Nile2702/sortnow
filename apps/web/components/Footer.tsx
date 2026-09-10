@@ -39,6 +39,14 @@ const COLUMNS = [
       { label: "List Your Store", href: "/seller/onboarding" },
     ],
   },
+  {
+    title: "Legal",
+    links: [
+      { label: "Terms of Use", href: "/legal/terms" },
+      { label: "Privacy Policy", href: "/legal/privacy" },
+      { label: "Refund & Cancellation", href: "/legal/refund-policy" },
+    ],
+  },
 ];
 
 export function Footer() {
