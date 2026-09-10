@@ -40,7 +40,11 @@ export default function SellerLoginPage() {
 
     if (!res.ok) {
       setSubmitting(false);
-      setError("Incorrect store or password. Try again.");
+      if (res.status === 429) {
+        setError("Too many attempts. Wait a few minutes before trying again.");
+      } else {
+        setError("Incorrect store or password. Try again.");
+      }
       return;
     }
 
