@@ -27,7 +27,7 @@ export default async function StorefrontPage({ params }: Props) {
   // primary/accent color (--store-primary / --store-accent, injected below)
   // differs per tenant, not the fonts, spacing, or layout.
   const sectionComponents: Record<string, JSX.Element | null> = {
-    hero: theme.layout.heroCarousel ? <HeroCarousel slides={theme.layout.heroCarousel} /> : null,
+    hero: theme.layout.heroCarousel ? <HeroCarousel slides={theme.layout.heroCarousel} photoUrl={store.photoUrl} /> : null,
     categoryNav: <CategoryNav storeId={store.id} />,
     featuredCollection: (
       <ProductGrid

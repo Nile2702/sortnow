@@ -15,27 +15,37 @@ interface Slide {
 // page is already there, so a "Shop X" button pointing at the same page
 // would be redundant; the category nav and product grid right below serve
 // that purpose instead.
-export function HeroCarousel({ slides }: { slides: Slide[] }) {
+export function HeroCarousel({ slides, photoUrl }: { slides: Slide[]; photoUrl?: string }) {
   const [active, setActive] = useState(0);
   if (!slides?.length) return null;
   const slide = slides[active];
 
   return (
     <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", height: 340 }}>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "linear-gradient(140deg, #14110f 0%, var(--store-primary, #1f2937) 55%, #14110f 100%)",
-        }}
-      />
+      {photoUrl ? (
+        <img
+          src={photoUrl}
+          alt=""
+          aria-hidden
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      ) : (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(140deg, #14110f 0%, var(--store-primary, #1f2937) 55%, #14110f 100%)",
+          }}
+        />
+      )}
       <div
         aria-hidden
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            "radial-gradient(ellipse at 50% 25%, rgba(255,255,255,0.14), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.55), transparent 60%)",
+          background: photoUrl
+            ? "linear-gradient(140deg, rgba(20,17,15,0.75) 0%, rgba(20,17,15,0.55) 55%, rgba(20,17,15,0.85) 100%)"
+            : "radial-gradient(ellipse at 50% 25%, rgba(255,255,255,0.14), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.55), transparent 60%)",
         }}
       />
 

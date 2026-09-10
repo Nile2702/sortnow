@@ -35,6 +35,7 @@ export interface StoreRecord {
   name: string;
   status: string;
   liveSale?: { headline: string; discountLabel: string; startedAt: string; endsAt: string } | null;
+  photoUrl?: string;
 }
 
 /**

@@ -15,6 +15,36 @@ function placeholderImage(label: string, bg: string, fg = "#ffffff", w = 600, h 
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
 
+// Real stock photos (Unsplash, hand-picked per category and verified to load
+// and be free of visible third-party branding) standing in for merchant
+// photography until sellers upload their own via the Media Pipeline. One
+// representative photo per subcategory is reused across matching products -
+// see docs note in the PR/commit for the curation process.
+function unsplashPhoto(id: string, w = 600, h = 800) {
+  return `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&q=80`;
+}
+
+const PHOTOS = {
+  saree: unsplashPhoto("1610030469983-98e550d6193c"),
+  kurti: unsplashPhoto("1741847639057-b51a25d42892"),
+  lehenga: unsplashPhoto("1724856604254-f7cf4e9c8f72"),
+  jeans: unsplashPhoto("1640336437301-8368b53861ab"),
+  denimJacket: unsplashPhoto("1516257984-b1b4d707412e"),
+  hoodie: unsplashPhoto("1556821840-3a63f95609a7"),
+  sneakers: unsplashPhoto("1650320079970-b4ee8f0dae33"),
+  joggers: unsplashPhoto("1552904219-f4b87efe8792"),
+  kidsDungaree: unsplashPhoto("1563330183-d44b627e4ea1"),
+  kidsFrock: unsplashPhoto("1682993145249-fbec74328160"),
+};
+
+const STORE_PHOTOS = {
+  saree: unsplashPhoto("1610030469983-98e550d6193c", 1200, 500),
+  weaving: unsplashPhoto("1640292343595-889db1c8262e", 1200, 500),
+  denimRack: unsplashPhoto("1576995853123-5a10305d93c0", 1200, 500),
+  zardozi: unsplashPhoto("1724856604254-f7cf4e9c8f72", 1200, 500),
+  sneakerShelf: unsplashPhoto("1734178313867-30531963c136", 1200, 500),
+};
+
 export interface LiveSale {
   headline: string;
   discountLabel: string;
@@ -34,6 +64,7 @@ export interface Store {
   latitude: number;
   longitude: number;
   liveSale?: LiveSale | null;
+  photoUrl?: string;
 }
 
 // Next.js dev-mode compiles route handlers on demand, which can give
@@ -62,6 +93,7 @@ const INITIAL_STORES: Store[] = [
     localMarket: "Bandra",
     latitude: 19.0596,
     longitude: 72.8295,
+    photoUrl: STORE_PHOTOS.saree,
   },
   {
     id: "store-south-silk-house",
@@ -74,6 +106,7 @@ const INITIAL_STORES: Store[] = [
     localMarket: "T. Nagar",
     latitude: 13.0418,
     longitude: 80.2341,
+    photoUrl: STORE_PHOTOS.weaving,
   },
   {
     id: "store-denim-district",
@@ -86,6 +119,7 @@ const INITIAL_STORES: Store[] = [
     localMarket: "Commercial Street",
     latitude: 12.9822,
     longitude: 77.6086,
+    photoUrl: STORE_PHOTOS.denimRack,
   },
   {
     id: "store-chandni-chowk-sarees",
@@ -98,6 +132,7 @@ const INITIAL_STORES: Store[] = [
     localMarket: "Chandni Chowk",
     latitude: 28.6506,
     longitude: 77.2303,
+    photoUrl: STORE_PHOTOS.saree,
   },
   {
     id: "store-charminar-zardozi",
@@ -110,6 +145,7 @@ const INITIAL_STORES: Store[] = [
     localMarket: "Charminar",
     latitude: 17.3616,
     longitude: 78.4747,
+    photoUrl: STORE_PHOTOS.zardozi,
   },
   {
     id: "store-sole-street",
@@ -122,6 +158,7 @@ const INITIAL_STORES: Store[] = [
     localMarket: "FC Road",
     latitude: 18.5236,
     longitude: 73.8478,
+    photoUrl: STORE_PHOTOS.sneakerShelf,
   },
   {
     id: "store-bengal-handloom",
@@ -134,6 +171,7 @@ const INITIAL_STORES: Store[] = [
     localMarket: "Gariahat",
     latitude: 22.5186,
     longitude: 88.3654,
+    photoUrl: STORE_PHOTOS.weaving,
   },
 ];
 export const stores: Store[] = globalThis.__sioStores ?? (globalThis.__sioStores = INITIAL_STORES);
@@ -408,7 +446,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Silk",
     basePrice: 2499,
     compareAtPrice: 3999,
-    images: [{ url: placeholderImage("Banarasi Silk Saree", "#7c2d12", "#f5deb3") }],
+    images: [{ url: PHOTOS.saree }],
     sizes: ["Free Size"],
     stockRemaining: 3,
     createdAt: "2026-08-30",
@@ -424,7 +462,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Breathable cotton Anarkali kurti, machine embroidery on the yoke.",
     fabric: "Cotton",
     basePrice: 899,
-    images: [{ url: placeholderImage("Anarkali Kurti", "#d97706", "#fffaf0") }],
+    images: [{ url: PHOTOS.kurti }],
     sizes: ["S", "M", "L", "XL"],
     stockRemaining: 12,
     createdAt: "2026-08-28",
@@ -441,7 +479,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Velvet",
     basePrice: 8999,
     compareAtPrice: 12999,
-    images: [{ url: placeholderImage("Bridal Lehenga", "#9f1239", "#fce7f3") }],
+    images: [{ url: PHOTOS.lehenga }],
     sizes: ["S", "M", "L"],
     stockRemaining: 2,
     createdAt: "2026-08-20",
@@ -457,7 +495,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Lucknowi chikankari hand-embroidered straight kurti.",
     fabric: "Cotton",
     basePrice: 1299,
-    images: [{ url: placeholderImage("Chikankari Kurti", "#f5deb3", "#7c2d12") }],
+    images: [{ url: PHOTOS.kurti }],
     sizes: ["S", "M", "L", "XL", "XXL"],
     stockRemaining: 8,
     createdAt: "2026-09-01",
@@ -474,7 +512,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Silk",
     basePrice: 5999,
     compareAtPrice: 7999,
-    images: [{ url: placeholderImage("Kanjivaram Silk Saree", "#7a1f3d", "#ffe9d6") }],
+    images: [{ url: PHOTOS.saree }],
     sizes: ["Free Size"],
     stockRemaining: 4,
     createdAt: "2026-08-25",
@@ -490,7 +528,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Everyday handloom cotton saree, pre-washed, easy drape.",
     fabric: "Cotton",
     basePrice: 1499,
-    images: [{ url: placeholderImage("Handloom Cotton Saree", "#c98a2c", "#fffdf8") }],
+    images: [{ url: PHOTOS.saree }],
     sizes: ["Free Size"],
     stockRemaining: 15,
     createdAt: "2026-08-29",
@@ -507,7 +545,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Denim",
     basePrice: 1799,
     compareAtPrice: 2399,
-    images: [{ url: placeholderImage("Slim Fit Jeans", "#1e3a8a", "#e5e7eb") }],
+    images: [{ url: PHOTOS.jeans }],
     sizes: ["30", "32", "34", "36"],
     stockRemaining: 20,
     createdAt: "2026-08-27",
@@ -523,7 +561,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Washed oversized denim jacket with contrast stitching.",
     fabric: "Denim",
     basePrice: 2299,
-    images: [{ url: placeholderImage("Denim Jacket", "#2563eb", "#f8fafc") }],
+    images: [{ url: PHOTOS.denimJacket }],
     sizes: ["S", "M", "L", "XL"],
     stockRemaining: 6,
     createdAt: "2026-09-01",
@@ -540,7 +578,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Cotton Blend",
     basePrice: 799,
     compareAtPrice: 1099,
-    images: [{ url: placeholderImage("Kids Kurta Set", "#db2777", "#fdf2f8") }],
+    images: [{ url: PHOTOS.kurti }],
     sizes: ["2-3Y", "4-5Y", "6-7Y", "8-9Y"],
     stockRemaining: 10,
     createdAt: "2026-08-31",
@@ -556,7 +594,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Adjustable-strap denim dungaree with a printed tee.",
     fabric: "Denim",
     basePrice: 999,
-    images: [{ url: placeholderImage("Kids Dungaree", "#1e40af", "#dbeafe") }],
+    images: [{ url: PHOTOS.kidsDungaree }],
     sizes: ["2-3Y", "4-5Y", "6-7Y"],
     stockRemaining: 14,
     createdAt: "2026-09-02",
@@ -573,7 +611,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Silk Blend",
     basePrice: 4499,
     compareAtPrice: 6999,
-    images: [{ url: placeholderImage("Zari Bridal Saree", "#a11d33", "#ffe3c2") }],
+    images: [{ url: PHOTOS.saree }],
     sizes: ["Free Size"],
     stockRemaining: 5,
     createdAt: "2026-08-22",
@@ -589,7 +627,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Lightweight printed chiffon saree for everyday office wear.",
     fabric: "Chiffon",
     basePrice: 899,
-    images: [{ url: placeholderImage("Printed Chiffon Saree", "#d4a017", "#fffaf2") }],
+    images: [{ url: PHOTOS.saree }],
     sizes: ["Free Size"],
     stockRemaining: 18,
     createdAt: "2026-08-30",
@@ -606,7 +644,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Organza",
     basePrice: 3299,
     compareAtPrice: 4499,
-    images: [{ url: placeholderImage("Banarasi Organza Saree", "#c2410c", "#fff7ed") }],
+    images: [{ url: PHOTOS.saree }],
     sizes: ["Free Size"],
     stockRemaining: 7,
     createdAt: "2026-09-03",
@@ -623,7 +661,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Velvet",
     basePrice: 12999,
     compareAtPrice: 17999,
-    images: [{ url: placeholderImage("Zardozi Lehenga", "#166534", "#fef3c7") }],
+    images: [{ url: PHOTOS.lehenga }],
     sizes: ["S", "M", "L"],
     stockRemaining: 3,
     createdAt: "2026-08-24",
@@ -639,7 +677,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Straight-cut kurti with hand zardozi embroidery on the neckline.",
     fabric: "Georgette",
     basePrice: 1899,
-    images: [{ url: placeholderImage("Zardozi Kurti", "#b45309", "#fefdf8") }],
+    images: [{ url: PHOTOS.kurti }],
     sizes: ["S", "M", "L", "XL"],
     stockRemaining: 9,
     createdAt: "2026-08-31",
@@ -656,7 +694,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Net",
     basePrice: 1599,
     compareAtPrice: 2199,
-    images: [{ url: placeholderImage("Kids Zardozi Lehenga", "#be123c", "#fdf2f8") }],
+    images: [{ url: PHOTOS.lehenga }],
     sizes: ["2-3Y", "4-5Y", "6-7Y"],
     stockRemaining: 6,
     createdAt: "2026-09-02",
@@ -673,7 +711,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Mesh & EVA",
     basePrice: 2799,
     compareAtPrice: 3499,
-    images: [{ url: placeholderImage("Retro Sneakers", "#0f172a", "#fde047") }],
+    images: [{ url: PHOTOS.sneakers }],
     sizes: ["7", "8", "9", "10"],
     stockRemaining: 11,
     createdAt: "2026-08-26",
@@ -689,7 +727,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Heavyweight fleece hoodie, oversized fit, kangaroo pocket.",
     fabric: "Cotton Fleece",
     basePrice: 1499,
-    images: [{ url: placeholderImage("Fleece Hoodie", "#f97316", "#0f172a") }],
+    images: [{ url: PHOTOS.hoodie }],
     sizes: ["S", "M", "L", "XL"],
     stockRemaining: 16,
     createdAt: "2026-09-01",
@@ -705,7 +743,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Tapered fit joggers with side stripe detailing, perfect for campus wear.",
     fabric: "Cotton Terry",
     basePrice: 1099,
-    images: [{ url: placeholderImage("Track Joggers", "#166534", "#f0fdf4") }],
+    images: [{ url: PHOTOS.joggers }],
     sizes: ["S", "M", "L", "XL"],
     stockRemaining: 13,
     createdAt: "2026-09-03",
@@ -722,7 +760,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Jamdani Cotton",
     basePrice: 3799,
     compareAtPrice: 4999,
-    images: [{ url: placeholderImage("Jamdani Saree", "#7c2d12", "#fef9c3") }],
+    images: [{ url: PHOTOS.saree }],
     sizes: ["Free Size"],
     stockRemaining: 6,
     createdAt: "2026-08-23",
@@ -738,7 +776,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Classic Bengal tant cotton saree with a woven border, breathable for daily wear.",
     fabric: "Tant Cotton",
     basePrice: 1299,
-    images: [{ url: placeholderImage("Tant Cotton Saree", "#15803d", "#fffdf7") }],
+    images: [{ url: PHOTOS.saree }],
     sizes: ["Free Size"],
     stockRemaining: 20,
     createdAt: "2026-08-29",
@@ -755,7 +793,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Tant Cotton",
     basePrice: 599,
     compareAtPrice: 799,
-    images: [{ url: placeholderImage("Kids Tant Frock", "#b91c1c", "#fef9c3") }],
+    images: [{ url: PHOTOS.kidsFrock }],
     sizes: ["2-3Y", "4-5Y", "6-7Y", "8-9Y"],
     stockRemaining: 12,
     createdAt: "2026-09-01",
