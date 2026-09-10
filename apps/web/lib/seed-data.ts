@@ -32,9 +32,11 @@ const PHOTOS = {
   sareePeach: unsplashPhoto("1750008558675-e385436092bf"),
   sareeBlue: unsplashPhoto("1614881064213-180b1c28f743"),
   kurtiPinkFloral: unsplashPhoto("1741847639057-b51a25d42892"),
+  kurtiWhite: unsplashPhoto("1667665970124-2273c6ef3489"),
   kurtiMaroon: unsplashPhoto("1708534419572-6e6614a53ca1"),
   lehengaCloseup: unsplashPhoto("1724856604254-f7cf4e9c8f72"),
   lehengaWineRed: unsplashPhoto("1762201698238-bf412e297016"),
+  lehengaPink: unsplashPhoto("1733937140732-2cc70a1d7017"),
   jeans: unsplashPhoto("1640336437301-8368b53861ab"),
   denimJacket: unsplashPhoto("1516257984-b1b4d707412e"),
   hoodie: unsplashPhoto("1556821840-3a63f95609a7"),
@@ -42,13 +44,15 @@ const PHOTOS = {
   joggers: unsplashPhoto("1552904219-f4b87efe8792"),
   kidsDungaree: unsplashPhoto("1563330183-d44b627e4ea1"),
   kidsFrock: unsplashPhoto("1682993145249-fbec74328160"),
+  kidsGirlPortrait: unsplashPhoto("1561987619-040030968422"),
 };
 
 const STORE_PHOTOS = {
   saree: unsplashPhoto("1610030469983-98e550d6193c", 1200, 500),
   weaving: unsplashPhoto("1640292343595-889db1c8262e", 1200, 500),
   denimRack: unsplashPhoto("1576995853123-5a10305d93c0", 1200, 500),
-  zardozi: unsplashPhoto("1724856604254-f7cf4e9c8f72", 1200, 500),
+  charminarMonument: unsplashPhoto("1741545979534-02f59c742730", 1200, 500),
+  chandniChowkBazaar: unsplashPhoto("1638415270042-aefde8ea6856", 1200, 500),
   sneakerShelf: unsplashPhoto("1734178313867-30531963c136", 1200, 500),
 };
 
@@ -139,7 +143,7 @@ const INITIAL_STORES: Store[] = [
     localMarket: "Chandni Chowk",
     latitude: 28.6506,
     longitude: 77.2303,
-    photoUrl: STORE_PHOTOS.saree,
+    photoUrl: STORE_PHOTOS.chandniChowkBazaar,
   },
   {
     id: "store-charminar-zardozi",
@@ -152,7 +156,7 @@ const INITIAL_STORES: Store[] = [
     localMarket: "Charminar",
     latitude: 17.3616,
     longitude: 78.4747,
-    photoUrl: STORE_PHOTOS.zardozi,
+    photoUrl: STORE_PHOTOS.charminarMonument,
   },
   {
     id: "store-sole-street",
@@ -502,7 +506,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Lucknowi chikankari hand-embroidered straight kurti.",
     fabric: "Cotton",
     basePrice: 1299,
-    images: [{ url: PHOTOS.kurtiPinkFloral }],
+    images: [{ url: PHOTOS.kurtiWhite }],
     sizes: ["S", "M", "L", "XL", "XXL"],
     stockRemaining: 8,
     createdAt: "2026-09-01",
@@ -585,7 +589,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Cotton Blend",
     basePrice: 799,
     compareAtPrice: 1099,
-    images: [{ url: PHOTOS.kurtiPinkFloral }],
+    images: [{ url: PHOTOS.kidsGirlPortrait }],
     sizes: ["2-3Y", "4-5Y", "6-7Y", "8-9Y"],
     stockRemaining: 10,
     createdAt: "2026-08-31",
@@ -701,7 +705,7 @@ const INITIAL_PRODUCTS: Product[] = [
     fabric: "Net",
     basePrice: 1599,
     compareAtPrice: 2199,
-    images: [{ url: PHOTOS.lehengaCloseup }],
+    images: [{ url: PHOTOS.lehengaPink }],
     sizes: ["2-3Y", "4-5Y", "6-7Y"],
     stockRemaining: 6,
     createdAt: "2026-09-02",
