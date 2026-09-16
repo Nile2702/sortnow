@@ -37,6 +37,10 @@ Return your answer as JSON with these fields:
   - Fabric texture and likely material, based on how it looks (sheen, weave, drape).
   - Who it suits and when it'd be worn (casual, festive, formal, daily wear), based on gender and style.
   Do not invent details you can't infer from the photo, and do not exaggerate with marketing fluff like "must-have" or "stunning" - stay factual and specific.
+  Write every sentence as a direct, confident statement of fact about the product, the way a retailer's own catalog copy reads.
+  Never hedge or narrate your own uncertainty - do not use phrases like "appears to be", "seems to", "looks like", "likely", "possibly",
+  "it can be seen that", or similar. State what the garment is and has, plainly (e.g. "The kurti is maroon with gold embroidery on the neckline"
+  - not "The kurti appears to be maroon and seems to have some embroidery").
 - fabric: your best guess at the fabric (e.g. "Cotton", "Silk", "Denim") from visual texture, or an empty string if you can't tell.
 
 If the photo doesn't clearly show a garment, still make your best guess rather than refusing.`;
