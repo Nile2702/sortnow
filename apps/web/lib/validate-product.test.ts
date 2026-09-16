@@ -1,0 +1,88 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { validateProductInput } from "./validate-product.ts";
+
+test("accepts a valid create payload", () => {
+  const { errors, data } = validateProductInput({ title: "Blue Kurti", basePrice: 999 }, true);
+  assert.deepEqual(errors, []);
+  assert.equal(data.title, "Blue Kurti");
+  assert.equal(data.basePrice, 999);
+});
+
+test("requires title and basePrice on create", () => {
+  const { errors } = validateProductInput({}, true);
+  assert.ok(errors.includes("title is required"));
+  assert.ok(errors.includes("basePrice is required"));
+});
+
+test("does not require title/basePrice on update", () => {
+  const { errors, data } = validateProductInput({ stockRemaining: 5 }, false);
+  assert.deepEqual(errors, []);
+  assert.equal(data.stockRemaining, 5);
+});
+
+test("rejects a non-positive or absurd basePrice", () => {
+  assert.ok(validateProductInput({ title: "x", basePrice: 0 }, true).errors.length > 0);
+  assert.ok(validateProductInput({ title: "x", basePrice: -50 }, true).errors.length > 0);
+  assert.ok(validateProductInput({ title: "x", basePrice: 50_000_000 }, true).errors.length > 0);
+  assert.ok(validateProductInput({ title: "x", basePrice: "not-a-number" }, true).errors.length > 0);
+});
+
+test("rejects an oversized title", () => {
+  const { errors } = validateProductInput({ title: "a".repeat(301), basePrice: 100 }, true);
+  assert.ok(errors.some((e) => e.includes("title")));
+});
+
+test("rejects a blank or whitespace-only title", () => {
+  assert.ok(validateProductInput({ title: "   ", basePrice: 100 }, true).errors.length > 0);
+});
+
+test("rejects an invalid gender", () => {
+  const { errors } = validateProductInput({ gender: "alien" }, false);
+  assert.ok(errors.some((e) => e.includes("gender")));
+});
+
+test("accepts a valid gender", () => {
+  const { errors, data } = validateProductInput({ gender: "kids" }, false);
+  assert.deepEqual(errors, []);
+  assert.equal(data.gender, "kids");
+});
+
+test("rejects a negative or non-integer stockRemaining", () => {
+  assert.ok(validateProductInput({ stockRemaining: -1 }, false).errors.length > 0);
+  assert.ok(validateProductInput({ stockRemaining: 2.5 }, false).errors.length > 0);
+});
+
+test("accepts zero stockRemaining (sold out, not invalid)", () => {
+  const { errors, data } = validateProductInput({ stockRemaining: 0 }, false);
+  assert.deepEqual(errors, []);
+  assert.equal(data.stockRemaining, 0);
+});
+
+test("rejects sizes that aren't an array of non-empty strings", () => {
+  assert.ok(validateProductInput({ sizes: "M" }, false).errors.length > 0);
+  assert.ok(validateProductInput({ sizes: ["M", ""] }, false).errors.length > 0);
+  assert.ok(validateProductInput({ sizes: Array(21).fill("M") }, false).errors.length > 0);
+});
+
+test("accepts a valid sizes array", () => {
+  const { errors, data } = validateProductInput({ sizes: ["S", "M", "L"] }, false);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(data.sizes, ["S", "M", "L"]);
+});
+
+test("rejects images missing a url", () => {
+  const { errors } = validateProductInput({ images: [{ url: "" }] }, false);
+  assert.ok(errors.length > 0);
+});
+
+test("accepts valid images", () => {
+  const { errors, data } = validateProductInput({ images: [{ url: "https://example.com/a.jpg" }] }, false);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(data.images, [{ url: "https://example.com/a.jpg" }]);
+});
+
+test("rejects an oversized description", () => {
+  const { errors } = validateProductInput({ description: "x".repeat(5001) }, false);
+  assert.ok(errors.some((e) => e.includes("description")));
+});

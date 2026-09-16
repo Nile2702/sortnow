@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createProduct, stores } from "../../../../../../../../lib/seed-data";
 import { requireSellerForStore } from "../../../../../../../../lib/auth/require-seller";
+import { validateProductInput } from "../../../../../../../../lib/validate-product";
 
 // Synchronous stand-in for the async `bulk_import_jobs` flow in
 // database/schema.sql - real bulk imports (thousands of rows) go through a
@@ -20,21 +21,25 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
 
   rows.forEach((row, i) => {
     try {
-      if (!row.title || !row.basePrice) {
-        errors.push({ row: i + 1, message: "Missing required field: title or basePrice" });
-        return;
-      }
-      createProduct(store.id, {
+      const candidate = {
         title: row.title,
         description: row.description || undefined,
         fabric: row.fabric || undefined,
         gender: row.gender || "women",
         subCategory: row.subCategory || "Other",
-        basePrice: Number(row.basePrice),
+        basePrice: row.basePrice !== undefined && row.basePrice !== "" ? Number(row.basePrice) : undefined,
         compareAtPrice: row.compareAtPrice ? Number(row.compareAtPrice) : undefined,
         sizes: row.sizes ? String(row.sizes).split(";").map((s: string) => s.trim()).filter(Boolean) : undefined,
         stockRemaining: row.stockRemaining ? Number(row.stockRemaining) : undefined,
-      });
+      };
+
+      const { errors: rowErrors, data } = validateProductInput(candidate, true);
+      if (rowErrors.length > 0) {
+        errors.push({ row: i + 1, message: rowErrors.join("; ") });
+        return;
+      }
+
+      createProduct(store.id, data);
       successCount++;
     } catch (err) {
       errors.push({ row: i + 1, message: err instanceof Error ? err.message : "Unknown error" });

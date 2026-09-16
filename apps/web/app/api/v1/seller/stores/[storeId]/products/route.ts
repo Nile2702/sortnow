@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getStoreProducts, createProduct, stores } from "../../../../../../../lib/seed-data";
 import { requireSellerForStore } from "../../../../../../../lib/auth/require-seller";
+import { validateProductInput } from "../../../../../../../lib/validate-product";
 
 // Seller-facing catalog endpoint: unlike the public /v1/stores/[id]/products
 // route (capped, filtered for shoppers), this returns the full unfiltered
@@ -21,7 +22,12 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
   if (denied) return denied;
 
   const body = await req.json();
-  const product = createProduct(store.id, body);
+  const { errors, data } = validateProductInput(body, true);
+  if (errors.length > 0) {
+    return NextResponse.json({ error: "invalid_input", errors }, { status: 400 });
+  }
+
+  const product = createProduct(store.id, data);
 
   revalidateTag(`products:${store.id}`);
   revalidatePath(`/store/${store.slug}`);
