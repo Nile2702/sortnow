@@ -65,7 +65,7 @@ function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
 const SECTION_CARD: React.CSSProperties = {
   background: "var(--sio-paper)",
   border: "1px solid var(--sio-line)",
-  borderRadius: 4,
+  borderRadius: 16,
 };
 
 export default function ProductDetailPage() {
@@ -221,8 +221,9 @@ export default function ProductDetailPage() {
                 color: "#fff",
                 fontSize: 11,
                 fontWeight: 600,
-                letterSpacing: "0.06em",
+                letterSpacing: "0.02em",
                 padding: "6px 12px",
+                borderRadius: 999,
               }}
             >
               {discountPct}% OFF
@@ -277,6 +278,7 @@ export default function ProductDetailPage() {
                     onClick={() => setSize(s)}
                     style={{
                       padding: "9px 18px",
+                      borderRadius: 999,
                       border: size === s ? "1px solid var(--sio-ink)" : "1px solid var(--sio-line)",
                       background: size === s ? "var(--sio-ink)" : "#fff",
                       color: size === s ? "#fff" : "var(--sio-ink)",
@@ -297,7 +299,7 @@ export default function ProductDetailPage() {
             <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 10, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
               Quantity
             </div>
-            <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--sio-line)" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--sio-line)", borderRadius: 999, overflow: "hidden" }}>
               <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} style={qtyBtnStyle()}>
                 −
               </button>
@@ -315,13 +317,12 @@ export default function ProductDetailPage() {
               style={{
                 flex: 1,
                 padding: "16px 24px",
+                borderRadius: 999,
                 border: "none",
                 background: added ? "var(--sio-bronze-dark)" : "var(--sio-ink)",
                 color: "#fff",
-                fontSize: 14,
+                fontSize: 14.5,
                 fontWeight: 600,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
                 cursor: "pointer",
               }}
             >
@@ -333,6 +334,8 @@ export default function ProductDetailPage() {
               aria-label="Toggle wishlist"
               style={{
                 width: 54,
+                height: 54,
+                borderRadius: "50%",
                 border: "1px solid var(--sio-line)",
                 background: "#fff",
                 color: wishlisted ? "var(--sio-bronze-dark)" : "var(--sio-muted)",
@@ -340,6 +343,7 @@ export default function ProductDetailPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                flexShrink: 0,
               }}
             >
               <svg width={19} height={19} viewBox="0 0 24 24" fill={wishlisted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6">
@@ -359,11 +363,11 @@ export default function ProductDetailPage() {
                 onChange={(e) => setCheckPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="Enter PIN code"
                 maxLength={6}
-                style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--sio-line)", fontSize: 14 }}
+                style={{ flex: 1, padding: "10px 14px", border: "1px solid var(--sio-line)", borderRadius: 999, fontSize: 14 }}
               />
               <button
                 onClick={handleCheckDelivery}
-                style={{ padding: "10px 20px", border: "none", background: "var(--sio-ink)", color: "#fff", fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer" }}
+                style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
               >
                 Check
               </button>
@@ -395,7 +399,7 @@ export default function ProductDetailPage() {
 
           <button
             onClick={() => router.push(`/store/${product.storeSlug}`)}
-            style={{ padding: "13px 24px", border: "1px solid var(--sio-line)", background: "#fff", fontSize: 13, letterSpacing: "0.03em", cursor: "pointer", width: "100%" }}
+            style={{ padding: "13px 24px", borderRadius: 999, border: "1px solid var(--sio-line)", background: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", width: "100%" }}
           >
             Visit {product.store.name}'s Storefront
           </button>
@@ -542,7 +546,7 @@ export default function ProductDetailPage() {
                 type="submit"
                 disabled={submittingReview}
                 className="sio-btn-primary sio-shine-btn"
-                style={{ padding: "13px 22px", border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", alignSelf: "flex-start" }}
+                style={{ padding: "13px 22px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13.5, cursor: "pointer", alignSelf: "flex-start" }}
               >
                 {submittingReview ? "Submitting…" : "Submit Review"}
               </button>
@@ -566,7 +570,7 @@ export default function ProductDetailPage() {
                 key={p.id}
                 href={`/product/${p.id}`}
                 className="sio-card sio-fade-in"
-                style={{ textDecoration: "none", color: "inherit", border: "1px solid var(--sio-line)", background: "#fff", animationDelay: `${i * 60}ms` }}
+                style={{ textDecoration: "none", color: "inherit", border: "1px solid var(--sio-line)", borderRadius: 14, overflow: "hidden", background: "#fff", animationDelay: `${i * 60}ms` }}
               >
                 <div className="sio-zoom-hover">
                   <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
@@ -608,5 +612,5 @@ function qtyBtnStyle(): React.CSSProperties {
 }
 
 function reviewInputStyle(): React.CSSProperties {
-  return { padding: "11px 12px", border: "1px solid var(--sio-line)", fontSize: 14 };
+  return { padding: "11px 12px", border: "1px solid var(--sio-line)", borderRadius: 10, fontSize: 14, fontFamily: "inherit" };
 }
