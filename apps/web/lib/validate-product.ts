@@ -15,6 +15,7 @@ export interface ProductInput {
   title?: unknown;
   description?: unknown;
   fabric?: unknown;
+  color?: unknown;
   gender?: unknown;
   subCategory?: unknown;
   basePrice?: unknown;
@@ -28,6 +29,7 @@ export interface ValidatedProductInput {
   title?: string;
   description?: string;
   fabric?: string;
+  color?: string;
   gender?: "men" | "women" | "kids";
   subCategory?: string;
   basePrice?: number;
@@ -116,6 +118,16 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
       errors.push(`fabric must be ${MAX_TEXT} characters or fewer`);
     } else {
       data.fabric = input.fabric;
+    }
+  }
+
+  if (input.color !== undefined && input.color !== null) {
+    if (typeof input.color !== "string") {
+      errors.push("color must be a string");
+    } else if (input.color.length > MAX_TEXT) {
+      errors.push(`color must be ${MAX_TEXT} characters or fewer`);
+    } else {
+      data.color = input.color;
     }
   }
 

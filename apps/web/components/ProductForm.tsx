@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CATEGORY_TREE } from "../lib/catalog-constants";
+import { CATEGORY_TREE, COLOR_CATALOG } from "../lib/catalog-constants";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
 type PhotoStage = "raw" | "bg-removed" | "mannequin";
@@ -12,6 +12,7 @@ interface ProductFormData {
   title: string;
   description: string;
   fabric: string;
+  color?: string;
   gender: string;
   subCategory: string;
   basePrice: number;
@@ -67,6 +68,12 @@ export function ProductForm({
   const [autofillError, setAutofillError] = useState("");
   const [autofilled, setAutofilled] = useState(false);
 
+  // Selecting more than one color creates one product per color on submit
+  // (see handleSubmit) - all sharing this same title/description/price/
+  // photo, only the color attribute differs - so a seller doesn't have to
+  // photograph and re-list every colorway of the same item separately.
+  const [selectedColors, setSelectedColors] = useState<string[]>(initial?.color ? [initial.color] : []);
+
   const [form, setForm] = useState<ProductFormData>({
     title: initial?.title ?? "",
     description: initial?.description ?? "",
@@ -86,6 +93,10 @@ export function ProductForm({
 
   function toggleSize(size: string) {
     setForm((f) => ({ ...f, sizes: f.sizes.includes(size) ? f.sizes.filter((s) => s !== size) : [...f.sizes, size] }));
+  }
+
+  function toggleColor(name: string) {
+    setSelectedColors((c) => (c.includes(name) ? c.filter((x) => x !== name) : [...c, name]));
   }
 
   useEffect(() => {
@@ -229,8 +240,7 @@ export function ProductForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const payload = {
-      title: form.title,
+    const basePayload = {
       description: form.description,
       fabric: form.fabric,
       gender: form.gender,
@@ -243,16 +253,28 @@ export function ProductForm({
     };
 
     if (mode === "create") {
-      await fetch(`/api/v1/seller/stores/${storeId}/products`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      // Selecting 2+ colors lists the same item once per color, sharing
+      // every other field and the single uploaded photo, instead of the
+      // seller re-uploading and re-typing details for each colorway.
+      const colorsToCreate = selectedColors.length > 0 ? selectedColors : [undefined];
+      await Promise.all(
+        colorsToCreate.map((color) =>
+          fetch(`/api/v1/seller/stores/${storeId}/products`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...basePayload,
+              title: color && colorsToCreate.length > 1 ? `${form.title} — ${color}` : form.title,
+              color,
+            }),
+          })
+        )
+      );
     } else {
       await fetch(`/api/v1/seller/products/${initial?.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...basePayload, title: form.title, color: selectedColors[0] }),
       });
     }
     router.push("/seller/products");
@@ -330,6 +352,53 @@ export function ProductForm({
       <div>
         <label style={labelStyle()}>Fabric</label>
         <input value={form.fabric} onChange={(e) => update("fabric", e.target.value)} style={inputStyle()} placeholder="e.g. Cotton, Silk, Denim" />
+      </div>
+
+      <div>
+        <label style={labelStyle()}>
+          Colors {mode === "create" && <span style={{ fontWeight: 400, color: "#94a3b8" }}>(pick more than one to list every color at once)</span>}
+        </label>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {COLOR_CATALOG.map((c) => {
+            const active = selectedColors.includes(c.name);
+            return (
+              <button
+                type="button"
+                key={c.name}
+                onClick={() => toggleColor(c.name)}
+                title={c.name}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 10px 5px 5px",
+                  borderRadius: 999,
+                  border: active ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                  background: active ? "#f1f5f9" : "#fff",
+                  cursor: "pointer",
+                  fontSize: 12,
+                }}
+              >
+                <span
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    background: c.hex,
+                    border: "1px solid rgba(0,0,0,0.12)",
+                    flexShrink: 0,
+                  }}
+                />
+                {c.name}
+              </button>
+            );
+          })}
+        </div>
+        {selectedColors.length > 1 && mode === "create" && (
+          <p style={{ fontSize: 12, color: "#7c3aed", marginTop: 8 }}>
+            Publishing will create {selectedColors.length} separate products — one per color — all sharing this title, price, and photo.
+          </p>
+        )}
       </div>
 
       <div>
@@ -575,7 +644,13 @@ export function ProductForm({
           cursor: saving ? "default" : "pointer",
         }}
       >
-        {saving ? "Saving…" : mode === "create" ? "Publish Product" : "Save Changes"}
+        {saving
+          ? "Saving…"
+          : mode === "create"
+            ? selectedColors.length > 1
+              ? `Publish ${selectedColors.length} Products`
+              : "Publish Product"
+            : "Save Changes"}
       </button>
     </form>
   );

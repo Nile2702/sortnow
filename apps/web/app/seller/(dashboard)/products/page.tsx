@@ -14,6 +14,7 @@ interface Product {
   stockRemaining?: number;
   gender: string;
   subCategory: string;
+  color?: string;
 }
 
 export default function SellerProductsPage() {
@@ -82,7 +83,8 @@ export default function SellerProductsPage() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{p.title}</div>
                 <div style={{ fontSize: 12, color: "#64748b" }}>
-                  {p.gender} · {p.subCategory} · {p.sizes.join(", ")}
+                  {p.gender} · {p.subCategory}
+                  {p.color ? ` · ${p.color}` : ""} · {p.sizes.join(", ")}
                 </div>
               </div>
               <div style={{ textAlign: "right", minWidth: 90 }}>

@@ -86,3 +86,14 @@ test("rejects an oversized description", () => {
   const { errors } = validateProductInput({ description: "x".repeat(5001) }, false);
   assert.ok(errors.some((e) => e.includes("description")));
 });
+
+test("accepts a valid color", () => {
+  const { errors, data } = validateProductInput({ color: "Navy Blue" }, false);
+  assert.deepEqual(errors, []);
+  assert.equal(data.color, "Navy Blue");
+});
+
+test("rejects a non-string or oversized color", () => {
+  assert.ok(validateProductInput({ color: 123 }, false).errors.length > 0);
+  assert.ok(validateProductInput({ color: "x".repeat(301) }, false).errors.length > 0);
+});

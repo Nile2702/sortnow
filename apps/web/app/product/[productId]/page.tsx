@@ -13,6 +13,7 @@ interface ProductDetail {
   title: string;
   description?: string;
   fabric?: string;
+  color?: string;
   gender: string;
   subCategory: string;
   basePrice: number;
@@ -425,6 +426,7 @@ export default function ProductDetailPage() {
               {[
                 ["Category", `${product.gender} / ${product.subCategory}`],
                 ["Fabric", product.fabric || "—"],
+                ...(product.color ? [["Color", product.color]] : []),
                 ["Available sizes", product.sizes.join(", ")],
                 ["Sold by", product.store.name],
                 ["Product ID", product.id],

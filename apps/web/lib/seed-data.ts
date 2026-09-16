@@ -428,6 +428,7 @@ export interface Product {
   title: string;
   description?: string;
   fabric?: string;
+  color?: string;
   basePrice: number;
   compareAtPrice?: number;
   images: { url: string }[];
@@ -946,6 +947,7 @@ export function createProduct(storeId: string, input: Partial<Product>): Product
     title: input.title ?? "Untitled product",
     description: input.description,
     fabric: input.fabric,
+    color: input.color,
     basePrice: input.basePrice ?? 0,
     compareAtPrice: input.compareAtPrice,
     images: input.images?.length ? input.images : [{ url: placeholderImage(input.title ?? "New product", "#334155", "#f1f5f9") }],
