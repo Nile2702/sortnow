@@ -69,7 +69,7 @@ export default function SellerDashboard() {
   }
 
   if (loading || !store) {
-    return <main style={{ maxWidth: 1100, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <main style={{ maxWidth: 1440, margin: "0 auto", padding: 40 }}>Loading…</main>;
   }
 
   const lowStock = products.filter((p) => (p.stockRemaining ?? 0) <= 5).length;
@@ -83,7 +83,7 @@ export default function SellerDashboard() {
   ];
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
+    <main style={{ maxWidth: 1440, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Welcome back, {store.name}</h1>
       <p style={{ color: "#64748b", marginBottom: 28 }}>
         {store.localMarket}, {store.city} · PIN {store.pincode}

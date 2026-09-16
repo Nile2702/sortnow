@@ -38,7 +38,7 @@ export async function ProductGrid({ storeId, gridStyle, title, categoryId, sort,
   if (!products.length) return null;
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 16px" }}>
+    <div style={{ maxWidth: 1440, margin: "0 auto", padding: "28px 16px" }}>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>{title}</h2>
       <div style={{ display: "grid", gridTemplateColumns: COLUMNS[gridStyle], gap: 16 }}>
         {products.map((p: any, i: number) => (

@@ -46,7 +46,7 @@ export default function ShopsPage() {
   });
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 16px 48px" }}>
+    <main style={{ maxWidth: 1440, margin: "0 auto", padding: "24px 16px 48px" }}>
       <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 6 }}>Explore All Shops</h1>
       <p style={{ color: "#64748b", marginBottom: 24 }}>
         Every boutique and store listed on SORT IT OUT — {shops.length > 0 ? `${shops.length} and counting` : "browse and pick one to shop"}.

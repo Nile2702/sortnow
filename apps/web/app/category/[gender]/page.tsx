@@ -113,7 +113,7 @@ function CategoryPageInner() {
   }
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 16px 48px" }}>
+    <main style={{ maxWidth: 1440, margin: "0 auto", padding: "24px 16px 48px" }}>
       <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>
         <Link href="/" style={{ color: "#94a3b8" }}>
           Home
@@ -185,7 +185,7 @@ function CategoryPageInner() {
 
 export default function CategoryPage() {
   return (
-    <Suspense fallback={<main style={{ maxWidth: 1100, margin: "0 auto", padding: 16 }}>Loading…</main>}>
+    <Suspense fallback={<main style={{ maxWidth: 1440, margin: "0 auto", padding: 16 }}>Loading…</main>}>
       <CategoryPageInner />
     </Suspense>
   );

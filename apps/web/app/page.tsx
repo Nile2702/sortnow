@@ -198,7 +198,7 @@ function DiscoverPageInner() {
   }
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 16px 40px" }}>
+    <main style={{ maxWidth: 1440, margin: "0 auto", padding: "16px 16px 40px" }}>
       <HeroSlider />
       <CategoryTiles />
 
@@ -513,7 +513,7 @@ function pillStyle(active: boolean): React.CSSProperties {
 
 export default function DiscoverPage() {
   return (
-    <Suspense fallback={<main style={{ maxWidth: 1100, margin: "0 auto", padding: 16 }}>Loading…</main>}>
+    <Suspense fallback={<main style={{ maxWidth: 1440, margin: "0 auto", padding: 16 }}>Loading…</main>}>
       <DiscoverPageInner />
     </Suspense>
   );

@@ -13,7 +13,7 @@ export async function CategoryNav({ storeId }: { storeId: string }) {
   if (!categories.length) return null;
 
   return (
-    <nav style={{ maxWidth: 1100, margin: "0 auto", display: "flex", gap: 8, overflowX: "auto", padding: "16px" }}>
+    <nav style={{ maxWidth: 1440, margin: "0 auto", display: "flex", gap: 8, overflowX: "auto", padding: "16px" }}>
       {categories.map((c: any) => (
         <a
           key={c.id}

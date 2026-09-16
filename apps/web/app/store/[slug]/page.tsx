@@ -67,7 +67,7 @@ export default async function StorefrontPage({ params }: Props) {
         )}
         {theme.layout.sectionOrder.map((key, i) =>
           key === "hero" ? (
-            <div key={key} data-section={key} style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 16px 0" }}>
+            <div key={key} data-section={key} style={{ maxWidth: 1440, margin: "0 auto", padding: "16px 16px 0" }}>
               {sectionComponents[key]}
             </div>
           ) : (

@@ -52,11 +52,11 @@ export default function ThemeStudioPage() {
   }
 
   if (storeLoading || !store || !theme) {
-    return <main style={{ maxWidth: 1100, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <main style={{ maxWidth: 1440, margin: "0 auto", padding: 40 }}>Loading…</main>;
   }
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
+    <main style={{ maxWidth: 1440, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Theme Studio</h1>
       <p style={{ color: "#64748b", marginBottom: 28 }}>
         No-code storefront customization for {store.name}. Fonts, spacing, and layout stay uniform across the platform — you control your

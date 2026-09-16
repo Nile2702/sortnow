@@ -29,7 +29,7 @@ export function SellerNav() {
 
   return (
     <div style={{ background: "#0f172a", color: "#fff" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "14px 20px", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "14px 20px", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap" }}>
           🏪 Seller Portal
         </div>

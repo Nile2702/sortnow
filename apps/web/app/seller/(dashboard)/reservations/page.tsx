@@ -68,7 +68,7 @@ export default function SellerReservationsPage() {
   }
 
   if (loading || !store) {
-    return <main style={{ maxWidth: 1100, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <main style={{ maxWidth: 1440, margin: "0 auto", padding: 40 }}>Loading…</main>;
   }
 
   const pending = reservations.filter((r) => r.status === "pending");

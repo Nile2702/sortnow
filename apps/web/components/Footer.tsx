@@ -52,7 +52,7 @@ const COLUMNS = [
 export function Footer() {
   return (
     <footer style={{ background: "var(--sio-ink)", color: "#c9c4b8", marginTop: 48 }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 16px 28px", display: "flex", flexWrap: "wrap", gap: 40 }}>
+      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "48px 16px 28px", display: "flex", flexWrap: "wrap", gap: 40 }}>
         <div style={{ flex: "1 1 220px" }}>
           <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 22, letterSpacing: "0.03em", color: "#fff", marginBottom: 10 }}>
             SORT IT <span style={{ color: "var(--sio-bronze)" }}>OUT</span>

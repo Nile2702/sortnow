@@ -179,7 +179,7 @@ export function SiteHeader() {
     >
       <div
         style={{
-          maxWidth: 1200,
+          maxWidth: 1440,
           margin: "0 auto",
           padding: "16px 20px",
           display: "flex",
