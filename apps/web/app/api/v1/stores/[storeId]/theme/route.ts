@@ -19,7 +19,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { storeId: s
   if (denied) return denied;
 
   const body = await req.json();
-  const updated = updateStoreTheme(store.id, body);
+  const { primary, accent, heroTitle, heroSubtitle } = body ?? {};
+  const HEX_COLOR = /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
+
+  if (primary !== undefined && (typeof primary !== "string" || !HEX_COLOR.test(primary))) {
+    return NextResponse.json({ error: "invalid_input", message: "primary must be a hex color like #0d9488" }, { status: 400 });
+  }
+  if (accent !== undefined && (typeof accent !== "string" || !HEX_COLOR.test(accent))) {
+    return NextResponse.json({ error: "invalid_input", message: "accent must be a hex color like #0d9488" }, { status: 400 });
+  }
+  if (heroTitle !== undefined && (typeof heroTitle !== "string" || heroTitle.length > 120)) {
+    return NextResponse.json({ error: "invalid_input", message: "heroTitle must be a string up to 120 characters" }, { status: 400 });
+  }
+  if (heroSubtitle !== undefined && (typeof heroSubtitle !== "string" || heroSubtitle.length > 240)) {
+    return NextResponse.json({ error: "invalid_input", message: "heroSubtitle must be a string up to 240 characters" }, { status: 400 });
+  }
+
+  const updated = updateStoreTheme(store.id, { primary, accent, heroTitle, heroSubtitle });
   if (!updated) return NextResponse.json({ error: "no_theme" }, { status: 404 });
 
   // Bust both the theme fetch cache and the storefront page's ISR cache so

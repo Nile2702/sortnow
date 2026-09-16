@@ -1169,7 +1169,8 @@ export function getSubscription(storeId: string): Subscription {
   return subscriptions[storeId] ?? { storeId, planCode: "lite", status: "active", currentPeriodEnd: futureDate(30) };
 }
 
-export function changePlan(storeId: string, planCode: Plan["code"]): Subscription {
+export function changePlan(storeId: string, planCode: Plan["code"]): Subscription | null {
+  if (!PLANS.some((p) => p.code === planCode)) return null;
   const sub = getSubscription(storeId);
   sub.planCode = planCode;
   sub.status = "active";

@@ -17,6 +17,7 @@ export default function ThemeStudioPage() {
   const [heroSubtitle, setHeroSubtitle] = useState("");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!store) return;
@@ -34,12 +35,18 @@ export default function ThemeStudioPage() {
   async function handleSave() {
     if (!store) return;
     setSaving(true);
-    await fetch(`/api/v1/stores/${store.id}/theme`, {
+    setError(null);
+    const res = await fetch(`/api/v1/stores/${store.id}/theme`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ primary, accent, heroTitle, heroSubtitle }),
     });
     setSaving(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      setError(body?.message ?? "Couldn't save your changes. Check the fields and try again.");
+      return;
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
@@ -107,6 +114,7 @@ export default function ThemeStudioPage() {
             {saving ? "Publishing…" : "Publish Changes"}
           </button>
           {saved && <span style={{ color: "#16a34a", fontSize: 13 }}>✓ Published — your live storefront is updated.</span>}
+          {error && <span style={{ color: "#dc2626", fontSize: 13 }}>{error}</span>}
         </div>
 
         <div>

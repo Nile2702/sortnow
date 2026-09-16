@@ -12,5 +12,8 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
 
   const { planCode } = await req.json();
   const subscription = changePlan(store.id, planCode);
+  if (!subscription) {
+    return NextResponse.json({ error: "invalid_plan", message: "planCode must be one of the published plans" }, { status: 400 });
+  }
   return NextResponse.json(subscription);
 }
