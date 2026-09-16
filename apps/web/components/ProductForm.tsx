@@ -61,6 +61,12 @@ export function ProductForm({
   const [mannequinError, setMannequinError] = useState("");
 
   const [credits, setCredits] = useState<number | null>(null);
+
+  const [autofillHint, setAutofillHint] = useState("");
+  const [autofilling, setAutofilling] = useState(false);
+  const [autofillError, setAutofillError] = useState("");
+  const [autofilled, setAutofilled] = useState(false);
+
   const [form, setForm] = useState<ProductFormData>({
     title: initial?.title ?? "",
     description: initial?.description ?? "",
@@ -193,6 +199,32 @@ export function ProductForm({
     setMannequinError("");
   }
 
+  async function handleAutofill() {
+    if (!uploadedImage) return;
+    setAutofilling(true);
+    setAutofillError("");
+    const res = await fetch("/api/v1/seller/photo-autofill", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageDataUrl: uploadedImage, hint: autofillHint.trim() || undefined }),
+    });
+    const result = await res.json().catch(() => null);
+    setAutofilling(false);
+    if (!res.ok) {
+      setAutofillError(result?.message ?? "Couldn't suggest details for this photo. Try again.");
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      title: result.title || f.title,
+      description: result.description || f.description,
+      fabric: result.fabric || f.fabric,
+      gender: result.gender || f.gender,
+      subCategory: result.subCategory || GENDER_SUBCATEGORIES[result.gender]?.[0] || f.subCategory,
+    }));
+    setAutofilled(true);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -238,7 +270,7 @@ export function ProductForm({
         <textarea
           value={form.description}
           onChange={(e) => update("description", e.target.value)}
-          rows={3}
+          rows={5}
           style={{ ...inputStyle(), resize: "vertical" }}
           placeholder="Fabric, fit, occasion..."
         />
@@ -440,6 +472,46 @@ export function ProductForm({
             {uploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{uploadError}</p>}
             {bgRemoveError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{bgRemoveError}</p>}
             {mannequinError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{mannequinError}</p>}
+
+            {uploadedImage && !uploadError && (
+              <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "#faf5ff", border: "1px solid #e9d5ff" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#0f172a" }}>✨ Auto-fill from photo</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={autofillHint}
+                    onChange={(e) => setAutofillHint(e.target.value)}
+                    placeholder="Optional hint — e.g. Top wear, Saree, Kids' t-shirt"
+                    style={{ ...inputStyle(), flex: 1, background: "#fff" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAutofill}
+                    disabled={autofilling}
+                    style={{
+                      padding: "0 16px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: autofilling ? "#94a3b8" : "#7c3aed",
+                      color: "#fff",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: autofilling ? "default" : "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {autofilling ? "Thinking…" : "Auto-fill"}
+                  </button>
+                </div>
+                {autofillError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 8 }}>{autofillError}</p>}
+                {autofilled && !autofillError && (
+                  <p style={{ fontSize: 12, color: "#16a34a", marginTop: 8 }}>✓ Title, category, and description filled in below — review and edit as needed.</p>
+                )}
+                <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 8, lineHeight: 1.5 }}>
+                  Gemini looks at the photo (and your hint, if given) to suggest a title, category, and description. Price, stock, and sizes are
+                  yours to set.
+                </p>
+              </div>
+            )}
 
             {uploadedImage && !uploadError && !bgRemoveError && !mannequinError && photoStage === "raw" && (
               <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "var(--sio-cream)", border: "1px solid var(--sio-line)" }}>
