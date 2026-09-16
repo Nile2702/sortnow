@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CATEGORY_TREE } from "../lib/catalog-constants";
+import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
 interface ProductFormData {
   id?: string;
@@ -335,10 +336,15 @@ export function ProductForm({
             <input type="file" accept="image/*" onChange={handleFileChange} style={{ fontSize: 13 }} />
             {uploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{uploadError}</p>}
             {enhanceError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{enhanceError}</p>}
-            {uploadedImage && !uploadError && !enhanceError && (
-              <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>
-                Have a plain phone photo? Try <strong>Enhance with AI</strong> to remove the background and present it on a mannequin.
-              </p>
+
+            {uploadedImage && !uploadError && !enhanceError && !enhanced && (
+              <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "var(--sio-cream)", border: "1px solid var(--sio-line)" }}>
+                <PhotoEnhanceIllustration />
+                <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 10, lineHeight: 1.6 }}>
+                  <strong style={{ color: "var(--sio-ink)" }}>Enhance with AI</strong> sends this photo to Gemini, which removes the background and
+                  places the garment on a mannequin — a small AI usage cost applies per enhancement, so it only runs when you click the button.
+                </p>
+              </div>
             )}
 
             {!uploadedImage && (
