@@ -1257,10 +1257,18 @@ declare global {
 
 export const analyticsEvents: AnalyticsEvent[] = globalThis.__sioAnalyticsEvents ?? (globalThis.__sioAnalyticsEvents = loadPersisted("analyticsEvents", [] as AnalyticsEvent[]));
 
+// Hard cap independent of the API route's rate limiting - keeps memory and
+// the persisted db.json bounded even if that limit is bypassed (e.g. spread
+// across many IPs), by dropping the oldest events once the log gets large.
+const MAX_ANALYTICS_EVENTS = 20_000;
+
 export function trackPageView(storeId: string, qrPosition?: string) {
   const now = new Date().toISOString();
   analyticsEvents.push({ storeId, eventType: "page_view", occurredAt: now });
   if (qrPosition) analyticsEvents.push({ storeId, eventType: "qr_scan", qrPosition, occurredAt: now });
+  if (analyticsEvents.length > MAX_ANALYTICS_EVENTS) {
+    analyticsEvents.splice(0, analyticsEvents.length - MAX_ANALYTICS_EVENTS);
+  }
   persist("analyticsEvents", analyticsEvents);
 }
 
