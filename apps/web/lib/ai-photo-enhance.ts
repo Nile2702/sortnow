@@ -1,18 +1,22 @@
-// AI product-photo enhancement: takes a seller's raw phone-camera photo and
-// asks an image-generation model to isolate the garment, remove the
-// background, and present it on a plain mannequin form - the standard
-// "ghost mannequin" e-commerce look, without needing a real photo studio.
-//
-// Uses Google's Gemini image model (single provider handles both background
-// removal and mannequin composition in one call via prompting, instead of
-// wiring up a separate background-removal API too). Requires GEMINI_API_KEY.
+// Paid second stage of the photo pipeline (see components/ProductForm.tsx):
+// free client-side background removal (lib client code, @imgly/background-
+// removal) runs first, so by the time an image reaches here it typically
+// already has a plain/transparent background. This step's job is placing
+// the garment on a mannequin - a real generative-AI task with no free-tier
+// equivalent, which is why it's metered against a store's photoCredits
+// (see lib/seed-data.ts) rather than being unlimited like background
+// removal. Still handles a raw, unedited photo reasonably (the prompt is
+// written to not assume a clean background), since a seller can also run
+// this step directly without bothering with background removal first.
 const GEMINI_MODEL = process.env.GEMINI_IMAGE_MODEL ?? "gemini-2.5-flash-image";
 
 const PROMPT = `You are editing a product photo for an online clothing marketplace.
 Take the garment shown in this photo and produce a professional e-commerce
 product image of it:
-- Remove the original background completely and replace it with a plain,
-  seamless light-gray or white studio background.
+- If the photo still has its original background (not already removed),
+  remove it completely and replace it with a plain, seamless light-gray or
+  white studio background. If the background has already been removed
+  (transparent or plain), keep it that way.
 - Present the garment on a plain, faceless mannequin form (or a
   ghost-mannequin / invisible-mannequin effect) so it looks worn and shows
   its natural shape and drape, rather than lying flat.

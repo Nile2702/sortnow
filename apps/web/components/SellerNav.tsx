@@ -12,6 +12,7 @@ const TABS = [
   { label: "QR Marketing", href: "/seller/qr" },
   { label: "Analytics", href: "/seller/analytics" },
   { label: "Billing", href: "/seller/billing" },
+  { label: "AI Photo Credits", href: "/seller/photo-credits" },
   { label: "Onboarding", href: "/seller/onboarding" },
 ];
 

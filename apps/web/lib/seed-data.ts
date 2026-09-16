@@ -1179,6 +1179,61 @@ export function changePlan(storeId: string, planCode: Plan["code"]): Subscriptio
   return sub;
 }
 
+// ---------------------------------------------------------------------
+// AI Photo Credits: the Gemini-based mannequin-placement step (unlike free
+// client-side background removal) is a real per-call cost to whoever's
+// paying the Google Cloud bill, so it's metered separately from SKU-based
+// subscription plans. A store spends 1 credit per successful enhancement;
+// "purchasing" a pack here is the same kind of demo stand-in as
+// changePlan()/billing subscribe - it flips the in-memory balance with no
+// real payment processor call. A real deployment would redirect to
+// Razorpay/Cashfree checkout here, same as billing/subscribe.
+// ---------------------------------------------------------------------
+export interface PhotoCreditPackage {
+  id: string;
+  credits: number;
+  priceInr: number;
+}
+
+export const PHOTO_CREDIT_PACKAGES: PhotoCreditPackage[] = [
+  { id: "pack-10", credits: 10, priceInr: 39 },
+  { id: "pack-50", credits: 50, priceInr: 179 },
+  { id: "pack-200", credits: 200, priceInr: 649 },
+];
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioPhotoCredits: Record<string, number> | undefined;
+}
+
+// New stores start with a few free credits so sellers can try the paid
+// mannequin step once before deciding whether to buy more.
+const STARTER_PHOTO_CREDITS = 3;
+
+export const photoCredits: Record<string, number> =
+  globalThis.__sioPhotoCredits ?? (globalThis.__sioPhotoCredits = loadPersisted("photoCredits", {} as Record<string, number>));
+
+export function getPhotoCredits(storeId: string): number {
+  return photoCredits[storeId] ?? STARTER_PHOTO_CREDITS;
+}
+
+export function spendPhotoCredit(storeId: string): boolean {
+  const balance = getPhotoCredits(storeId);
+  if (balance <= 0) return false;
+  photoCredits[storeId] = balance - 1;
+  persist("photoCredits", photoCredits);
+  return true;
+}
+
+export function buyPhotoCredits(storeId: string, packageId: string): number | null {
+  const pack = PHOTO_CREDIT_PACKAGES.find((p) => p.id === packageId);
+  if (!pack) return null;
+  const balance = getPhotoCredits(storeId);
+  photoCredits[storeId] = balance + pack.credits;
+  persist("photoCredits", photoCredits);
+  return photoCredits[storeId];
+}
+
 // Platform is registered in Maharashtra (state code 27) for this demo -
 // mirrors fn_compute_gst_split() in database/schema.sql.
 const PLATFORM_STATE_CODE = "27";

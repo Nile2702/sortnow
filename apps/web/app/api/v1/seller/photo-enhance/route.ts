@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSellerSession } from "../../../../../lib/auth/require-seller";
 import { enhanceProductPhoto } from "../../../../../lib/ai-photo-enhance";
 import { rateLimit, clientIp } from "../../../../../lib/rate-limit";
+import { getPhotoCredits, spendPhotoCredit } from "../../../../../lib/seed-data";
 
 const MAX_DATA_URL_LENGTH = 6_000_000; // ~4.3MB raw image after base64 overhead, matching the 3MB upload cap client-side
 
@@ -28,11 +29,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_input", message: "Image is too large. Please use a photo under 3MB." }, { status: 400 });
   }
 
+  if (getPhotoCredits(session.storeId) <= 0) {
+    return NextResponse.json(
+      { error: "insufficient_credits", message: "You're out of AI photo credits. Buy more to keep using this feature." },
+      { status: 402 }
+    );
+  }
+
   const result = await enhanceProductPhoto(imageDataUrl);
   if (!result.ok) {
+    // Failed calls don't spend a credit - only a successful enhancement does.
     const status = result.code === "not_configured" ? 503 : result.code === "invalid_image" ? 400 : 502;
     return NextResponse.json({ error: result.code, message: result.error }, { status });
   }
 
-  return NextResponse.json({ imageDataUrl: result.imageDataUrl });
+  spendPhotoCredit(session.storeId);
+  return NextResponse.json({ imageDataUrl: result.imageDataUrl, creditsRemaining: getPhotoCredits(session.storeId) });
 }
