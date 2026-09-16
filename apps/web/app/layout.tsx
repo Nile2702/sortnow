@@ -1,4 +1,4 @@
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "../components/SiteHeader";
 import { Footer } from "../components/Footer";
@@ -6,7 +6,11 @@ import { CursorGlow } from "../components/CursorGlow";
 import { ScrollRevealInit } from "../components/ScrollRevealInit";
 import { ToastHost } from "../components/ToastHost";
 
-const heading = Cormorant_Garamond({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--site-font-heading" });
+// A rounded, friendly sans-serif for headings instead of the earlier
+// Cormorant Garamond serif - the serif read as a formal fashion-magazine
+// "classic boutique" look; this keeps things approachable while staying
+// distinct from the Inter body text.
+const heading = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--site-font-heading" });
 const body = Inter({ subsets: ["latin"], variable: "--site-font-body" });
 
 export const metadata = {

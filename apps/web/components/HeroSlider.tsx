@@ -77,6 +77,7 @@ export function HeroSlider() {
         overflow: "hidden",
         marginBottom: 40,
         height: 400,
+        borderRadius: 24,
       }}
     >
       <Link
@@ -152,14 +153,13 @@ export function HeroSlider() {
             position: "relative",
             padding: "14px 34px",
             border: "1px solid rgba(255,255,255,0.55)",
-            fontSize: 12,
-            fontWeight: 500,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            borderRadius: 2,
+            fontSize: 13.5,
+            fontWeight: 600,
+            letterSpacing: "0.01em",
+            borderRadius: 999,
           }}
         >
-          {slide.cta}
+          {slide.cta} →
         </span>
       </Link>
 

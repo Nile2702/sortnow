@@ -171,6 +171,7 @@ export function SiteHeader() {
               background: "var(--sio-cream)",
               fontSize: 14,
               outline: "none",
+              borderRadius: 999,
             }}
           />
         </form>
@@ -229,13 +230,12 @@ export function SiteHeader() {
                 background: "var(--sio-ink)",
                 color: "#fff",
                 textDecoration: "none",
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 600,
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
+                borderRadius: 999,
               }}
             >
-              Login / Sign Up
+              Login / Sign up
             </Link>
           )}
         </nav>
@@ -293,9 +293,9 @@ function MobileMenu({ onNavigate, shopper }: { onNavigate: () => void; shopper: 
         <Link
           href="/account"
           onClick={onNavigate}
-          style={{ flex: 1, textAlign: "center", padding: "12px", background: "var(--sio-ink)", color: "#fff", textDecoration: "none", fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}
+          style={{ flex: 1, textAlign: "center", padding: "12px", background: "var(--sio-ink)", color: "#fff", textDecoration: "none", fontSize: 13, fontWeight: 600, borderRadius: 999 }}
         >
-          {shopper ? `Hi, ${shopper.name.split(" ")[0]}` : "Login / Sign Up"}
+          {shopper ? `Hi, ${shopper.name.split(" ")[0]}` : "Login / Sign up"}
         </Link>
       </div>
     </div>
@@ -390,6 +390,7 @@ function CategoryMenu({ gender, label, subCategories }: { gender: string; label:
             left: 0,
             background: "var(--sio-paper)",
             border: "1px solid var(--sio-line)",
+            borderRadius: 14,
             boxShadow: "0 16px 32px rgba(22,20,15,0.1)",
             padding: 8,
             minWidth: 190,
@@ -421,6 +422,7 @@ function dropdownLinkStyle(bold: boolean): React.CSSProperties {
   return {
     display: "block",
     padding: "8px 10px",
+    borderRadius: 8,
     color: bold ? "var(--sio-ink)" : "var(--sio-ink-soft)",
     fontWeight: bold ? 600 : 400,
     textDecoration: "none",

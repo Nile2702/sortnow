@@ -67,7 +67,7 @@ html {
 h1,
 h2,
 h3 {
-  font-family: var(--site-font-heading), serif;
+  font-family: var(--site-font-heading), system-ui, sans-serif;
   letter-spacing: 0;
   font-weight: 600;
 }

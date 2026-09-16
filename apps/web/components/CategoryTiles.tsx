@@ -38,6 +38,7 @@ export function CategoryTiles() {
                 display: "block",
                 background: "var(--sio-paper)",
                 border: "1px solid var(--sio-line)",
+                borderRadius: 16,
                 padding: 24,
                 textDecoration: "none",
               }}
