@@ -40,11 +40,13 @@ export function ProductForm({
   storeId,
   initial,
   initialImageUrl,
+  initialAdditionalImages,
   mode,
 }: {
   storeId: string;
   initial?: Partial<ProductFormData>;
   initialImageUrl?: string;
+  initialAdditionalImages?: string[];
   mode: "create" | "edit";
 }) {
   const router = useRouter();
@@ -53,6 +55,13 @@ export function ProductForm({
   const [uploadError, setUploadError] = useState("");
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [photoStage, setPhotoStage] = useState<PhotoStage>("raw");
+
+  // Extra angle/detail shots beyond the primary photo - shown as a gallery
+  // on the storefront (see the product detail page's thumbnail strip) but
+  // not run through any AI tooling (background removal, mannequin,
+  // autofill), which all operate on the primary photo only.
+  const [additionalImages, setAdditionalImages] = useState<string[]>(initialAdditionalImages ?? []);
+  const [additionalUploadError, setAdditionalUploadError] = useState("");
 
   const [bgRemoving, setBgRemoving] = useState(false);
   const [bgRemoveProgress, setBgRemoveProgress] = useState("");
@@ -124,6 +133,42 @@ export function ProductForm({
     const reader = new FileReader();
     reader.onload = () => setUploadedImage(reader.result as string);
     reader.readAsDataURL(file);
+  }
+
+  async function handleAdditionalFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    setAdditionalUploadError("");
+
+    const MAX_ADDITIONAL = 5;
+    if (additionalImages.length + files.length > MAX_ADDITIONAL) {
+      setAdditionalUploadError(`You can add up to ${MAX_ADDITIONAL} additional photos.`);
+      return;
+    }
+
+    const readOne = (file: File) =>
+      new Promise<string | null>((resolve) => {
+        if (!file.type.startsWith("image/") || file.size > 3 * 1024 * 1024) {
+          resolve(null);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      });
+
+    const results = await Promise.all(files.map(readOne));
+    const valid = results.filter((r): r is string => r !== null);
+    if (valid.length < files.length) {
+      setAdditionalUploadError("Some photos were skipped — only images under 3MB are supported.");
+    }
+    setAdditionalImages((imgs) => [...imgs, ...valid]);
+  }
+
+  function removeAdditionalImage(index: number) {
+    setAdditionalImages((imgs) => imgs.filter((_, i) => i !== index));
   }
 
   // Free, runs entirely client-side via a WASM ML model - no API key, no
@@ -249,7 +294,10 @@ export function ProductForm({
       compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : undefined,
       sizes: form.sizes,
       stockRemaining: Number(form.stockRemaining),
-      images: [{ url: uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor) }],
+      images: [
+        { url: uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor) },
+        ...additionalImages.map((url) => ({ url })),
+      ],
     };
 
     if (mode === "create") {
@@ -629,6 +677,48 @@ export function ProductForm({
           Pipeline / CDN (docs/02-system-architecture.md).
         </p>
       </div>
+
+      {uploadedImage && (
+        <div>
+          <label style={labelStyle()}>Additional photos (optional)</label>
+          <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 10 }}>
+            Extra angles or close-ups shoppers can browse alongside your main photo. These don't go through background removal, AI
+            mannequin, or auto-fill — only your main photo above does.
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+            {additionalImages.map((img, i) => (
+              <div key={i} style={{ position: "relative" }}>
+                <img src={img} alt={`Additional ${i + 1}`} style={{ width: 64, height: 80, objectFit: "cover", borderRadius: 8, border: "1px solid #e2e8f0" }} />
+                <button
+                  type="button"
+                  onClick={() => removeAdditionalImage(i)}
+                  aria-label="Remove photo"
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -6,
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "#0f172a",
+                    color: "#fff",
+                    cursor: "pointer",
+                    fontSize: 10,
+                    lineHeight: 1,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+          {additionalImages.length < 5 && (
+            <input type="file" accept="image/*" multiple onChange={handleAdditionalFilesChange} style={{ fontSize: 13 }} />
+          )}
+          {additionalUploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{additionalUploadError}</p>}
+        </div>
+      )}
 
       <button
         type="submit"

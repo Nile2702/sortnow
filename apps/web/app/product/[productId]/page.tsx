@@ -73,6 +73,8 @@ export default function ProductDetailPage() {
   const { productId } = useParams<{ productId: string }>();
   const router = useRouter();
   const [product, setProduct] = useState<ProductDetail | null>(null);
+  const [activeImage, setActiveImage] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const [size, setSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -91,6 +93,15 @@ export default function ProductDetailPage() {
     const shopper = getShopperSession();
     if (shopper) setReviewForm((f) => (f.authorName ? f : { ...f, authorName: shopper.name }));
   }, []);
+
+  useEffect(() => {
+    if (!zoomOpen) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setZoomOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [zoomOpen]);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
@@ -99,6 +110,7 @@ export default function ProductDetailPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => {
         setProduct(p);
+        setActiveImage(0);
         if (p?.sizes?.length) setSize(p.sizes[0]);
         if (p) setWishlisted(isWishlisted(p.id));
       });
@@ -115,7 +127,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: 24 }}>
+      <main style={{ maxWidth: 1440, margin: "0 auto", padding: 24 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
           <div className="sio-skeleton" style={{ aspectRatio: "3/4" }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -193,7 +205,7 @@ export default function ProductDetailPage() {
   const discountPct = product.compareAtPrice ? Math.round(((product.compareAtPrice - product.basePrice) / product.compareAtPrice) * 100) : 0;
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "8px 16px 64px" }}>
+    <main style={{ maxWidth: 1440, margin: "0 auto", padding: "8px 16px 64px" }}>
       <div className="sio-fade-in" style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 20, letterSpacing: "0.02em" }}>
         <Link href="/" style={{ color: "var(--sio-muted)" }}>
           Home
@@ -210,25 +222,83 @@ export default function ProductDetailPage() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 56 }}>
-        <div className="sio-fade-in sio-zoom-hover" style={{ position: "relative" }}>
-          <img src={product.images[0]?.url} alt={product.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
-          {discountPct > 0 && (
+        <div className="sio-fade-in" style={{ position: "relative" }}>
+          <div
+            className="sio-zoom-hover"
+            style={{ position: "relative", cursor: "zoom-in" }}
+            onClick={() => setZoomOpen(true)}
+          >
+            <img
+              src={product.images[activeImage]?.url ?? product.images[0]?.url}
+              alt={product.title}
+              style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }}
+            />
+            {discountPct > 0 && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  left: 16,
+                  background: "var(--sio-ink)",
+                  color: "#fff",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.02em",
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                }}
+              >
+                {discountPct}% OFF
+              </span>
+            )}
             <span
+              aria-hidden
               style={{
                 position: "absolute",
-                top: 16,
-                left: 16,
-                background: "var(--sio-ink)",
+                bottom: 12,
+                right: 12,
+                background: "rgba(22,20,15,0.65)",
                 color: "#fff",
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: "0.02em",
-                padding: "6px 12px",
-                borderRadius: 999,
+                width: 34,
+                height: 34,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {discountPct}% OFF
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+                <path d="M11 8v6M8 11h6" />
+              </svg>
             </span>
+          </div>
+
+          {product.images.length > 1 && (
+            <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+              {product.images.map((img, i) => (
+                <button
+                  key={img.url + i}
+                  type="button"
+                  onClick={() => setActiveImage(i)}
+                  aria-label={`Show photo ${i + 1}`}
+                  style={{
+                    padding: 0,
+                    border: i === activeImage ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    width: 64,
+                    height: 80,
+                    flexShrink: 0,
+                    background: "none",
+                  }}
+                >
+                  <img src={img.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
@@ -590,9 +660,93 @@ export default function ProductDetailPage() {
           </div>
         </section>
       )}
+
+      {zoomOpen && (
+        <div
+          onClick={() => setZoomOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15,13,10,0.92)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+            cursor: "zoom-out",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setZoomOpen(false)}
+            aria-label="Close zoomed image"
+            style={{
+              position: "absolute",
+              top: 20,
+              right: 24,
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              border: "none",
+              background: "rgba(255,255,255,0.12)",
+              color: "#fff",
+              fontSize: 20,
+              cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+          <img
+            src={product.images[activeImage]?.url ?? product.images[0]?.url}
+            alt={product.title}
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "min(90vw, 900px)", maxHeight: "88vh", objectFit: "contain", cursor: "default" }}
+          />
+          {product.images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImage((i) => (i - 1 + product.images.length) % product.images.length);
+                }}
+                aria-label="Previous photo"
+                style={{ ...zoomArrowStyle, left: 20 }}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImage((i) => (i + 1) % product.images.length);
+                }}
+                aria-label="Next photo"
+                style={{ ...zoomArrowStyle, right: 20 }}
+              >
+                ›
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </main>
   );
 }
+
+const zoomArrowStyle: React.CSSProperties = {
+  position: "absolute",
+  top: "50%",
+  transform: "translateY(-50%)",
+  width: 44,
+  height: 44,
+  borderRadius: "50%",
+  border: "none",
+  background: "rgba(255,255,255,0.15)",
+  color: "#fff",
+  fontSize: 24,
+  cursor: "pointer",
+};
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (

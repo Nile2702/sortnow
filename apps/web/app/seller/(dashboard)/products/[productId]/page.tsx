@@ -43,6 +43,7 @@ export default function EditProductPage() {
         storeId={store.id}
         mode="edit"
         initialImageUrl={product.images?.[0]?.url}
+        initialAdditionalImages={product.images?.slice(1).map((img) => img.url)}
         initial={{
           id: product.id,
           title: product.title,
