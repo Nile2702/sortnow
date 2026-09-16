@@ -49,6 +49,7 @@ export function ProductForm({
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [recoloring, setRecoloring] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialImageUrl ?? null);
   const [uploadError, setUploadError] = useState("");
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -240,6 +241,7 @@ export function ProductForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    const baseImage = uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor);
     const basePayload = {
       description: form.description,
       fabric: form.fabric,
@@ -249,14 +251,34 @@ export function ProductForm({
       compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : undefined,
       sizes: form.sizes,
       stockRemaining: Number(form.stockRemaining),
-      images: [{ url: uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor) }],
     };
 
     if (mode === "create") {
       // Selecting 2+ colors lists the same item once per color, sharing
-      // every other field and the single uploaded photo, instead of the
-      // seller re-uploading and re-typing details for each colorway.
+      // every other field, instead of the seller re-uploading and
+      // re-typing details for each colorway. Each color's own photo is a
+      // free client-side recolor of the shared upload (see
+      // recolorGarment) rather than the same picture reused verbatim.
       const colorsToCreate = selectedColors.length > 0 ? selectedColors : [undefined];
+      const recoloredByColor: Record<string, string> = {};
+
+      if (colorsToCreate.length > 1 && uploadedImage) {
+        setRecoloring(true);
+        await Promise.all(
+          colorsToCreate.map(async (color) => {
+            if (!color) return;
+            const hex = COLOR_CATALOG.find((c) => c.name === color)?.hex;
+            if (!hex) return;
+            try {
+              recoloredByColor[color] = await recolorGarment(baseImage, hex);
+            } catch {
+              // Falls back to the shared original photo for this color below.
+            }
+          })
+        );
+        setRecoloring(false);
+      }
+
       await Promise.all(
         colorsToCreate.map((color) =>
           fetch(`/api/v1/seller/stores/${storeId}/products`, {
@@ -266,6 +288,7 @@ export function ProductForm({
               ...basePayload,
               title: color && colorsToCreate.length > 1 ? `${form.title} — ${color}` : form.title,
               color,
+              images: [{ url: (color && recoloredByColor[color]) || baseImage }],
             }),
           })
         )
@@ -274,7 +297,7 @@ export function ProductForm({
       await fetch(`/api/v1/seller/products/${initial?.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...basePayload, title: form.title, color: selectedColors[0] }),
+        body: JSON.stringify({ ...basePayload, title: form.title, color: selectedColors[0], images: [{ url: baseImage }] }),
       });
     }
     router.push("/seller/products");
@@ -395,9 +418,15 @@ export function ProductForm({
           })}
         </div>
         {selectedColors.length > 1 && mode === "create" && (
-          <p style={{ fontSize: 12, color: "#7c3aed", marginTop: 8 }}>
-            Publishing will create {selectedColors.length} separate products — one per color — all sharing this title, price, and photo.
-          </p>
+          <div style={{ marginTop: 8 }}>
+            <p style={{ fontSize: 12, color: "#7c3aed" }}>
+              Publishing will create {selectedColors.length} separate products — one per color, each with a free automatically-recolored photo.
+            </p>
+            <p style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 4, lineHeight: 1.5 }}>
+              Recoloring is free but not AI — it works best on solid-color garments with the background removed first. Patterned or
+              multi-color garments may look uniformly tinted rather than accurately recolored.
+            </p>
+          </div>
         )}
       </div>
 
@@ -644,13 +673,15 @@ export function ProductForm({
           cursor: saving ? "default" : "pointer",
         }}
       >
-        {saving
-          ? "Saving…"
-          : mode === "create"
-            ? selectedColors.length > 1
-              ? `Publish ${selectedColors.length} Products`
-              : "Publish Product"
-            : "Save Changes"}
+        {recoloring
+          ? "Generating color variants…"
+          : saving
+            ? "Saving…"
+            : mode === "create"
+              ? selectedColors.length > 1
+                ? `Publish ${selectedColors.length} Products`
+                : "Publish Product"
+              : "Save Changes"}
       </button>
     </form>
   );
@@ -697,6 +728,64 @@ function resizeForAnalysis(dataUrl: string, maxDimension = 768): Promise<string>
       resolve(canvas.toDataURL("image/jpeg", 0.85));
     };
     img.onerror = () => reject(new Error("Couldn't load image for resizing"));
+    img.src = dataUrl;
+  });
+}
+
+// Free, deterministic recoloring for the multi-color listing flow (no AI,
+// no API call, no cost) - converts the image to grayscale to isolate its
+// shading/folds, then uses the canvas "color" blend mode to paint in the
+// target hue while keeping that original luminosity. Works well on
+// solid-color garments; a patterned/multi-color garment will just get
+// uniformly tinted rather than intelligently recolored, since this has no
+// actual understanding of the image - it's pixel math, not AI. Assumes the
+// background is already transparent (run after Remove Background) so only
+// the garment - not the backdrop - gets recolored.
+//
+// The "color" blend fill still paints fully opaque across the whole canvas
+// even where the destination was transparent (canvas composite operations
+// use normal source-over alpha math, they don't skip empty pixels) - so a
+// "destination-in" pass redrawing the original image afterward clips the
+// result back to the original alpha mask, restoring transparency in the
+// background. Verified directly against pixel data before wiring this in:
+// without that clip step a transparent corner came back fully opaque
+// (painted solid with the target color); with it, alpha correctly returns
+// to 0 there while the garment's shading is preserved (a lighter fold area
+// stayed visibly lighter than the base color after recoloring, not
+// flattened to one flat tone).
+function recolorGarment(dataUrl: string, targetHex: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas not supported"));
+
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        data[i] = gray;
+        data[i + 1] = gray;
+        data[i + 2] = gray;
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      ctx.globalCompositeOperation = "color";
+      ctx.fillStyle = targetHex;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.globalCompositeOperation = "destination-in";
+      ctx.drawImage(img, 0, 0);
+
+      ctx.globalCompositeOperation = "source-over";
+
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => reject(new Error("Couldn't load image for recoloring"));
     img.src = dataUrl;
   });
 }
