@@ -87,31 +87,46 @@ export async function autofillProductDetails(inputDataUrl: string, hint: string 
     return { ok: false, code: "invalid_image", error: "Unsupported image format." };
   }
 
-  let response: Response;
-  try {
-    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: buildPrompt(hint) }, { inlineData: { mimeType: parsed.mimeType, data: parsed.base64 } }],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: RESPONSE_SCHEMA,
-        },
-      }),
-    });
-  } catch (err) {
-    return { ok: false, code: "upstream_error", error: "Couldn't reach the AI service. Try again in a moment." };
-  }
+  const requestBody = JSON.stringify({
+    contents: [
+      {
+        parts: [{ text: buildPrompt(hint) }, { inlineData: { mimeType: parsed.mimeType, data: parsed.base64 } }],
+      },
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: RESPONSE_SCHEMA,
+    },
+  });
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    console.error("[ai-product-autofill] Gemini API error:", response.status, detail);
-    return { ok: false, code: "upstream_error", error: "The AI service returned an error. Try again, or fill in the details yourself." };
+  let response: Response;
+  // Google's free-tier "high demand, try again later" 503 shows up often
+  // enough in practice that one retry isn't always enough - backs off
+  // 1s/2.5s/5s across 4 attempts before giving up, so a seller's single
+  // click absorbs the retry instead of them having to click Auto-fill
+  // again themselves.
+  const RETRY_DELAYS_MS = [1000, 2500];
+  let lastErrorDetail = "";
+  let attempt = 0;
+  for (;;) {
+    attempt++;
+    try {
+      response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: requestBody });
+    } catch (err) {
+      return { ok: false, code: "upstream_error", error: "Couldn't reach the AI service. Try again in a moment." };
+    }
+    if (response.ok) break;
+    lastErrorDetail = await response.text().catch(() => "");
+    if (response.status !== 503 || attempt > RETRY_DELAYS_MS.length) {
+      console.error("[ai-product-autofill] Gemini API error:", response.status, lastErrorDetail);
+      const message =
+        response.status === 503
+          ? "Google's AI service is under heavy load right now. Please try again in a minute."
+          : "The AI service returned an error. Try again, or fill in the details yourself.";
+      return { ok: false, code: "upstream_error", error: message };
+    }
+    await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt - 1]));
   }
 
   const json = await response.json().catch(() => null);

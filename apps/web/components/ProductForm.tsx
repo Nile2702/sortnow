@@ -203,10 +203,11 @@ export function ProductForm({
     if (!uploadedImage) return;
     setAutofilling(true);
     setAutofillError("");
+    const analysisImage = await resizeForAnalysis(uploadedImage).catch(() => uploadedImage);
     const res = await fetch("/api/v1/seller/photo-autofill", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageDataUrl: uploadedImage, hint: autofillHint.trim() || undefined }),
+      body: JSON.stringify({ imageDataUrl: analysisImage, hint: autofillHint.trim() || undefined }),
     });
     const result = await res.json().catch(() => null);
     setAutofilling(false);
@@ -599,5 +600,28 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(blob);
+  });
+}
+
+// Downscales an image before sending it for AI analysis - a full 3MB photo
+// takes noticeably longer to upload and for the model to process than it
+// needs to for reading a garment's color/style/category, and this version
+// is never shown or saved, only sent to the API. Not used for the
+// mannequin-placement step, where the actual output image quality matters.
+function resizeForAnalysis(dataUrl: string, maxDimension = 768): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas not supported"));
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => reject(new Error("Couldn't load image for resizing"));
+    img.src = dataUrl;
   });
 }
