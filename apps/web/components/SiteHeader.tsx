@@ -61,6 +61,14 @@ function CloseIcon() {
   );
 }
 
+interface SearchSuggestion {
+  id: string;
+  title: string;
+  basePrice: number;
+  storeName: string;
+  images?: { url: string }[];
+}
+
 export function SiteHeader() {
   const router = useRouter();
   const [cartN, setCartN] = useState(0);
@@ -68,6 +76,11 @@ export function SiteHeader() {
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [shopper, setShopper] = useState<ShopperSession | null>(null);
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const searchRef = useRef<HTMLFormElement | null>(null);
 
   useEffect(() => {
     const refresh = () => {
@@ -90,9 +103,64 @@ export function SiteHeader() {
     return onShopperSessionChange(() => setShopper(getShopperSession()));
   }, []);
 
+  // Debounced as-you-type suggestions - waits for a short pause in typing
+  // before hitting the search API, so we're not firing a request per
+  // keystroke.
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setLoadingSuggestions(false);
+      return;
+    }
+    setLoadingSuggestions(true);
+    const timer = setTimeout(() => {
+      fetch(`/api/v1/products/search?q=${encodeURIComponent(trimmed)}`)
+        .then((r) => (r.ok ? r.json() : []))
+        .then((results: SearchSuggestion[]) => {
+          setSuggestions(results.slice(0, 6));
+          setActiveIndex(-1);
+        })
+        .finally(() => setLoadingSuggestions(false));
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
+    setShowSuggestions(false);
     router.push(query.trim() ? `/?q=${encodeURIComponent(query.trim())}` : "/");
+  }
+
+  function goToSuggestion(s: SearchSuggestion) {
+    setShowSuggestions(false);
+    router.push(`/product/${s.id}`);
+  }
+
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Enter" && activeIndex >= 0) {
+      e.preventDefault();
+      goToSuggestion(suggestions[activeIndex]);
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+    }
   }
 
   return (
@@ -156,14 +224,20 @@ export function SiteHeader() {
           </Link>
         </nav>
 
-        <form onSubmit={handleSearch} style={{ flex: "1 1 100px", minWidth: 0, position: "relative" }}>
+        <form ref={searchRef} onSubmit={handleSearch} style={{ flex: "1 1 100px", minWidth: 0, position: "relative" }} autoComplete="off">
           <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--sio-muted)" }}>
             <SearchIcon />
           </span>
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onKeyDown={handleSearchKeyDown}
             placeholder="Search for products…"
+            autoComplete="off"
             style={{
               width: "100%",
               padding: "10px 14px 10px 38px",
@@ -174,6 +248,90 @@ export function SiteHeader() {
               borderRadius: 999,
             }}
           />
+
+          {showSuggestions && query.trim().length >= 2 && (
+            <div
+              className="sio-dropdown"
+              style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                left: 0,
+                right: 0,
+                background: "var(--sio-paper)",
+                border: "1px solid var(--sio-line)",
+                borderRadius: 14,
+                boxShadow: "0 16px 32px rgba(22,20,15,0.12)",
+                padding: 6,
+                zIndex: 30,
+                maxHeight: 380,
+                overflowY: "auto",
+              }}
+            >
+              {loadingSuggestions ? (
+                <div style={{ padding: "14px 12px", fontSize: 13, color: "var(--sio-muted)" }}>Searching…</div>
+              ) : suggestions.length === 0 ? (
+                <div style={{ padding: "14px 12px", fontSize: 13, color: "var(--sio-muted)" }}>
+                  No products found for &ldquo;{query.trim()}&rdquo;
+                </div>
+              ) : (
+                <>
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => goToSuggestion(s)}
+                      onMouseEnter={() => setActiveIndex(i)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: 10,
+                        border: "none",
+                        background: i === activeIndex ? "var(--sio-cream)" : "transparent",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <img
+                        src={s.images?.[0]?.url}
+                        alt=""
+                        style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, background: "var(--sio-cream)" }}
+                      />
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {s.title}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--sio-muted)" }}>{s.storeName}</div>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 600, flexShrink: 0, color: "var(--sio-ink)" }}>₹{s.basePrice}</div>
+                    </button>
+                  ))}
+                  <button
+                    type="submit"
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      padding: "10px 12px",
+                      marginTop: 2,
+                      borderRadius: 10,
+                      border: "none",
+                      borderTop: "1px solid var(--sio-line)",
+                      background: "none",
+                      color: "var(--sio-bronze-dark)",
+                      fontWeight: 600,
+                      fontSize: 12.5,
+                      textAlign: "left",
+                      cursor: "pointer",
+                    }}
+                  >
+                    See all results for &ldquo;{query.trim()}&rdquo; →
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </form>
 
         <nav style={{ display: "flex", gap: 20, alignItems: "center", whiteSpace: "nowrap" }}>
