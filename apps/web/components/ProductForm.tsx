@@ -47,6 +47,10 @@ export function ProductForm({
   const [saving, setSaving] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialImageUrl ?? null);
   const [uploadError, setUploadError] = useState("");
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [enhancing, setEnhancing] = useState(false);
+  const [enhanceError, setEnhanceError] = useState("");
+  const [enhanced, setEnhanced] = useState(false);
   const [form, setForm] = useState<ProductFormData>({
     title: initial?.title ?? "",
     description: initial?.description ?? "",
@@ -72,6 +76,8 @@ export function ProductForm({
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadError("");
+    setEnhanceError("");
+    setEnhanced(false);
     if (!file.type.startsWith("image/")) {
       setUploadError("Please choose an image file.");
       return;
@@ -83,6 +89,32 @@ export function ProductForm({
     const reader = new FileReader();
     reader.onload = () => setUploadedImage(reader.result as string);
     reader.readAsDataURL(file);
+  }
+
+  async function handleEnhance() {
+    if (!uploadedImage) return;
+    setEnhancing(true);
+    setEnhanceError("");
+    setOriginalImage(uploadedImage);
+    const res = await fetch("/api/v1/seller/photo-enhance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageDataUrl: uploadedImage }),
+    });
+    const result = await res.json().catch(() => null);
+    setEnhancing(false);
+    if (!res.ok) {
+      setEnhanceError(result?.message ?? "Couldn't enhance this photo. Try again.");
+      return;
+    }
+    setUploadedImage(result.imageDataUrl);
+    setEnhanced(true);
+  }
+
+  function handleRevertToOriginal() {
+    setUploadedImage(originalImage);
+    setEnhanced(false);
+    setEnhanceError("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -218,34 +250,96 @@ export function ProductForm({
         <label style={labelStyle()}>Product photo</label>
         <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
           {uploadedImage && (
-            <div style={{ position: "relative" }}>
-              <img src={uploadedImage} alt="Preview" style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10, border: "1px solid #e2e8f0" }} />
+            <div>
+              <div style={{ position: "relative" }}>
+                <img src={uploadedImage} alt="Preview" style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10, border: "1px solid #e2e8f0" }} />
+                {enhanced && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      bottom: -6,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      background: "#0f172a",
+                      color: "#fff",
+                      fontSize: 9,
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    ✨ AI Enhanced
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadedImage(null);
+                    setOriginalImage(null);
+                    setEnhanced(false);
+                    setEnhanceError("");
+                  }}
+                  aria-label="Remove photo"
+                  style={{
+                    position: "absolute",
+                    top: -8,
+                    right: -8,
+                    width: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "#0f172a",
+                    color: "#fff",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    lineHeight: 1,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
               <button
                 type="button"
-                onClick={() => setUploadedImage(null)}
-                aria-label="Remove photo"
+                onClick={handleEnhance}
+                disabled={enhancing}
                 style={{
-                  position: "absolute",
-                  top: -8,
-                  right: -8,
-                  width: 22,
-                  height: 22,
-                  borderRadius: "50%",
+                  marginTop: 14,
+                  padding: "7px 12px",
+                  borderRadius: 999,
                   border: "none",
-                  background: "#0f172a",
+                  background: enhancing ? "#94a3b8" : "#7c3aed",
                   color: "#fff",
-                  cursor: "pointer",
                   fontSize: 12,
-                  lineHeight: 1,
+                  fontWeight: 600,
+                  cursor: enhancing ? "default" : "pointer",
+                  whiteSpace: "nowrap",
+                  width: "100%",
                 }}
               >
-                ✕
+                {enhancing ? "Enhancing…" : "✨ Enhance with AI"}
               </button>
+              {enhanced && originalImage && (
+                <button
+                  type="button"
+                  onClick={handleRevertToOriginal}
+                  style={{ marginTop: 6, background: "none", border: "none", color: "#64748b", fontSize: 11, cursor: "pointer", width: "100%", textDecoration: "underline" }}
+                >
+                  Revert to original
+                </button>
+              )}
             </div>
           )}
           <div style={{ flex: 1 }}>
             <input type="file" accept="image/*" onChange={handleFileChange} style={{ fontSize: 13 }} />
             {uploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{uploadError}</p>}
+            {enhanceError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{enhanceError}</p>}
+            {uploadedImage && !uploadError && !enhanceError && (
+              <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>
+                Have a plain phone photo? Try <strong>Enhance with AI</strong> to remove the background and present it on a mannequin.
+              </p>
+            )}
 
             {!uploadedImage && (
               <>
