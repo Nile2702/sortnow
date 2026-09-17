@@ -35,6 +35,33 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Any text input/select/textarea under 16px makes iOS Safari zoom the whole
+   page in on focus (its long-standing auto-zoom heuristic) - jarring on a
+   phone and not something any individual form noticed one at a time. Every
+   field gets bumped to 16px on phone-width viewports regardless of what
+   the component authored inline. */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Large display headings (hero banners, product title) are sized for a
+   desktop hero image and read as oversized/cramped on a phone screen -
+   scale them down below tablet width instead of keeping one fixed size
+   everywhere. */
+@media (max-width: 640px) {
+  .sio-hero-title {
+    font-size: 30px !important;
+  }
+
+  .sio-product-title {
+    font-size: 22px !important;
+  }
+}
+
 .sio-header-nav {
   display: flex;
   gap: 4px;

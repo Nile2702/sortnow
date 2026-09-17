@@ -337,7 +337,7 @@ export default function ProductDetailPage() {
           <div style={{ fontSize: 12, letterSpacing: "0.1em", color: "var(--sio-bronze)", fontWeight: 600, marginBottom: 10, textTransform: "uppercase" }}>
             {product.store.name}
           </div>
-          <h1 style={{ fontSize: 32, fontWeight: 600, marginBottom: 12, lineHeight: 1.2 }}>{product.title}</h1>
+          <h1 className="sio-product-title" style={{ fontSize: 32, fontWeight: 600, marginBottom: 12, lineHeight: 1.2 }}>{product.title}</h1>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
             {summary.count > 0 ? (

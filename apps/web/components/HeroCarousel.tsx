@@ -58,6 +58,7 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
           </div>
         )}
         <h1
+          className="sio-hero-title"
           style={{
             fontSize: 38,
             margin: 0,

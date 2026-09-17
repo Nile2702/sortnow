@@ -350,16 +350,16 @@ export function SiteHeader() {
           )}
         </form>
 
-        <nav className="sio-header-icons" style={{ display: "flex", gap: 20, alignItems: "center", whiteSpace: "nowrap" }}>
-          <Link href="/wishlist" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex" }} aria-label="Wishlist">
+        <nav className="sio-header-icons" style={{ display: "flex", gap: 4, alignItems: "center", whiteSpace: "nowrap" }}>
+          <Link href="/wishlist" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="Wishlist">
             <HeartIcon />
             {wishN > 0 && <CountBadge n={wishN} />}
           </Link>
-          <Link href="/cart" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex" }} aria-label="Your Sort">
+          <Link href="/cart" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="Your Sort">
             <SortIcon />
             {cartN > 0 && <CountBadge n={cartN} />}
           </Link>
-          <Link href="/reservations" className="sio-header-reservations" style={{ color: "var(--sio-ink-soft)", display: "flex" }} aria-label="My Reservations">
+          <Link href="/reservations" className="sio-header-reservations" style={{ color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="My Reservations">
             <ReceiptIcon />
           </Link>
           {shopper ? (
@@ -615,8 +615,12 @@ function CountBadge({ n }: { n: number }) {
     <span
       style={{
         position: "absolute",
-        top: -8,
-        right: -10,
+        // Offset accounts for the 10px padding added to the wishlist/cart
+        // links (a bigger invisible tap target around the small icon,
+        // without changing how large the icon itself looks) - without
+        // this the badge would float away from the icon's actual corner.
+        top: 2,
+        right: 0,
         background: "var(--sio-bronze-dark)",
         color: "#fff",
         borderRadius: "50%",

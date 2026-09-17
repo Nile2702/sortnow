@@ -133,6 +133,7 @@ export function HeroSlider() {
           {slide.eyebrow}
         </div>
         <h1
+          className="sio-hero-title"
           style={{
             position: "relative",
             fontSize: 48,
