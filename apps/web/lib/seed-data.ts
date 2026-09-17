@@ -10,6 +10,7 @@ import { loadPersisted, persist } from "./persist";
 import { Gender, ALL_SIZES, CATEGORY_TREE } from "./catalog-constants";
 import { hashPassword, verifyPassword } from "./auth/password";
 import { lookupPincode } from "india-post-pincode";
+import { fuzzyBestScore } from "./fuzzy-search";
 
 export type { Gender };
 export { ALL_SIZES, CATEGORY_TREE };
@@ -853,12 +854,19 @@ export function searchProducts(opts: {
       const distanceKm = origin
         ? Math.round(haversineKm(origin.lat, origin.lng, store.latitude, store.longitude) * 10) / 10
         : null;
+      // Fuzzy-matched against title/fabric/category/color so typos
+      // ("kurthi"), missing spaces ("bluejeans") and partial words still
+      // find the right products, the way a real search engine would.
+      const searchScore = query
+        ? fuzzyBestScore(query, [p.title, p.fabric, p.subCategory, p.color, p.gender])
+        : 0;
       return {
         ...p,
         storeName: store.name,
         storeCity: store.city,
         storeLocalMarket: store.localMarket,
         distanceKm,
+        searchScore,
       };
     })
     .filter((p) => storesById.get(p.storeId)?.status === "active")
@@ -868,14 +876,15 @@ export function searchProducts(opts: {
     .filter((p) => minPrice == null || p.basePrice >= minPrice)
     .filter((p) => maxPrice == null || p.basePrice <= maxPrice)
     .filter((p) => !size || p.sizes.includes(size))
-    .filter((p) => !query || p.title.toLowerCase().includes(query) || p.fabric?.toLowerCase().includes(query));
+    .filter((p) => !query || p.searchScore > 0);
 
   if (sort === "price_asc") results = [...results].sort((a, b) => a.basePrice - b.basePrice);
   else if (sort === "price_desc") results = [...results].sort((a, b) => b.basePrice - a.basePrice);
   else if (sort === "newest") results = [...results].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  else if (query) results = [...results].sort((a, b) => b.searchScore - a.searchScore || (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
   else results = [...results].sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
 
-  return results;
+  return results.map(({ searchScore, ...p }) => p);
 }
 
 
