@@ -12,18 +12,28 @@ import { NextRequest, NextResponse } from "next/server";
 
 const PLATFORM_ROOT_DOMAIN = "sortitout.in";
 
+// Matches a private LAN IP (10.x, 192.168.x, 172.16-31.x), with or without a
+// port - lets a phone on the same Wi-Fi hit the dev server at its host
+// machine's LAN address (e.g. http://192.168.1.23:3000) and be treated as
+// the platform root instead of falling through to "domain not configured".
+// Dev-only: gated on NODE_ENV so a production deploy never treats a bare
+// IP request as the root domain.
+const LAN_IP_HOST = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)[\d.]+(:\d+)?$/;
+
 export async function middleware(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
   const url = req.nextUrl.clone();
 
   // 1. Root platform domain (consumer app, path-based stores) - no rewrite needed.
-  //    localhost is treated as the root domain for local development.
+  //    localhost (and, in dev, a LAN IP) is treated as the root domain for
+  //    local development.
   if (
     host === PLATFORM_ROOT_DOMAIN ||
     host === `www.${PLATFORM_ROOT_DOMAIN}` ||
     host.startsWith("localhost:") ||
     host === "localhost" ||
-    host.startsWith("127.0.0.1")
+    host.startsWith("127.0.0.1") ||
+    (process.env.NODE_ENV !== "production" && LAN_IP_HOST.test(host))
   ) {
     return NextResponse.next();
   }
