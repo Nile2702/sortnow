@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stores, pinCodeIndex, haversineKm } from "../../../../../../lib/seed-data";
+import { stores, resolvePincode, haversineKm } from "../../../../../../lib/seed-data";
 
 // SORT IT OUT is reserve-and-pickup, not shipped delivery - there's no
 // "estimated delivery time" to give a shopper, so instead of faking one this
 // tells them how far the store actually is from their PIN code, using the
-// same pinCodeIndex/haversineKm distance math the homepage's "stores near
-// you" and cross-store search already use.
+// same resolvePincode/haversineKm distance math the homepage's "stores near
+// you" and cross-store search already use. resolvePincode covers every real
+// Indian PIN code (~19.5k), not just a handful of seed-store cities.
 export async function GET(req: NextRequest, { params }: { params: { storeId: string } }) {
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: { storeId: str
     return NextResponse.json({ error: "invalid_pincode", message: "Enter a valid 6-digit PIN code." }, { status: 400 });
   }
 
-  const origin = pinCodeIndex[pincode];
+  const origin = resolvePincode(pincode);
   if (!origin) {
     return NextResponse.json(
       { error: "unknown_pincode", message: "We don't have location data for that PIN code yet." },

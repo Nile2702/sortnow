@@ -9,6 +9,7 @@
 import { loadPersisted, persist } from "./persist";
 import { Gender, ALL_SIZES, CATEGORY_TREE } from "./catalog-constants";
 import { hashPassword, verifyPassword } from "./auth/password";
+import { lookupPincode } from "india-post-pincode";
 
 export type { Gender };
 export { ALL_SIZES, CATEGORY_TREE };
@@ -815,16 +816,15 @@ export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
   return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Minimal PIN -> lat/long lookup standing in for the `pin_codes` reference table.
-export const pinCodeIndex: Record<string, { lat: number; lng: number; city: string }> = {
-  "400050": { lat: 19.0596, lng: 72.8295, city: "Mumbai" },
-  "600017": { lat: 13.0418, lng: 80.2341, city: "Chennai" },
-  "560001": { lat: 12.9822, lng: 77.6086, city: "Bengaluru" },
-  "110006": { lat: 28.6506, lng: 77.2303, city: "Delhi (Chandni Chowk)" },
-  "500002": { lat: 17.3616, lng: 78.4747, city: "Hyderabad" },
-  "411005": { lat: 18.5236, lng: 73.8478, city: "Pune" },
-  "700019": { lat: 22.5186, lng: 88.3654, city: "Kolkata" },
-};
+// PIN -> lat/long lookup, standing in for the `pin_codes` reference table.
+// Backed by india-post-pincode's offline dataset (~19.5k real Indian PIN
+// codes with coordinates averaged from India Post's own office records),
+// so every genuine PIN code a shopper types resolves to a real location.
+export function resolvePincode(pincode: string): { lat: number; lng: number; city: string } | undefined {
+  const hit = lookupPincode(pincode);
+  if (!hit || hit.latitude == null || hit.longitude == null) return undefined;
+  return { lat: hit.latitude, lng: hit.longitude, city: hit.district };
+}
 
 // Cross-store hyperlocal product search — the backbone of "sort and shop in
 // sort": a shopper filters once (category, price, size, radius) and shops
@@ -842,7 +842,7 @@ export function searchProducts(opts: {
   q?: string;
 }) {
   const { pincode, radiusKm = 10, gender, subCategory, minPrice, maxPrice, size, sort, q } = opts;
-  const origin = pincode ? pinCodeIndex[pincode] : undefined;
+  const origin = pincode ? resolvePincode(pincode) : undefined;
   const query = q?.trim().toLowerCase();
 
   const storesById = new Map(stores.map((s) => [s.id, s]));
@@ -897,7 +897,7 @@ export function getCategoryTileCounts() {
 
 export function discoverStores(opts: { pincode?: string; radiusKm?: number; gender?: string; subCategory?: string }) {
   const { pincode, radiusKm = 10, gender, subCategory } = opts;
-  const origin = pincode ? pinCodeIndex[pincode] : undefined;
+  const origin = pincode ? resolvePincode(pincode) : undefined;
 
   const matchingStoreIds =
     gender && gender !== "all"
