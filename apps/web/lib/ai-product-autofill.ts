@@ -20,6 +20,13 @@ function buildPrompt(hint: string | undefined): string {
   return `You are helping a small Indian fashion retailer list a product on an online marketplace.
 Look at the attached photo of a garment${hint ? ` and this hint from the seller: "${hint}"` : ""}.
 
+First, check whether this photo is appropriate for a public, general-audience fashion marketplace
+listing. A person modeling clothing - including swimwear, lingerie, or sleepwear shown the way a
+normal retail catalog would - is appropriate. Nudity, sexually explicit content, weapons, illegal
+drugs, or anything else that would violate a general-audience marketplace's content policy is not.
+Set "safe" to false and briefly explain why in "unsafeReason" if it's not appropriate; otherwise set
+"safe" to true and leave "unsafeReason" as an empty string.
+
 Suggest listing details for this product. Use the hint (if given) to guide the category and
 description, but rely on the photo for anything the hint doesn't cover.
 
@@ -27,6 +34,8 @@ Valid gender/subCategory combinations (pick exactly one subCategory from the mat
 ${CATEGORY_GUIDE}
 
 Return your answer as JSON with these fields:
+- safe: boolean, per the content-safety check above.
+- unsafeReason: a brief reason if safe is false, otherwise an empty string.
 - title: a short, specific product title an Indian shopper would recognize, always including the primary color and garment type (e.g. "Cotton Round-Neck T-Shirt — Navy Blue"), under 70 characters.
 - gender: one of "men", "women", "kids" - whichever the garment is for.
 - subCategory: exactly one value from that gender's list above.
@@ -49,13 +58,15 @@ If the photo doesn't clearly show a garment, still make your best guess rather t
 const RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
+    safe: { type: "BOOLEAN" },
+    unsafeReason: { type: "STRING" },
     title: { type: "STRING" },
     gender: { type: "STRING", enum: ["men", "women", "kids"] },
     subCategory: { type: "STRING" },
     description: { type: "STRING" },
     fabric: { type: "STRING" },
   },
-  required: ["title", "gender", "subCategory", "description", "fabric"],
+  required: ["safe", "title", "gender", "subCategory", "description", "fabric"],
 };
 
 export interface AutofillSuggestion {
@@ -68,7 +79,7 @@ export interface AutofillSuggestion {
 
 export type AutofillResult =
   | { ok: true; suggestion: AutofillSuggestion }
-  | { ok: false; code: "not_configured" | "invalid_image" | "upstream_error" | "no_result"; error: string };
+  | { ok: false; code: "not_configured" | "invalid_image" | "upstream_error" | "no_result" | "content_blocked"; error: string };
 
 function parseDataUrl(dataUrl: string): { mimeType: string; base64: string } | null {
   const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(dataUrl);
@@ -136,11 +147,19 @@ export async function autofillProductDetails(inputDataUrl: string, hint: string 
     return { ok: false, code: "no_result", error: "The AI couldn't suggest details for this photo. Try a clearer photo or fill in the details yourself." };
   }
 
-  let parsedSuggestion: AutofillSuggestion;
+  let parsedSuggestion: AutofillSuggestion & { safe: boolean; unsafeReason?: string };
   try {
     parsedSuggestion = JSON.parse(text);
   } catch {
     return { ok: false, code: "no_result", error: "The AI's response wasn't understandable. Try again." };
+  }
+
+  if (parsedSuggestion.safe === false) {
+    return {
+      ok: false,
+      code: "content_blocked",
+      error: parsedSuggestion.unsafeReason?.trim() || "This photo doesn't meet this marketplace's content policy.",
+    };
   }
 
   const validGenders = CATEGORY_TREE.map((c) => c.value);

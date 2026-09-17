@@ -36,7 +36,14 @@ export async function POST(req: NextRequest) {
 
   const result = await autofillProductDetails(imageDataUrl, hint || undefined);
   if (!result.ok) {
-    const status = result.code === "not_configured" ? 503 : result.code === "invalid_image" ? 400 : 502;
+    const status =
+      result.code === "not_configured"
+        ? 503
+        : result.code === "invalid_image"
+          ? 400
+          : result.code === "content_blocked"
+            ? 422
+            : 502;
     return NextResponse.json({ error: result.code, message: result.error }, { status });
   }
 

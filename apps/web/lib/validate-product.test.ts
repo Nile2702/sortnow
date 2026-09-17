@@ -97,3 +97,21 @@ test("rejects a non-string or oversized color", () => {
   assert.ok(validateProductInput({ color: 123 }, false).errors.length > 0);
   assert.ok(validateProductInput({ color: "x".repeat(301) }, false).errors.length > 0);
 });
+
+test("blocks a listing whose description references banned content", () => {
+  const { errors } = validateProductInput({ title: "Cotton Kurti", basePrice: 500, description: "Comes bundled with a firearm." }, true);
+  assert.ok(errors.some((e) => e.includes("can't be published")));
+});
+
+test("blocks a listing whose title uses counterfeit marketing language", () => {
+  const { errors } = validateProductInput({ title: "First Copy Designer Handbag", basePrice: 500 }, true);
+  assert.ok(errors.some((e) => e.includes("can't be published")));
+});
+
+test("does not flag ordinary fashion terms as banned content", () => {
+  const { errors } = validateProductInput(
+    { title: "Nude Pumps", basePrice: 999, description: "Classic nude heels with a leopard print insole.", color: "Nude" },
+    true
+  );
+  assert.deepEqual(errors, []);
+});

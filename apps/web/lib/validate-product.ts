@@ -4,6 +4,8 @@
 // straight into a Product, so a malformed request (negative price, a
 // multi-megabyte "title" string, a non-numeric stockRemaining) would
 // silently corrupt the catalog instead of getting rejected.
+import { moderateText } from "./content-moderation.ts";
+
 const GENDERS = ["men", "women", "kids"] as const;
 const MAX_TEXT = 300;
 const MAX_DESCRIPTION = 5000;
@@ -158,6 +160,15 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
     } else {
       data.images = input.images as { url: string }[];
     }
+  }
+
+  // Content-safety gate - runs on every field actually present in this
+  // request, using the validated/trimmed values above rather than the raw
+  // input, so this can't be bypassed by whitespace or case tricks that
+  // slipped past the earlier per-field checks.
+  const moderation = moderateText([data.title, data.description, data.fabric, data.subCategory, data.color]);
+  if (moderation.blocked) {
+    errors.push(`This listing can't be published: it appears to reference ${moderation.category}, which isn't allowed on this marketplace.`);
   }
 
   return { errors, data };
