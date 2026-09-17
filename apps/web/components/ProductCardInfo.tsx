@@ -31,7 +31,18 @@ export function ProductCardInfo({ title, storeName, basePrice, compareAtPrice, s
       >
         {title}
       </div>
-      <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, minHeight: storeName ? undefined : 0 }}>{storeName ?? " "}</div>
+      <div
+        style={{
+          fontSize: 12,
+          color: "#64748b",
+          marginTop: 2,
+          height: 15,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {storeName ?? " "}</div>
       <div style={{ marginTop: 6 }}>
         <span style={{ fontWeight: 700 }}>₹{basePrice}</span>
         {compareAtPrice && <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{compareAtPrice}</span>}
