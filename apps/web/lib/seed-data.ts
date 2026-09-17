@@ -889,19 +889,22 @@ export function searchProducts(opts: {
 
 
 // Featured category tiles for the homepage "Browse by Category" strip.
-// Counts are computed live from the seed catalog rather than hardcoded.
-export const CATEGORY_TILES: { label: string; gender: Gender; subCategory: string }[] = [
-  { label: "Sarees", gender: "women", subCategory: "Sarees" },
-  { label: "Kurtis", gender: "women", subCategory: "Kurtis" },
-  { label: "Jeans", gender: "men", subCategory: "Jeans" },
-  { label: "Kids Wear", gender: "kids", subCategory: "" },
-];
-
-export function getCategoryTileCounts() {
-  return CATEGORY_TILES.map((tile) => ({
-    ...tile,
-    count: products.filter((p) => p.gender === tile.gender && (!tile.subCategory || p.subCategory === tile.subCategory)).length,
-  }));
+// Computed live from whatever subcategories actually have stock, sorted by
+// how many products are in each - not a fixed list, so it keeps reflecting
+// the real catalog as sellers add products in new subcategories (the old
+// version was a hardcoded 4-entry list from before CATEGORY_TREE grew to
+// 12-14 subcategories per gender, so it had gone stale and only surfaced a
+// sliver of the actual catalog).
+export function getCategoryTileCounts(limit = 8) {
+  const counts = new Map<string, { label: string; gender: Gender; subCategory: string; count: number }>();
+  for (const p of products) {
+    if (!p.subCategory) continue;
+    const key = `${p.gender}::${p.subCategory}`;
+    const existing = counts.get(key);
+    if (existing) existing.count++;
+    else counts.set(key, { label: p.subCategory, gender: p.gender, subCategory: p.subCategory, count: 1 });
+  }
+  return [...counts.values()].sort((a, b) => b.count - a.count).slice(0, limit);
 }
 
 export function discoverStores(opts: { pincode?: string; radiusKm?: number; gender?: string; subCategory?: string }) {
