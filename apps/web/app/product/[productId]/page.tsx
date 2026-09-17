@@ -130,7 +130,7 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <main style={{ maxWidth: 1440, margin: "0 auto", padding: 24 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
+        <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
           <div className="sio-skeleton" style={{ aspectRatio: "3/4" }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div className="sio-skeleton" style={{ height: 32, width: "80%" }} />
@@ -232,7 +232,7 @@ export default function ProductDetailPage() {
         &nbsp;/&nbsp; <span style={{ color: "var(--sio-ink)" }}>{product.title}</span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 56 }}>
+      <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 56 }}>
         <div className="sio-fade-in" style={{ position: "relative" }}>
           <div
             style={{ position: "relative", cursor: "zoom-in", overflow: "hidden" }}
@@ -559,7 +559,7 @@ export default function ProductDetailPage() {
         <div style={{ ...SECTION_CARD, padding: 32, marginBottom: 32 }}>
           <SectionHeading>Customer Reviews</SectionHeading>
 
-          <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 40, marginTop: 20, marginBottom: 32 }}>
+          <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 40, marginTop: 20, marginBottom: 32 }}>
             <div>
               <div style={{ fontSize: 38, fontWeight: 600, fontFamily: "var(--site-font-heading)" }}>{summary.average || "—"}</div>
               <Stars rating={summary.average} size={16} />

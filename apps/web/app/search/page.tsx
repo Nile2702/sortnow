@@ -185,7 +185,7 @@ function SearchPageInner() {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 28, alignItems: "start" }}>
+      <div className="sio-search-layout" style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 28, alignItems: "start" }}>
         <aside
           className="sio-card"
           style={{ background: "#fff", borderRadius: 14, padding: 18, border: "1px solid #f1f5f9", position: "sticky", top: 88 }}

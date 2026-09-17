@@ -30,7 +30,7 @@ export default function QrMarketingPage() {
         the O2O foot-traffic loop (docs/03-multi-tenant-storefront.md §4).
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+      <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }}>Placement label</label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>

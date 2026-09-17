@@ -10,10 +10,15 @@ interface Props {
   limit?: number;
 }
 
+// minmax(0, 1fr) rather than plain 1fr: a bare 1fr track has an implicit
+// min-width of auto (its content's min-content size), so an unbreakable
+// price line or title inside one card can force the whole grid wider than
+// its container - the classic CSS Grid overflow gotcha, and exactly what
+// was pushing this grid ~20px past the viewport on narrow phones.
 const COLUMNS: Record<Props["gridStyle"], string> = {
-  "2-col": "repeat(2, 1fr)",
-  "3-col": "repeat(3, 1fr)",
-  "4-col": "repeat(4, 1fr)",
+  "2-col": "repeat(2, minmax(0, 1fr))",
+  "3-col": "repeat(3, minmax(0, 1fr))",
+  "4-col": "repeat(4, minmax(0, 1fr))",
   list: "1fr",
 };
 

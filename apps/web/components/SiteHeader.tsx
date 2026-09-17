@@ -36,6 +36,15 @@ function SearchIcon() {
   );
 }
 
+function PersonIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+    </svg>
+  );
+}
+
 function ReceiptIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -178,6 +187,7 @@ export function SiteHeader() {
       }}
     >
       <div
+        className="sio-header-row"
         style={{
           maxWidth: 1440,
           margin: "0 auto",
@@ -212,7 +222,7 @@ export function SiteHeader() {
           }}
         >
           <LogoBadge size={40} />
-          SORT IT OUT
+          <span className="sio-logo-text">SORT IT OUT</span>
         </Link>
 
         <nav className="sio-header-nav">
@@ -224,7 +234,13 @@ export function SiteHeader() {
           </Link>
         </nav>
 
-        <form ref={searchRef} onSubmit={handleSearch} style={{ flex: "1 1 100px", minWidth: 0, position: "relative" }} autoComplete="off">
+        <form
+          ref={searchRef}
+          onSubmit={handleSearch}
+          className="sio-header-search-form"
+          style={{ flex: "1 1 100px", minWidth: 0, position: "relative" }}
+          autoComplete="off"
+        >
           <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--sio-muted)" }}>
             <SearchIcon />
           </span>
@@ -334,7 +350,7 @@ export function SiteHeader() {
           )}
         </form>
 
-        <nav style={{ display: "flex", gap: 20, alignItems: "center", whiteSpace: "nowrap" }}>
+        <nav className="sio-header-icons" style={{ display: "flex", gap: 20, alignItems: "center", whiteSpace: "nowrap" }}>
           <Link href="/wishlist" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex" }} aria-label="Wishlist">
             <HeartIcon />
             {wishN > 0 && <CountBadge n={wishN} />}
@@ -343,7 +359,7 @@ export function SiteHeader() {
             <SortIcon />
             {cartN > 0 && <CountBadge n={cartN} />}
           </Link>
-          <Link href="/reservations" style={{ color: "var(--sio-ink-soft)", display: "flex" }} aria-label="My Reservations">
+          <Link href="/reservations" className="sio-header-reservations" style={{ color: "var(--sio-ink-soft)", display: "flex" }} aria-label="My Reservations">
             <ReceiptIcon />
           </Link>
           {shopper ? (
@@ -370,11 +386,14 @@ export function SiteHeader() {
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: 12,
+                  flexShrink: 0,
                 }}
               >
                 {shopper.name.trim().charAt(0).toUpperCase()}
               </span>
-              <span style={{ whiteSpace: "nowrap" }}>Hi, {shopper.name.split(" ")[0]}</span>
+              <span className="sio-login-label" style={{ whiteSpace: "nowrap" }}>
+                Hi, {shopper.name.split(" ")[0]}
+              </span>
             </Link>
           ) : (
             <Link
@@ -393,7 +412,10 @@ export function SiteHeader() {
                 borderRadius: 999,
               }}
             >
-              Login / Sign up
+              <span className="sio-login-label">Login / Sign up</span>
+              <span className="sio-login-icon" aria-hidden>
+                <PersonIcon />
+              </span>
             </Link>
           )}
         </nav>

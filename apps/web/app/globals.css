@@ -50,6 +50,16 @@ html {
   display: none;
 }
 
+.sio-login-icon {
+  display: none;
+}
+
+/* Header search box always keeps its own inline slot, but on a viewport
+   too narrow to fit the logo + icon nav + search box on one line, it drops
+   to a full-width second row instead of shrinking to near-zero width and
+   pushing the wishlist/cart/login icons past the viewport edge (where
+   `overflow-x: hidden` on <body> above made them silently unreachable,
+   not just scrollable-to). */
 @media (max-width: 860px) {
   .sio-header-nav {
     display: none;
@@ -61,6 +71,66 @@ html {
 
   .sio-mobile-menu {
     display: block;
+  }
+
+  .sio-header-row {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .sio-header-search-form {
+    order: 3;
+    flex-basis: 100% !important;
+    width: 100%;
+  }
+}
+
+/* Narrow phones: the logo wordmark, "My Reservations" icon and the login
+   button's text label are the least essential header pixels, so they're
+   the first to go - keeps row 1 (hamburger + logo + icons) within a
+   ~360-420px viewport instead of clipping. */
+@media (max-width: 480px) {
+  .sio-logo-text {
+    display: none;
+  }
+
+  .sio-header-icons {
+    gap: 12px !important;
+  }
+
+  .sio-header-reservations {
+    display: none;
+  }
+
+  .sio-login-label {
+    display: none;
+  }
+
+  .sio-login-icon {
+    display: inline-flex;
+  }
+
+  .sio-btn-primary {
+    padding: 10px 12px !important;
+  }
+}
+
+/* Any fixed two-column layout (product detail's image/details split, the
+   seller theme editor, the QR standee page) collapses to one column below
+   tablet width - a hardcoded "1fr 1fr" inline style has no way to respond
+   to viewport width on its own, and previously just overflowed sideways. */
+@media (max-width: 760px) {
+  .sio-two-col-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* The search results page's filters-sidebar + product-grid split collapses
+   to a single column on mobile, with the filters moving above the grid
+   instead of squeezing into a fixed 220px rail that doesn't fit a phone. */
+@media (max-width: 760px) {
+  .sio-search-layout {
+    grid-template-columns: 1fr !important;
   }
 }
 

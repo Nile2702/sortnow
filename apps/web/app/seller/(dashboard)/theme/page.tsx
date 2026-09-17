@@ -63,7 +63,7 @@ export default function ThemeStudioPage() {
         brand color and hero message.
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+      <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Primary color</label>
