@@ -474,7 +474,7 @@ export function ProductForm({
 
       <div>
         <label style={labelStyle()}>Product photo</label>
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
           {uploadedImage && (
             <div>
               <div style={{ position: "relative" }}>
@@ -585,7 +585,7 @@ export function ProductForm({
               )}
             </div>
           )}
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 240 }}>
             <input type="file" accept="image/*" onChange={handleFileChange} style={{ fontSize: 13 }} />
             {uploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{uploadError}</p>}
             {bgRemoveError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{bgRemoveError}</p>}

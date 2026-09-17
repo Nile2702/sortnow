@@ -46,12 +46,12 @@ export default function SellerProductsPage() {
 
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "28px 20px 60px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 14 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 700 }}>Products</h1>
           <p style={{ color: "#64748b", fontSize: 14 }}>{store.name} · {products.length} SKUs</p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link
             href="/seller/products/bulk"
             style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid #e2e8f0", color: "#0f172a", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
