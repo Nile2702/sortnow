@@ -139,7 +139,7 @@ export function SiteHeader() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setShowSuggestions(false);
-    router.push(query.trim() ? `/?q=${encodeURIComponent(query.trim())}` : "/");
+    router.push(query.trim() ? `/search?q=${encodeURIComponent(query.trim())}` : "/");
   }
 
   function goToSuggestion(s: SearchSuggestion) {
