@@ -75,6 +75,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [hoverZoom, setHoverZoom] = useState<{ x: number; y: number } | null>(null);
   const [size, setSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -85,6 +86,7 @@ export default function ProductDetailPage() {
   const [similar, setSimilar] = useState<SimilarProduct[]>([]);
 
   const [checkPincode, setCheckPincode] = useState("");
+  const [checkingDistance, setCheckingDistance] = useState(false);
   const [deliveryMsg, setDeliveryMsg] = useState("");
 
   const [reviewForm, setReviewForm] = useState({ authorName: "", rating: 5, title: "", comment: "" });
@@ -171,14 +173,23 @@ export default function ProductDetailPage() {
     showToast(nowWishlisted ? "Saved to Wishlist" : "Removed from Wishlist");
   }
 
-  function handleCheckDelivery() {
-    if (checkPincode.length !== 6) {
+  // Reserve-and-pickup, not shipped delivery - there's nothing to estimate
+  // a delivery date for, so this tells the shopper how far the store
+  // actually is from their PIN code instead.
+  async function handleCheckDistance() {
+    if (!product || checkPincode.length !== 6) {
       setDeliveryMsg("Enter a valid 6-digit PIN code.");
       return;
     }
-    const sameCity = checkPincode.slice(0, 3) === product!.store.pincode.slice(0, 3);
-    const days = sameCity ? "1–2" : "3–5";
-    setDeliveryMsg(`Delivery by ${days} business days to ${checkPincode}. Free returns within 7 days.`);
+    setCheckingDistance(true);
+    const res = await fetch(`/api/v1/stores/${product.storeSlug}/distance?pincode=${checkPincode}`);
+    const result = await res.json();
+    setCheckingDistance(false);
+    if (!res.ok) {
+      setDeliveryMsg(result?.message ?? "Couldn't check that PIN code. Try again.");
+      return;
+    }
+    setDeliveryMsg(`${product.store.name} is about ${result.distanceKm} km from PIN ${checkPincode}.`);
   }
 
   async function handleSubmitReview(e: React.FormEvent) {
@@ -224,15 +235,35 @@ export default function ProductDetailPage() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 56 }}>
         <div className="sio-fade-in" style={{ position: "relative" }}>
           <div
-            className="sio-zoom-hover"
-            style={{ position: "relative", cursor: "zoom-in" }}
+            style={{ position: "relative", cursor: "zoom-in", overflow: "hidden" }}
             onClick={() => setZoomOpen(true)}
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100));
+              const y = Math.min(100, Math.max(0, ((e.clientY - rect.top) / rect.height) * 100));
+              setHoverZoom({ x, y });
+            }}
+            onMouseLeave={() => setHoverZoom(null)}
           >
             <img
               src={product.images[activeImage]?.url ?? product.images[0]?.url}
               alt={product.title}
               style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }}
             />
+            {hoverZoom && (
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundImage: `url(${product.images[activeImage]?.url ?? product.images[0]?.url})`,
+                  backgroundSize: "220%",
+                  backgroundPosition: `${hoverZoom.x}% ${hoverZoom.y}%`,
+                  backgroundRepeat: "no-repeat",
+                  pointerEvents: "none",
+                }}
+              />
+            )}
             {discountPct > 0 && (
               <span
                 style={{
@@ -423,24 +454,35 @@ export default function ProductDetailPage() {
             </button>
           </div>
 
-          {/* Delivery check */}
+          {/* Distance check - reserve-and-pickup, so this tells shoppers how
+              far the store is instead of a fake shipping estimate */}
           <div style={{ ...SECTION_CARD, padding: 18, marginBottom: 20 }}>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--sio-muted)" }}>
-              Check delivery availability
+              How far is this store?
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <input
                 value={checkPincode}
                 onChange={(e) => setCheckPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="Enter PIN code"
+                placeholder="Enter your PIN code"
                 maxLength={6}
                 style={{ flex: 1, padding: "10px 14px", border: "1px solid var(--sio-line)", borderRadius: 999, fontSize: 14 }}
               />
               <button
-                onClick={handleCheckDelivery}
-                style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                onClick={handleCheckDistance}
+                disabled={checkingDistance}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: 999,
+                  border: "none",
+                  background: checkingDistance ? "var(--sio-muted)" : "var(--sio-ink)",
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: checkingDistance ? "default" : "pointer",
+                }}
               >
-                Check
+                {checkingDistance ? "Checking…" : "Check"}
               </button>
             </div>
             {deliveryMsg && (
@@ -450,7 +492,8 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* Trust line */}
+          {/* Trust line - reflects the actual reserve-and-pickup model: no
+              online payment happens on this site, nothing ships */}
           <div
             style={{
               display: "flex",
@@ -463,9 +506,9 @@ export default function ProductDetailPage() {
               padding: "14px 0",
             }}
           >
-            <span style={{ flex: 1, textAlign: "center", borderRight: "1px solid var(--sio-line)" }}>Secure Payment</span>
-            <span style={{ flex: 1, textAlign: "center", borderRight: "1px solid var(--sio-line)" }}>7-Day Returns</span>
-            <span style={{ flex: 1, textAlign: "center" }}>Cash on Delivery</span>
+            <span style={{ flex: 1, textAlign: "center", borderRight: "1px solid var(--sio-line)" }}>No Online Payment</span>
+            <span style={{ flex: 1, textAlign: "center", borderRight: "1px solid var(--sio-line)" }}>Try Before You Buy</span>
+            <span style={{ flex: 1, textAlign: "center" }}>Pay In-Store Only</span>
           </div>
 
           <button
