@@ -679,7 +679,7 @@ export default function ProductDetailPage() {
       {similar.length > 0 && (
         <section className="sio-fade-in" style={{ animationDelay: "330ms" }}>
           <SectionHeading>You Might Also Like</SectionHeading>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 24, marginTop: 20 }}>
+          <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 24, marginTop: 20 }}>
             {similar.map((p, i) => (
               <Link
                 key={p.id}

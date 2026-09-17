@@ -26,7 +26,7 @@ export default function WishlistPage() {
           .
         </p>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
+        <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
           {items.map((item) => (
             <div key={item.productId} className="sio-card" style={{ background: "#fff", borderRadius: 12, overflow: "hidden" }}>
               <Link href={`/product/${item.productId}`}>

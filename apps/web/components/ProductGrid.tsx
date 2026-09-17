@@ -45,7 +45,7 @@ export async function ProductGrid({ storeId, gridStyle, title, categoryId, sort,
   return (
     <div style={{ maxWidth: 1440, margin: "0 auto", padding: "28px 16px" }}>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>{title}</h2>
-      <div style={{ display: "grid", gridTemplateColumns: COLUMNS[gridStyle], gap: 16 }}>
+      <div className={gridStyle === "list" ? undefined : "sio-product-grid"} style={{ display: "grid", gridTemplateColumns: COLUMNS[gridStyle], gap: 16 }}>
         {products.map((p: any, i: number) => (
           <div key={p.id} className="sio-reveal" style={{ animationDelay: `${i * 60}ms` }}>
             <TiltCard>

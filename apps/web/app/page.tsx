@@ -455,7 +455,7 @@ function DiscoverPageInner() {
         </div>
 
         {loading ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+          <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
             {[1, 2, 3, 4].map((i) => (
               <SkeletonCard key={i} height={260} />
             ))}
@@ -463,7 +463,7 @@ function DiscoverPageInner() {
         ) : sortedProducts.length === 0 ? (
           <p style={{ color: "#64748b" }}>No products match this sort yet.</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+          <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
             {sortedProducts.map((p, i) => (
               <div key={p.id} className="sio-fade-in" style={{ animationDelay: `${i * 40}ms` }}>
                 <TiltCard>

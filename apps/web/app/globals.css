@@ -134,6 +134,19 @@ html {
   }
 }
 
+/* Product-card grids (homepage, category, search, wishlist, similar
+   products, store catalogs) use auto-fill/minmax or a fixed column count
+   tuned for desktop, which resolves to a single column on a phone -
+   a plain list, not the two-per-row layout shoppers expect from a mobile
+   storefront. Below 640px every one of them locks to exactly two columns
+   instead, with a tighter gap so two cards actually fit comfortably. */
+@media (max-width: 640px) {
+  .sio-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+}
+
 h1,
 h2,
 h3 {
