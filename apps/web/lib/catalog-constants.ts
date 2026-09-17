@@ -45,7 +45,47 @@ export const COLOR_CATALOG: { name: string; hex: string }[] = [
 // attribute). Mirrors what `product_categories` + a `gender` facet would look
 // like as a real per-tenant catalog taxonomy (docs/03-multi-tenant-storefront.md).
 export const CATEGORY_TREE: { label: string; value: Gender; subCategories: string[] }[] = [
-  { label: "Men", value: "men", subCategories: ["Jeans", "Jackets", "Shirts", "T-Shirts", "Footwear"] },
-  { label: "Women", value: "women", subCategories: ["Sarees", "Kurtis", "Lehengas", "Western Wear"] },
-  { label: "Kids", value: "kids", subCategories: ["Boys", "Girls", "Infant"] },
+  {
+    label: "Men",
+    value: "men",
+    subCategories: [
+      "T-Shirts",
+      "Shirts",
+      "Jeans",
+      "Trousers",
+      "Shorts",
+      "Ethnic Wear",
+      "Jackets",
+      "Sweaters & Sweatshirts",
+      "Suits & Blazers",
+      "Innerwear & Loungewear",
+      "Footwear",
+      "Accessories",
+    ],
+  },
+  {
+    label: "Women",
+    value: "women",
+    subCategories: [
+      "Sarees",
+      "Kurtis",
+      "Dresses",
+      "Tops",
+      "Jeans",
+      "Trousers & Capris",
+      "Lehengas",
+      "Western Wear",
+      "Ethnic Wear",
+      "Skirts",
+      "Lingerie & Sleepwear",
+      "Footwear",
+      "Jewellery & Accessories",
+      "Handbags",
+    ],
+  },
+  {
+    label: "Kids",
+    value: "kids",
+    subCategories: ["Boys", "Girls", "Infant Wear", "Kids Footwear", "Kids Ethnic Wear", "Kids Winter Wear"],
+  },
 ];
