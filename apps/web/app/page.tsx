@@ -48,6 +48,17 @@ const QUICK_MARKETS = [
   { label: "Gariahat, Kolkata", pincode: "700019" },
 ];
 
+// Reserve-and-pickup is an unusual model for a shopper used to typical
+// online shopping (ship-to-door, pay online) - this spells it out plainly
+// rather than assuming a first-time visitor infers it from the product
+// page's trust line alone.
+const WHY_SHOP_WITH_US = [
+  { icon: "🏬", title: "Real Local Stores", body: "Every listing comes from a verified boutique near you, not an anonymous warehouse." },
+  { icon: "👗", title: "Try Before You Buy", body: "Reserve online, then try it on in person at the store before you commit." },
+  { icon: "💳", title: "No Online Payment", body: "Nothing to pay upfront - you pay the store directly if and when you buy." },
+  { icon: "🚶", title: "Walk In, Walk Out", body: "No shipping, no waiting for delivery. Pick up your reservation the same day." },
+];
+
 function SkeletonCard({ height = 220 }: { height?: number }) {
   return <div className="sio-skeleton" style={{ borderRadius: 14, height }} />;
 }
@@ -120,6 +131,50 @@ function HeartButton({ product, size = 18 }: { product: SearchProduct; size?: nu
   );
 }
 
+function ProductRow({ products, loading }: { products: SearchProduct[]; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+        {[1, 2, 3, 4].map((i) => (
+          <SkeletonCard key={i} height={260} />
+        ))}
+      </div>
+    );
+  }
+  if (products.length === 0) return null;
+  return (
+    <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+      {products.map((p, i) => (
+        <div key={p.id} className="sio-fade-in" style={{ animationDelay: `${i * 40}ms` }}>
+          <TiltCard>
+            <Link
+              href={`/product/${p.id}`}
+              className="sio-card"
+              style={{
+                position: "relative",
+                display: "block",
+                textDecoration: "none",
+                color: "inherit",
+                borderRadius: 14,
+                overflow: "hidden",
+                border: "1px solid #f1f5f9",
+                background: "#fff",
+              }}
+            >
+              <div style={{ position: "relative" }}>
+                <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />
+                <DiscountBadge basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} />
+                <HeartButton product={p} />
+              </div>
+              <ProductCardInfo title={p.title} storeName={p.storeName} basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} stockRemaining={p.stockRemaining} />
+            </Link>
+          </TiltCard>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function DiscoverPageInner() {
   const searchParams = useSearchParams();
 
@@ -138,6 +193,32 @@ function DiscoverPageInner() {
   const [loading, setLoading] = useState(true);
   const [saveName, setSaveName] = useState("");
   const [savedMsg, setSavedMsg] = useState("");
+
+  const [newArrivals, setNewArrivals] = useState<SearchProduct[]>([]);
+  const [bestDeals, setBestDeals] = useState<SearchProduct[]>([]);
+  const [spotlightLoading, setSpotlightLoading] = useState(true);
+
+  // Nationwide (no pincode/radius) spotlight sections - unlike "Stores near
+  // you" and "Shop in Sort" below, these aren't scoped to the shopper's
+  // location or filter choices, so they're fetched once on mount rather
+  // than re-running every time pincode/radius/gender/etc. change.
+  useEffect(() => {
+    setSpotlightLoading(true);
+    Promise.all([
+      fetch(`/api/v1/products/search?sort=newest`).then((r) => r.json()),
+      fetch(`/api/v1/products/search?sort=newest`).then((r) => r.json()),
+    ])
+      .then(([newest, forDeals]: [SearchProduct[], SearchProduct[]]) => {
+        setNewArrivals(newest.slice(0, 8));
+        const discounted = forDeals
+          .filter((p) => p.compareAtPrice && p.compareAtPrice > p.basePrice)
+          .sort((a, b) => (b.compareAtPrice! - b.basePrice) / b.compareAtPrice! - (a.compareAtPrice! - a.basePrice) / a.compareAtPrice!);
+        setBestDeals(discounted.slice(0, 8));
+      })
+      .finally(() => setSpotlightLoading(false));
+  }, []);
+
+  const liveSaleStores = stores.filter((s) => isSaleActive(s.liveSale));
 
   // Clicking a header category link or a saved Smart Sort changes the URL but
   // stays on this same route, so it doesn't remount the component — sync
@@ -201,6 +282,43 @@ function DiscoverPageInner() {
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "16px 16px 40px" }}>
       <HeroSlider />
       <CategoryTiles />
+
+      {liveSaleStores.length > 0 && (
+        <section style={{ marginBottom: 28 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <span className="sio-breathe" style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626", display: "inline-block" }} />
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Live Sales Near You</h2>
+          </div>
+          <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 6 }}>
+            {liveSaleStores.map((s) => (
+              <Link
+                key={s.id}
+                href={`/store/${s.slug}`}
+                className="sio-card sio-fade-in"
+                style={{
+                  flex: "0 0 260px",
+                  display: "block",
+                  textDecoration: "none",
+                  borderRadius: 16,
+                  padding: 18,
+                  background: "linear-gradient(135deg, #dc2626, #7c2d12)",
+                  color: "#fff",
+                  boxShadow: "0 4px 14px rgba(220,38,38,0.25)",
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", opacity: 0.85, marginBottom: 6 }}>
+                  ● Live Now
+                </div>
+                <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 4 }}>{s.name}</div>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 10 }}>{s.liveSale!.headline}</div>
+                <div style={{ display: "inline-block", background: "rgba(255,255,255,0.2)", borderRadius: 999, padding: "4px 12px", fontSize: 13, fontWeight: 600 }}>
+                  {s.liveSale!.discountLabel}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {q && (
         <div style={{ marginBottom: 16, fontSize: 14, color: "#475569" }}>
@@ -388,6 +506,18 @@ function DiscoverPageInner() {
         </div>
       )}
 
+      <section style={{ marginBottom: 44 }}>
+        <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>✨ New Arrivals</h2>
+        <ProductRow products={newArrivals} loading={spotlightLoading} />
+      </section>
+
+      {(spotlightLoading || bestDeals.length > 0) && (
+        <section style={{ marginBottom: 44 }}>
+          <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>🔥 Best Deals</h2>
+          <ProductRow products={bestDeals} loading={spotlightLoading} />
+        </section>
+      )}
+
       <section style={{ background: "#fff", borderRadius: 18, padding: 24, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", border: "1px solid #f1f5f9" }}>
         <h2 style={{ fontSize: 20, marginBottom: 4, fontWeight: 700 }}>🧭 Shop in Sort</h2>
         <p style={{ fontSize: 13, color: "#64748b", marginBottom: 18 }}>
@@ -493,6 +623,19 @@ function DiscoverPageInner() {
             ))}
           </div>
         )}
+      </section>
+
+      <section style={{ marginTop: 44 }}>
+        <h2 style={{ fontSize: 20, marginBottom: 18, fontWeight: 700, textAlign: "center" }}>Why Shop With Us</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
+          {WHY_SHOP_WITH_US.map((item) => (
+            <div key={item.title} className="sio-card" style={{ background: "#fff", borderRadius: 16, padding: 22, border: "1px solid #f1f5f9", textAlign: "center" }}>
+              <div style={{ fontSize: 28, marginBottom: 10 }}>{item.icon}</div>
+              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{item.title}</div>
+              <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, margin: 0 }}>{item.body}</p>
+            </div>
+          ))}
+        </div>
       </section>
     </main>
   );
