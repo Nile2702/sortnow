@@ -41,11 +41,11 @@ export default function SellerProductsPage() {
   }
 
   if (storeLoading || !store) {
-    return <main style={{ maxWidth: 1100, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <main style={{ maxWidth: 1440, margin: "0 auto", padding: 40 }}>Loading…</main>;
   }
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
+    <main style={{ maxWidth: 1440, margin: "0 auto", padding: "28px 20px 60px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 700 }}>Products</h1>
@@ -56,7 +56,13 @@ export default function SellerProductsPage() {
             href="/seller/products/bulk"
             style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid #e2e8f0", color: "#0f172a", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
           >
-            Bulk Upload
+            Bulk Upload (CSV)
+          </Link>
+          <Link
+            href="/seller/products/bulk-photos"
+            style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid #e9d5ff", background: "#faf5ff", color: "#7c3aed", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
+          >
+            ✨ AI Bulk Upload
           </Link>
           <Link
             href="/seller/products/new"
