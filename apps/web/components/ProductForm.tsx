@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CATEGORY_TREE, COLOR_CATALOG } from "../lib/catalog-constants";
+import { autoAlignAndZoom } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
 type PhotoStage = "raw" | "bg-removed" | "mannequin";
@@ -211,7 +212,9 @@ export function ProductForm({
           if (total > 0) setBgRemoveProgress(`Processing… ${Math.round((current / total) * 100)}%`);
         },
       });
-      const dataUrl = await blobToDataUrl(resultBlob);
+      const bgRemovedUrl = await blobToDataUrl(resultBlob);
+      setBgRemoveProgress("Aligning and framing…");
+      const dataUrl = await autoAlignAndZoom(bgRemovedUrl).catch(() => bgRemovedUrl);
       setUploadedImage(dataUrl);
       setPhotoStage("bg-removed");
     } catch (err) {
@@ -498,7 +501,7 @@ export function ProductForm({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {photoStage === "mannequin" ? "✨ AI Mannequin" : "🪄 BG Removed"}
+                    {photoStage === "mannequin" ? "✨ AI Mannequin" : "🪄 Enhanced"}
                   </span>
                 )}
                 <button
@@ -548,7 +551,7 @@ export function ProductForm({
                   width: "100%",
                 }}
               >
-                {bgRemoving ? bgRemoveProgress || "Removing…" : "🪄 Remove Background (Free)"}
+                {bgRemoving ? bgRemoveProgress || "Enhancing…" : "🪄 Enhance Photo (Free)"}
               </button>
 
               <button
@@ -638,7 +641,8 @@ export function ProductForm({
               <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "var(--sio-cream)", border: "1px solid var(--sio-line)" }}>
                 <PhotoEnhanceIllustration />
                 <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 10, lineHeight: 1.6 }}>
-                  <strong style={{ color: "var(--sio-ink)" }}>Remove Background</strong> runs free, right in your browser — no cost, no limit.{" "}
+                  <strong style={{ color: "var(--sio-ink)" }}>Enhance Photo</strong> removes the background, then automatically centers and
+                  zooms in on the garment so it fills the frame — all free, right in your browser, no cost, no limit.{" "}
                   <strong style={{ color: "var(--sio-ink)" }}>Add Mannequin</strong> sends the photo to Gemini AI and uses 1 photo credit
                   {credits !== null && (
                     <>

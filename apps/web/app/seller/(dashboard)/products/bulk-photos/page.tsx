@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
 import { CATEGORY_TREE } from "../../../../../lib/catalog-constants";
+import { autoAlignAndZoom } from "../../../../../lib/image-enhance";
 import { showToast } from "../../../../../lib/toast";
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
@@ -109,12 +110,13 @@ export default function BulkPhotoUploadPage() {
           /* webpackIgnore: true */ "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
         )) as { removeBackground: (image: string, config?: { model?: string; output?: { format?: string } }) => Promise<Blob> };
         const blob = await removeBackground(draft.originalImage, { model: "isnet_quint8", output: { format: "image/png" } });
-        currentImage = await new Promise<string>((resolve, reject) => {
+        const bgRemovedUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
+        currentImage = await autoAlignAndZoom(bgRemovedUrl).catch(() => bgRemovedUrl);
         updateDraft(draft.localId, { image: currentImage, bgRemoved: true });
       } catch (err) {
         console.error(err);
@@ -205,9 +207,9 @@ export default function BulkPhotoUploadPage() {
 
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>✨ AI Bulk Upload</h1>
       <p style={{ color: "#64748b", marginBottom: 24, maxWidth: 640 }}>
-        Upload several raw product photos at once for {store.name}. Each one automatically gets its background removed (free) and its
-        title, category, and description suggested by AI — review and adjust before publishing. Price, stock, and sizes default to
-        placeholders you should edit.
+        Upload several raw product photos at once for {store.name}. Each one automatically gets its background removed, centered, and
+        zoomed to fill the frame (free), plus a title, category, and description suggested by AI — review and adjust before publishing.
+        Price, stock, and sizes default to placeholders you should edit.
       </p>
 
       <div
@@ -284,7 +286,7 @@ export default function BulkPhotoUploadPage() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    🪄 BG Removed
+                    🪄 Enhanced
                   </span>
                 )}
               </div>
