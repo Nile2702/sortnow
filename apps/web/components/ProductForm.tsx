@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CATEGORY_TREE, COLOR_CATALOG } from "../lib/catalog-constants";
+import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor } from "../lib/catalog-constants";
 import { autoAlignAndZoom, autoEnhanceQuality, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
-type PhotoStage = "raw" | "bg-removed" | "mannequin";
+type PhotoStage = "raw" | "bg-removed" | "mannequin" | "restored";
 
 interface ProductFormData {
   id?: string;
@@ -24,8 +24,6 @@ interface ProductFormData {
 }
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
-
-const ALL_SIZE_OPTIONS = ["S", "M", "L", "XL", "XXL", "Free Size", "28", "30", "32", "34", "36", "7", "8", "9", "10", "2-3Y", "4-5Y", "6-7Y", "8-9Y"];
 
 const SWATCHES = ["#7c2d12", "#1e3a8a", "#9f1239", "#166534", "#7a1f3d", "#0f172a", "#b45309", "#4c1d95"];
 
@@ -80,6 +78,9 @@ export function ProductForm({
   const [mannequinApplying, setMannequinApplying] = useState(false);
   const [mannequinError, setMannequinError] = useState("");
 
+  const [restoringPhoto, setRestoringPhoto] = useState(false);
+  const [restoreError, setRestoreError] = useState("");
+
   const [credits, setCredits] = useState<number | null>(null);
 
   const [autofillHint, setAutofillHint] = useState("");
@@ -117,6 +118,10 @@ export function ProductForm({
   function update<K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
+
+  // Scoped to the selected subcategory so a shirt doesn't offer shoe sizes
+  // and a saree doesn't offer S/M/L - see getSizeOptionsFor.
+  const sizeOptions = getSizeOptionsFor(form.subCategory);
 
   function toggleSize(size: string) {
     setForm((f) => ({ ...f, sizes: f.sizes.includes(size) ? f.sizes.filter((s) => s !== size) : [...f.sizes, size] }));
@@ -304,11 +309,42 @@ export function ProductForm({
     if (typeof result.creditsRemaining === "number") setCredits(result.creditsRemaining);
   }
 
+  // For a "hard copy" photo - a seller's own photo of a physical, printed
+  // product photo (a catalog page, banner, or poster already showing a
+  // model wearing the garment) - rather than "Add Mannequin", which assumes
+  // a flat garment with no person in it. Same paid Gemini image-edit call
+  // and credit cost, different prompt (see lib/ai-photo-enhance.ts).
+  async function handleRestoreRealPhoto() {
+    if (!uploadedImage) return;
+    if (credits !== null && credits <= 0) {
+      setRestoreError("You're out of AI photo credits.");
+      return;
+    }
+    setRestoringPhoto(true);
+    setRestoreError("");
+    if (!originalImage) setOriginalImage(uploadedImage);
+    const res = await fetch("/api/v1/seller/photo-enhance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageDataUrl: uploadedImage, mode: "restore" }),
+    });
+    const result = await res.json().catch(() => null);
+    setRestoringPhoto(false);
+    if (!res.ok) {
+      setRestoreError(result?.message ?? "Couldn't restore this photo. Try again.");
+      return;
+    }
+    setUploadedImage(result.imageDataUrl);
+    setPhotoStage("restored");
+    if (typeof result.creditsRemaining === "number") setCredits(result.creditsRemaining);
+  }
+
   function handleRevertToOriginal() {
     setUploadedImage(originalImage);
     setPhotoStage("raw");
     setBgRemoveError("");
     setMannequinError("");
+    setRestoreError("");
     setCutoutImage(null);
     setSelectedBackground("transparent");
     setAutoBackgroundLabel("");
@@ -452,8 +488,9 @@ export function ProductForm({
           <select
             value={form.gender}
             onChange={(e) => {
-              update("gender", e.target.value);
-              update("subCategory", GENDER_SUBCATEGORIES[e.target.value][0]);
+              const nextSubCategory = GENDER_SUBCATEGORIES[e.target.value][0];
+              const validSizes = getSizeOptionsFor(nextSubCategory);
+              setForm((f) => ({ ...f, gender: e.target.value, subCategory: nextSubCategory, sizes: f.sizes.filter((s) => validSizes.includes(s)) }));
             }}
             style={inputStyle()}
           >
@@ -464,7 +501,14 @@ export function ProductForm({
         </div>
         <div>
           <label style={labelStyle()}>Subcategory</label>
-          <select value={form.subCategory} onChange={(e) => update("subCategory", e.target.value)} style={inputStyle()}>
+          <select
+            value={form.subCategory}
+            onChange={(e) => {
+              const validSizes = getSizeOptionsFor(e.target.value);
+              setForm((f) => ({ ...f, subCategory: e.target.value, sizes: f.sizes.filter((s) => validSizes.includes(s)) }));
+            }}
+            style={inputStyle()}
+          >
             {GENDER_SUBCATEGORIES[form.gender].map((sc) => (
               <option key={sc} value={sc}>
                 {sc}
@@ -581,25 +625,29 @@ export function ProductForm({
 
       <div>
         <label style={labelStyle()}>Sizes</label>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {ALL_SIZE_OPTIONS.map((sz) => (
-            <button
-              type="button"
-              key={sz}
-              onClick={() => toggleSize(sz)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: 999,
-                border: form.sizes.includes(sz) ? "2px solid #0f172a" : "1px solid #e2e8f0",
-                background: "#fff",
-                cursor: "pointer",
-                fontSize: 13,
-              }}
-            >
-              {sz}
-            </button>
-          ))}
-        </div>
+        {sizeOptions.length === 0 ? (
+          <p style={{ fontSize: 13, color: "#94a3b8" }}>This category doesn't use sizes.</p>
+        ) : (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {sizeOptions.map((sz) => (
+              <button
+                type="button"
+                key={sz}
+                onClick={() => toggleSize(sz)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: form.sizes.includes(sz) ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                  background: "#fff",
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                {sz}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
@@ -616,7 +664,7 @@ export function ProductForm({
                       bottom: -6,
                       left: "50%",
                       transform: "translateX(-50%)",
-                      background: photoStage === "mannequin" ? "#7c3aed" : "#0f172a",
+                      background: photoStage === "mannequin" || photoStage === "restored" ? "#7c3aed" : "#0f172a",
                       color: "#fff",
                       fontSize: 9,
                       fontWeight: 700,
@@ -625,7 +673,7 @@ export function ProductForm({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {photoStage === "mannequin" ? "✨ AI Mannequin" : "🪄 Enhanced"}
+                    {photoStage === "mannequin" ? "✨ AI Mannequin" : photoStage === "restored" ? "✨ AI Restored" : "🪄 Enhanced"}
                   </span>
                 )}
                 <button

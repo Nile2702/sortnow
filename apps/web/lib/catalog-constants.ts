@@ -7,7 +7,70 @@
 // importing everything from one place.
 export type Gender = "men" | "women" | "kids";
 
-export const ALL_SIZES = ["S", "M", "L", "XL", "XXL", "Free Size", "30", "32", "34", "36", "2-3Y", "4-5Y", "6-7Y", "8-9Y"];
+// Kept as the full union, e.g. for a size dropdown filter that isn't scoped
+// to one category (see app/search/page.tsx). Anywhere the category is known
+// (the seller's product form, a category page) should use
+// getSizeOptionsFor(subCategory) instead, so a shirt listing doesn't offer
+// shoe sizes and vice versa.
+export const ALL_SIZES = ["S", "M", "L", "XL", "XXL", "Free Size", "28", "30", "32", "34", "36", "6", "7", "8", "9", "10", "11", "2-3Y", "4-5Y", "6-7Y", "8-9Y", "10-12Y"];
+
+const SIZE_GROUPS = {
+  clothing: ["S", "M", "L", "XL", "XXL"],
+  freeSize: ["Free Size"],
+  waist: ["28", "30", "32", "34", "36", "38"],
+  footwear: ["6", "7", "8", "9", "10", "11"],
+  kidsAge: ["0-1Y", "1-2Y", "2-3Y", "4-5Y", "6-7Y", "8-9Y", "10-12Y"],
+  kidsFootwear: ["4", "6", "8", "10", "12", "13", "1", "2", "3"],
+  none: [] as string[],
+} satisfies Record<string, string[]>;
+
+// Which size group applies to each subCategory - a shirt shouldn't offer
+// shoe sizes, a saree (typically unstitched, one-size) shouldn't offer S/M/L,
+// and jewellery shouldn't offer sizes at all. Falls back to "clothing" for
+// any subCategory not listed here (new ones added to CATEGORY_TREE default
+// to the most common case rather than showing nothing).
+const SUBCATEGORY_SIZE_GROUP: Record<string, keyof typeof SIZE_GROUPS> = {
+  // Men
+  "T-Shirts": "clothing",
+  Shirts: "clothing",
+  Jeans: "waist",
+  Trousers: "waist",
+  Shorts: "waist",
+  "Ethnic Wear": "clothing",
+  Jackets: "clothing",
+  "Sweaters & Sweatshirts": "clothing",
+  "Suits & Blazers": "clothing",
+  "Innerwear & Loungewear": "clothing",
+  Footwear: "footwear",
+  Accessories: "none",
+  // Women
+  Sarees: "freeSize",
+  Kurtis: "clothing",
+  Dresses: "clothing",
+  Tops: "clothing",
+  "Trousers & Capris": "waist",
+  Lehengas: "clothing",
+  "Western Wear": "clothing",
+  Skirts: "clothing",
+  "Lingerie & Sleepwear": "clothing",
+  "Jewellery & Accessories": "none",
+  Handbags: "none",
+  // Kids
+  Boys: "kidsAge",
+  Girls: "kidsAge",
+  "Infant Wear": "kidsAge",
+  "Kids Footwear": "kidsFootwear",
+  "Kids Ethnic Wear": "kidsAge",
+  "Kids Winter Wear": "kidsAge",
+};
+
+export function getSizeOptionsFor(subCategory: string | undefined): string[] {
+  const group = (subCategory && SUBCATEGORY_SIZE_GROUP[subCategory]) || "clothing";
+  const sizes = SIZE_GROUPS[group];
+  // Every sizeable category also offers Free Size as a catch-all (e.g. a
+  // loose kurta or a one-size scarf), except where sizes don't apply at all.
+  return group === "none" ? sizes : group === "freeSize" ? sizes : [...sizes, "Free Size"];
+}
 
 // A shared color catalog so a seller can list one product across several
 // colors by picking swatches instead of photographing and re-uploading

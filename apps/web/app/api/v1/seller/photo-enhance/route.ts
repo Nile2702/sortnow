@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSellerSession } from "../../../../../lib/auth/require-seller";
-import { enhanceProductPhoto } from "../../../../../lib/ai-photo-enhance";
+import { enhanceProductPhoto, restoreRealPhoto } from "../../../../../lib/ai-photo-enhance";
 import { rateLimit, clientIp } from "../../../../../lib/rate-limit";
 import { getPhotoCredits, spendPhotoCredit } from "../../../../../lib/seed-data";
 
@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const imageDataUrl = body?.imageDataUrl;
+  const mode = body?.mode === "restore" ? "restore" : "mannequin";
 
   if (typeof imageDataUrl !== "string" || !imageDataUrl.startsWith("data:image/")) {
     return NextResponse.json({ error: "invalid_input", message: "imageDataUrl must be a data: URL for an image." }, { status: 400 });
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = await enhanceProductPhoto(imageDataUrl);
+  const result = mode === "restore" ? await restoreRealPhoto(imageDataUrl) : await enhanceProductPhoto(imageDataUrl);
   if (!result.ok) {
     // Failed calls don't spend a credit - only a successful enhancement does.
     const status = result.code === "not_configured" ? 503 : result.code === "invalid_image" ? 400 : 502;

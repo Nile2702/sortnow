@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
-import { CATEGORY_TREE } from "../../../../../lib/catalog-constants";
+import { CATEGORY_TREE, getSizeOptionsFor } from "../../../../../lib/catalog-constants";
 import { autoAlignAndZoom, autoEnhanceQuality } from "../../../../../lib/image-enhance";
 import { showToast } from "../../../../../lib/toast";
 
@@ -172,7 +172,12 @@ export default function BulkPhotoUploadPage() {
               basePrice: d.basePrice,
               compareAtPrice: d.compareAtPrice,
               stockRemaining: d.stockRemaining,
-              sizes: ["Free Size"],
+              // No size picker in this quick-publish flow - default to every
+              // size valid for the category (e.g. all shoe sizes for
+              // Footwear) rather than "Free Size" for everything, which was
+              // wrong for any category that isn't genuinely one-size. The
+              // seller can narrow it down later via Edit.
+              sizes: getSizeOptionsFor(d.subCategory),
               images: [{ url: d.image }],
             }),
           });
