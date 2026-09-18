@@ -167,6 +167,123 @@ export function autoEnhanceQuality(dataUrl: string): Promise<string> {
   });
 }
 
+// Fast blur via canvas 2D context's native CSS-filter support, used as the
+// "low-frequency" stand-in for both lighting stabilization and wrinkle
+// smoothing below - blurring away fine detail leaves only the slow-changing
+// shading/light behind, without hand-rolling a box/gaussian kernel.
+function blurCanvas(source: HTMLCanvasElement, radiusPx: number): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  out.width = source.width;
+  out.height = source.height;
+  const ctx = out.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported");
+  ctx.filter = `blur(${radiusPx}px)`;
+  ctx.drawImage(source, 0, 0);
+  return out;
+}
+
+/**
+ * Flattens uneven lighting - a bright flash hotspot or a shadowed corner
+ * from window light - without touching the garment's actual color. A heavy
+ * blur of the photo stands in for just the lighting (all fine detail is
+ * gone, leaving only the slow brightness gradient), then every pixel is
+ * rescaled by how far its neighborhood's brightness sits from the photo's
+ * overall average: a dim corner gets brightened, a blown-out hotspot gets
+ * pulled back down, both toward the same middle. Free, client-side, runs
+ * alongside the other canvas-based fixes before background removal.
+ */
+export function stabilizeLighting(dataUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas not supported"));
+      ctx.drawImage(img, 0, 0);
+
+      const radius = Math.max(12, Math.round(Math.min(img.width, img.height) * 0.12));
+      const blurCtx = blurCanvas(canvas, radius).getContext("2d");
+      if (!blurCtx) return reject(new Error("Canvas not supported"));
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const { data } = imageData;
+      const lightData = blurCtx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+      let sumLuma = 0;
+      const count = data.length / 4;
+      for (let i = 0; i < lightData.length; i += 4) {
+        sumLuma += 0.299 * lightData[i] + 0.587 * lightData[i + 1] + 0.114 * lightData[i + 2];
+      }
+      const targetLuma = sumLuma / count;
+
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] === 0) continue; // leave transparent pixels alone
+        const localLuma = 0.299 * lightData[i] + 0.587 * lightData[i + 1] + 0.114 * lightData[i + 2];
+        // Clamp the correction so a near-black corner doesn't get blown out
+        // trying to match the target brightness exactly.
+        const ratio = Math.max(0.6, Math.min(1.6, targetLuma / Math.max(localLuma, 24)));
+        data[i] = Math.max(0, Math.min(255, data[i] * ratio));
+        data[i + 1] = Math.max(0, Math.min(255, data[i + 1] * ratio));
+        data[i + 2] = Math.max(0, Math.min(255, data[i + 2] * ratio));
+      }
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => reject(new Error("Couldn't load image for lighting stabilization"));
+    img.src = dataUrl;
+  });
+}
+
+/**
+ * Softens the fine, low-contrast shading that creases and wrinkles put into
+ * a fabric photo, while leaving real edges - the garment outline, prints,
+ * seams, buttons - untouched. Blends each pixel toward a blurred version of
+ * itself, but only where the local difference from that blur is small (a
+ * wrinkle's soft shading); a big difference means a real edge or pattern
+ * boundary, which is left almost entirely alone. Free, client-side - a mild
+ * texture-smoothing pass, not true fabric de-wrinkling.
+ */
+export function reduceWrinkles(dataUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas not supported"));
+      ctx.drawImage(img, 0, 0);
+
+      const radius = Math.max(3, Math.round(Math.min(img.width, img.height) * 0.012));
+      const blurCtx = blurCanvas(canvas, radius).getContext("2d");
+      if (!blurCtx) return reject(new Error("Canvas not supported"));
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const { data } = imageData;
+      const blurData = blurCtx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+      const EDGE_THRESHOLD = 26; // luma difference above this reads as a real edge, not a wrinkle
+      const MAX_SMOOTH = 0.65; // never fully replace a pixel - keeps fabric texture believable
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] === 0) continue;
+        const luma = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        const blurLuma = 0.299 * blurData[i] + 0.587 * blurData[i + 1] + 0.114 * blurData[i + 2];
+        const diff = Math.abs(luma - blurLuma);
+        const weight = MAX_SMOOTH * Math.max(0, 1 - diff / EDGE_THRESHOLD);
+        data[i] += (blurData[i] - data[i]) * weight;
+        data[i + 1] += (blurData[i + 1] - data[i + 1]) * weight;
+        data[i + 2] += (blurData[i + 2] - data[i + 2]) * weight;
+      }
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => reject(new Error("Couldn't load image for wrinkle smoothing"));
+    img.src = dataUrl;
+  });
+}
+
 export interface BackgroundPreset {
   key: string;
   label: string;

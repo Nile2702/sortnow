@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor } from "../lib/catalog-constants";
-import { autoAlignAndZoom, autoEnhanceQuality, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS } from "../lib/image-enhance";
+import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
 type PhotoStage = "raw" | "bg-removed" | "mannequin" | "restored";
@@ -238,15 +238,20 @@ export function ProductForm({
     if (!uploadedImage) return;
     setBgRemoving(true);
     setBgRemoveError("");
-    setBgRemoveProgress("Correcting lighting and color…");
+    setBgRemoveProgress("Stabilizing lighting and smoothing fabric…");
     if (!originalImage) setOriginalImage(uploadedImage);
 
     try {
       // Fixes a harsh/flat/poorly-lit phone shot before anything else runs -
       // including a photo that's already a real model wearing the garment,
       // not just a flat-lay - so both the background-removal model and the
-      // seller end up working from a cleaner image.
-      const enhancedInput = await autoEnhanceQuality(uploadedImage).catch(() => uploadedImage);
+      // seller end up working from a cleaner image. Lighting is flattened
+      // first (hotspots/shadows), then levels/saturation, then wrinkle
+      // texture is smoothed last since it works best on already-corrected
+      // color.
+      const litInput = await stabilizeLighting(uploadedImage).catch(() => uploadedImage);
+      const enhancedInput = await autoEnhanceQuality(litInput).catch(() => litInput);
+      const smoothedInput = await reduceWrinkles(enhancedInput).catch(() => enhancedInput);
       setBgRemoveProgress("Loading background-removal model…");
 
       // Cast since the npm package (and its types) isn't installed - it's
@@ -260,7 +265,7 @@ export function ProductForm({
           config?: { model?: string; output?: { format?: string }; progress?: (key: string, current: number, total: number) => void }
         ) => Promise<Blob>;
       };
-      const resultBlob = await removeBackground(enhancedInput, {
+      const resultBlob = await removeBackground(smoothedInput, {
         model: "isnet_quint8",
         output: { format: "image/png" },
         progress: (key, current, total) => {
@@ -826,7 +831,7 @@ export function ProductForm({
                     value={autofillHint}
                     onChange={(e) => setAutofillHint(e.target.value)}
                     placeholder="Optional hint — e.g. Top wear, Saree, Kids' t-shirt"
-                    style={{ ...inputStyle(), flex: 1, background: "#fff" }}
+                    style={{ ...inputStyle(), flex: 1, minWidth: 0, background: "#fff" }}
                   />
                   <button
                     type="button"
