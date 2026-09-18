@@ -20,6 +20,11 @@ const PLATFORM_ROOT_DOMAIN = "sortitout.in";
 // IP request as the root domain.
 const LAN_IP_HOST = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)[\d.]+(:\d+)?$/;
 
+// Public dev-tunnel hostnames (localtunnel, ngrok, Cloudflare quick tunnels)
+// - the standard workaround when a firewall or network policy blocks direct
+// LAN access from a phone to this machine. Same dev-only gate as above.
+const DEV_TUNNEL_HOST = /\.(loca\.lt|ngrok-free\.app|ngrok\.io|ngrok\.app|trycloudflare\.com)$/;
+
 export async function middleware(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
   const url = req.nextUrl.clone();
@@ -33,7 +38,7 @@ export async function middleware(req: NextRequest) {
     host.startsWith("localhost:") ||
     host === "localhost" ||
     host.startsWith("127.0.0.1") ||
-    (process.env.NODE_ENV !== "production" && LAN_IP_HOST.test(host))
+    (process.env.NODE_ENV !== "production" && (LAN_IP_HOST.test(host) || DEV_TUNNEL_HOST.test(host)))
   ) {
     return NextResponse.next();
   }
