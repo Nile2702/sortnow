@@ -616,7 +616,7 @@ export function ProductForm({
                     </>
                   ) : (
                     <>
-                      <input type="file" accept="image/*" onChange={(e) => handleColorImageChange(color, e)} style={{ fontSize: 12, flex: 1 }} />
+                      <input type="file" accept="image/*" onChange={(e) => handleColorImageChange(color, e)} style={{ fontSize: 12, flex: 1, minWidth: 0 }} />
                       <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>Optional — reuses main photo if blank</span>
                     </>
                   )}
@@ -818,7 +818,7 @@ export function ProductForm({
             </div>
           )}
           <div style={{ flex: 1, minWidth: 240 }}>
-            <input type="file" accept="image/*" onChange={handleFileChange} style={{ fontSize: 13 }} />
+            <input type="file" accept="image/*" onChange={handleFileChange} style={{ fontSize: 13, width: "100%", maxWidth: "100%" }} />
             {uploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{uploadError}</p>}
             {bgRemoveError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{bgRemoveError}</p>}
             {mannequinError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{mannequinError}</p>}
@@ -926,7 +926,7 @@ export function ProductForm({
             ))}
           </div>
           {additionalImages.length < 5 && (
-            <input type="file" accept="image/*" multiple onChange={handleAdditionalFilesChange} style={{ fontSize: 13 }} />
+            <input type="file" accept="image/*" multiple onChange={handleAdditionalFilesChange} style={{ fontSize: 13, width: "100%", maxWidth: "100%" }} />
           )}
           {additionalUploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{additionalUploadError}</p>}
         </div>

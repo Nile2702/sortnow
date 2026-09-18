@@ -225,7 +225,7 @@ export default function BulkPhotoUploadPage() {
         style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 24 }}
       >
         <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 10 }}>Select photos</label>
-        <input type="file" accept="image/*" multiple onChange={handleFilesSelected} style={{ fontSize: 13 }} />
+        <input type="file" accept="image/*" multiple onChange={handleFilesSelected} style={{ fontSize: 13, width: "100%", maxWidth: "100%" }} />
         <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>Up to 3MB per photo. Add more photos any time before processing.</p>
 
         {drafts.length > 0 && (
@@ -273,7 +273,7 @@ export default function BulkPhotoUploadPage() {
           {drafts.map((d) => (
             <div
               key={d.localId}
-              className="sio-card"
+              className="sio-card sio-draft-row"
               style={{ display: "flex", gap: 16, background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}
             >
               <div style={{ position: "relative", flexShrink: 0 }}>
@@ -323,7 +323,7 @@ export default function BulkPhotoUploadPage() {
                 ) : d.status === "published" ? (
                   <p style={{ fontSize: 13, color: "#16a34a" }}>✓ Published as "{d.title}"</p>
                 ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 8 }}>
+                  <div className="sio-draft-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 8 }}>
                     <input
                       value={d.title}
                       onChange={(e) => updateDraft(d.localId, { title: e.target.value })}

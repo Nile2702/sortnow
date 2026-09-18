@@ -80,7 +80,7 @@ export default function BulkImportPage() {
             Load sample data
           </button>
         </div>
-        <input type="file" accept=".csv,text/csv" onChange={handleFile} style={{ fontSize: 13, marginBottom: 16 }} />
+        <input type="file" accept=".csv,text/csv" onChange={handleFile} style={{ fontSize: 13, marginBottom: 16, width: "100%", maxWidth: "100%" }} />
 
         <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>...or paste CSV text</label>
         <textarea

@@ -165,6 +165,28 @@ html {
   }
 }
 
+/* AI Bulk Upload's per-photo draft card: a fixed 80px thumbnail beside a
+   4-column edit grid (title spans full width; gender/subCategory/price/MRP/
+   fabric/stock each get a column; description spans full width). On a phone
+   that 4-column grid squeezes into whatever's left after the thumbnail -
+   under 100px total, each column a sliver - and combined with the 16px
+   min font-size iOS rule above, the text no longer fits its own input.
+   Below tablet width the thumbnail moves above the fields instead of beside
+   them (full card width for the grid), and the grid itself drops to two
+   columns so each field has room for a real value. */
+@media (max-width: 640px) {
+  .sio-draft-row {
+    flex-direction: column;
+  }
+  .sio-draft-row img {
+    width: 100% !important;
+    height: 160px !important;
+  }
+  .sio-draft-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+}
+
 /* Product-card grids (homepage, category, search, wishlist, similar
    products, store catalogs) use auto-fill/minmax or a fixed column count
    tuned for desktop, which resolves to a single column on a phone -
