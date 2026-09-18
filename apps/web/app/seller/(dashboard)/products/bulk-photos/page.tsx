@@ -25,6 +25,7 @@ interface Draft {
   fabric: string;
   description: string;
   basePrice: number;
+  compareAtPrice: number | undefined;
   stockRemaining: number;
 }
 
@@ -76,6 +77,7 @@ export default function BulkPhotoUploadPage() {
         fabric: "",
         description: "",
         basePrice: 999,
+        compareAtPrice: undefined,
         stockRemaining: 10,
       });
     }
@@ -165,6 +167,7 @@ export default function BulkPhotoUploadPage() {
               gender: d.gender,
               subCategory: d.subCategory,
               basePrice: d.basePrice,
+              compareAtPrice: d.compareAtPrice,
               stockRemaining: d.stockRemaining,
               sizes: ["Free Size"],
               images: [{ url: d.image }],
@@ -339,6 +342,14 @@ export default function BulkPhotoUploadPage() {
                       value={d.basePrice}
                       onChange={(e) => updateDraft(d.localId, { basePrice: Number(e.target.value) })}
                       placeholder="Price"
+                      style={inputStyle()}
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      value={d.compareAtPrice ?? ""}
+                      onChange={(e) => updateDraft(d.localId, { compareAtPrice: e.target.value ? Number(e.target.value) : undefined })}
+                      placeholder="MRP (optional)"
                       style={inputStyle()}
                     />
                     <input

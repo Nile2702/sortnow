@@ -377,11 +377,11 @@ export function ProductForm({
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)", gap: 14 }}>
         <div>
-          <label style={labelStyle()}>Price (₹)</label>
+          <label style={labelStyle()}>Selling Price (₹)</label>
           <input required type="number" min={0} value={form.basePrice} onChange={(e) => update("basePrice", Number(e.target.value) as any)} style={inputStyle()} />
         </div>
         <div>
-          <label style={labelStyle()}>Compare-at price</label>
+          <label style={labelStyle()}>MRP (₹)</label>
           <input
             type="number"
             min={0}
@@ -390,6 +390,9 @@ export function ProductForm({
             style={inputStyle()}
             placeholder="Optional"
           />
+          <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+            Set higher than Selling Price to show a discount to shoppers.
+          </p>
         </div>
         <div>
           <label style={labelStyle()}>Stock qty</label>
