@@ -21,6 +21,9 @@ export default function SellerProductsPage() {
   const { store, loading: storeLoading } = useSellerStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
 
   function load(storeId: string) {
     setLoading(true);
@@ -34,9 +37,22 @@ export default function SellerProductsPage() {
     if (store) load(store.id);
   }, [store]);
 
+  // Was previously gated behind window.confirm(), which some browser
+  // contexts (embedded webviews, iframes, certain browser policies)
+  // suppress outright - confirm() then always returns false and the delete
+  // silently never happens, with no error or feedback shown. An inline
+  // two-step confirmation in the page itself doesn't depend on native
+  // dialog support at all.
   async function handleDelete(id: string) {
-    if (!confirm("Delete this product? This can't be undone.")) return;
-    await fetch(`/api/v1/seller/products/${id}`, { method: "DELETE" });
+    setDeletingId(id);
+    setDeleteError("");
+    const res = await fetch(`/api/v1/seller/products/${id}`, { method: "DELETE" });
+    setDeletingId(null);
+    setConfirmingId(null);
+    if (!res.ok) {
+      setDeleteError("Couldn't delete this product. Try again.");
+      return;
+    }
     if (store) load(store.id);
   }
 
@@ -83,35 +99,74 @@ export default function SellerProductsPage() {
             <div
               key={p.id}
               className="sio-card"
-              style={{ display: "flex", gap: 16, alignItems: "center", background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 14 }}
+              style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 14 }}
             >
               <img src={p.images?.[0]?.url} alt={p.title} style={{ width: 56, height: 70, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: "1 1 200px", minWidth: 180 }}>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{p.title}</div>
                 <div style={{ fontSize: 12, color: "#64748b" }}>
                   {p.gender} · {p.subCategory}
                   {p.color ? ` · ${p.color}` : ""} · {p.sizes.join(", ")}
                 </div>
               </div>
-              <div style={{ textAlign: "right", minWidth: 90 }}>
+              <div style={{ textAlign: "right", minWidth: 90, flexShrink: 0 }}>
                 <div style={{ fontWeight: 700 }}>₹{p.basePrice}</div>
                 {p.stockRemaining != null && (
                   <div style={{ fontSize: 12, color: p.stockRemaining <= 5 ? "#e11d48" : "#64748b" }}>{p.stockRemaining} in stock</div>
                 )}
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <Link
-                  href={`/seller/products/${p.id}`}
-                  style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", color: "#0f172a", textDecoration: "none", fontSize: 13 }}
-                >
-                  Edit
-                </Link>
-                <button
-                  onClick={() => handleDelete(p.id)}
-                  style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #fecdd3", background: "#fff", color: "#e11d48", cursor: "pointer", fontSize: 13 }}
-                >
-                  Delete
-                </button>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Link
+                    href={`/seller/products/${p.id}`}
+                    style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", color: "#0f172a", textDecoration: "none", fontSize: 13 }}
+                  >
+                    Edit
+                  </Link>
+                  {confirmingId === p.id ? (
+                    <>
+                      <button
+                        onClick={() => handleDelete(p.id)}
+                        disabled={deletingId === p.id}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 8,
+                          border: "none",
+                          background: deletingId === p.id ? "#fca5a5" : "#e11d48",
+                          color: "#fff",
+                          cursor: deletingId === p.id ? "default" : "pointer",
+                          fontSize: 13,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {deletingId === p.id ? "Deleting…" : "Confirm Delete"}
+                      </button>
+                      <button
+                        onClick={() => setConfirmingId(null)}
+                        disabled={deletingId === p.id}
+                        style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", cursor: "pointer", fontSize: 13 }}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setConfirmingId(p.id);
+                        setDeleteError("");
+                      }}
+                      style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #fecdd3", background: "#fff", color: "#e11d48", cursor: "pointer", fontSize: 13 }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+                {confirmingId === p.id && (
+                  <span style={{ fontSize: 11, color: "#e11d48" }}>This can&rsquo;t be undone.</span>
+                )}
+                {deleteError && confirmingId === null && deletingId === null && (
+                  <span style={{ fontSize: 11, color: "#e11d48" }}>{deleteError}</span>
+                )}
               </div>
             </div>
           ))}
