@@ -474,7 +474,7 @@ export default function ProductDetailPage() {
                 onChange={(e) => setCheckPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="Enter your PIN code"
                 maxLength={6}
-                style={{ flex: 1, padding: "10px 14px", border: "1px solid var(--sio-line)", borderRadius: 999, fontSize: 14 }}
+                style={{ flex: 1, minWidth: 0, padding: "10px 14px", border: "1px solid var(--sio-line)", borderRadius: 999, fontSize: 14 }}
               />
               <button
                 onClick={handleCheckDistance}

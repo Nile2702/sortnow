@@ -145,10 +145,14 @@ html {
 /* Any fixed two-column layout (product detail's image/details split, the
    seller theme editor, the QR standee page) collapses to one column below
    tablet width - a hardcoded "1fr 1fr" inline style has no way to respond
-   to viewport width on its own, and previously just overflowed sideways. */
+   to viewport width on its own, and previously just overflowed sideways.
+   minmax(0, 1fr) rather than a bare 1fr: a plain "1fr" track still has an
+   implicit min-width of its content's min-content size, so a wide child
+   (e.g. the Add to Sort + wishlist button row) could still stretch the
+   single column - and the whole page - wider than the viewport. */
 @media (max-width: 760px) {
   .sio-two-col-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 
@@ -157,7 +161,7 @@ html {
    instead of squeezing into a fixed 220px rail that doesn't fit a phone. */
 @media (max-width: 760px) {
   .sio-search-layout {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 

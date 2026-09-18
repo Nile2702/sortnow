@@ -78,7 +78,7 @@ export default function OnboardingPage() {
                   value={gstin}
                   onChange={(e) => setGstin(e.target.value.toUpperCase())}
                   maxLength={15}
-                  style={{ ...fieldStyle(), flex: 1 }}
+                  style={{ ...fieldStyle(), flex: 1, minWidth: 0 }}
                   placeholder="27ABCDE1234F1Z5"
                 />
                 <button onClick={verifyGstin} disabled={gstin.length !== 15 || gstinStatus === "checking"} style={verifyBtnStyle()}>
@@ -101,7 +101,7 @@ export default function OnboardingPage() {
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>PAN</label>
               <div style={{ display: "flex", gap: 10 }}>
-                <input value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} maxLength={10} style={{ ...fieldStyle(), flex: 1 }} placeholder="ABCDE1234F" />
+                <input value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} maxLength={10} style={{ ...fieldStyle(), flex: 1, minWidth: 0 }} placeholder="ABCDE1234F" />
                 <button onClick={verifyPan} disabled={pan.length !== 10 || panStatus === "checking"} style={verifyBtnStyle()}>
                   {panStatus === "checking" ? "Checking…" : "Verify"}
                 </button>
@@ -117,7 +117,7 @@ export default function OnboardingPage() {
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>UPI VPA for payouts</label>
               <div style={{ display: "flex", gap: 10 }}>
-                <input value={upi} onChange={(e) => setUpi(e.target.value)} style={{ ...fieldStyle(), flex: 1 }} placeholder="yourbusiness@okhdfcbank" />
+                <input value={upi} onChange={(e) => setUpi(e.target.value)} style={{ ...fieldStyle(), flex: 1, minWidth: 0 }} placeholder="yourbusiness@okhdfcbank" />
                 <button onClick={verifyUpi} disabled={!upi.includes("@") || upiStatus === "checking"} style={verifyBtnStyle()}>
                   {upiStatus === "checking" ? "Verifying…" : "Verify"}
                 </button>
