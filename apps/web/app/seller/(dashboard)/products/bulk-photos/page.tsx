@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
 import { CATEGORY_TREE } from "../../../../../lib/catalog-constants";
-import { autoAlignAndZoom } from "../../../../../lib/image-enhance";
+import { autoAlignAndZoom, autoEnhanceQuality } from "../../../../../lib/image-enhance";
 import { showToast } from "../../../../../lib/toast";
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
@@ -106,10 +106,11 @@ export default function BulkPhotoUploadPage() {
 
       let currentImage = draft.originalImage;
       try {
+        const enhancedInput = await autoEnhanceQuality(draft.originalImage).catch(() => draft.originalImage);
         const { removeBackground } = (await import(
           /* webpackIgnore: true */ "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
         )) as { removeBackground: (image: string, config?: { model?: string; output?: { format?: string } }) => Promise<Blob> };
-        const blob = await removeBackground(draft.originalImage, { model: "isnet_quint8", output: { format: "image/png" } });
+        const blob = await removeBackground(enhancedInput, { model: "isnet_quint8", output: { format: "image/png" } });
         const bgRemovedUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);

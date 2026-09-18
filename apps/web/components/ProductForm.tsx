@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CATEGORY_TREE, COLOR_CATALOG } from "../lib/catalog-constants";
-import { autoAlignAndZoom } from "../lib/image-enhance";
+import { autoAlignAndZoom, autoEnhanceQuality, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
 type PhotoStage = "raw" | "bg-removed" | "mannequin";
@@ -57,6 +57,15 @@ export function ProductForm({
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [photoStage, setPhotoStage] = useState<PhotoStage>("raw");
 
+  // The transparent, aligned cutout - kept separate from uploadedImage (what's
+  // actually shown/submitted) so switching backdrops re-composites from a
+  // clean source every time instead of layering a new background on top of
+  // whatever's already displayed, which would bake in the previous one.
+  const [cutoutImage, setCutoutImage] = useState<string | null>(null);
+  const [selectedBackground, setSelectedBackground] = useState("transparent");
+  const [backgroundBusy, setBackgroundBusy] = useState(false);
+  const [autoBackgroundLabel, setAutoBackgroundLabel] = useState("");
+
   // Extra angle/detail shots beyond the primary photo - shown as a gallery
   // on the storefront (see the product detail page's thumbnail strip) but
   // not run through any AI tooling (background removal, mannequin,
@@ -84,6 +93,14 @@ export function ProductForm({
   // photograph and re-list every colorway of the same item separately.
   const [selectedColors, setSelectedColors] = useState<string[]>(initial?.color ? [initial.color] : []);
 
+  // A colorway can get its own real photo instead of reusing the main
+  // upload for every variant - a seller who's actually photographed each
+  // color (the normal real-world case) lists them as genuinely distinct
+  // products with distinct photos, rather than the same picture relabeled.
+  // Falls back to the main photo for any color left without one.
+  const [colorImages, setColorImages] = useState<Record<string, string>>({});
+  const [colorImageErrors, setColorImageErrors] = useState<Record<string, string>>({});
+
   const [form, setForm] = useState<ProductFormData>({
     title: initial?.title ?? "",
     description: initial?.description ?? "",
@@ -107,6 +124,32 @@ export function ProductForm({
 
   function toggleColor(name: string) {
     setSelectedColors((c) => (c.includes(name) ? c.filter((x) => x !== name) : [...c, name]));
+  }
+
+  function handleColorImageChange(color: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setColorImageErrors((errs) => ({ ...errs, [color]: "" }));
+    if (!file.type.startsWith("image/")) {
+      setColorImageErrors((errs) => ({ ...errs, [color]: "Please choose an image file." }));
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setColorImageErrors((errs) => ({ ...errs, [color]: "Image is too large — please choose one under 3MB." }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setColorImages((imgs) => ({ ...imgs, [color]: reader.result as string }));
+    reader.readAsDataURL(file);
+  }
+
+  function removeColorImage(color: string) {
+    setColorImages((imgs) => {
+      const next = { ...imgs };
+      delete next[color];
+      return next;
+    });
   }
 
   useEffect(() => {
@@ -190,10 +233,17 @@ export function ProductForm({
     if (!uploadedImage) return;
     setBgRemoving(true);
     setBgRemoveError("");
-    setBgRemoveProgress("Loading background-removal model…");
+    setBgRemoveProgress("Correcting lighting and color…");
     if (!originalImage) setOriginalImage(uploadedImage);
 
     try {
+      // Fixes a harsh/flat/poorly-lit phone shot before anything else runs -
+      // including a photo that's already a real model wearing the garment,
+      // not just a flat-lay - so both the background-removal model and the
+      // seller end up working from a cleaner image.
+      const enhancedInput = await autoEnhanceQuality(uploadedImage).catch(() => uploadedImage);
+      setBgRemoveProgress("Loading background-removal model…");
+
       // Cast since the npm package (and its types) isn't installed - it's
       // loaded as a plain ES module from a CDN URL instead (see comment
       // above), which TypeScript can't resolve a module path for.
@@ -205,7 +255,7 @@ export function ProductForm({
           config?: { model?: string; output?: { format?: string }; progress?: (key: string, current: number, total: number) => void }
         ) => Promise<Blob>;
       };
-      const resultBlob = await removeBackground(uploadedImage, {
+      const resultBlob = await removeBackground(enhancedInput, {
         model: "isnet_quint8",
         output: { format: "image/png" },
         progress: (key, current, total) => {
@@ -215,6 +265,9 @@ export function ProductForm({
       const bgRemovedUrl = await blobToDataUrl(resultBlob);
       setBgRemoveProgress("Aligning and framing…");
       const dataUrl = await autoAlignAndZoom(bgRemovedUrl).catch(() => bgRemovedUrl);
+      setCutoutImage(dataUrl);
+      setSelectedBackground("transparent");
+      setAutoBackgroundLabel("");
       setUploadedImage(dataUrl);
       setPhotoStage("bg-removed");
     } catch (err) {
@@ -256,6 +309,44 @@ export function ProductForm({
     setPhotoStage("raw");
     setBgRemoveError("");
     setMannequinError("");
+    setCutoutImage(null);
+    setSelectedBackground("transparent");
+    setAutoBackgroundLabel("");
+  }
+
+  async function handleChooseBackground(presetKey: string) {
+    if (!cutoutImage) return;
+    const preset = BACKGROUND_PRESETS.find((p) => p.key === presetKey);
+    if (!preset) return;
+    setBackgroundBusy(true);
+    setAutoBackgroundLabel("");
+    try {
+      const composited = await compositeBackground(cutoutImage, preset);
+      setUploadedImage(composited);
+      setSelectedBackground(presetKey);
+    } catch (err) {
+      console.error(err);
+      setBgRemoveError("Couldn't apply that background. Try a different one.");
+    } finally {
+      setBackgroundBusy(false);
+    }
+  }
+
+  async function handleAutoBackground() {
+    if (!cutoutImage) return;
+    setBackgroundBusy(true);
+    try {
+      const preset = await pickAutoBackground(cutoutImage);
+      const composited = await compositeBackground(cutoutImage, preset);
+      setUploadedImage(composited);
+      setSelectedBackground(preset.key);
+      setAutoBackgroundLabel(preset.label);
+    } catch (err) {
+      console.error(err);
+      setBgRemoveError("Couldn't pick a background automatically. Try choosing one instead.");
+    } finally {
+      setBackgroundBusy(false);
+    }
   }
 
   async function handleAutofill() {
@@ -305,21 +396,26 @@ export function ProductForm({
 
     if (mode === "create") {
       // Selecting 2+ colors lists the same item once per color, sharing
-      // every other field and the single uploaded photo, instead of the
-      // seller re-uploading and re-typing details for each colorway.
+      // every other field, instead of the seller re-typing details for each
+      // colorway - but each color uses its own uploaded photo when the
+      // seller provided one, falling back to the main photo otherwise.
       const colorsToCreate = selectedColors.length > 0 ? selectedColors : [undefined];
       await Promise.all(
-        colorsToCreate.map((color) =>
-          fetch(`/api/v1/seller/stores/${storeId}/products`, {
+        colorsToCreate.map((color) => {
+          const colorImage = color ? colorImages[color] : undefined;
+          return fetch(`/api/v1/seller/stores/${storeId}/products`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...basePayload,
               title: color && colorsToCreate.length > 1 ? `${form.title} — ${color}` : form.title,
               color,
+              images: colorImage
+                ? [{ url: colorImage }, ...additionalImages.map((url) => ({ url }))]
+                : basePayload.images,
             }),
-          })
-        )
+          });
+        })
       );
     } else {
       await fetch(`/api/v1/seller/products/${initial?.id}`, {
@@ -449,9 +545,37 @@ export function ProductForm({
           })}
         </div>
         {selectedColors.length > 1 && mode === "create" && (
-          <p style={{ fontSize: 12, color: "#7c3aed", marginTop: 8 }}>
-            Publishing will create {selectedColors.length} separate products — one per color — all sharing this title, price, and photo.
-          </p>
+          <>
+            <p style={{ fontSize: 12, color: "#7c3aed", marginTop: 8 }}>
+              Publishing will create {selectedColors.length} separate products — one per color, sharing this title and price. Upload a
+              photo of that colorway below, or leave blank to reuse the main photo above.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+              {selectedColors.map((color) => (
+                <div key={color} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, minWidth: 90 }}>{color}</span>
+                  {colorImages[color] ? (
+                    <>
+                      <img src={colorImages[color]} alt={color} style={{ width: 36, height: 44, objectFit: "cover", borderRadius: 6, border: "1px solid #e2e8f0" }} />
+                      <button
+                        type="button"
+                        onClick={() => removeColorImage(color)}
+                        style={{ fontSize: 12, color: "#e11d48", background: "none", border: "none", cursor: "pointer" }}
+                      >
+                        Remove photo
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <input type="file" accept="image/*" onChange={(e) => handleColorImageChange(color, e)} style={{ fontSize: 12, flex: 1 }} />
+                      <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>Optional — reuses main photo if blank</span>
+                    </>
+                  )}
+                  {colorImageErrors[color] && <span style={{ fontSize: 11, color: "#e11d48" }}>{colorImageErrors[color]}</span>}
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -512,6 +636,9 @@ export function ProductForm({
                     setPhotoStage("raw");
                     setBgRemoveError("");
                     setMannequinError("");
+                    setCutoutImage(null);
+                    setSelectedBackground("transparent");
+                    setAutoBackgroundLabel("");
                   }}
                   aria-label="Remove photo"
                   style={{
@@ -553,6 +680,52 @@ export function ProductForm({
               >
                 {bgRemoving ? bgRemoveProgress || "Enhancing…" : "🪄 Enhance Photo (Free)"}
               </button>
+
+              {cutoutImage && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Background</div>
+                  <button
+                    type="button"
+                    onClick={handleAutoBackground}
+                    disabled={backgroundBusy}
+                    style={{
+                      width: "100%",
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "1px solid #c4b5fd",
+                      background: "#faf5ff",
+                      color: "#7c3aed",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: backgroundBusy ? "default" : "pointer",
+                      marginBottom: 8,
+                    }}
+                  >
+                    {backgroundBusy ? "Picking…" : autoBackgroundLabel ? `✨ Auto-picked: ${autoBackgroundLabel}` : "✨ Auto-pick for me"}
+                  </button>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {BACKGROUND_PRESETS.map((preset) => (
+                      <button
+                        type="button"
+                        key={preset.key}
+                        onClick={() => handleChooseBackground(preset.key)}
+                        disabled={backgroundBusy}
+                        title={preset.label}
+                        aria-label={preset.label}
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: "50%",
+                          background: preset.swatch,
+                          border: selectedBackground === preset.key ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                          cursor: backgroundBusy ? "default" : "pointer",
+                          flexShrink: 0,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -642,7 +815,8 @@ export function ProductForm({
                 <PhotoEnhanceIllustration />
                 <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 10, lineHeight: 1.6 }}>
                   <strong style={{ color: "var(--sio-ink)" }}>Enhance Photo</strong> removes the background, then automatically centers and
-                  zooms in on the garment so it fills the frame — all free, right in your browser, no cost, no limit.{" "}
+                  zooms in on the garment so it fills the frame. After that, pick a studio-style backdrop (or let it auto-pick one for
+                  you) — all free, right in your browser, no cost, no limit.{" "}
                   <strong style={{ color: "var(--sio-ink)" }}>Add Mannequin</strong> sends the photo to Gemini AI and uses 1 photo credit
                   {credits !== null && (
                     <>
@@ -655,28 +829,6 @@ export function ProductForm({
               </div>
             )}
 
-            {!uploadedImage && (
-              <>
-                <div style={{ fontSize: 12, color: "#94a3b8", margin: "10px 0 6px" }}>Or pick a placeholder color:</div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {SWATCHES.map((sw) => (
-                    <button
-                      type="button"
-                      key={sw}
-                      onClick={() => update("imageColor", sw)}
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: sw,
-                        border: form.imageColor === sw ? "3px solid #0f172a" : "1px solid #e2e8f0",
-                        cursor: "pointer",
-                      }}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
           </div>
         </div>
         <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>
