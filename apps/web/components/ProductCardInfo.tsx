@@ -14,6 +14,7 @@ interface Props {
 // its height, even when empty, so cards in the same row line up exactly.
 export function ProductCardInfo({ title, storeName, basePrice, compareAtPrice, stockRemaining }: Props) {
   const lowStock = stockRemaining != null && stockRemaining <= 5;
+  const savingsAmount = compareAtPrice && compareAtPrice > basePrice ? compareAtPrice - basePrice : 0;
 
   return (
     <div style={{ padding: 12, display: "flex", flexDirection: "column" }}>
@@ -45,8 +46,13 @@ export function ProductCardInfo({ title, storeName, basePrice, compareAtPrice, s
         {storeName ?? " "}</div>
       <div style={{ marginTop: 6 }}>
         <span style={{ fontWeight: 700 }}>₹{basePrice}</span>
-        {compareAtPrice && <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{compareAtPrice}</span>}
+        {compareAtPrice && (
+          <span style={{ marginLeft: 6, opacity: 0.65, fontSize: 11 }}>
+            MRP <span style={{ textDecoration: "line-through" }}>₹{compareAtPrice}</span>
+          </span>
+        )}
       </div>
+      <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 600, marginTop: 2, minHeight: 15 }}>{savingsAmount > 0 ? `Save ₹${savingsAmount}` : " "}</div>
       <div style={{ fontSize: 12, color: "#e11d48", marginTop: 4, minHeight: 16 }}>{lowStock ? `Only ${stockRemaining} left` : " "}</div>
     </div>
   );

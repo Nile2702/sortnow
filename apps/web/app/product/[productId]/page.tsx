@@ -214,6 +214,7 @@ export default function ProductDetailPage() {
   }
 
   const discountPct = product.compareAtPrice ? Math.round(((product.compareAtPrice - product.basePrice) / product.compareAtPrice) * 100) : 0;
+  const savingsAmount = product.compareAtPrice ? product.compareAtPrice - product.basePrice : 0;
 
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "8px 16px 64px" }}>
@@ -353,13 +354,20 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 4 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 4, flexWrap: "wrap" }}>
             <span style={{ fontSize: 28, fontWeight: 600 }}>₹{product.basePrice}</span>
             {product.compareAtPrice && (
-              <span style={{ textDecoration: "line-through", fontSize: 16, color: "var(--sio-muted)" }}>₹{product.compareAtPrice}</span>
+              <span style={{ fontSize: 16, color: "var(--sio-muted)" }}>
+                MRP <span style={{ textDecoration: "line-through" }}>₹{product.compareAtPrice}</span>
+              </span>
             )}
             {discountPct > 0 && <span style={{ color: "var(--sio-bronze-dark)", fontWeight: 600, fontSize: 13 }}>Save {discountPct}%</span>}
           </div>
+          {savingsAmount > 0 && (
+            <div style={{ fontSize: 13, color: "var(--sio-bronze-dark)", fontWeight: 600, marginBottom: 4 }}>
+              You save ₹{savingsAmount} on this order
+            </div>
+          )}
           <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 20 }}>Inclusive of all taxes</div>
 
           {product.stockRemaining != null && product.stockRemaining <= 5 && (
