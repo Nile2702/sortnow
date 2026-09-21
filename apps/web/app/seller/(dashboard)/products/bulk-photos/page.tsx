@@ -72,6 +72,34 @@ export default function BulkPhotoUploadPage() {
   const [bulkCompareAtPrice, setBulkCompareAtPrice] = useState("");
   const [bulkStockRemaining, setBulkStockRemaining] = useState("");
 
+  // Lets a seller pick a whole mixed batch in one file dialog - some photos
+  // of the same product, others of different products - then sort it out
+  // here: check the photos that are really the same product and merge them
+  // into a single draft, leaving everything else as its own product.
+  const [selectedForMerge, setSelectedForMerge] = useState<string[]>([]);
+
+  function toggleMergeSelect(localId: string) {
+    setSelectedForMerge((ids) => (ids.includes(localId) ? ids.filter((id) => id !== localId) : [...ids, localId]));
+  }
+
+  function handleMergeSelected() {
+    const selected = drafts.filter((d) => selectedForMerge.includes(d.localId));
+    if (selected.length < 2) return;
+    const [primary, ...rest] = selected;
+    const combinedExtras = [primary.additionalImages, ...rest.map((d) => [d.image, ...d.additionalImages])].flat();
+    const truncated = combinedExtras.length > MAX_ADDITIONAL_IMAGES;
+    const merged: Draft = { ...primary, additionalImages: combinedExtras.slice(0, MAX_ADDITIONAL_IMAGES) };
+
+    setDrafts((ds) => ds.map((d) => (d.localId === primary.localId ? merged : d)).filter((d) => !rest.some((r) => r.localId === d.localId)));
+    setSelectedForMerge([]);
+    showToast(
+      truncated
+        ? `Merged into one product — only kept the first ${MAX_ADDITIONAL_IMAGES + 1} photos.`
+        : `Merged ${selected.length} photos into one product.`,
+      "success"
+    );
+  }
+
   function updateDraft(localId: string, patch: Partial<Draft>) {
     setDrafts((ds) => ds.map((d) => (d.localId === localId ? { ...d, ...patch } : d)));
   }
@@ -131,6 +159,7 @@ export default function BulkPhotoUploadPage() {
 
   function removeDraft(localId: string) {
     setDrafts((ds) => ds.filter((d) => d.localId !== localId));
+    setSelectedForMerge((ids) => ids.filter((id) => id !== localId));
   }
 
   // Lets a seller attach extra angles (back, side, close-up) of the same
@@ -289,10 +318,10 @@ export default function BulkPhotoUploadPage() {
 
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>✨ AI Bulk Upload</h1>
       <p style={{ color: "#64748b", marginBottom: 24, maxWidth: 640 }}>
-        Upload several raw product photos at once for {store.name}. Each one becomes its own product, automatically getting its background
-        removed, centered, and zoomed to fill the frame (free), plus a title, category, and description suggested by AI — review and
-        adjust before publishing. Price, stock, and sizes default to placeholders you should edit. Once a photo is processed, you can add
-        more angles (back, side, close-up) of that same product before publishing it.
+        Upload several raw product photos at once for {store.name} — mix photos of different products and multiple angles of the same
+        product in one go. Each photo becomes its own product by default, automatically getting its background removed, centered, and
+        zoomed to fill the frame (free), plus a title, category, and description suggested by AI. If a few photos are really the same
+        product, check them below and merge them into one before publishing.
       </p>
 
       <div
@@ -427,15 +456,82 @@ export default function BulkPhotoUploadPage() {
         </div>
       )}
 
+      {selectedForMerge.length >= 2 && (
+        <div
+          className="sio-fade-in"
+          style={{
+            position: "sticky",
+            top: 12,
+            zIndex: 5,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            background: "#0f172a",
+            color: "#fff",
+            borderRadius: 12,
+            padding: "12px 18px",
+            marginBottom: 16,
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 600, minWidth: 0 }}>
+            {selectedForMerge.length} photos selected — are these the same product?
+          </span>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => setSelectedForMerge([])}
+              style={{ background: "none", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 999, padding: "6px 14px", fontSize: 12, cursor: "pointer" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleMergeSelected}
+              style={{ background: "#7c3aed", border: "none", color: "#fff", borderRadius: 999, padding: "6px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+            >
+              Merge into One Product
+            </button>
+          </div>
+        </div>
+      )}
+
       {drafts.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {drafts.map((d) => (
+          {drafts.map((d) => {
+            const mergeable = d.status === "queued" || d.status === "error" || d.status === "ready";
+            return (
             <div
               key={d.localId}
               className="sio-card sio-draft-row"
-              style={{ display: "flex", gap: 16, background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}
+              style={{
+                display: "flex",
+                gap: 16,
+                background: "#fff",
+                borderRadius: 14,
+                border: selectedForMerge.includes(d.localId) ? "2px solid #7c3aed" : "1px solid #f1f5f9",
+                padding: 16,
+              }}
             >
               <div style={{ position: "relative", flexShrink: 0 }}>
+                {mergeable && drafts.filter((o) => o.status === "queued" || o.status === "error" || o.status === "ready").length > 1 && (
+                  <input
+                    type="checkbox"
+                    checked={selectedForMerge.includes(d.localId)}
+                    onChange={() => toggleMergeSelect(d.localId)}
+                    aria-label="Select for merging into one product"
+                    style={{
+                      position: "absolute",
+                      top: -8,
+                      left: -8,
+                      width: 18,
+                      height: 18,
+                      zIndex: 1,
+                      cursor: "pointer",
+                    }}
+                  />
+                )}
                 <img
                   className="sio-draft-thumb"
                   src={d.image}
@@ -599,7 +695,8 @@ export default function BulkPhotoUploadPage() {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </main>
