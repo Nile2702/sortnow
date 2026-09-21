@@ -51,8 +51,42 @@ export default function BulkPhotoUploadPage() {
   const [publishing, setPublishing] = useState(false);
   const [progressLabel, setProgressLabel] = useState("");
 
+  // "Apply to all" bar - every field starts blank/untouched so applying
+  // never clobbers a draft's own value unless the seller actually typed
+  // something here. Lets a seller who just uploaded a uniform batch (e.g.
+  // 10 sarees at the same price) set it once instead of retyping it on
+  // every single ready draft.
+  const [bulkGender, setBulkGender] = useState("");
+  const [bulkSubCategory, setBulkSubCategory] = useState("");
+  const [bulkFabric, setBulkFabric] = useState("");
+  const [bulkBasePrice, setBulkBasePrice] = useState("");
+  const [bulkCompareAtPrice, setBulkCompareAtPrice] = useState("");
+  const [bulkStockRemaining, setBulkStockRemaining] = useState("");
+
   function updateDraft(localId: string, patch: Partial<Draft>) {
     setDrafts((ds) => ds.map((d) => (d.localId === localId ? { ...d, ...patch } : d)));
+  }
+
+  function handleApplyToAll() {
+    const applyCount = drafts.filter((d) => d.status === "ready").length;
+    setDrafts((ds) =>
+      ds.map((d) => {
+        if (d.status !== "ready") return d;
+        const patch: Partial<Draft> = {};
+        if (bulkGender) {
+          patch.gender = bulkGender;
+          patch.subCategory = bulkSubCategory || GENDER_SUBCATEGORIES[bulkGender][0];
+        } else if (bulkSubCategory && GENDER_SUBCATEGORIES[d.gender]?.includes(bulkSubCategory)) {
+          patch.subCategory = bulkSubCategory;
+        }
+        if (bulkFabric) patch.fabric = bulkFabric;
+        if (bulkBasePrice !== "") patch.basePrice = Number(bulkBasePrice);
+        if (bulkCompareAtPrice !== "") patch.compareAtPrice = Number(bulkCompareAtPrice);
+        if (bulkStockRemaining !== "") patch.stockRemaining = Number(bulkStockRemaining);
+        return { ...d, ...patch };
+      })
+    );
+    showToast(`Applied to ${applyCount} draft${applyCount === 1 ? "" : "s"}.`, "success");
   }
 
   async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
@@ -267,6 +301,90 @@ export default function BulkPhotoUploadPage() {
           </div>
         )}
       </div>
+
+      {readyCount > 0 && (
+        <div
+          className="sio-card"
+          style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 24 }}
+        >
+          <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>Apply to all</label>
+          <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12 }}>
+            Set any field here and apply it to every ready draft at once — leave a field blank to leave that field untouched on each
+            draft. Handy when a whole batch is the same category, price, or fabric.
+          </p>
+          <div className="sio-draft-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+            <select
+              value={bulkGender}
+              onChange={(e) => {
+                setBulkGender(e.target.value);
+                setBulkSubCategory("");
+              }}
+              style={inputStyle()}
+            >
+              <option value="">Gender (unchanged)</option>
+              <option value="women">Women</option>
+              <option value="men">Men</option>
+              <option value="kids">Kids</option>
+            </select>
+            <select value={bulkSubCategory} onChange={(e) => setBulkSubCategory(e.target.value)} style={inputStyle()} disabled={!bulkGender}>
+              <option value="">Category (unchanged)</option>
+              {(bulkGender ? GENDER_SUBCATEGORIES[bulkGender] : []).map((sc) => (
+                <option key={sc} value={sc}>
+                  {sc}
+                </option>
+              ))}
+            </select>
+            <input value={bulkFabric} onChange={(e) => setBulkFabric(e.target.value)} placeholder="Fabric (unchanged)" style={inputStyle()} />
+            <input
+              type="number"
+              min={0}
+              value={bulkBasePrice}
+              onChange={(e) => setBulkBasePrice(e.target.value)}
+              placeholder="Price (unchanged)"
+              style={inputStyle()}
+            />
+            <input
+              type="number"
+              min={0}
+              value={bulkCompareAtPrice}
+              onChange={(e) => setBulkCompareAtPrice(e.target.value)}
+              placeholder="MRP (unchanged)"
+              style={inputStyle()}
+            />
+            <input
+              type="number"
+              min={0}
+              value={bulkStockRemaining}
+              onChange={(e) => setBulkStockRemaining(e.target.value)}
+              placeholder="Stock (unchanged)"
+              style={inputStyle()}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleApplyToAll}
+            disabled={!bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkStockRemaining === ""}
+            style={{
+              padding: "10px 20px",
+              borderRadius: 999,
+              border: "none",
+              background:
+                !bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkStockRemaining === ""
+                  ? "#94a3b8"
+                  : "#0f172a",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 13,
+              cursor:
+                !bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkStockRemaining === ""
+                  ? "default"
+                  : "pointer",
+            }}
+          >
+            Apply to {readyCount} Ready Draft{readyCount === 1 ? "" : "s"}
+          </button>
+        </div>
+      )}
 
       {drafts.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
