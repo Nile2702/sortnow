@@ -12,11 +12,20 @@ const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGO
 
 type DraftStatus = "queued" | "removing-bg" | "autofilling" | "ready" | "publishing" | "published" | "error";
 
+const MAX_ADDITIONAL_IMAGES = 4;
+
 interface Draft {
   localId: string;
   fileName: string;
   originalImage: string;
   image: string;
+  // Extra angles (back, side, close-up) of the same product - unlike `image`,
+  // these skip the free enhancement pipeline (no bg removal/align/lighting):
+  // that pipeline runs once per draft during Process All, before these can
+  // even be added, so re-running it per additional photo would mean a
+  // second heavy segmentation pass per photo. Same tradeoff the single-
+  // product form already makes for its own "Additional Photos".
+  additionalImages: string[];
   bgRemoved: boolean;
   status: DraftStatus;
   error: string;
@@ -103,6 +112,7 @@ export default function BulkPhotoUploadPage() {
         fileName: file.name,
         originalImage: dataUrl,
         image: dataUrl,
+        additionalImages: [],
         bgRemoved: false,
         status: "queued",
         error: "",
@@ -121,6 +131,36 @@ export default function BulkPhotoUploadPage() {
 
   function removeDraft(localId: string) {
     setDrafts((ds) => ds.filter((d) => d.localId !== localId));
+  }
+
+  // Lets a seller attach extra angles (back, side, close-up) of the same
+  // product to a draft that's already been through Process All - the same
+  // "Additional Photos" pattern as the single-product form, just scoped to
+  // one draft in a batch instead of the one product on that page.
+  async function handleAdditionalPhotosChange(localId: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+
+    const draft = drafts.find((d) => d.localId === localId);
+    if (!draft) return;
+    const room = MAX_ADDITIONAL_IMAGES - draft.additionalImages.length;
+    if (room <= 0) return;
+
+    const accepted: string[] = [];
+    for (const file of files.slice(0, room)) {
+      if (!file.type.startsWith("image/") || file.size > 3 * 1024 * 1024) continue;
+      accepted.push(await fileToDataUrl(file));
+    }
+    if (accepted.length > 0) {
+      updateDraft(localId, { additionalImages: [...draft.additionalImages, ...accepted] });
+    }
+  }
+
+  function removeAdditionalImage(localId: string, index: number) {
+    setDrafts((ds) =>
+      ds.map((d) => (d.localId === localId ? { ...d, additionalImages: d.additionalImages.filter((_, i) => i !== index) } : d))
+    );
   }
 
   // Runs free background removal + AI autofill across every queued photo,
@@ -214,7 +254,7 @@ export default function BulkPhotoUploadPage() {
               // wrong for any category that isn't genuinely one-size. The
               // seller can narrow it down later via Edit.
               sizes: getSizeOptionsFor(d.subCategory),
-              images: [{ url: d.image }],
+              images: [{ url: d.image }, ...d.additionalImages.map((url) => ({ url }))],
             }),
           });
           if (!res.ok) throw new Error("Publish failed");
@@ -249,9 +289,10 @@ export default function BulkPhotoUploadPage() {
 
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>✨ AI Bulk Upload</h1>
       <p style={{ color: "#64748b", marginBottom: 24, maxWidth: 640 }}>
-        Upload several raw product photos at once for {store.name}. Each one automatically gets its background removed, centered, and
-        zoomed to fill the frame (free), plus a title, category, and description suggested by AI — review and adjust before publishing.
-        Price, stock, and sizes default to placeholders you should edit.
+        Upload several raw product photos at once for {store.name}. Each one becomes its own product, automatically getting its background
+        removed, centered, and zoomed to fill the frame (free), plus a title, category, and description suggested by AI — review and
+        adjust before publishing. Price, stock, and sizes default to placeholders you should edit. Once a photo is processed, you can add
+        more angles (back, side, close-up) of that same product before publishing it.
       </p>
 
       <div
@@ -395,7 +436,12 @@ export default function BulkPhotoUploadPage() {
               style={{ display: "flex", gap: 16, background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}
             >
               <div style={{ position: "relative", flexShrink: 0 }}>
-                <img src={d.image} alt={d.fileName} style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 8, border: "1px solid #e2e8f0" }} />
+                <img
+                  className="sio-draft-thumb"
+                  src={d.image}
+                  alt={d.fileName}
+                  style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 8, border: "1px solid #e2e8f0" }}
+                />
                 {d.bgRemoved && (
                   <span
                     style={{
@@ -501,6 +547,54 @@ export default function BulkPhotoUploadPage() {
                       rows={2}
                       style={{ ...inputStyle(), gridColumn: "1 / -1", resize: "vertical" }}
                     />
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>
+                        More photos of this product (back, side, close-up)
+                      </p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: d.additionalImages.length > 0 ? 8 : 0 }}>
+                        {d.additionalImages.map((img, i) => (
+                          <div key={i} style={{ position: "relative" }}>
+                            <img
+                              src={img}
+                              alt={`${d.fileName} extra angle ${i + 1}`}
+                              style={{ width: 48, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid #e2e8f0" }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeAdditionalImage(d.localId, i)}
+                              aria-label="Remove photo"
+                              style={{
+                                position: "absolute",
+                                top: -6,
+                                right: -6,
+                                width: 18,
+                                height: 18,
+                                borderRadius: "50%",
+                                border: "none",
+                                background: "#0f172a",
+                                color: "#fff",
+                                fontSize: 11,
+                                lineHeight: "18px",
+                                textAlign: "center",
+                                cursor: "pointer",
+                                padding: 0,
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      {d.additionalImages.length < MAX_ADDITIONAL_IMAGES && (
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => handleAdditionalPhotosChange(d.localId, e)}
+                          style={{ fontSize: 11, width: "100%", maxWidth: "100%" }}
+                        />
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

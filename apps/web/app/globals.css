@@ -178,7 +178,7 @@ html {
   .sio-draft-row {
     flex-direction: column;
   }
-  .sio-draft-row img {
+  .sio-draft-row .sio-draft-thumb {
     width: 100% !important;
     height: 160px !important;
   }
