@@ -185,6 +185,25 @@ export default function ProductDetailPage() {
     showToast(nowWishlisted ? "Saved to Wishlist" : "Removed from Wishlist");
   }
 
+  async function handleShare() {
+    if (!product) return;
+    const shareData = { title: product.title, text: `${product.title} — ${product.store.name}`, url: window.location.href };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // Cancelled - nothing to do.
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showToast("Link copied");
+    } catch {
+      showToast("Couldn't copy the link.");
+    }
+  }
+
   // Reserve-and-pickup, not shipped delivery - there's nothing to estimate
   // a delivery date for, so this tells the shopper how far the store
   // actually is from their PIN code instead.
@@ -230,6 +249,29 @@ export default function ProductDetailPage() {
 
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "8px 16px 64px" }}>
+      <div className="sio-product-mobile-header">
+        <button type="button" onClick={() => router.back()} aria-label="Back" className="sio-product-mobile-header-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button type="button" onClick={handleToggleWishlist} aria-label="Wishlist" className="sio-product-mobile-header-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlisted ? "var(--sio-bronze-dark)" : "none"} stroke={wishlisted ? "var(--sio-bronze-dark)" : "currentColor"} strokeWidth="2">
+              <path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2 4.5 5.6 4c2-.3 3.8.7 4.9 2.4C11.6 4.7 13.4 3.7 15.4 4c3.6.5 5.3 4.1 3.6 7.7C19.5 16.4 12 21 12 21z" />
+            </svg>
+          </button>
+          <button type="button" onClick={handleShare} aria-label="Share" className="sio-product-mobile-header-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <path d="M8.6 10.5l6.8-3.9M8.6 13.5l6.8 3.9" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       <div className="sio-fade-in" style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 20, letterSpacing: "0.02em" }}>
         <Link href="/" style={{ color: "var(--sio-muted)" }}>
           Home
@@ -486,7 +528,7 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+          <div className="sio-product-inline-actions" style={{ display: "flex", gap: 10, marginBottom: 24 }}>
             <button
               onClick={handleAddToCart}
               className="sio-btn-primary sio-shine-btn"
@@ -847,6 +889,18 @@ export default function ProductDetailPage() {
           )}
         </div>
       )}
+
+      <div className="sio-product-action-spacer" />
+      <div className="sio-product-action-bar">
+        <button type="button" onClick={handleToggleWishlist} aria-label="Wishlist" className="sio-product-action-heart">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill={wishlisted ? "var(--sio-bronze-dark)" : "none"} stroke={wishlisted ? "var(--sio-bronze-dark)" : "currentColor"} strokeWidth="2">
+            <path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2 4.5 5.6 4c2-.3 3.8.7 4.9 2.4C11.6 4.7 13.4 3.7 15.4 4c3.6.5 5.3 4.1 3.6 7.7C19.5 16.4 12 21 12 21z" />
+          </svg>
+        </button>
+        <button type="button" onClick={handleAddToCart} className="sio-product-action-cta">
+          {added ? "Added ✓" : `Add to Sort — ₹${product.basePrice}`}
+        </button>
+      </div>
     </main>
   );
 }

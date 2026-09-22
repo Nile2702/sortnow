@@ -597,3 +597,93 @@ body {
     display: block;
   }
 }
+
+/* Product detail page's own mobile header/footer - lighter than the app
+   shell above (just back/wishlist/share, and a sticky buy-box action bar)
+   since a single-product page is a focused decision screen, not a place
+   to browse from. Desktop keeps the normal SiteHeader and in-flow
+   Add to Sort button; both of these stay display:none there. */
+.sio-product-mobile-header,
+.sio-product-action-spacer,
+.sio-product-action-bar {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .sio-product-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 10px 6px;
+    margin: 0 -16px 14px;
+    background: var(--sio-cream);
+    border-bottom: 1px solid var(--sio-line);
+  }
+
+  .sio-product-mobile-header-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--sio-ink);
+    cursor: pointer;
+  }
+
+  .sio-product-action-spacer {
+    display: block;
+    height: 68px;
+  }
+
+  .sio-product-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    padding: 10px 16px;
+    background: var(--sio-paper);
+    border-top: 1px solid var(--sio-line);
+  }
+
+  .sio-product-action-heart {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid var(--sio-line);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--sio-ink);
+    cursor: pointer;
+  }
+
+  .sio-product-action-cta {
+    flex: 1;
+    height: 46px;
+    border-radius: 999px;
+    border: none;
+    background: var(--sio-ink);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14.5px;
+    cursor: pointer;
+  }
+
+  /* The in-flow Add to Sort/wishlist row is redundant with the sticky
+     action bar above once both are on screen at once. */
+  .sio-product-inline-actions {
+    display: none;
+  }
+}

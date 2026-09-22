@@ -15,3 +15,10 @@ export function isMobileAppShellPage(pathname: string): boolean {
   if (pathname.startsWith("/product/")) return false;
   return true;
 }
+
+// The product detail page gets its own lightweight mobile header/footer
+// (ProductMobileHeader, and the sticky action bar built into the page
+// itself) instead of the app shell above - see that component for why.
+export function isProductDetailPage(pathname: string): boolean {
+  return pathname.startsWith("/product/");
+}
