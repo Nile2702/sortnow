@@ -8,6 +8,7 @@ import { getWishlist } from "../lib/wishlist";
 import { CATEGORY_TREE } from "../lib/catalog-constants";
 import { LogoBadge } from "./LogoBadge";
 import { getShopperSession, onShopperSessionChange, ShopperSession } from "../lib/shopper-session";
+import { isMobileAppShellPage } from "../lib/mobile-shell";
 
 function HeartIcon() {
   return (
@@ -81,11 +82,12 @@ interface SearchSuggestion {
 export function SiteHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  // The homepage and search results page get an app-style header instead
-  // (MobileAppHeader) on mobile widths - this one stays mounted (so its
-  // state/effects don't reset) but is hidden there via CSS, and is
-  // unaffected at desktop widths regardless of route.
-  const hideOnMobile = pathname === "/" || pathname === "/search";
+  // Every shopper page except product detail gets an app-style header
+  // instead (MobileAppHeader) on mobile widths - see lib/mobile-shell.ts
+  // for the shared rule. This one stays mounted (so its state/effects
+  // don't reset) but is hidden there via CSS, and is unaffected at desktop
+  // widths regardless of route.
+  const hideOnMobile = isMobileAppShellPage(pathname);
   const [cartN, setCartN] = useState(0);
   const [wishN, setWishN] = useState(0);
   const [query, setQuery] = useState("");

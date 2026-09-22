@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { QUICK_MARKETS, getLocationPref, setLocationPref, LOCATION_CHANGED_EVENT, type QuickMarket } from "../lib/location";
+import { isMobileAppShellPage } from "../lib/mobile-shell";
 import { showToast } from "../lib/toast";
 import { QrScannerModal } from "./QrScannerModal";
 
@@ -78,8 +79,8 @@ function getSpeechRecognition(): (new () => any) | undefined {
 export function MobileAppHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const isAppPage = pathname === "/" || pathname === "/search";
-  const isListingPage = pathname === "/search";
+  const isAppPage = isMobileAppShellPage(pathname);
+  const isListingPage = isAppPage && pathname !== "/";
 
   const [location, setLocation] = useState<QuickMarket>(QUICK_MARKETS[0]);
   const [pickerOpen, setPickerOpen] = useState(false);

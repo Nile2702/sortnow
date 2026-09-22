@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isMobileAppShellPage } from "../lib/mobile-shell";
 
 const BAR_HEIGHT = 60;
 
@@ -45,21 +46,19 @@ function AccountIcon({ active }: { active: boolean }) {
 
 const TABS = [
   { href: "/", label: "Home", Icon: HomeIcon, match: (p: string) => p === "/" },
-  { href: "/search", label: "Category", Icon: CategoryIcon, match: (p: string) => p === "/search" },
+  { href: "/search", label: "Category", Icon: CategoryIcon, match: (p: string) => p === "/search" || p.startsWith("/category/") },
   { href: "/reservations", label: "Reservations", Icon: ReservationIcon, match: (p: string) => p.startsWith("/reservations") },
   { href: "/account", label: "Account", Icon: AccountIcon, match: (p: string) => p.startsWith("/account") },
 ];
 
 // Persistent bottom tab bar for the two pages redesigned as an app-style
-// mobile experience (homepage, search results) - see MobileAppHeader for
-// the matching header. Kept to just those two routes rather than site-wide
-// since product/cart/seller pages already have their own focused
-// bottom-of-screen actions (Add to Sort, Publish, etc.) that a persistent
-// nav bar would crowd.
+// mobile experience - see MobileAppHeader for the matching header and
+// lib/mobile-shell.ts for the shared page rule (every shopper page except
+// product detail, which already has its own back navigation and no room
+// to spare above the fold; the seller portal has its own nav entirely).
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const isAppPage = pathname === "/" || pathname === "/search";
-  if (!isAppPage) return null;
+  if (!isMobileAppShellPage(pathname)) return null;
 
   return (
     <>
