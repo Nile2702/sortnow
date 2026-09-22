@@ -8,6 +8,7 @@ import { toggleWishlist, isWishlisted } from "../../../lib/wishlist";
 import { showToast } from "../../../lib/toast";
 import { getShopperSession } from "../../../lib/shopper-session";
 import { COLOR_CATALOG } from "../../../lib/catalog-constants";
+import { LogoBadge } from "../../../components/LogoBadge";
 
 interface ColorVariant {
   id: string;
@@ -255,6 +256,9 @@ export default function ProductDetailPage() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
+        <Link href="/" aria-label="SORT IT OUT — Home" style={{ display: "flex" }}>
+          <LogoBadge size={30} />
+        </Link>
         <div style={{ display: "flex", gap: 4 }}>
           <button type="button" onClick={handleToggleWishlist} aria-label="Wishlist" className="sio-product-mobile-header-btn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlisted ? "var(--sio-bronze-dark)" : "none"} stroke={wishlisted ? "var(--sio-bronze-dark)" : "currentColor"} strokeWidth="2">
