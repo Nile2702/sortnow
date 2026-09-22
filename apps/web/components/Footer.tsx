@@ -36,7 +36,7 @@ const COLUMNS = [
     title: "For Merchants",
     links: [
       { label: "Seller Portal", href: "/seller" },
-      { label: "List Your Store", href: "/seller/onboarding" },
+      { label: "List Your Store", href: "/seller/signup" },
     ],
   },
   {

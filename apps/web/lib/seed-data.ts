@@ -182,6 +182,95 @@ export function verifySellerLogin(storeSlug: string, password: string): Store | 
   return store;
 }
 
+function slugify(name: string): string {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "store";
+}
+
+export interface CreateStoreInput {
+  name: string;
+  category: string;
+  pincode: string;
+  localMarket: string;
+  password: string;
+}
+
+// Real "sign up as a new merchant" path - as opposed to verifySellerLogin
+// above, which only ever authenticates one of the pre-seeded demo stores.
+// The new store starts life as "draft" (not yet visible to shoppers) until
+// the seller completes the onboarding/KYC flow, matching how a real
+// marketplace wouldn't list an unverified merchant either.
+export function createStore(input: CreateStoreInput): { store: Store } | { error: string } {
+  const name = input.name.trim();
+  if (!name) return { error: "Store name is required." };
+  if (name.length > 120) return { error: "Store name is too long." };
+  if (!input.localMarket.trim()) return { error: "Local market or area is required." };
+  if (!input.password || input.password.length < 8) return { error: "Password must be at least 8 characters." };
+
+  const geo = resolvePincode(input.pincode);
+  if (!geo) return { error: "Couldn't recognize that PIN code." };
+
+  const baseSlug = slugify(name);
+  let slug = baseSlug;
+  let suffix = 2;
+  while (stores.some((s) => s.slug === slug)) {
+    slug = `${baseSlug}-${suffix++}`;
+  }
+
+  const store: Store = {
+    id: `store-${slug}-${Date.now().toString(36)}`,
+    slug,
+    name,
+    status: "draft",
+    category: input.category || "ethnic",
+    city: geo.city,
+    pincode: input.pincode,
+    localMarket: input.localMarket.trim(),
+    latitude: geo.lat,
+    longitude: geo.lng,
+  };
+  stores.unshift(store);
+  persist("stores", stores);
+
+  sellerCredentials[store.id] = hashPassword(input.password);
+  persist("sellerCredentials", sellerCredentials);
+
+  // A brand-new store still needs a theme record to render its storefront
+  // page and Theme Studio at all - every seed store has one, so this one
+  // gets a sensible neutral default (the app's own teal/ink brand colors)
+  // rather than leaving themes[store.id] undefined.
+  themes[store.id] = {
+    version: 1,
+    brand: {
+      logoUrl: "",
+      colors: {
+        primary: "#0f172a",
+        secondary: "#f1f5f9",
+        accent: "#0d9488",
+        background: "#ffffff",
+        text: "#0f172a",
+        saleBadge: "#e11d48",
+      },
+      typography: { headingFont: "Inter", bodyFont: "Inter", baseSizePx: 16 },
+      borderRadiusScale: "soft",
+    },
+    layout: {
+      gridStyle: "3-col",
+      sectionOrder: ["hero", "categoryNav", "featuredCollection", "newArrivals"],
+      heroCarousel: [
+        {
+          eyebrow: `${store.name} · ${store.localMarket}`,
+          title: "Welcome to our store",
+          subtitle: "New arrivals, curated for you.",
+        },
+      ],
+      featuredCollection: { title: "Featured", maxItems: 8 },
+    },
+  };
+  persist("themes", themes);
+
+  return { store };
+}
+
 const INITIAL_THEMES: Record<string, any> = {
   "store-urban-vogue": {
     version: 3,
@@ -1022,6 +1111,18 @@ export function getStoreProducts(storeId: string): Product[] {
 export function getColorSiblings(product: Product): Product[] {
   if (!product.colorGroupId) return [];
   return products.filter((p) => p.id !== product.id && p.storeId === product.storeId && p.colorGroupId === product.colorGroupId);
+}
+
+// Flips a newly-signed-up store from "draft" to "active" once its seller
+// finishes the onboarding/KYC flow - draft stores are excluded from every
+// shopper-facing search/browse query (see the "active" filters above), so
+// this is the one step that actually makes a new merchant visible.
+export function activateStore(storeId: string): Store | null {
+  const store = stores.find((s) => s.id === storeId);
+  if (!store) return null;
+  store.status = "active";
+  persist("stores", stores);
+  return store;
 }
 
 export function updateStoreTheme(storeId: string, patch: { primary?: string; accent?: string; heroTitle?: string; heroSubtitle?: string }) {

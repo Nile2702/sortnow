@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useSellerStore } from "../../../../lib/use-seller-store";
 
 const STEPS = ["Business Details", "GSTIN Verification", "PAN Verification", "Bank/UPI Payout", "Done"];
 
 export default function OnboardingPage() {
+  const { store } = useSellerStore();
   const [step, setStep] = useState(0);
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("proprietorship");
@@ -14,6 +16,19 @@ export default function OnboardingPage() {
   const [panStatus, setPanStatus] = useState<"idle" | "checking" | "verified">("idle");
   const [upi, setUpi] = useState("");
   const [upiStatus, setUpiStatus] = useState<"idle" | "checking" | "verified">("idle");
+  const [activating, setActivating] = useState(false);
+
+  // Only a "draft" store (just signed up, not yet visible to shoppers)
+  // needs activating - the pre-seeded demo stores are already "active" and
+  // are just replaying this flow for its own sake, so skip the call there.
+  async function completeOnboarding() {
+    if (store?.status === "draft") {
+      setActivating(true);
+      await fetch(`/api/v1/seller/stores/${store.id}/activate`, { method: "POST" }).catch(() => {});
+      setActivating(false);
+    }
+    setStep(4);
+  }
 
   function verifyGstin() {
     setGstinStatus("checking");
@@ -124,7 +139,7 @@ export default function OnboardingPage() {
               </div>
               {upiStatus === "verified" && <StatusBadge ok text="Penny-drop successful — account active" />}
             </div>
-            <NextButton disabled={upiStatus !== "verified"} onClick={() => setStep(4)} label="Complete Onboarding" />
+            <NextButton disabled={upiStatus !== "verified" || activating} onClick={completeOnboarding} label={activating ? "Activating your store…" : "Complete Onboarding"} />
           </div>
         )}
 

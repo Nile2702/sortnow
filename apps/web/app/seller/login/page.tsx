@@ -307,6 +307,13 @@ export default function SellerLoginPage() {
               </div>
             </form>
 
+            <div style={{ marginTop: 16, textAlign: "center", fontSize: 12.5, color: "var(--sio-muted)" }}>
+              New here?{" "}
+              <Link href="/seller/signup" style={{ color: "var(--sio-bronze)", fontWeight: 600, textDecoration: "none" }}>
+                List your store
+              </Link>
+            </div>
+
             <Link
               href="/"
               style={{
