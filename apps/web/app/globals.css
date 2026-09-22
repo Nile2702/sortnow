@@ -682,8 +682,11 @@ body {
   }
 
   /* The in-flow Add to Sort/wishlist row is redundant with the sticky
-     action bar above once both are on screen at once. */
+     action bar above once both are on screen at once. !important because
+     the row also carries an inline display:flex (for desktop), which
+     otherwise wins the cascade over this class rule regardless of the
+     media query. */
   .sio-product-inline-actions {
-    display: none;
+    display: none !important;
   }
 }
