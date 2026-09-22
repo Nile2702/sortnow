@@ -6,6 +6,7 @@ import { QUICK_MARKETS, getLocationPref, setLocationPref, LOCATION_CHANGED_EVENT
 import { isMobileAppShellPage } from "../lib/mobile-shell";
 import { showToast } from "../lib/toast";
 import { QrScannerModal } from "./QrScannerModal";
+import { LogoBadge } from "./LogoBadge";
 
 function BackIcon() {
   return (
@@ -69,6 +70,14 @@ function getSpeechRecognition(): (new () => any) | undefined {
   return (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
 }
 
+const TRENDING_SEARCHES = ["Sarees", "Kurtis", "Sneakers", "Lehengas", "Jeans"];
+
+function greetingFor(hour: number): string {
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 // The app-style header (location + voice search + QR scan) shown in place
 // of the normal site header on the two pages it makes sense for - the
 // homepage and the search results list - per the seller/shopper feedback
@@ -81,16 +90,24 @@ export function MobileAppHeader() {
   const router = useRouter();
   const isAppPage = isMobileAppShellPage(pathname);
   const isListingPage = isAppPage && pathname !== "/";
+  // Only the homepage gets the fuller, livelier banner treatment (greeting,
+  // dark gradient, glow, trending chips) - every other app-shell page
+  // (search, cart, wishlist, reservations...) keeps the plain compact
+  // header, since a big hero banner would be out of place re-appearing on
+  // every page navigation instead of just the first screen a shopper sees.
+  const isHome = isAppPage && pathname === "/";
 
   const [location, setLocation] = useState<QuickMarket>(QUICK_MARKETS[0]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [listening, setListening] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [greeting, setGreeting] = useState("");
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLocation(getLocationPref());
+    setGreeting(greetingFor(new Date().getHours()));
     function onChange(e: Event) {
       setLocation((e as CustomEvent<QuickMarket>).detail);
     }
@@ -147,8 +164,35 @@ export function MobileAppHeader() {
   }
 
   return (
-    <div className="sio-app-header">
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "12px 16px 10px" }}>
+    <div
+      className="sio-app-header"
+      style={
+        isHome
+          ? { position: "relative", overflow: "hidden", background: "linear-gradient(135deg, var(--sio-ink) 0%, #0f2b26 100%)" }
+          : undefined
+      }
+    >
+      {isHome && (
+        <>
+          <div className="sio-grid-overlay" aria-hidden />
+          <div className="sio-scanline" aria-hidden />
+          <span className="sio-particle" aria-hidden style={{ width: 5, height: 5, left: "12%", top: "20%", animationDelay: "0s", animationDuration: "6s" }} />
+          <span className="sio-particle" aria-hidden style={{ width: 4, height: 4, left: "82%", top: "60%", animationDelay: "1.4s", animationDuration: "7s" }} />
+          <span className="sio-particle" aria-hidden style={{ width: 3, height: 3, left: "60%", top: "10%", animationDelay: "2.6s", animationDuration: "5s" }} />
+        </>
+      )}
+      <div style={{ position: "relative", maxWidth: 720, margin: "0 auto", padding: "12px 16px 14px" }}>
+        {isHome && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <LogoBadge size={22} />
+            <span style={{ color: "#fff", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em" }}>SORT IT OUT</span>
+          </div>
+        )}
+        {isHome && greeting && (
+          <div className="sio-neon-text" style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, letterSpacing: "0.02em" }}>
+            {greeting} ✨ what are we sorting today?
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
           {isListingPage && (
             <button
@@ -185,7 +229,7 @@ export function MobileAppHeader() {
                 border: "none",
                 padding: 0,
                 cursor: "pointer",
-                color: "var(--sio-bronze-dark)",
+                color: isHome ? "var(--sio-glow)" : "var(--sio-bronze-dark)",
                 maxWidth: "100%",
               }}
             >
@@ -248,17 +292,18 @@ export function MobileAppHeader() {
             type="button"
             onClick={() => setQrOpen(true)}
             aria-label="Scan QR code"
+            className={isHome ? "sio-glass sio-glow-ring" : undefined}
             style={{
               flexShrink: 0,
               width: 38,
               height: 38,
               borderRadius: "50%",
-              border: "1px solid var(--sio-line)",
-              background: "#fff",
+              border: isHome ? undefined : "1px solid var(--sio-line)",
+              background: isHome ? undefined : "#fff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "var(--sio-ink)",
+              color: isHome ? "var(--sio-glow)" : "var(--sio-ink)",
               cursor: "pointer",
             }}
           >
@@ -278,11 +323,12 @@ export function MobileAppHeader() {
             style={{
               width: "100%",
               padding: "11px 44px",
-              border: "1px solid var(--sio-line)",
-              background: "var(--sio-cream)",
+              border: isHome ? "1px solid rgba(45,212,191,0.35)" : "1px solid var(--sio-line)",
+              background: isHome ? "#fff" : "var(--sio-cream)",
               fontSize: 16,
               outline: "none",
               borderRadius: 999,
+              boxShadow: isHome ? "0 6px 20px rgba(0,0,0,0.25)" : undefined,
             }}
           />
           <button
@@ -309,6 +355,31 @@ export function MobileAppHeader() {
             <MicIcon active={listening} />
           </button>
         </form>
+
+        {isHome && (
+          <div style={{ display: "flex", gap: 8, marginTop: 10, overflowX: "auto", paddingBottom: 2 }}>
+            {TRENDING_SEARCHES.map((term) => (
+              <button
+                key={term}
+                type="button"
+                onClick={() => router.push(`/search?q=${encodeURIComponent(term)}`)}
+                className="sio-glass"
+                style={{
+                  flexShrink: 0,
+                  padding: "6px 14px",
+                  borderRadius: 999,
+                  color: "var(--sio-ink)",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {term}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {qrOpen && <QrScannerModal onClose={() => setQrOpen(false)} />}
