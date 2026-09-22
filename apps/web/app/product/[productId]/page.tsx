@@ -256,8 +256,9 @@ export default function ProductDetailPage() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <Link href="/" aria-label="SORT IT OUT — Home" style={{ display: "flex" }}>
-          <LogoBadge size={30} />
+        <Link href="/" aria-label="SORT IT OUT — Home" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <LogoBadge size={26} />
+          <span style={{ color: "var(--sio-ink)", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>SORT IT OUT</span>
         </Link>
         <div style={{ display: "flex", gap: 4 }}>
           <button type="button" onClick={handleToggleWishlist} aria-label="Wishlist" className="sio-product-mobile-header-btn">
