@@ -7,6 +7,13 @@ import { addToCart } from "../../../lib/cart";
 import { toggleWishlist, isWishlisted } from "../../../lib/wishlist";
 import { showToast } from "../../../lib/toast";
 import { getShopperSession } from "../../../lib/shopper-session";
+import { COLOR_CATALOG } from "../../../lib/catalog-constants";
+
+interface ColorVariant {
+  id: string;
+  color?: string;
+  thumbnail?: string;
+}
 
 interface ProductDetail {
   id: string;
@@ -14,6 +21,7 @@ interface ProductDetail {
   description?: string;
   fabric?: string;
   color?: string;
+  colorVariants?: ColorVariant[];
   gender: string;
   subCategory: string;
   basePrice: number;
@@ -23,6 +31,10 @@ interface ProductDetail {
   stockRemaining?: number;
   storeSlug: string;
   store: { name: string; city: string; localMarket: string; pincode: string };
+}
+
+function colorHex(name: string | undefined): string {
+  return COLOR_CATALOG.find((c) => c.name.toLowerCase() === name?.toLowerCase())?.hex ?? "#cbd5e1";
 }
 
 interface Review {
@@ -373,6 +385,60 @@ export default function ProductDetailPage() {
           {product.stockRemaining != null && product.stockRemaining <= 5 && (
             <div className="sio-breathe" style={{ color: "var(--sio-bronze-dark)", fontSize: 13, fontWeight: 500, marginBottom: 20, display: "inline-block" }}>
               Only {product.stockRemaining} left in stock
+            </div>
+          )}
+
+          {(product.color || (product.colorVariants && product.colorVariants.length > 0)) && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 10, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                Color{product.color ? `: ${product.color}` : ""}
+              </div>
+              {product.colorVariants && product.colorVariants.length > 0 ? (
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {[{ id: product.id, color: product.color, thumbnail: product.images[0]?.url }, ...product.colorVariants]
+                    .sort((a, b) => (a.id === product.id ? -1 : b.id === product.id ? 1 : 0))
+                    .map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => v.id !== product.id && router.push(`/product/${v.id}`)}
+                        title={v.color}
+                        aria-current={v.id === product.id}
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: "50%",
+                          border: v.id === product.id ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
+                          padding: 2,
+                          background: "#fff",
+                          cursor: v.id === product.id ? "default" : "pointer",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {v.thumbnail ? (
+                          <img
+                            src={v.thumbnail}
+                            alt={v.color ?? "Color option"}
+                            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+                          />
+                        ) : (
+                          <span style={{ display: "block", width: "100%", height: "100%", borderRadius: "50%", background: colorHex(v.color) }} />
+                        )}
+                      </button>
+                    ))}
+                </div>
+              ) : (
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    border: "1px solid var(--sio-line)",
+                    background: colorHex(product.color),
+                  }}
+                />
+              )}
             </div>
           )}
 

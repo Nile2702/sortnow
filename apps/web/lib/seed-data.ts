@@ -431,6 +431,11 @@ export interface Product {
   description?: string;
   fabric?: string;
   color?: string;
+  // Shared by every colorway listed together from one "select colors" step
+  // in the product form - lets the product page look up and show the
+  // sibling colors as swatches. Undefined for anything created singly
+  // (manual single-color, CSV bulk, AI bulk photos).
+  colorGroupId?: string;
   basePrice: number;
   compareAtPrice?: number;
   images: { url: string }[];
@@ -957,6 +962,7 @@ export function createProduct(storeId: string, input: Partial<Product>): Product
     description: input.description,
     fabric: input.fabric,
     color: input.color,
+    colorGroupId: input.colorGroupId,
     basePrice: input.basePrice ?? 0,
     compareAtPrice: input.compareAtPrice,
     images: input.images?.length ? input.images : [{ url: placeholderImage(input.title ?? "New product", "#334155", "#f1f5f9") }],
@@ -987,6 +993,14 @@ export function deleteProduct(id: string): boolean {
 
 export function getStoreProducts(storeId: string): Product[] {
   return products.filter((p) => p.storeId === storeId);
+}
+
+// The other colorways of the same listing (e.g. the "select colors" step
+// creating one product per color) - same colorGroupId, same store, not
+// itself - so the product page can offer them as swatches.
+export function getColorSiblings(product: Product): Product[] {
+  if (!product.colorGroupId) return [];
+  return products.filter((p) => p.id !== product.id && p.storeId === product.storeId && p.colorGroupId === product.colorGroupId);
 }
 
 export function updateStoreTheme(storeId: string, patch: { primary?: string; accent?: string; heroTitle?: string; heroSubtitle?: string }) {

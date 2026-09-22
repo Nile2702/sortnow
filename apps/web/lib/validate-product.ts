@@ -18,6 +18,7 @@ export interface ProductInput {
   description?: unknown;
   fabric?: unknown;
   color?: unknown;
+  colorGroupId?: unknown;
   gender?: unknown;
   subCategory?: unknown;
   basePrice?: unknown;
@@ -32,6 +33,11 @@ export interface ValidatedProductInput {
   description?: string;
   fabric?: string;
   color?: string;
+  // Shared across every colorway created together from the same "select
+  // colors" step in the product form, so the product page can look up and
+  // show the sibling colors as swatches. Not user-facing text, so it skips
+  // content moderation below.
+  colorGroupId?: string;
   gender?: "men" | "women" | "kids";
   subCategory?: string;
   basePrice?: number;
@@ -130,6 +136,14 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
       errors.push(`color must be ${MAX_TEXT} characters or fewer`);
     } else {
       data.color = input.color;
+    }
+  }
+
+  if (input.colorGroupId !== undefined && input.colorGroupId !== null) {
+    if (typeof input.colorGroupId !== "string" || input.colorGroupId.length > MAX_TEXT) {
+      errors.push("colorGroupId must be a string");
+    } else {
+      data.colorGroupId = input.colorGroupId;
     }
   }
 

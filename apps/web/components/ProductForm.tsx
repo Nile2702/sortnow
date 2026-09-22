@@ -441,6 +441,10 @@ export function ProductForm({
       // colorway - but each color uses its own uploaded photo when the
       // seller provided one, falling back to the main photo otherwise.
       const colorsToCreate = selectedColors.length > 0 ? selectedColors : [undefined];
+      // Only listings created together as multiple colorways need to find
+      // each other later - a single-color/no-color create has no siblings,
+      // so it gets no colorGroupId at all.
+      const colorGroupId = colorsToCreate.length > 1 ? `cg-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}` : undefined;
       await Promise.all(
         colorsToCreate.map((color) => {
           const colorImage = color ? colorImages[color] : undefined;
@@ -451,6 +455,7 @@ export function ProductForm({
               ...basePayload,
               title: color && colorsToCreate.length > 1 ? `${form.title} — ${color}` : form.title,
               color,
+              colorGroupId,
               images: colorImage
                 ? [{ url: colorImage }, ...additionalImages.map((url) => ({ url }))]
                 : basePayload.images,
