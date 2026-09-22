@@ -94,6 +94,7 @@ export function MobileAppHeader() {
   const [query, setQuery] = useState("");
   const [listening, setListening] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -104,6 +105,18 @@ export function MobileAppHeader() {
     window.addEventListener(LOCATION_CHANGED_EVENT, onChange);
     return () => window.removeEventListener(LOCATION_CHANGED_EVENT, onChange);
   }, []);
+
+  // Home's logo/location row collapses away once the page scrolls, so the
+  // search bar slides up into its place instead of the banner permanently
+  // eating a fixed chunk of the (already scarce) mobile viewport.
+  useEffect(() => {
+    if (!isHome) return;
+    function onScroll() {
+      setScrolled(window.scrollY > 12);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isHome]);
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -173,11 +186,88 @@ export function MobileAppHeader() {
       )}
       <div style={{ position: "relative", maxWidth: 720, margin: "0 auto", padding: "12px 16px 14px" }}>
         {isHome && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <LogoBadge size={22} />
-            <span style={{ color: "#fff", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em" }}>SORT IT OUT</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              maxHeight: scrolled ? 0 : 40,
+              opacity: scrolled ? 0 : 1,
+              marginBottom: scrolled ? 0 : 10,
+              overflow: "hidden",
+              transition: "max-height 0.25s ease, opacity 0.2s ease, margin-bottom 0.25s ease",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <LogoBadge size={22} />
+              <span style={{ color: "#fff", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>SORT IT OUT</span>
+            </div>
+
+            <div ref={pickerRef} style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => setPickerOpen((o) => !o)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  color: "var(--sio-glow)",
+                  maxWidth: "100%",
+                }}
+              >
+                <PinIcon />
+                <span style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 130 }}>
+                  {location.label}
+                </span>
+                <ChevronDown />
+              </button>
+
+              {pickerOpen && (
+                <div
+                  className="sio-fade-in sio-glass"
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    right: 0,
+                    zIndex: 25,
+                    borderRadius: 12,
+                    padding: 8,
+                    minWidth: 220,
+                    boxShadow: "0 12px 32px rgba(0,0,0,0.14)",
+                  }}
+                >
+                  {QUICK_MARKETS.map((m) => (
+                    <button
+                      key={m.pincode}
+                      type="button"
+                      onClick={() => pickMarket(m)}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: "none",
+                        background: m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
+                        color: "var(--sio-ink)",
+                        fontSize: 13,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
+        {!isHome && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
           {isListingPage && (
             <button
@@ -295,8 +385,10 @@ export function MobileAppHeader() {
             <QrIcon />
           </button>
         </div>
+        )}
 
-        <form onSubmit={handleSearchSubmit} style={{ position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <form onSubmit={handleSearchSubmit} style={{ position: "relative", flex: 1, minWidth: 0 }}>
           <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--sio-muted)" }}>
             <SearchIcon />
           </span>
@@ -340,6 +432,29 @@ export function MobileAppHeader() {
             <MicIcon active={listening} />
           </button>
         </form>
+
+        {isHome && (
+          <button
+            type="button"
+            onClick={() => setQrOpen(true)}
+            aria-label="Scan QR code"
+            className="sio-glass sio-glow-ring"
+            style={{
+              flexShrink: 0,
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--sio-glow)",
+              cursor: "pointer",
+            }}
+          >
+            <QrIcon />
+          </button>
+        )}
+        </div>
       </div>
 
       {qrOpen && <QrScannerModal onClose={() => setQrOpen(false)} />}
