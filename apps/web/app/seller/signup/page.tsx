@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { showToast } from "../../../lib/toast";
 
 const CATEGORIES = [
+  { value: "apparel", label: "All Types of Apparel" },
   { value: "ethnic", label: "Ethnic Wear" },
   { value: "western", label: "Western Wear" },
   { value: "footwear", label: "Footwear" },
