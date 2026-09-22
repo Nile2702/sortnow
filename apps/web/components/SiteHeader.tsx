@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getCart, cartCount } from "../lib/cart";
 import { getWishlist } from "../lib/wishlist";
@@ -80,6 +80,12 @@ interface SearchSuggestion {
 
 export function SiteHeader() {
   const router = useRouter();
+  const pathname = usePathname();
+  // The homepage and search results page get an app-style header instead
+  // (MobileAppHeader) on mobile widths - this one stays mounted (so its
+  // state/effects don't reset) but is hidden there via CSS, and is
+  // unaffected at desktop widths regardless of route.
+  const hideOnMobile = pathname === "/" || pathname === "/search";
   const [cartN, setCartN] = useState(0);
   const [wishN, setWishN] = useState(0);
   const [query, setQuery] = useState("");
@@ -174,7 +180,7 @@ export function SiteHeader() {
 
   return (
     <div
-      className="sio-glass"
+      className={`sio-glass${hideOnMobile ? " sio-header-app-hidden" : ""}`}
       style={{
         position: "sticky",
         top: 0,

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { ALL_SIZES, CATEGORY_TREE } from "../lib/catalog-constants";
 import { saveSmartSort } from "../lib/smart-sorts";
 import { toggleWishlist, isWishlisted } from "../lib/wishlist";
+import { QUICK_MARKETS, setLocationPref } from "../lib/location";
 import { HeroSlider } from "../components/HeroSlider";
 import { CategoryTiles } from "../components/CategoryTiles";
 import { TiltCard } from "../components/TiltCard";
@@ -38,15 +39,6 @@ interface SearchProduct {
   stockRemaining?: number;
 }
 
-const QUICK_MARKETS = [
-  { label: "Bandra, Mumbai", pincode: "400050" },
-  { label: "Commercial Street, Bengaluru", pincode: "560001" },
-  { label: "T. Nagar, Chennai", pincode: "600017" },
-  { label: "Chandni Chowk, Delhi", pincode: "110006" },
-  { label: "Charminar, Hyderabad", pincode: "500002" },
-  { label: "FC Road, Pune", pincode: "411005" },
-  { label: "Gariahat, Kolkata", pincode: "700019" },
-];
 
 // Reserve-and-pickup is an unusual model for a shopper used to typical
 // online shopping (ship-to-door, pay online) - this spells it out plainly
@@ -197,6 +189,14 @@ function DiscoverPageInner() {
   const [newArrivals, setNewArrivals] = useState<SearchProduct[]>([]);
   const [bestDeals, setBestDeals] = useState<SearchProduct[]>([]);
   const [spotlightLoading, setSpotlightLoading] = useState(true);
+
+  // Mirrors whatever pincode is actually driving this page's search into the
+  // shared location preference, so the mobile app-style header (rendered
+  // outside this page, in the root layout) can show it and jump back here.
+  useEffect(() => {
+    const match = QUICK_MARKETS.find((m) => m.pincode === pincode);
+    setLocationPref({ label: match?.label ?? `PIN ${pincode}`, pincode });
+  }, [pincode]);
 
   // Nationwide (no pincode/radius) spotlight sections - unlike "Stores near
   // you" and "Shop in Sort" below, these aren't scoped to the shopper's

@@ -557,3 +557,43 @@ body {
     animation: none !important;
   }
 }
+
+/* App-style mobile shell (MobileAppHeader / MobileBottomNav) - shown only
+   on the homepage and search results page (each component gates itself by
+   route via usePathname), and only at phone widths; SiteHeader hides
+   itself the same way for those two routes via .sio-header-app-hidden, so
+   exactly one header is ever visible at a time. Desktop is untouched at
+   every width above the breakpoint regardless of route. */
+.sio-app-header,
+.sio-app-bottom-nav,
+.sio-app-bottom-spacer {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .sio-header-app-hidden {
+    display: none !important;
+  }
+
+  .sio-app-header {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid var(--sio-line);
+  }
+
+  .sio-app-bottom-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    border-top: 1px solid var(--sio-line);
+  }
+
+  .sio-app-bottom-spacer {
+    display: block;
+  }
+}

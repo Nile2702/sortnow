@@ -1,0 +1,316 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { QUICK_MARKETS, getLocationPref, setLocationPref, LOCATION_CHANGED_EVENT, type QuickMarket } from "../lib/location";
+import { showToast } from "../lib/toast";
+import { QrScannerModal } from "./QrScannerModal";
+
+function BackIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 18l-6-6 6-6" />
+    </svg>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11z" />
+      <circle cx="12" cy="10" r="2.3" />
+    </svg>
+  );
+}
+
+function ChevronDown() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.3-4.3" />
+    </svg>
+  );
+}
+
+function MicIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--sio-bronze-dark)" : "currentColor"} strokeWidth="2">
+      <rect x="9" y="2" width="6" height="12" rx="3" />
+      <path d="M5 10a7 7 0 0 0 14 0" />
+      <path d="M12 19v3" />
+    </svg>
+  );
+}
+
+function QrIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+      <path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20v.01" />
+    </svg>
+  );
+}
+
+// A browser's SpeechRecognition constructor isn't in TypeScript's built-in
+// DOM lib, and only exists behind a vendor prefix in some browsers.
+function getSpeechRecognition(): (new () => any) | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+}
+
+// The app-style header (location + voice search + QR scan) shown in place
+// of the normal site header on the two pages it makes sense for - the
+// homepage and the search results list - per the seller/shopper feedback
+// that browsing on mobile should feel like a normal shopping app's home
+// screen rather than a scaled-down desktop layout. SiteHeader itself hides
+// on mobile for these same two routes (see its own pathname check) so the
+// two never show at once.
+export function MobileAppHeader() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const isAppPage = pathname === "/" || pathname === "/search";
+  const isListingPage = pathname === "/search";
+
+  const [location, setLocation] = useState<QuickMarket>(QUICK_MARKETS[0]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [listening, setListening] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setLocation(getLocationPref());
+    function onChange(e: Event) {
+      setLocation((e as CustomEvent<QuickMarket>).detail);
+    }
+    window.addEventListener(LOCATION_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(LOCATION_CHANGED_EVENT, onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [pickerOpen]);
+
+  if (!isAppPage) return null;
+
+  function pickMarket(market: QuickMarket) {
+    setLocationPref(market);
+    setPickerOpen(false);
+    router.push(`/?pincode=${market.pincode}`);
+  }
+
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    router.push(query.trim() ? `/search?q=${encodeURIComponent(query.trim())}` : "/search");
+  }
+
+  function handleMic() {
+    const Recognition = getSpeechRecognition();
+    if (!Recognition) {
+      showToast("Voice search isn't supported in this browser.");
+      return;
+    }
+    const recognition = new Recognition();
+    recognition.lang = "en-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => setListening(true);
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => {
+      setListening(false);
+      showToast("Couldn't hear that. Try again.");
+    };
+    recognition.onresult = (event: any) => {
+      const heard = event.results?.[0]?.[0]?.transcript?.trim();
+      if (heard) {
+        setQuery(heard);
+        router.push(`/search?q=${encodeURIComponent(heard)}`);
+      }
+    };
+    recognition.start();
+  }
+
+  return (
+    <div className="sio-app-header">
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: "12px 16px 10px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
+          {isListingPage && (
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              aria-label="Back to Home"
+              style={{
+                flexShrink: 0,
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: "none",
+                background: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--sio-ink)",
+                cursor: "pointer",
+                marginLeft: -6,
+              }}
+            >
+              <BackIcon />
+            </button>
+          )}
+          <div ref={pickerRef} style={{ position: "relative", minWidth: 0, flex: 1 }}>
+            <button
+              type="button"
+              onClick={() => setPickerOpen((o) => !o)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                color: "var(--sio-bronze-dark)",
+                maxWidth: "100%",
+              }}
+            >
+              <PinIcon />
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: 14,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  maxWidth: 190,
+                }}
+              >
+                {location.label}
+              </span>
+              <ChevronDown />
+            </button>
+
+            {pickerOpen && (
+              <div
+                className="sio-fade-in sio-glass"
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  left: 0,
+                  zIndex: 25,
+                  borderRadius: 12,
+                  padding: 8,
+                  minWidth: 220,
+                  boxShadow: "0 12px 32px rgba(0,0,0,0.14)",
+                }}
+              >
+                {QUICK_MARKETS.map((m) => (
+                  <button
+                    key={m.pincode}
+                    type="button"
+                    onClick={() => pickMarket(m)}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "none",
+                      background: m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
+                      color: "var(--sio-ink)",
+                      fontSize: 13,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setQrOpen(true)}
+            aria-label="Scan QR code"
+            style={{
+              flexShrink: 0,
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              border: "1px solid var(--sio-line)",
+              background: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--sio-ink)",
+              cursor: "pointer",
+            }}
+          >
+            <QrIcon />
+          </button>
+        </div>
+
+        <form onSubmit={handleSearchSubmit} style={{ position: "relative" }}>
+          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--sio-muted)" }}>
+            <SearchIcon />
+          </span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search for products…"
+            autoComplete="off"
+            style={{
+              width: "100%",
+              padding: "11px 44px",
+              border: "1px solid var(--sio-line)",
+              background: "var(--sio-cream)",
+              fontSize: 16,
+              outline: "none",
+              borderRadius: 999,
+            }}
+          />
+          <button
+            type="button"
+            onClick={handleMic}
+            aria-label="Search by voice"
+            style={{
+              position: "absolute",
+              right: 6,
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              border: "none",
+              background: listening ? "rgba(13,148,136,0.14)" : "transparent",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--sio-ink-soft)",
+              cursor: "pointer",
+            }}
+          >
+            <MicIcon active={listening} />
+          </button>
+        </form>
+      </div>
+
+      {qrOpen && <QrScannerModal onClose={() => setQrOpen(false)} />}
+    </div>
+  );
+}

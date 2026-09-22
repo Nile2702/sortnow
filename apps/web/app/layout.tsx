@@ -1,6 +1,8 @@
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "../components/SiteHeader";
+import { MobileAppHeader } from "../components/MobileAppHeader";
+import { MobileBottomNav } from "../components/MobileBottomNav";
 import { Footer } from "../components/Footer";
 import { CursorGlow } from "../components/CursorGlow";
 import { ScrollRevealInit } from "../components/ScrollRevealInit";
@@ -46,8 +48,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ScrollRevealInit />
         <ToastHost />
         <SiteHeader />
+        <MobileAppHeader />
         <div style={{ flex: 1, position: "relative" }}>{children}</div>
         <Footer />
+        <MobileBottomNav />
       </body>
     </html>
   );
