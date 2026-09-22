@@ -11,7 +11,15 @@ export default function QrMarketingPage() {
   const [label, setLabel] = useState(LABELS[0]);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
-  const targetUrl = store ? `https://sortitout.in/store/${store.slug}?src=qr&pos=${encodeURIComponent(label)}` : "";
+  // The site's own actual origin, not a hardcoded production domain - the
+  // in-app QR scanner only follows a scanned code if it resolves to this
+  // same origin (untrusted input otherwise), so a QR generated while
+  // testing on localhost or a tunnel has to encode that same origin to be
+  // scannable there at all. Falls back to the real domain in an SSR pass
+  // before window exists (this only runs client-side, but keeps the
+  // pre-mount targetUrl computation type-safe).
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://sortitout.in";
+  const targetUrl = store ? `${origin}/store/${store.slug}?src=qr&pos=${encodeURIComponent(label)}` : "";
 
   useEffect(() => {
     if (!targetUrl) return;
