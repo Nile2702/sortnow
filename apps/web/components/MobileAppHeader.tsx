@@ -70,14 +70,6 @@ function getSpeechRecognition(): (new () => any) | undefined {
   return (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
 }
 
-const TRENDING_SEARCHES = ["Sarees", "Kurtis", "Sneakers", "Lehengas", "Jeans"];
-
-function greetingFor(hour: number): string {
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
 // The app-style header (location + voice search + QR scan) shown in place
 // of the normal site header on the two pages it makes sense for - the
 // homepage and the search results list - per the seller/shopper feedback
@@ -102,12 +94,10 @@ export function MobileAppHeader() {
   const [query, setQuery] = useState("");
   const [listening, setListening] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
-  const [greeting, setGreeting] = useState("");
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLocation(getLocationPref());
-    setGreeting(greetingFor(new Date().getHours()));
     function onChange(e: Event) {
       setLocation((e as CustomEvent<QuickMarket>).detail);
     }
@@ -186,11 +176,6 @@ export function MobileAppHeader() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <LogoBadge size={22} />
             <span style={{ color: "#fff", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em" }}>SORT IT OUT</span>
-          </div>
-        )}
-        {isHome && greeting && (
-          <div className="sio-neon-text" style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, letterSpacing: "0.02em" }}>
-            {greeting} ✨ what are we sorting today?
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
@@ -355,31 +340,6 @@ export function MobileAppHeader() {
             <MicIcon active={listening} />
           </button>
         </form>
-
-        {isHome && (
-          <div style={{ display: "flex", gap: 8, marginTop: 10, overflowX: "auto", paddingBottom: 2 }}>
-            {TRENDING_SEARCHES.map((term) => (
-              <button
-                key={term}
-                type="button"
-                onClick={() => router.push(`/search?q=${encodeURIComponent(term)}`)}
-                className="sio-glass"
-                style={{
-                  flexShrink: 0,
-                  padding: "6px 14px",
-                  borderRadius: 999,
-                  color: "var(--sio-ink)",
-                  fontSize: 12.5,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {term}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {qrOpen && <QrScannerModal onClose={() => setQrOpen(false)} />}
