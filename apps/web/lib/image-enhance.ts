@@ -16,10 +16,20 @@
 // then erode by the same radius) on the alpha mask, which mathematically
 // can only fill a hole narrower than roughly 2x the radius - a thin strip
 // or seam gets bridged, while a real neckline or armpit opening (wider
-// than that) is left alone. For any pixel the closing operation newly
-// promotes to "foreground", the actual color is pulled from the original
-// photo (passed in separately) at the same coordinates, rather than reusing
-// whatever zeroed-out RGB the background-removal output left behind.
+// than that) is left alone.
+//
+// Separately, every pixel's color always comes from the original photo,
+// never from the background-removal output's own RGB - not just for
+// gap-filled pixels. In low-contrast areas (a fold, a shadow, a soft
+// fabric edge) the segmentation model's alpha "matting" gets noisy, and
+// since its RGB is alpha-premultiplied (color already multiplied by that
+// pixel's own opacity), a locally noisy alpha value drags the stored
+// color toward black right along with it - producing visible dark
+// speckling in exactly those spots, even where the pixel is still meant
+// to be opaque garment. Only the model's alpha channel is trustworthy as
+// a mask; sourcing color from the untouched original avoids that
+// corruption at every alpha level (opaque, transparent, or a soft
+// antialiased edge in between).
 export function closeSmallGaps(bgRemovedDataUrl: string, sourceDataUrl: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const bgImg = new Image();
@@ -53,11 +63,11 @@ export function closeSmallGaps(bgRemovedDataUrl: string, sourceDataUrl: string):
         const srcData = srcCtx.getImageData(0, 0, width, height).data;
 
         for (let i = 0; i < width * height; i++) {
+          const o = i * 4;
+          data[o] = srcData[o];
+          data[o + 1] = srcData[o + 1];
+          data[o + 2] = srcData[o + 2];
           if (closed[i] === 1 && mask[i] === 0) {
-            const o = i * 4;
-            data[o] = srcData[o];
-            data[o + 1] = srcData[o + 1];
-            data[o + 2] = srcData[o + 2];
             data[o + 3] = 255;
           }
         }
