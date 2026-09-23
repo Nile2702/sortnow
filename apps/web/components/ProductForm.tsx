@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor } from "../lib/catalog-constants";
+import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../lib/catalog-constants";
 import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, cutoutFromMask } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
@@ -117,7 +117,7 @@ export function ProductForm({
     description: initial?.description ?? "",
     fabric: initial?.fabric ?? "",
     gender: initial?.gender ?? "women",
-    subCategory: initial?.subCategory ?? GENDER_SUBCATEGORIES[initial?.gender ?? "women"][0],
+    subCategory: initial?.subCategory ?? defaultSizedSubCategoryFor((initial?.gender ?? "women") as Gender),
     basePrice: initial?.basePrice ?? 999,
     compareAtPrice: initial?.compareAtPrice,
     sizes: initial?.sizes ?? ["Free Size"],
@@ -464,7 +464,7 @@ export function ProductForm({
       description: result.description || f.description,
       fabric: result.fabric || f.fabric,
       gender: result.gender || f.gender,
-      subCategory: result.subCategory || GENDER_SUBCATEGORIES[result.gender]?.[0] || f.subCategory,
+      subCategory: result.subCategory || defaultSizedSubCategoryFor(result.gender as Gender) || f.subCategory,
     }));
     setAutofilled(true);
   }
@@ -550,7 +550,7 @@ export function ProductForm({
           <select
             value={form.gender}
             onChange={(e) => {
-              const nextSubCategory = GENDER_SUBCATEGORIES[e.target.value][0];
+              const nextSubCategory = defaultSizedSubCategoryFor(e.target.value as Gender);
               const validSizes = getSizeOptionsFor(nextSubCategory);
               setForm((f) => ({ ...f, gender: e.target.value, subCategory: nextSubCategory, sizes: f.sizes.filter((s) => validSizes.includes(s)) }));
             }}

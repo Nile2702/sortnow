@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
-import { CATEGORY_TREE, getSizeOptionsFor } from "../../../../../lib/catalog-constants";
+import { CATEGORY_TREE, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
 import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, cutoutFromMask } from "../../../../../lib/image-enhance";
 import { showToast } from "../../../../../lib/toast";
 
@@ -112,7 +112,7 @@ export default function BulkPhotoUploadPage() {
         const patch: Partial<Draft> = {};
         if (bulkGender) {
           patch.gender = bulkGender;
-          patch.subCategory = bulkSubCategory || GENDER_SUBCATEGORIES[bulkGender][0];
+          patch.subCategory = bulkSubCategory || defaultSizedSubCategoryFor(bulkGender as Gender);
         } else if (bulkSubCategory && GENDER_SUBCATEGORIES[d.gender]?.includes(bulkSubCategory)) {
           patch.subCategory = bulkSubCategory;
         }
@@ -146,7 +146,7 @@ export default function BulkPhotoUploadPage() {
         error: "",
         title: "",
         gender: "women",
-        subCategory: GENDER_SUBCATEGORIES.women[0],
+        subCategory: defaultSizedSubCategoryFor("women"),
         fabric: "",
         description: "",
         basePrice: 999,
@@ -251,7 +251,7 @@ export default function BulkPhotoUploadPage() {
           description: result.description ?? "",
           fabric: result.fabric ?? "",
           gender: result.gender ?? "women",
-          subCategory: result.subCategory ?? GENDER_SUBCATEGORIES[result.gender ?? "women"][0],
+          subCategory: result.subCategory ?? defaultSizedSubCategoryFor((result.gender ?? "women") as Gender),
         });
       } catch (err: any) {
         updateDraft(draft.localId, { status: "error", error: err?.message ?? "Couldn't process this photo." });
@@ -598,7 +598,7 @@ export default function BulkPhotoUploadPage() {
                     />
                     <select
                       value={d.gender}
-                      onChange={(e) => updateDraft(d.localId, { gender: e.target.value, subCategory: GENDER_SUBCATEGORIES[e.target.value][0] })}
+                      onChange={(e) => updateDraft(d.localId, { gender: e.target.value, subCategory: defaultSizedSubCategoryFor(e.target.value as Gender) })}
                       style={inputStyle()}
                     >
                       <option value="women">Women</option>

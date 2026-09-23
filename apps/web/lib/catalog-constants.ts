@@ -72,6 +72,21 @@ export function getSizeOptionsFor(subCategory: string | undefined): string[] {
   return group === "none" ? sizes : group === "freeSize" ? sizes : [...sizes, "Free Size"];
 }
 
+// Picks a sensible default subCategory to land a seller on when they first
+// choose a gender - specifically, one that actually offers real sizes
+// (S/M/L, waist, footwear, kids' age, etc.), not just whatever happens to
+// be listed first. Women's list starts with Sarees, which is correctly
+// Free-Size-only (a saree is unstitched, one-size cloth) - but since it's
+// also the very first thing a new seller sees on the product form, that
+// made sizing look broken/missing entirely before they'd even touched the
+// subcategory picker. Falls back to the first subcategory if a gender's
+// entire list is Free-Size/no-size (so it never returns nothing).
+export function defaultSizedSubCategoryFor(gender: Gender): string {
+  const tree = CATEGORY_TREE.find((c) => c.value === gender);
+  if (!tree || tree.subCategories.length === 0) return "";
+  return tree.subCategories.find((sc) => getSizeOptionsFor(sc).length > 1) ?? tree.subCategories[0];
+}
+
 // A shared color catalog so a seller can list one product across several
 // colors by picking swatches instead of photographing and re-uploading
 // every colorway separately - see components/ProductForm.tsx, which creates
