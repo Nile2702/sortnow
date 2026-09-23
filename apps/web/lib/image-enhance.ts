@@ -1,85 +1,95 @@
-// The background-removal model is a general saliency segmenter, not a
-// garment-specific one - a white strip, piping, or print inside the
-// garment often has too little contrast against a light/white backdrop,
-// and the model misclassifies it as background right along with the real
-// backdrop, cutting a hole in the middle of the garment. But not every
-// enclosed transparent region is a mistake: a shirt's neckline, an armpit
-// gap, or the space between a hanger and the fabric are *real* holes the
-// model got right, and they can be just as "enclosed" as a false-positive
-// strip - there's no reliable way to tell them apart just by whether they
-// touch the image border (an earlier version of this function assumed
-// exactly that, and ended up painting real neckline gaps solid black,
-// since a background-removal tool's alpha=0 pixels usually have their RGB
-// zeroed out too - there's no color left there to restore).
+// Two earlier attempts at cleaning up the background-removal model's output
+// both worked from its composited RGBA image - and both leaked artifacts
+// from that image's own RGB channel, which turns out to be untrustworthy in
+// different ways in different spots (see the two fixes this replaced, still
+// visible in git history): alpha=0 pixels have no real color left in them,
+// and even opaque-looking pixels near a soft/noisy edge (a fold, a shadow, a
+// wrinkle) can be alpha-premultiplied toward black. Chasing each artifact
+// pattern one at a time wasn't converging.
 //
-// Instead this only closes *small* gaps: morphological closing (dilate,
-// then erode by the same radius) on the alpha mask, which mathematically
-// can only fill a hole narrower than roughly 2x the radius - a thin strip
-// or seam gets bridged, while a real neckline or armpit opening (wider
-// than that) is left alone.
+// This rebuilds the cutout from scratch instead of patching the model's
+// composite: the model is asked for `output.type: "mask"` (a plain
+// grayscale opacity map, no color at all - see handleRemoveBackground),
+// and every output pixel's RGB comes from the caller's own untouched
+// original photo. The model's job is reduced to "how opaque is this pixel",
+// which is the only judgment call it's actually suited to make; it never
+// gets a chance to hand back a corrupted color.
 //
-// Separately, every pixel's color always comes from the original photo,
-// never from the background-removal output's own RGB - not just for
-// gap-filled pixels. In low-contrast areas (a fold, a shadow, a soft
-// fabric edge) the segmentation model's alpha "matting" gets noisy, and
-// since its RGB is alpha-premultiplied (color already multiplied by that
-// pixel's own opacity), a locally noisy alpha value drags the stored
-// color toward black right along with it - producing visible dark
-// speckling in exactly those spots, even where the pixel is still meant
-// to be opaque garment. Only the model's alpha channel is trustworthy as
-// a mask; sourcing color from the untouched original avoids that
-// corruption at every alpha level (opaque, transparent, or a soft
-// antialiased edge in between).
-export function closeSmallGaps(bgRemovedDataUrl: string, sourceDataUrl: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const bgImg = new Image();
-    bgImg.onload = () => {
-      const width = bgImg.width;
-      const height = bgImg.height;
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return reject(new Error("Canvas not supported"));
-      ctx.drawImage(bgImg, 0, 0);
-      const imageData = ctx.getImageData(0, 0, width, height);
-      const { data } = imageData;
+// The mask still isn't garment-aware, so it can still misjudge a white
+// strip against a light backdrop as background. That's handled the same
+// way as before: morphological closing (dilate, then erode by the same
+// small radius) can only bridge a gap narrower than ~2x the radius, so a
+// thin false-positive strip gets closed while a real neckline or armpit
+// opening (much wider) is left alone.
+export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Promise<string> {
+  return Promise.all([loadImage(originalDataUrl), loadImage(maskDataUrl)]).then(([originalImg, maskImg]) => {
+    const width = originalImg.width;
+    const height = originalImg.height;
 
-      const ALPHA_THRESHOLD = 10;
-      const mask = new Uint8Array(width * height);
-      for (let i = 0; i < width * height; i++) mask[i] = data[i * 4 + 3] >= ALPHA_THRESHOLD ? 1 : 0;
+    const originalCtx = drawToCanvas(originalImg, width, height);
+    const originalData = originalCtx.getImageData(0, 0, width, height).data;
 
-      const radius = Math.min(16, Math.max(3, Math.round(Math.max(width, height) / 220)));
-      const closed = boxMorph(boxMorph(mask, width, height, radius, true), width, height, radius, false);
+    // The mask is drawn scaled to the original's own dimensions rather than
+    // assumed to already match - defensive against the segmentation tool
+    // returning a slightly different size (internal padding/resizing) than
+    // what was fed into it, which would otherwise misalign mask and color.
+    const maskCtx = drawToCanvas(maskImg, width, height);
+    const maskData = maskCtx.getImageData(0, 0, width, height).data;
 
-      const srcImg = new Image();
-      srcImg.onload = () => {
-        const srcCanvas = document.createElement("canvas");
-        srcCanvas.width = width;
-        srcCanvas.height = height;
-        const srcCtx = srcCanvas.getContext("2d");
-        if (!srcCtx) return reject(new Error("Canvas not supported"));
-        srcCtx.drawImage(srcImg, 0, 0, width, height);
-        const srcData = srcCtx.getImageData(0, 0, width, height).data;
+    // output.type: "mask" keeps the original pass-through color in R/G/B
+    // and puts the actual opacity/confidence in the alpha channel - it's
+    // not a grayscale image with the mask value replicated across R=G=B,
+    // which an earlier version of this function assumed (reading the R
+    // channel as if it were the mask, which is really just the original
+    // photo's own red channel - completely unrelated to segmentation).
+    const pixelCount = width * height;
+    const alpha = new Uint8ClampedArray(pixelCount);
+    for (let i = 0; i < pixelCount; i++) alpha[i] = maskData[i * 4 + 3];
 
-        for (let i = 0; i < width * height; i++) {
-          const o = i * 4;
-          data[o] = srcData[o];
-          data[o + 1] = srcData[o + 1];
-          data[o + 2] = srcData[o + 2];
-          if (closed[i] === 1 && mask[i] === 0) {
-            data[o + 3] = 255;
-          }
-        }
-        ctx.putImageData(imageData, 0, 0);
-        resolve(canvas.toDataURL("image/png"));
-      };
-      srcImg.onerror = () => reject(new Error("Couldn't load original photo for gap-filling"));
-      srcImg.src = sourceDataUrl;
-    };
-    bgImg.onerror = () => reject(new Error("Couldn't load background-removed image"));
-    bgImg.src = bgRemovedDataUrl;
+    const ALPHA_THRESHOLD = 10;
+    const foreground = new Uint8Array(pixelCount);
+    for (let i = 0; i < pixelCount; i++) foreground[i] = alpha[i] >= ALPHA_THRESHOLD ? 1 : 0;
+
+    const radius = Math.min(16, Math.max(3, Math.round(Math.max(width, height) / 220)));
+    const closed = boxMorph(boxMorph(foreground, width, height, radius, true), width, height, radius, false);
+
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = width;
+    outCanvas.height = height;
+    const outCtx = outCanvas.getContext("2d");
+    if (!outCtx) throw new Error("Canvas not supported");
+    const outImageData = outCtx.createImageData(width, height);
+    const outData = outImageData.data;
+
+    for (let i = 0; i < pixelCount; i++) {
+      const o = i * 4;
+      outData[o] = originalData[o];
+      outData[o + 1] = originalData[o + 1];
+      outData[o + 2] = originalData[o + 2];
+      outData[o + 3] = closed[i] === 1 && foreground[i] === 0 ? 255 : alpha[i];
+    }
+    outCtx.putImageData(outImageData, 0, 0);
+    return outCanvas.toDataURL("image/png");
   });
+}
+
+function loadImage(dataUrl: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Couldn't load image"));
+    img.src = dataUrl;
+  });
+}
+
+function drawToCanvas(img: HTMLImageElement, width: number, height: number): CanvasRenderingContext2D {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported");
+  ctx.drawImage(img, 0, 0, width, height);
+  return ctx;
 }
 
 // Separable box-filter approximation of dilate (isMax) / erode (!isMax) on a

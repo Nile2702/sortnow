@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor } from "../lib/catalog-constants";
-import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, closeSmallGaps } from "../lib/image-enhance";
+import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, cutoutFromMask } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
 type PhotoStage = "raw" | "bg-removed" | "mannequin" | "restored";
@@ -293,21 +293,29 @@ export function ProductForm({
       )) as {
         removeBackground: (
           image: string,
-          config?: { model?: string; output?: { format?: string }; progress?: (key: string, current: number, total: number) => void }
+          config?: {
+            model?: string;
+            output?: { format?: string; type?: string };
+            progress?: (key: string, current: number, total: number) => void;
+          }
         ) => Promise<Blob>;
       };
       const bgInput = await resizeForBgRemoval(uploadedImage).catch(() => uploadedImage);
-      const resultBlob = await removeBackground(bgInput, {
+      // Asks for just the opacity mask (output.type: "mask"), not the
+      // model's own composited cutout - see cutoutFromMask for why: its
+      // RGB output isn't trustworthy at every alpha level, only its
+      // judgment of what's foreground is.
+      const maskBlob = await removeBackground(bgInput, {
         model: "isnet_quint8",
-        output: { format: "image/png" },
+        output: { format: "image/png", type: "mask" },
         progress: (key, current, total) => {
           if (total > 0) setBgRemoveProgress(`Processing… ${Math.round((current / total) * 100)}%`);
         },
       });
-      const bgRemovedUrl = await blobToDataUrl(resultBlob);
-      const patchedUrl = await closeSmallGaps(bgRemovedUrl, bgInput).catch(() => bgRemovedUrl);
+      const maskUrl = await blobToDataUrl(maskBlob);
+      const cutoutUrl = await cutoutFromMask(bgInput, maskUrl);
       setBgRemoveProgress("Aligning and framing…");
-      const dataUrl = await autoAlignAndZoom(patchedUrl).catch(() => patchedUrl);
+      const dataUrl = await autoAlignAndZoom(cutoutUrl).catch(() => cutoutUrl);
       setCutoutImage(dataUrl);
       setSelectedBackground("transparent");
       setAutoBackgroundLabel("");
