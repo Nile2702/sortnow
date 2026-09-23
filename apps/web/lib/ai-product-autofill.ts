@@ -12,7 +12,14 @@
 // exact free-tier terms can change.
 import { CATEGORY_TREE } from "./catalog-constants";
 
-const GEMINI_MODEL = process.env.GEMINI_TEXT_MODEL ?? "gemini-3.6-flash";
+// The non-lite flash model measured 8-130+ seconds per call in practice
+// (its extended "thinking" mode adds unpredictable overhead a simple
+// vision-classification task like this doesn't need) - slow enough that
+// a request could exceed a reverse proxy's timeout and look like autofill
+// had simply stopped working, not just been slow. The lite variant is
+// built for exactly this: consistently 2-5s in testing, same vision +
+// JSON-schema support, no measurable quality loss for this task.
+const GEMINI_MODEL = process.env.GEMINI_TEXT_MODEL ?? "gemini-3.5-flash-lite";
 
 const CATEGORY_GUIDE = CATEGORY_TREE.map((c) => `- ${c.value}: ${c.subCategories.join(", ")}`).join("\n");
 

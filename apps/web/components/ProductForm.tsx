@@ -75,6 +75,16 @@ export function ProductForm({
   const [bgRemoveProgress, setBgRemoveProgress] = useState("");
   const [bgRemoveError, setBgRemoveError] = useState("");
 
+  // Split from background removal per seller feedback - lighting/quality/
+  // wrinkle correction and background removal used to run as one combined
+  // pipeline behind a single button, so a seller who only wanted one of the
+  // two (photo's already well-lit, or wants to keep the real background)
+  // had no way to skip the other. Independent now: either can run first,
+  // neither requires the other.
+  const [enhancing, setEnhancing] = useState(false);
+  const [enhanceError, setEnhanceError] = useState("");
+  const [enhanced, setEnhanced] = useState(false);
+
   const [mannequinApplying, setMannequinApplying] = useState(false);
   const [mannequinError, setMannequinError] = useState("");
 
@@ -168,6 +178,8 @@ export function ProductForm({
     if (!file) return;
     setUploadError("");
     setBgRemoveError("");
+    setEnhanceError("");
+    setEnhanced(false);
     setMannequinError("");
     setPhotoStage("raw");
     setOriginalImage(null);
@@ -220,9 +232,40 @@ export function ProductForm({
     setAdditionalImages((imgs) => imgs.filter((_, i) => i !== index));
   }
 
+  // Free, runs entirely client-side (canvas pixel math, no WASM, no API
+  // call) - fixes a harsh/flat/poorly-lit phone shot, including a photo
+  // that's already a real model wearing the garment, not just a flat-lay.
+  // Independent of background removal below - a seller can run this alone
+  // and keep their real background, or skip it if the photo's already
+  // well-lit.
+  async function handleEnhancePhoto() {
+    if (!uploadedImage) return;
+    setEnhancing(true);
+    setEnhanceError("");
+    if (!originalImage) setOriginalImage(uploadedImage);
+
+    try {
+      // Lighting is flattened first (hotspots/shadows), then levels/
+      // saturation, then wrinkle texture is smoothed last since it works
+      // best on already-corrected color.
+      const litInput = await stabilizeLighting(uploadedImage).catch(() => uploadedImage);
+      const enhancedInput = await autoEnhanceQuality(litInput).catch(() => litInput);
+      const smoothedInput = await reduceWrinkles(enhancedInput).catch(() => enhancedInput);
+      setUploadedImage(smoothedInput);
+      setEnhanced(true);
+    } catch (err) {
+      console.error(err);
+      setEnhanceError("Couldn't enhance this photo. Try again.");
+    } finally {
+      setEnhancing(false);
+    }
+  }
+
   // Free, runs entirely client-side via a WASM ML model - no API key, no
   // server call, no per-image cost. Only the optional mannequin step below
-  // costs a credit.
+  // costs a credit. Independent of the enhance step above - operates on
+  // whatever uploadedImage currently is, enhanced or not, so either button
+  // can be used first or on its own.
   //
   // Loaded from jsDelivr's ESM CDN via a webpackIgnore'd dynamic import
   // rather than the npm package - @imgly/background-removal's own docs say
@@ -238,22 +281,10 @@ export function ProductForm({
     if (!uploadedImage) return;
     setBgRemoving(true);
     setBgRemoveError("");
-    setBgRemoveProgress("Stabilizing lighting and smoothing fabric…");
+    setBgRemoveProgress("Loading background-removal model…");
     if (!originalImage) setOriginalImage(uploadedImage);
 
     try {
-      // Fixes a harsh/flat/poorly-lit phone shot before anything else runs -
-      // including a photo that's already a real model wearing the garment,
-      // not just a flat-lay - so both the background-removal model and the
-      // seller end up working from a cleaner image. Lighting is flattened
-      // first (hotspots/shadows), then levels/saturation, then wrinkle
-      // texture is smoothed last since it works best on already-corrected
-      // color.
-      const litInput = await stabilizeLighting(uploadedImage).catch(() => uploadedImage);
-      const enhancedInput = await autoEnhanceQuality(litInput).catch(() => litInput);
-      const smoothedInput = await reduceWrinkles(enhancedInput).catch(() => enhancedInput);
-      setBgRemoveProgress("Loading background-removal model…");
-
       // Cast since the npm package (and its types) isn't installed - it's
       // loaded as a plain ES module from a CDN URL instead (see comment
       // above), which TypeScript can't resolve a module path for.
@@ -265,7 +296,7 @@ export function ProductForm({
           config?: { model?: string; output?: { format?: string }; progress?: (key: string, current: number, total: number) => void }
         ) => Promise<Blob>;
       };
-      const resultBlob = await removeBackground(smoothedInput, {
+      const resultBlob = await removeBackground(uploadedImage, {
         model: "isnet_quint8",
         output: { format: "image/png" },
         progress: (key, current, total) => {
@@ -348,6 +379,8 @@ export function ProductForm({
     setUploadedImage(originalImage);
     setPhotoStage("raw");
     setBgRemoveError("");
+    setEnhanceError("");
+    setEnhanced(false);
     setMannequinError("");
     setRestoreError("");
     setCutoutImage(null);
@@ -667,7 +700,7 @@ export function ProductForm({
             <div>
               <div style={{ position: "relative" }}>
                 <img src={uploadedImage} alt="Preview" style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10, border: "1px solid #e2e8f0" }} />
-                {photoStage !== "raw" && (
+                {(photoStage !== "raw" || enhanced) && (
                   <span
                     style={{
                       position: "absolute",
@@ -683,7 +716,11 @@ export function ProductForm({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {photoStage === "mannequin" ? "✨ AI Mannequin" : photoStage === "restored" ? "✨ AI Restored" : "🪄 Enhanced"}
+                    {photoStage === "mannequin"
+                      ? "✨ AI Mannequin"
+                      : photoStage === "restored"
+                        ? "✨ AI Restored"
+                        : [enhanced && "✨ Enhanced", photoStage === "bg-removed" && "🪄 BG Removed"].filter(Boolean).join(" · ")}
                   </span>
                 )}
                 <button
@@ -693,6 +730,8 @@ export function ProductForm({
                     setOriginalImage(null);
                     setPhotoStage("raw");
                     setBgRemoveError("");
+                    setEnhanceError("");
+                    setEnhanced(false);
                     setMannequinError("");
                     setCutoutImage(null);
                     setSelectedBackground("transparent");
@@ -720,10 +759,31 @@ export function ProductForm({
 
               <button
                 type="button"
-                onClick={handleRemoveBackground}
-                disabled={bgRemoving || mannequinApplying}
+                onClick={handleEnhancePhoto}
+                disabled={enhancing || bgRemoving || mannequinApplying}
                 style={{
                   marginTop: 14,
+                  padding: "7px 12px",
+                  borderRadius: 999,
+                  border: "none",
+                  background: enhancing ? "#94a3b8" : "#0f172a",
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: enhancing ? "default" : "pointer",
+                  whiteSpace: "nowrap",
+                  width: "100%",
+                }}
+              >
+                {enhancing ? "Enhancing…" : "✨ Enhance Photo (Free)"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRemoveBackground}
+                disabled={bgRemoving || enhancing || mannequinApplying}
+                style={{
+                  marginTop: 8,
                   padding: "7px 12px",
                   borderRadius: 999,
                   border: "none",
@@ -736,7 +796,7 @@ export function ProductForm({
                   width: "100%",
                 }}
               >
-                {bgRemoving ? bgRemoveProgress || "Enhancing…" : "🪄 Enhance Photo (Free)"}
+                {bgRemoving ? bgRemoveProgress || "Removing…" : "🪄 Remove Background (Free)"}
               </button>
 
               {cutoutImage && (
@@ -788,7 +848,7 @@ export function ProductForm({
               <button
                 type="button"
                 onClick={handleAddMannequin}
-                disabled={mannequinApplying || bgRemoving || credits === 0}
+                disabled={mannequinApplying || bgRemoving || enhancing || credits === 0}
                 style={{
                   marginTop: 6,
                   padding: "7px 12px",
@@ -826,6 +886,7 @@ export function ProductForm({
             <input type="file" accept="image/*" onChange={handleFileChange} style={{ fontSize: 13, width: "100%", maxWidth: "100%" }} />
             {uploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{uploadError}</p>}
             {bgRemoveError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{bgRemoveError}</p>}
+            {enhanceError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{enhanceError}</p>}
             {mannequinError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{mannequinError}</p>}
 
             {uploadedImage && !uploadError && (
@@ -868,13 +929,15 @@ export function ProductForm({
               </div>
             )}
 
-            {uploadedImage && !uploadError && !bgRemoveError && !mannequinError && photoStage === "raw" && (
+            {uploadedImage && !uploadError && !bgRemoveError && !enhanceError && !mannequinError && photoStage === "raw" && !enhanced && (
               <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "var(--sio-cream)", border: "1px solid var(--sio-line)" }}>
                 <PhotoEnhanceIllustration />
                 <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 10, lineHeight: 1.6 }}>
-                  <strong style={{ color: "var(--sio-ink)" }}>Enhance Photo</strong> removes the background, then automatically centers and
-                  zooms in on the garment so it fills the frame. After that, pick a studio-style backdrop (or let it auto-pick one for
-                  you) — all free, right in your browser, no cost, no limit.{" "}
+                  <strong style={{ color: "var(--sio-ink)" }}>Enhance Photo</strong> fixes lighting, smooths fabric wrinkles, and sharpens
+                  detail — keeps your original background.{" "}
+                  <strong style={{ color: "var(--sio-ink)" }}>Remove Background</strong> cuts out the garment, centers and zooms it to
+                  fill the frame, then lets you pick a studio-style backdrop (or auto-pick one). Both are free, run right in your
+                  browser, and can be used together in either order, or on their own.{" "}
                   <strong style={{ color: "var(--sio-ink)" }}>Add Mannequin</strong> sends the photo to Gemini AI and uses 1 photo credit
                   {credits !== null && (
                     <>
