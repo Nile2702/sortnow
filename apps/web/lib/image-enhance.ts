@@ -53,6 +53,19 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
     const radius = Math.min(16, Math.max(3, Math.round(Math.max(width, height) / 220)));
     const closed = boxMorph(boxMorph(foreground, width, height, radius, true), width, height, radius, false);
 
+    // A real edge (garment silhouette against the backdrop) is the only
+    // place partial alpha is meaningful - it's what antialiasing looks
+    // like. But the model's confidence can also wobble on a wrinkle or
+    // shadow deep inside the garment, far from any actual edge, leaving a
+    // patch of pixels at, say, 190/255 instead of fully opaque - which
+    // then shows the studio backdrop faintly through the fabric, looking
+    // like the color shifted or faded in exactly that spot. Eroding the
+    // closed foreground mask finds the pixels at least `radius` away from
+    // the nearest background pixel - guaranteed interior, nowhere near a
+    // real edge - and forces those fully opaque regardless of what the
+    // model's own alpha said there.
+    const core = boxMorph(closed, width, height, radius, false);
+
     const outCanvas = document.createElement("canvas");
     outCanvas.width = width;
     outCanvas.height = height;
@@ -66,7 +79,7 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
       outData[o] = originalData[o];
       outData[o + 1] = originalData[o + 1];
       outData[o + 2] = originalData[o + 2];
-      outData[o + 3] = closed[i] === 1 && foreground[i] === 0 ? 255 : alpha[i];
+      outData[o + 3] = core[i] === 1 || (closed[i] === 1 && foreground[i] === 0) ? 255 : alpha[i];
     }
     outCtx.putImageData(outImageData, 0, 0);
     return outCanvas.toDataURL("image/png");
