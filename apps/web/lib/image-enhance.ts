@@ -53,19 +53,26 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
     const radius = Math.min(16, Math.max(3, Math.round(Math.max(width, height) / 220)));
     const closed = boxMorph(boxMorph(foreground, width, height, radius, true), width, height, radius, false);
 
-    // A real edge (garment silhouette against the backdrop) is the only
-    // place partial alpha is meaningful - it's what antialiasing looks
-    // like. But the model's confidence can also wobble on a wrinkle or
-    // shadow deep inside the garment, far from any actual edge, leaving a
-    // patch of pixels at, say, 190/255 instead of fully opaque - which
-    // then shows the studio backdrop faintly through the fabric, looking
-    // like the color shifted or faded in exactly that spot. Eroding the
-    // closed foreground mask finds the pixels at least `radius` away from
-    // the nearest background pixel - guaranteed interior, nowhere near a
-    // real edge - and forces those fully opaque regardless of what the
-    // model's own alpha said there.
-    const core = boxMorph(closed, width, height, radius, false);
-
+    // Two follow-up fixes (interior-erosion forcing, then a larger fp16
+    // model) each closed off one specific way the model's confidence could
+    // wobble mid-garment and leave a patch at partial alpha - showing the
+    // backdrop faintly through the fabric, looking like the color faded or
+    // shifted right there. Both were confirmed fixed here, but the wobble
+    // kept resurfacing on the reporting device: parallel float-reduction
+    // order in the WASM runtime isn't bit-exact across hardware/thread
+    // counts, so a phone can compute a materially different confidence map
+    // from the same photo than what's been verified here.
+    //
+    // Rather than keep chasing wherever the next device computes its next
+    // wobble, the alpha channel is now fully binary - every pixel is either
+    // fully opaque or fully transparent, full stop. `closed` (mask,
+    // classified at a threshold, then small-gap-closed) is the only thing
+    // that decides that; the model's raw confidence value is never used
+    // directly in the output, so there is no partial-alpha value left for
+    // any device's wobble to express itself through. The trade is a
+    // slightly harder (non-antialiased) cutout edge instead of a soft one -
+    // a fixed, predictable cost instead of an intermittent, device-specific
+    // artifact.
     const outCanvas = document.createElement("canvas");
     outCanvas.width = width;
     outCanvas.height = height;
@@ -79,7 +86,7 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
       outData[o] = originalData[o];
       outData[o + 1] = originalData[o + 1];
       outData[o + 2] = originalData[o + 2];
-      outData[o + 3] = core[i] === 1 || (closed[i] === 1 && foreground[i] === 0) ? 255 : alpha[i];
+      outData[o + 3] = closed[i] === 1 ? 255 : 0;
     }
     outCtx.putImageData(outImageData, 0, 0);
     return outCanvas.toDataURL("image/png");
