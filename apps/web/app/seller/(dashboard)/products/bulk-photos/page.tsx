@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
 import { CATEGORY_TREE, getSizeOptionsFor } from "../../../../../lib/catalog-constants";
-import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, fillEnclosedHoles } from "../../../../../lib/image-enhance";
+import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, closeSmallGaps } from "../../../../../lib/image-enhance";
 import { showToast } from "../../../../../lib/toast";
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
@@ -222,7 +222,7 @@ export default function BulkPhotoUploadPage() {
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
-        const patchedUrl = await fillEnclosedHoles(bgRemovedUrl).catch(() => bgRemovedUrl);
+        const patchedUrl = await closeSmallGaps(bgRemovedUrl, smoothedInput).catch(() => bgRemovedUrl);
         currentImage = await autoAlignAndZoom(patchedUrl).catch(() => patchedUrl);
         updateDraft(draft.localId, { image: currentImage, bgRemoved: true });
       } catch (err) {

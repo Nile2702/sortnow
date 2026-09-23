@@ -2,72 +2,107 @@
 // garment-specific one - a white strip, piping, or print inside the
 // garment often has too little contrast against a light/white backdrop,
 // and the model misclassifies it as background right along with the real
-// backdrop. The real backdrop always touches the image border (nothing
-// legitimate to cut out is fully surrounded by garment), so this floods
-// transparency inward from the four edges and restores anything transparent
-// that flood never reaches - i.e. any "background" that's actually enclosed
-// inside the garment's silhouette gets its original pixel back. Run this on
-// the model's raw output before autoAlignAndZoom, while alpha still holds
-// only what the model itself produced.
-export function fillEnclosedHoles(dataUrl: string): Promise<string> {
+// backdrop, cutting a hole in the middle of the garment. But not every
+// enclosed transparent region is a mistake: a shirt's neckline, an armpit
+// gap, or the space between a hanger and the fabric are *real* holes the
+// model got right, and they can be just as "enclosed" as a false-positive
+// strip - there's no reliable way to tell them apart just by whether they
+// touch the image border (an earlier version of this function assumed
+// exactly that, and ended up painting real neckline gaps solid black,
+// since a background-removal tool's alpha=0 pixels usually have their RGB
+// zeroed out too - there's no color left there to restore).
+//
+// Instead this only closes *small* gaps: morphological closing (dilate,
+// then erode by the same radius) on the alpha mask, which mathematically
+// can only fill a hole narrower than roughly 2x the radius - a thin strip
+// or seam gets bridged, while a real neckline or armpit opening (wider
+// than that) is left alone. For any pixel the closing operation newly
+// promotes to "foreground", the actual color is pulled from the original
+// photo (passed in separately) at the same coordinates, rather than reusing
+// whatever zeroed-out RGB the background-removal output left behind.
+export function closeSmallGaps(bgRemovedDataUrl: string, sourceDataUrl: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
+    const bgImg = new Image();
+    bgImg.onload = () => {
+      const width = bgImg.width;
+      const height = bgImg.height;
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext("2d");
       if (!ctx) return reject(new Error("Canvas not supported"));
-      ctx.drawImage(img, 0, 0);
-      const { width, height } = canvas;
+      ctx.drawImage(bgImg, 0, 0);
       const imageData = ctx.getImageData(0, 0, width, height);
       const { data } = imageData;
+
       const ALPHA_THRESHOLD = 10;
-      const isTransparent = (idx: number) => data[idx * 4 + 3] < ALPHA_THRESHOLD;
+      const mask = new Uint8Array(width * height);
+      for (let i = 0; i < width * height; i++) mask[i] = data[i * 4 + 3] >= ALPHA_THRESHOLD ? 1 : 0;
 
-      const reachesBorder = new Uint8Array(width * height);
-      const queue = new Int32Array(width * height);
-      let head = 0;
-      let tail = 0;
+      const radius = Math.min(16, Math.max(3, Math.round(Math.max(width, height) / 220)));
+      const closed = boxMorph(boxMorph(mask, width, height, radius, true), width, height, radius, false);
 
-      const enqueueIfTransparent = (x: number, y: number) => {
-        const idx = y * width + x;
-        if (reachesBorder[idx] || !isTransparent(idx)) return;
-        reachesBorder[idx] = 1;
-        queue[tail++] = idx;
-      };
+      const srcImg = new Image();
+      srcImg.onload = () => {
+        const srcCanvas = document.createElement("canvas");
+        srcCanvas.width = width;
+        srcCanvas.height = height;
+        const srcCtx = srcCanvas.getContext("2d");
+        if (!srcCtx) return reject(new Error("Canvas not supported"));
+        srcCtx.drawImage(srcImg, 0, 0, width, height);
+        const srcData = srcCtx.getImageData(0, 0, width, height).data;
 
-      for (let x = 0; x < width; x++) {
-        enqueueIfTransparent(x, 0);
-        enqueueIfTransparent(x, height - 1);
-      }
-      for (let y = 0; y < height; y++) {
-        enqueueIfTransparent(0, y);
-        enqueueIfTransparent(width - 1, y);
-      }
-
-      while (head < tail) {
-        const idx = queue[head++];
-        const x = idx % width;
-        const y = (idx / width) | 0;
-        if (x > 0) enqueueIfTransparent(x - 1, y);
-        if (x < width - 1) enqueueIfTransparent(x + 1, y);
-        if (y > 0) enqueueIfTransparent(x, y - 1);
-        if (y < height - 1) enqueueIfTransparent(x, y + 1);
-      }
-
-      for (let idx = 0; idx < width * height; idx++) {
-        if (isTransparent(idx) && !reachesBorder[idx]) {
-          data[idx * 4 + 3] = 255;
+        for (let i = 0; i < width * height; i++) {
+          if (closed[i] === 1 && mask[i] === 0) {
+            const o = i * 4;
+            data[o] = srcData[o];
+            data[o + 1] = srcData[o + 1];
+            data[o + 2] = srcData[o + 2];
+            data[o + 3] = 255;
+          }
         }
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-      resolve(canvas.toDataURL("image/png"));
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      srcImg.onerror = () => reject(new Error("Couldn't load original photo for gap-filling"));
+      srcImg.src = sourceDataUrl;
     };
-    img.onerror = () => reject(new Error("Couldn't load image for hole-filling"));
-    img.src = dataUrl;
+    bgImg.onerror = () => reject(new Error("Couldn't load background-removed image"));
+    bgImg.src = bgRemovedDataUrl;
   });
+}
+
+// Separable box-filter approximation of dilate (isMax) / erode (!isMax) on a
+// binary mask - a pixel becomes 1 (dilate) if any pixel in its
+// (2*radius+1)-wide window is 1, or stays 1 (erode) only if every pixel in
+// that window is 1. Row and column passes each run in O(width*height) via a
+// prefix-sum sliding window, rather than an O(radius) inner loop per pixel.
+function boxMorph(mask: Uint8Array, width: number, height: number, radius: number, isMax: boolean): Uint8Array {
+  const temp = new Uint8Array(width * height);
+  const rowPrefix = new Int32Array(width + 1);
+  for (let y = 0; y < height; y++) {
+    const off = y * width;
+    for (let x = 0; x < width; x++) rowPrefix[x + 1] = rowPrefix[x] + mask[off + x];
+    for (let x = 0; x < width; x++) {
+      const lo = Math.max(0, x - radius);
+      const hi = Math.min(width - 1, x + radius);
+      const count = rowPrefix[hi + 1] - rowPrefix[lo];
+      temp[off + x] = isMax ? (count > 0 ? 1 : 0) : count === hi - lo + 1 ? 1 : 0;
+    }
+  }
+
+  const result = new Uint8Array(width * height);
+  const colPrefix = new Int32Array(height + 1);
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) colPrefix[y + 1] = colPrefix[y] + temp[y * width + x];
+    for (let y = 0; y < height; y++) {
+      const lo = Math.max(0, y - radius);
+      const hi = Math.min(height - 1, y + radius);
+      const count = colPrefix[hi + 1] - colPrefix[lo];
+      result[y * width + x] = isMax ? (count > 0 ? 1 : 0) : count === hi - lo + 1 ? 1 : 0;
+    }
+  }
+  return result;
 }
 
 // Shared by the single-product form and the AI bulk photo upload flow -

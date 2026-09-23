@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor } from "../lib/catalog-constants";
-import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, fillEnclosedHoles } from "../lib/image-enhance";
+import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, closeSmallGaps } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
 type PhotoStage = "raw" | "bg-removed" | "mannequin" | "restored";
@@ -305,7 +305,7 @@ export function ProductForm({
         },
       });
       const bgRemovedUrl = await blobToDataUrl(resultBlob);
-      const patchedUrl = await fillEnclosedHoles(bgRemovedUrl).catch(() => bgRemovedUrl);
+      const patchedUrl = await closeSmallGaps(bgRemovedUrl, bgInput).catch(() => bgRemovedUrl);
       setBgRemoveProgress("Aligning and framing…");
       const dataUrl = await autoAlignAndZoom(patchedUrl).catch(() => patchedUrl);
       setCutoutImage(dataUrl);
@@ -1067,7 +1067,7 @@ function resizeForAnalysis(dataUrl: string, maxDimension = 768): Promise<string>
 // resolution regardless. 1600px is generous for an e-commerce product
 // photo (well above what most marketplaces display), so this trims
 // processing time with no visible quality loss.
-function resizeForBgRemoval(dataUrl: string, maxDimension = 1600): Promise<string> {
+function resizeForBgRemoval(dataUrl: string, maxDimension = 1200): Promise<string> {
   return resizeImage(dataUrl, maxDimension, 0.92);
 }
 

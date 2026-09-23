@@ -23,6 +23,17 @@ const nextConfig = {
           // rule, not opened up to third parties.
           { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=(self)" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+          // Cross-origin isolation lets the background-removal WASM model
+          // use SharedArrayBuffer and run multi-threaded instead of falling
+          // back to single-threaded (several times slower) - without this,
+          // the browser silently ignores the model's own numThreads setting.
+          // "credentialless" (rather than "require-corp") doesn't require
+          // every cross-origin resource (CDN scripts, Google Fonts, product
+          // images) to opt in with its own CORP header - it just strips
+          // credentials from those cross-origin loads, which none of this
+          // site's third-party resources need anyway.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
         ],
       },
     ];
