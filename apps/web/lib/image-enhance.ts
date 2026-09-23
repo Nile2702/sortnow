@@ -61,7 +61,104 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
     // opening's width at this resolution, so a real hole still isn't
     // wrongly filled in.
     const radius = Math.min(30, Math.max(6, Math.round(Math.max(width, height) / 80)));
-    const closed = boxMorph(boxMorph(foreground, width, height, radius, true), width, height, radius, false);
+    let closed = boxMorph(boxMorph(foreground, width, height, radius, true), width, height, radius, false);
+
+    // A real photo (run through actual phone/WhatsApp compression, not a
+    // pre-shrunk test copy) reproduced a false-positive gap 90+ pixels wide
+    // - a light/white stripe the model misjudged as background, roughly the
+    // same order of size as the neckline itself. No fixed size threshold
+    // can safely tell those two apart by width alone anymore.
+    //
+    // What does tell them apart is *where* they are: every product photo on
+    // this platform is a garment hung or laid flat with the neckline at
+    // top - a men's/women's/kids' top, dress, kurti, etc. never has a real
+    // opening anywhere in its lower two-thirds. So any enclosed
+    // "background" pocket - regardless of size - that sits below the
+    // garment's own upper third is necessarily a segmentation mistake, not
+    // a neckline or armpit gap, and gets filled in (color from the original
+    // photo, as always). A pocket in the upper third is left alone, since
+    // that's exactly where a real neckline lives.
+    const bboxTop = closed.findIndex((v) => v === 1);
+    if (bboxTop !== -1) {
+      let minY = height;
+      let maxY = 0;
+      for (let i = 0; i < pixelCount; i++) {
+        if (closed[i] !== 1) continue;
+        const y = (i / width) | 0;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+      const neckZoneBottom = minY + (maxY - minY) * 0.33;
+
+      const isBackground = new Uint8Array(pixelCount);
+      for (let i = 0; i < pixelCount; i++) isBackground[i] = closed[i] === 0 ? 1 : 0;
+
+      const reachesBorder = new Uint8Array(pixelCount);
+      const queue = new Int32Array(pixelCount);
+      let head = 0;
+      let tail = 0;
+      const enqueue = (x: number, y: number) => {
+        if (x < 0 || x >= width || y < 0 || y >= height) return;
+        const i = y * width + x;
+        if (reachesBorder[i] || !isBackground[i]) return;
+        reachesBorder[i] = 1;
+        queue[tail++] = i;
+      };
+      for (let x = 0; x < width; x++) {
+        enqueue(x, 0);
+        enqueue(x, height - 1);
+      }
+      for (let y = 0; y < height; y++) {
+        enqueue(0, y);
+        enqueue(width - 1, y);
+      }
+      while (head < tail) {
+        const i = queue[head++];
+        const x = i % width;
+        const y = (i / width) | 0;
+        enqueue(x - 1, y);
+        enqueue(x + 1, y);
+        enqueue(x, y - 1);
+        enqueue(x, y + 1);
+      }
+
+      const patched = closed.slice();
+      const visited = new Uint8Array(pixelCount);
+      const stack: number[] = [];
+      for (let start = 0; start < pixelCount; start++) {
+        if (!isBackground[start] || reachesBorder[start] || visited[start]) continue;
+        stack.length = 0;
+        stack.push(start);
+        visited[start] = 1;
+        const component = [start];
+        let belowNeckZone = false;
+        while (stack.length) {
+          const i = stack.pop() as number;
+          const x = i % width;
+          const y = (i / width) | 0;
+          if (y > neckZoneBottom) belowNeckZone = true;
+          const neighbors = [
+            [x - 1, y],
+            [x + 1, y],
+            [x, y - 1],
+            [x, y + 1],
+          ];
+          for (const [nx, ny] of neighbors) {
+            if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+            const ni = ny * width + nx;
+            if (isBackground[ni] && !reachesBorder[ni] && !visited[ni]) {
+              visited[ni] = 1;
+              stack.push(ni);
+              component.push(ni);
+            }
+          }
+        }
+        if (belowNeckZone) {
+          for (const i of component) patched[i] = 1;
+        }
+      }
+      closed = patched;
+    }
 
     // Two follow-up fixes (interior-erosion forcing, then a larger fp16
     // model) each closed off one specific way the model's confidence could
