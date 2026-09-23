@@ -1,3 +1,75 @@
+// The background-removal model is a general saliency segmenter, not a
+// garment-specific one - a white strip, piping, or print inside the
+// garment often has too little contrast against a light/white backdrop,
+// and the model misclassifies it as background right along with the real
+// backdrop. The real backdrop always touches the image border (nothing
+// legitimate to cut out is fully surrounded by garment), so this floods
+// transparency inward from the four edges and restores anything transparent
+// that flood never reaches - i.e. any "background" that's actually enclosed
+// inside the garment's silhouette gets its original pixel back. Run this on
+// the model's raw output before autoAlignAndZoom, while alpha still holds
+// only what the model itself produced.
+export function fillEnclosedHoles(dataUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas not supported"));
+      ctx.drawImage(img, 0, 0);
+      const { width, height } = canvas;
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const { data } = imageData;
+      const ALPHA_THRESHOLD = 10;
+      const isTransparent = (idx: number) => data[idx * 4 + 3] < ALPHA_THRESHOLD;
+
+      const reachesBorder = new Uint8Array(width * height);
+      const queue = new Int32Array(width * height);
+      let head = 0;
+      let tail = 0;
+
+      const enqueueIfTransparent = (x: number, y: number) => {
+        const idx = y * width + x;
+        if (reachesBorder[idx] || !isTransparent(idx)) return;
+        reachesBorder[idx] = 1;
+        queue[tail++] = idx;
+      };
+
+      for (let x = 0; x < width; x++) {
+        enqueueIfTransparent(x, 0);
+        enqueueIfTransparent(x, height - 1);
+      }
+      for (let y = 0; y < height; y++) {
+        enqueueIfTransparent(0, y);
+        enqueueIfTransparent(width - 1, y);
+      }
+
+      while (head < tail) {
+        const idx = queue[head++];
+        const x = idx % width;
+        const y = (idx / width) | 0;
+        if (x > 0) enqueueIfTransparent(x - 1, y);
+        if (x < width - 1) enqueueIfTransparent(x + 1, y);
+        if (y > 0) enqueueIfTransparent(x, y - 1);
+        if (y < height - 1) enqueueIfTransparent(x, y + 1);
+      }
+
+      for (let idx = 0; idx < width * height; idx++) {
+        if (isTransparent(idx) && !reachesBorder[idx]) {
+          data[idx * 4 + 3] = 255;
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => reject(new Error("Couldn't load image for hole-filling"));
+    img.src = dataUrl;
+  });
+}
+
 // Shared by the single-product form and the AI bulk photo upload flow -
 // both run free client-side background removal, then this. Runs right
 // after background removal, while the image still has real transparency to

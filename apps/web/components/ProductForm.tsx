@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor } from "../lib/catalog-constants";
-import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS } from "../lib/image-enhance";
+import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, fillEnclosedHoles } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
 type PhotoStage = "raw" | "bg-removed" | "mannequin" | "restored";
@@ -296,7 +296,8 @@ export function ProductForm({
           config?: { model?: string; output?: { format?: string }; progress?: (key: string, current: number, total: number) => void }
         ) => Promise<Blob>;
       };
-      const resultBlob = await removeBackground(uploadedImage, {
+      const bgInput = await resizeForBgRemoval(uploadedImage).catch(() => uploadedImage);
+      const resultBlob = await removeBackground(bgInput, {
         model: "isnet_quint8",
         output: { format: "image/png" },
         progress: (key, current, total) => {
@@ -304,8 +305,9 @@ export function ProductForm({
         },
       });
       const bgRemovedUrl = await blobToDataUrl(resultBlob);
+      const patchedUrl = await fillEnclosedHoles(bgRemovedUrl).catch(() => bgRemovedUrl);
       setBgRemoveProgress("Aligning and framing…");
-      const dataUrl = await autoAlignAndZoom(bgRemovedUrl).catch(() => bgRemovedUrl);
+      const dataUrl = await autoAlignAndZoom(patchedUrl).catch(() => patchedUrl);
       setCutoutImage(dataUrl);
       setSelectedBackground("transparent");
       setAutoBackgroundLabel("");
@@ -1054,17 +1056,34 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 // is never shown or saved, only sent to the API. Not used for the
 // mannequin-placement step, where the actual output image quality matters.
 function resizeForAnalysis(dataUrl: string, maxDimension = 768): Promise<string> {
+  return resizeImage(dataUrl, maxDimension, 0.85);
+}
+
+// The background-removal WASM model still has to decode the image and
+// upscale its mask back to the input's own resolution, and both of those
+// steps scale with pixel count - a raw 3000x4000+ phone photo makes that
+// postprocessing dramatically slower than it needs to be for a listing
+// photo, even though the model's internal inference runs at a fixed low
+// resolution regardless. 1600px is generous for an e-commerce product
+// photo (well above what most marketplaces display), so this trims
+// processing time with no visible quality loss.
+function resizeForBgRemoval(dataUrl: string, maxDimension = 1600): Promise<string> {
+  return resizeImage(dataUrl, maxDimension, 0.92);
+}
+
+function resizeImage(dataUrl: string, maxDimension: number, quality: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+      if (scale === 1) return resolve(dataUrl);
       const canvas = document.createElement("canvas");
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
       const ctx = canvas.getContext("2d");
       if (!ctx) return reject(new Error("Canvas not supported"));
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/jpeg", 0.85));
+      resolve(canvas.toDataURL("image/jpeg", quality));
     };
     img.onerror = () => reject(new Error("Couldn't load image for resizing"));
     img.src = dataUrl;
