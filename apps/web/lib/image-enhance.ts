@@ -50,7 +50,17 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
     const foreground = new Uint8Array(pixelCount);
     for (let i = 0; i < pixelCount; i++) foreground[i] = alpha[i] >= ALPHA_THRESHOLD ? 1 : 0;
 
-    const radius = Math.min(16, Math.max(3, Math.round(Math.max(width, height) / 220)));
+    // A photo actually uploaded through the site can be far more detailed
+    // than a small test copy - real fabric weave/texture visible at full
+    // resolution gives the model more to be uncertain about than a heavily
+    // downscaled copy ever shows, so a false-positive gap on a real photo
+    // can end up wider than this radius could originally bridge. Widened
+    // from an earlier, more conservative radius (max(3, size/220), capped
+    // at 16) to max(6, size/80), capped at 30 - triples the gap width this
+    // can close, while staying well under a typical neckline/armpit
+    // opening's width at this resolution, so a real hole still isn't
+    // wrongly filled in.
+    const radius = Math.min(30, Math.max(6, Math.round(Math.max(width, height) / 80)));
     const closed = boxMorph(boxMorph(foreground, width, height, radius, true), width, height, radius, false);
 
     // Two follow-up fixes (interior-erosion forcing, then a larger fp16
