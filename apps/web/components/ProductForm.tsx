@@ -305,8 +305,17 @@ export function ProductForm({
       // model's own composited cutout - see cutoutFromMask for why: its
       // RGB output isn't trustworthy at every alpha level, only its
       // judgment of what's foreground is.
+      //
+      // Model is "isnet_fp16" (the library's own default), not the smaller
+      // "isnet_quint8" - the library's own docs describe quint8 as
+      // occasionally showing artifacts, being a quantized model, and a real
+      // photo confirmed it: a low-confidence wobble on a fabric wrinkle
+      // that fp16 doesn't reproduce. Costs a larger one-time model download
+      // (~80MB vs ~40MB) for meaningfully more reliable segmentation -
+      // worth it now that correctness has been the recurring problem, not
+      // speed.
       const maskBlob = await removeBackground(bgInput, {
-        model: "isnet_quint8",
+        model: "isnet_fp16",
         output: { format: "image/png", type: "mask" },
         progress: (key, current, total) => {
           if (total > 0) setBgRemoveProgress(`Processing… ${Math.round((current / total) * 100)}%`);

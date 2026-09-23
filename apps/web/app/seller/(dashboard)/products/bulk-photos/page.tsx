@@ -217,7 +217,10 @@ export default function BulkPhotoUploadPage() {
         )) as {
           removeBackground: (image: string, config?: { model?: string; output?: { format?: string; type?: string } }) => Promise<Blob>;
         };
-        const maskBlob = await removeBackground(smoothedInput, { model: "isnet_quint8", output: { format: "image/png", type: "mask" } });
+        // isnet_fp16, not the smaller isnet_quint8 - see ProductForm.tsx's
+        // handleRemoveBackground for why (quint8 is documented as
+        // occasionally artifact-prone, and reproduced one on a real photo).
+        const maskBlob = await removeBackground(smoothedInput, { model: "isnet_fp16", output: { format: "image/png", type: "mask" } });
         const maskUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
