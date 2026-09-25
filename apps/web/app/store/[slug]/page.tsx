@@ -1,10 +1,12 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getStoreBySlug, getLiveTheme, themeToCssVariables } from "../../../lib/theme";
+import { getStoreRatingSummary } from "../../../lib/seed-data";
 import { HeroCarousel } from "../../../components/HeroCarousel";
 import { ProductGrid } from "../../../components/ProductGrid";
 import { CategoryNav } from "../../../components/CategoryNav";
 import { TrackPageView } from "../../../components/TrackPageView";
+import { StoreRatingBadge } from "../../../components/StoreRatingBadge";
 
 interface Props {
   params: { slug: string };
@@ -21,6 +23,7 @@ export default async function StorefrontPage({ params }: Props) {
   const theme = await getLiveTheme(store.id);
   const css = themeToCssVariables(theme);
   const saleActive = !!store.liveSale && new Date(store.liveSale.endsAt).getTime() > Date.now();
+  const rating = getStoreRatingSummary(store.id);
 
   // Every section in sectionOrder maps to a shared component - the same
   // components and design system the homepage uses. Only the store's
@@ -63,6 +66,11 @@ export default async function StorefrontPage({ params }: Props) {
           >
             <span className="sio-breathe" style={{ display: "inline-block", marginRight: 8 }}>●</span>
             LIVE SALE — {store.liveSale.headline} · {store.liveSale.discountLabel}
+          </div>
+        )}
+        {rating.count > 0 && (
+          <div style={{ maxWidth: 1440, margin: "0 auto", padding: "12px 16px 0" }}>
+            <StoreRatingBadge average={rating.average} count={rating.count} />
           </div>
         )}
         {theme.layout.sectionOrder.map((key, i) =>

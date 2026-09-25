@@ -25,7 +25,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { storeId: s
   }
 
   const errors: string[] = [];
-  const patch: { mode?: "gst" | "normal"; gstin?: string; taxRatePercent?: number } = {};
+  const patch: { mode?: "gst" | "normal"; gstin?: string; taxRatePercent?: number; invoiceNote?: string } = {};
+
+  const MAX_NOTE_LENGTH = 300;
+  if (body.invoiceNote !== undefined) {
+    if (typeof body.invoiceNote !== "string" || body.invoiceNote.length > MAX_NOTE_LENGTH) {
+      errors.push(`invoiceNote must be a string of ${MAX_NOTE_LENGTH} characters or fewer`);
+    } else {
+      patch.invoiceNote = body.invoiceNote.trim() || undefined;
+    }
+  }
 
   if (body.mode !== undefined) {
     if (body.mode !== "gst" && body.mode !== "normal") {

@@ -20,6 +20,7 @@ export default function SellerSignupPage() {
   const [category, setCategory] = useState(CATEGORIES[0].value);
   const [pincode, setPincode] = useState("");
   const [localMarket, setLocalMarket] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +44,7 @@ export default function SellerSignupPage() {
     const res = await fetch("/api/v1/seller/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, category, pincode, localMarket, password }),
+      body: JSON.stringify({ name, category, pincode, localMarket, phone: phone || undefined, password }),
     });
     const result = await res.json().catch(() => null);
     setSubmitting(false);
@@ -125,6 +126,16 @@ export default function SellerSignupPage() {
               />
             </div>
           </div>
+
+          <label style={labelStyle}>Mobile number (optional)</label>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            placeholder="10-digit mobile number"
+            maxLength={10}
+            style={{ ...inputStyle, marginBottom: 6 }}
+          />
+          <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginBottom: 16 }}>Lets you sign in with an OTP instead of a password, any time later.</p>
 
           <label style={labelStyle}>Password</label>
           <div style={{ position: "relative", marginBottom: 16 }}>

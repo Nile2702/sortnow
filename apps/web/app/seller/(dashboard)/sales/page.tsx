@@ -12,6 +12,7 @@ interface Product {
   basePrice: number;
   stockRemaining?: number;
   sizes: string[];
+  productCode?: string;
 }
 
 interface BillingSettings {
@@ -19,6 +20,7 @@ interface BillingSettings {
   gstin?: string;
   taxRatePercent: number;
   nextInvoiceNumber: number;
+  invoiceNote?: string;
 }
 
 interface Bill {
@@ -76,6 +78,7 @@ export default function SellerSalesPage() {
   const [settingsMode, setSettingsMode] = useState<"gst" | "normal">("normal");
   const [gstin, setGstin] = useState("");
   const [taxRatePercent, setTaxRatePercent] = useState(5);
+  const [invoiceNote, setInvoiceNote] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState("");
 
@@ -95,6 +98,7 @@ export default function SellerSalesPage() {
         setSettingsMode(s.mode);
         setGstin(s.gstin ?? "");
         setTaxRatePercent(s.taxRatePercent);
+        setInvoiceNote(s.invoiceNote ?? "");
       });
   }
 
@@ -117,7 +121,7 @@ export default function SellerSalesPage() {
     const res = await fetch(`/api/v1/seller/stores/${store.id}/bill-settings`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: settingsMode, gstin: settingsMode === "gst" ? gstin : undefined, taxRatePercent }),
+      body: JSON.stringify({ mode: settingsMode, gstin: settingsMode === "gst" ? gstin : undefined, taxRatePercent, invoiceNote }),
     });
     const result = await res.json().catch(() => null);
     setSavingSettings(false);
@@ -285,6 +289,19 @@ export default function SellerSalesPage() {
             </div>
           )}
 
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, display: "block", marginBottom: 6 }}>Invoice note (optional)</label>
+            <textarea
+              value={invoiceNote}
+              onChange={(e) => setInvoiceNote(e.target.value)}
+              placeholder="e.g. Exchange within 7 days with this receipt. Thank you for shopping with us!"
+              rows={2}
+              maxLength={300}
+              style={{ ...inputStyle(), resize: "vertical" }}
+            />
+            <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Printed at the bottom of every receipt/invoice - your own words, your own policy.</p>
+          </div>
+
           {settingsError && <p style={{ fontSize: 12, color: "#e11d48", marginBottom: 10 }}>{settingsError}</p>}
 
           <button
@@ -322,6 +339,7 @@ export default function SellerSalesPage() {
             <option value="">Select a product…</option>
             {products.map((p) => (
               <option key={p.id} value={p.id} disabled={(p.stockRemaining ?? 0) <= 0}>
+                {p.productCode ? `[${p.productCode}] ` : ""}
                 {p.title} — ₹{p.basePrice} ({p.stockRemaining ?? 0} in stock)
               </option>
             ))}

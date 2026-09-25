@@ -11,6 +11,7 @@ export interface SellerStore {
   city: string;
   pincode: string;
   localMarket: string;
+  phone?: string;
 }
 
 /** Resolves the signed-in seller's store from their session cookie, redirecting to login if absent. */

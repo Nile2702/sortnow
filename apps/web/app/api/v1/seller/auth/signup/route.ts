@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createStore } from "../../../../../../lib/seed-data";
+import { createStore, findStoreByPhone } from "../../../../../../lib/seed-data";
 import { createSellerSessionToken, SELLER_SESSION_COOKIE } from "../../../../../../lib/auth/session";
 import { rateLimit, clientIp } from "../../../../../../lib/rate-limit";
 import { moderateText } from "../../../../../../lib/content-moderation";
@@ -10,15 +10,24 @@ export async function POST(req: NextRequest) {
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
-  const { name, category, pincode, localMarket, password } = body;
+  const { name, category, pincode, localMarket, phone, password } = body;
   if (
     typeof name !== "string" ||
     typeof category !== "string" ||
     typeof pincode !== "string" ||
     typeof localMarket !== "string" ||
-    typeof password !== "string"
+    typeof password !== "string" ||
+    (phone !== undefined && typeof phone !== "string")
   ) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  }
+  if (phone) {
+    if (!/^\d{10}$/.test(phone)) {
+      return NextResponse.json({ error: "invalid_input", message: "Mobile number must be exactly 10 digits." }, { status: 400 });
+    }
+    if (findStoreByPhone(phone)) {
+      return NextResponse.json({ error: "invalid_input", message: "This mobile number is already registered to another store." }, { status: 400 });
+    }
   }
 
   // A handful of signups per IP per hour - generous for a real merchant,
@@ -39,7 +48,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = createStore({ name, category, pincode, localMarket, password });
+  const result = createStore({ name, category, pincode, localMarket, phone, password });
   if ("error" in result) {
     return NextResponse.json({ error: "invalid_input", message: result.error }, { status: 400 });
   }

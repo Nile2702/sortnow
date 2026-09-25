@@ -14,6 +14,7 @@ interface ProductFormData {
   description: string;
   fabric: string;
   color?: string;
+  productCode?: string;
   gender: string;
   subCategory: string;
   basePrice: number;
@@ -116,6 +117,7 @@ export function ProductForm({
     title: initial?.title ?? "",
     description: initial?.description ?? "",
     fabric: initial?.fabric ?? "",
+    productCode: initial?.productCode ?? "",
     gender: initial?.gender ?? "women",
     subCategory: initial?.subCategory ?? defaultSizedSubCategoryFor((initial?.gender ?? "women") as Gender),
     basePrice: initial?.basePrice ?? 999,
@@ -484,6 +486,7 @@ export function ProductForm({
     const basePayload = {
       description: form.description,
       fabric: form.fabric,
+      productCode: form.productCode?.trim() || undefined,
       gender: form.gender,
       subCategory: form.subCategory,
       basePrice: Number(form.basePrice),
@@ -618,6 +621,19 @@ export function ProductForm({
       <div>
         <label style={labelStyle()}>Fabric</label>
         <input required value={form.fabric} onChange={(e) => update("fabric", e.target.value)} style={inputStyle()} placeholder="e.g. Cotton, Silk, Denim" />
+      </div>
+
+      <div>
+        <label style={labelStyle()}>Product Code (optional)</label>
+        <input
+          value={form.productCode ?? ""}
+          onChange={(e) => update("productCode", e.target.value)}
+          style={inputStyle()}
+          placeholder="e.g. UV-042"
+        />
+        <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+          Shown to shoppers online so they can quote it when they reach your shop — useful for fast lookup at the counter.
+        </p>
       </div>
 
       <div>

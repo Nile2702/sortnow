@@ -19,6 +19,7 @@ export interface ProductInput {
   fabric?: unknown;
   color?: unknown;
   colorGroupId?: unknown;
+  productCode?: unknown;
   gender?: unknown;
   subCategory?: unknown;
   basePrice?: unknown;
@@ -38,6 +39,9 @@ export interface ValidatedProductInput {
   // show the sibling colors as swatches. Not user-facing text, so it skips
   // content moderation below.
   colorGroupId?: string;
+  // Seller-assigned lookup code (e.g. "UV-042") - not user-facing prose, so
+  // it also skips content moderation, same reasoning as colorGroupId.
+  productCode?: string;
   gender?: "men" | "women" | "kids";
   subCategory?: string;
   basePrice?: number;
@@ -132,6 +136,16 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
       errors.push(`fabric must be ${MAX_TEXT} characters or fewer`);
     } else {
       data.fabric = input.fabric;
+    }
+  }
+
+  if (input.productCode !== undefined && input.productCode !== null) {
+    if (typeof input.productCode !== "string") {
+      errors.push("productCode must be a string");
+    } else if (input.productCode.length > MAX_TEXT) {
+      errors.push(`productCode must be ${MAX_TEXT} characters or fewer`);
+    } else {
+      data.productCode = input.productCode.trim() || undefined;
     }
   }
 

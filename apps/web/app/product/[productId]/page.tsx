@@ -22,6 +22,7 @@ interface ProductDetail {
   description?: string;
   fabric?: string;
   color?: string;
+  productCode?: string;
   colorVariants?: ColorVariant[];
   gender: string;
   subCategory: string;
@@ -663,6 +664,10 @@ export default function ProductDetailPage() {
                 ...(product.color ? [["Color", product.color]] : []),
                 ["Available sizes", product.sizes.join(", ")],
                 ["Sold by", product.store.name],
+                // Only shown when the seller has set one - quote this to the
+                // shopkeeper at the counter for fast lookup instead of
+                // describing the item or scrolling through photos.
+                ...(product.productCode ? [["Product Code", product.productCode]] : []),
                 ["Product ID", product.id],
               ].map(([label, value]) => (
                 <tr key={label} style={{ borderBottom: "1px solid var(--sio-line)" }}>

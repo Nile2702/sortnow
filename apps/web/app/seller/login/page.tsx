@@ -20,6 +20,9 @@ const FEATURES = [
   { icon: "🎨", title: "Customize your storefront", desc: "Theme Studio lets you set brand colors, hero message, and QR standees." },
 ];
 
+type LoginMode = "password" | "otp";
+type OtpStep = "phone" | "code";
+
 export default function SellerLoginPage() {
   const router = useRouter();
   const [stores, setStores] = useState<StoreOption[]>([]);
@@ -29,6 +32,14 @@ export default function SellerLoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingStores, setLoadingStores] = useState(true);
+
+  const [mode, setMode] = useState<LoginMode>("password");
+  const [otpStep, setOtpStep] = useState<OtpStep>("phone");
+  const [otpPhone, setOtpPhone] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [devOtp, setDevOtp] = useState("");
+  const [otpSubmitting, setOtpSubmitting] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/v1/seller/stores")
@@ -69,6 +80,49 @@ export default function SellerLoginPage() {
   function fillDemoPassword() {
     setPassword("sortitout123");
     setShowPassword(true);
+  }
+
+  async function handleSendOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setOtpError(null);
+    if (!/^\d{10}$/.test(otpPhone)) {
+      setOtpError("Enter a valid 10-digit mobile number.");
+      return;
+    }
+    setOtpSubmitting(true);
+    const res = await fetch("/api/v1/seller/auth/otp/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: otpPhone }),
+    });
+    const result = await res.json().catch(() => null);
+    setOtpSubmitting(false);
+    if (!res.ok) {
+      setOtpError(result?.message ?? "Couldn't send an OTP. Try again.");
+      return;
+    }
+    setDevOtp(result?.devOtp ?? "");
+    setOtpStep("code");
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setOtpError(null);
+    setOtpSubmitting(true);
+    const res = await fetch("/api/v1/seller/auth/otp/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: otpPhone, code: otpCode }),
+    });
+    const result = await res.json().catch(() => null);
+    setOtpSubmitting(false);
+    if (!res.ok) {
+      setOtpError(result?.message ?? "Incorrect or expired OTP.");
+      return;
+    }
+    showToast(`Signed in — welcome back, ${result.name}`);
+    router.push("/seller");
+    router.refresh();
   }
 
   return (
@@ -179,6 +233,131 @@ export default function SellerLoginPage() {
               <p style={{ color: "var(--sio-muted)", fontSize: 13.5 }}>Manage your storefront, catalog, and reservations.</p>
             </div>
 
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              <button
+                type="button"
+                onClick={() => setMode("password")}
+                style={{
+                  flex: 1,
+                  padding: "9px 0",
+                  borderRadius: 999,
+                  border: mode === "password" ? "none" : "1px solid var(--sio-line)",
+                  background: mode === "password" ? "var(--sio-ink)" : "transparent",
+                  color: mode === "password" ? "#fff" : "var(--sio-muted)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Password
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("otp")}
+                style={{
+                  flex: 1,
+                  padding: "9px 0",
+                  borderRadius: 999,
+                  border: mode === "otp" ? "none" : "1px solid var(--sio-line)",
+                  background: mode === "otp" ? "var(--sio-ink)" : "transparent",
+                  color: mode === "otp" ? "#fff" : "var(--sio-muted)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                OTP
+              </button>
+            </div>
+
+            {mode === "otp" ? (
+              <form
+                onSubmit={otpStep === "phone" ? handleSendOtp : handleVerifyOtp}
+                style={{
+                  background: "var(--sio-paper)",
+                  border: "1px solid var(--sio-line)",
+                  borderRadius: 16,
+                  padding: 28,
+                  boxShadow: "0 20px 40px rgba(22, 20, 15, 0.05)",
+                }}
+              >
+                {otpStep === "phone" ? (
+                  <>
+                    <label style={labelStyle}>Registered mobile number</label>
+                    <input
+                      value={otpPhone}
+                      onChange={(e) => setOtpPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                      placeholder="10-digit mobile number"
+                      style={{ ...inputStyle, marginBottom: 6 }}
+                    />
+                    <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginBottom: 4 }}>
+                      Only works if a phone number is on file for your store (set at signup, or ask support to add one). Demo: Urban Vogue's
+                      is 9876543210.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <label style={labelStyle}>Enter the code</label>
+                    <input
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="6-digit OTP"
+                      style={{ ...inputStyle, letterSpacing: "0.3em", textAlign: "center", fontSize: 18, marginBottom: 6 }}
+                      autoFocus
+                    />
+                    {devOtp && (
+                      <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginBottom: 4 }}>
+                        Dev mode — code: <strong style={{ color: "var(--sio-ink)" }}>{devOtp}</strong> (no SMS gateway connected yet)
+                      </p>
+                    )}
+                  </>
+                )}
+
+                {otpError && (
+                  <div
+                    style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginTop: 8, marginBottom: 6 }}
+                  >
+                    {otpError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={otpSubmitting}
+                  className="sio-btn-primary sio-shine-btn"
+                  style={{
+                    width: "100%",
+                    padding: "13px 18px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: "var(--sio-ink)",
+                    color: "#fff",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: otpSubmitting ? "default" : "pointer",
+                    opacity: otpSubmitting ? 0.7 : 1,
+                    marginTop: 14,
+                  }}
+                >
+                  {otpSubmitting ? (otpStep === "phone" ? "Sending…" : "Verifying…") : otpStep === "phone" ? "Send OTP" : "Verify & sign in"}
+                </button>
+
+                {otpStep === "code" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpStep("phone");
+                      setOtpCode("");
+                      setDevOtp("");
+                      setOtpError(null);
+                    }}
+                    style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 12.5, cursor: "pointer", padding: "10px 0 0", width: "100%" }}
+                  >
+                    ← Change number
+                  </button>
+                )}
+              </form>
+            ) : (
             <form
               onSubmit={handleSubmit}
               style={{
@@ -306,6 +485,7 @@ export default function SellerLoginPage() {
                 </button>
               </div>
             </form>
+            )}
 
             <div style={{ marginTop: 16, textAlign: "center", fontSize: 12.5, color: "var(--sio-muted)" }}>
               New here?{" "}

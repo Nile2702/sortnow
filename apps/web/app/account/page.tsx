@@ -7,8 +7,6 @@ import { getShopperSession, setShopperSession, clearShopperSession, ShopperSessi
 
 type Step = "phone" | "otp";
 
-const DEMO_OTP = "1234";
-
 export default function AccountPage() {
   const router = useRouter();
   const [session, setSession] = useState<ShopperSession | null>(null);
@@ -18,23 +16,54 @@ export default function AccountPage() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  // Shown only because no real SMS gateway is connected yet (see
+  // lib/otp.ts) - the server has nowhere else to actually deliver the code
+  // to in this environment, so it hands it back for the demo to display.
+  const [devOtp, setDevOtp] = useState("");
 
   useEffect(() => {
     setSession(getShopperSession());
     setReady(true);
   }, []);
 
-  function handleSendOtp(e: React.FormEvent) {
+  async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!name.trim()) return setError("Enter your name.");
     if (!/^\d{10}$/.test(phone)) return setError("Enter a valid 10-digit mobile number.");
+    setSending(true);
+    const res = await fetch("/api/v1/auth/otp/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    });
+    const result = await res.json().catch(() => null);
+    setSending(false);
+    if (!res.ok) {
+      setError(result?.message ?? "Couldn't send an OTP. Try again.");
+      return;
+    }
+    setDevOtp(result.devOtp ?? "");
     setStep("otp");
   }
 
-  function handleVerify(e: React.FormEvent) {
+  async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
-    if (otp !== DEMO_OTP) return setError(`Incorrect OTP. This demo's OTP is always ${DEMO_OTP}.`);
+    setError("");
+    setVerifying(true);
+    const res = await fetch("/api/v1/auth/otp/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, code: otp }),
+    });
+    const result = await res.json().catch(() => null);
+    setVerifying(false);
+    if (!res.ok) {
+      setError(result?.message ?? "Incorrect or expired OTP.");
+      return;
+    }
     setShopperSession({ name: name.trim(), phone });
     setSession({ name: name.trim(), phone });
   }
@@ -146,32 +175,41 @@ export default function AccountPage() {
               />
             </div>
             {error && <ErrorBanner text={error} />}
-            <button type="submit" className="sio-btn-primary sio-shine-btn" style={buttonStyle}>
-              Send OTP
+            <button type="submit" disabled={sending} className="sio-btn-primary sio-shine-btn" style={{ ...buttonStyle, opacity: sending ? 0.7 : 1 }}>
+              {sending ? "Sending…" : "Send OTP"}
             </button>
-            <p style={{ fontSize: 12, color: "var(--sio-muted)", textAlign: "center" }}>
-              Demo login — no SMS is actually sent, OTP is always <strong>{DEMO_OTP}</strong>.
-            </p>
           </form>
         ) : (
           <form onSubmit={handleVerify} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <p style={{ fontSize: 13.5, color: "var(--sio-muted)", textAlign: "center" }}>
-              OTP sent to +91 {phone}. <strong style={{ color: "var(--sio-ink)" }}>Demo OTP: {DEMO_OTP}</strong>
+              OTP sent to +91 {phone}.
+              {devOtp && (
+                <>
+                  {" "}
+                  <strong style={{ color: "var(--sio-ink)" }}>Dev mode — code: {devOtp}</strong> (no SMS gateway connected yet, so it's shown
+                  here instead)
+                </>
+              )}
             </p>
             <input
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              placeholder="4-digit OTP"
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="6-digit OTP"
               style={{ ...inputStyle, letterSpacing: "0.3em", fontSize: 18, textAlign: "center" }}
               autoFocus
             />
             {error && <ErrorBanner text={error} />}
-            <button type="submit" className="sio-btn-primary sio-shine-btn" style={buttonStyle}>
-              Verify &amp; sign in
+            <button type="submit" disabled={verifying} className="sio-btn-primary sio-shine-btn" style={{ ...buttonStyle, opacity: verifying ? 0.7 : 1 }}>
+              {verifying ? "Verifying…" : "Verify & sign in"}
             </button>
             <button
               type="button"
-              onClick={() => setStep("phone")}
+              onClick={() => {
+                setStep("phone");
+                setOtp("");
+                setDevOtp("");
+                setError("");
+              }}
               style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 13, cursor: "pointer", padding: 4 }}
             >
               ← Change number

@@ -15,6 +15,7 @@ interface Product {
   gender: string;
   subCategory: string;
   color?: string;
+  productCode?: string;
 }
 
 export default function SellerProductsPage() {
@@ -24,6 +25,14 @@ export default function SellerProductsPage() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
+  const [search, setSearch] = useState("");
+
+  const filteredProducts = search.trim()
+    ? products.filter((p) => {
+        const q = search.trim().toLowerCase();
+        return p.title.toLowerCase().includes(q) || (p.productCode ?? "").toLowerCase().includes(q);
+      })
+    : products;
 
   function load(storeId: string) {
     setLoading(true);
@@ -89,13 +98,24 @@ export default function SellerProductsPage() {
         </div>
       </div>
 
+      {products.length > 0 && (
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by title or product code…"
+          style={{ width: "100%", maxWidth: 360, padding: "9px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, marginBottom: 16 }}
+        />
+      )}
+
       {loading ? (
         <p style={{ color: "#64748b" }}>Loading products…</p>
       ) : products.length === 0 ? (
         <p style={{ color: "#64748b" }}>No products yet. Add your first one to go live.</p>
+      ) : filteredProducts.length === 0 ? (
+        <p style={{ color: "#64748b" }}>No products match "{search}".</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {products.map((p) => (
+          {filteredProducts.map((p) => (
             <div
               key={p.id}
               className="sio-card"
@@ -103,7 +123,16 @@ export default function SellerProductsPage() {
             >
               <img src={p.images?.[0]?.url} alt={p.title} style={{ width: 56, height: 70, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
               <div style={{ flex: "1 1 200px", minWidth: 180 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{p.title}</div>
+                <div style={{ fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                  {p.title}
+                  {p.productCode && (
+                    <span
+                      style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 600, color: "#0f172a", background: "#f1f5f9", padding: "2px 6px", borderRadius: 4 }}
+                    >
+                      {p.productCode}
+                    </span>
+                  )}
+                </div>
                 <div style={{ fontSize: 12, color: "#64748b" }}>
                   {p.gender} · {p.subCategory}
                   {p.color ? ` · ${p.color}` : ""} · {p.sizes.join(", ")}

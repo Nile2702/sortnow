@@ -46,6 +46,10 @@ export interface Store {
   latitude: number;
   longitude: number;
   liveSale?: LiveSale | null;
+  // Optional - lets a seller sign in via OTP as an alternative to their
+  // password (see /api/v1/seller/auth/otp/*). Not required at signup so
+  // this doesn't break an existing password-only account.
+  phone?: string;
 }
 
 // Next.js dev-mode compiles route handlers on demand, which can give
@@ -74,6 +78,7 @@ const INITIAL_STORES: Store[] = [
     localMarket: "Bandra",
     latitude: 19.0596,
     longitude: 72.8295,
+    phone: "9876543210",
   },
   {
     id: "store-south-silk-house",
@@ -182,6 +187,15 @@ export function verifySellerLogin(storeSlug: string, password: string): Store | 
   return store;
 }
 
+// OTP login only ever proves the caller owns this phone number - it must
+// already be registered against exactly one store (set at signup or later
+// via account settings), unlike shopper OTP login which has no
+// pre-registration requirement at all.
+export function findStoreByPhone(phone: string): Store | null {
+  const normalized = phone.replace(/\D/g, "").slice(-10);
+  return stores.find((s) => s.phone && s.phone.replace(/\D/g, "").slice(-10) === normalized) ?? null;
+}
+
 function slugify(name: string): string {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "store";
 }
@@ -192,6 +206,7 @@ export interface CreateStoreInput {
   pincode: string;
   localMarket: string;
   password: string;
+  phone?: string;
 }
 
 // Real "sign up as a new merchant" path - as opposed to verifySellerLogin
@@ -225,6 +240,7 @@ export function createStore(input: CreateStoreInput): { store: Store } | { error
     city: geo.city,
     pincode: input.pincode,
     localMarket: input.localMarket.trim(),
+    phone: input.phone?.trim() || undefined,
     latitude: geo.lat,
     longitude: geo.lng,
   };
@@ -525,6 +541,12 @@ export interface Product {
   // sibling colors as swatches. Undefined for anything created singly
   // (manual single-color, CSV bulk, AI bulk photos).
   colorGroupId?: string;
+  // Seller-assigned, optional - a shopper who browsed online and shows up
+  // in person can just read this out to the shopkeeper (or a shopper on
+  // the phone can quote it) instead of describing the item or scrolling
+  // through photos to find it. Purely a lookup aid; has no effect on
+  // pricing, stock, or anything else.
+  productCode?: string;
   basePrice: number;
   compareAtPrice?: number;
   images: { url: string }[];
@@ -1073,6 +1095,7 @@ export function createProduct(storeId: string, input: Partial<Product>): Product
     fabric: input.fabric,
     color: input.color,
     colorGroupId: input.colorGroupId,
+    productCode: input.productCode,
     basePrice: input.basePrice ?? 0,
     compareAtPrice: input.compareAtPrice,
     images: input.images?.length ? input.images : [{ url: placeholderImage(input.title ?? "New product", "#334155", "#f1f5f9") }],
@@ -1231,6 +1254,14 @@ export function createReservation(input: {
   };
   reservations.unshift(reservation);
   persist("reservations", reservations);
+
+  if (store.phone) {
+    const itemCount = reservation.items.reduce((sum, i) => sum + i.quantity, 0);
+    notify(store.id, store.phone, "seller", "reservation_created",
+      `New reservation from ${reservation.shopperName} (${reservation.shopperPhone}): ${itemCount} item${itemCount === 1 ? "" : "s"}, ₹${reservation.total}. Reserved until ${new Date(reservation.reservedUntil).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}.`
+    );
+  }
+
   return reservation;
 }
 
@@ -1247,6 +1278,13 @@ export function updateReservationStatus(id: string, status: "fulfilled" | "cance
   if (!reservation) return null;
   reservation.status = status;
   persist("reservations", reservations);
+
+  const message =
+    status === "fulfilled"
+      ? `Thanks for shopping with ${reservation.storeName}! Your order (₹${reservation.total}) has been picked up.`
+      : `Your reservation at ${reservation.storeName} (₹${reservation.total}) was cancelled.`;
+  notify(reservation.storeId, reservation.shopperPhone, "shopper", `reservation_${status}`, message);
+
   return reservation;
 }
 
@@ -1255,6 +1293,56 @@ export function updateReservationStatus(id: string, status: "fulfilled" | "cance
 export function effectiveReservationStatus(r: Reservation): ReservationStatus {
   if (r.status === "pending" && new Date(r.reservedUntil).getTime() < Date.now()) return "expired";
   return r.status;
+}
+
+// ---------------------------------------------------------------------
+// Notifications: an SMS/WhatsApp-style log so a reservation actually
+// reaches someone (seller told a reservation came in, shopper told
+// theirs was fulfilled/cancelled) instead of only living inside this
+// dashboard until someone happens to check it. Event-driven only (fires
+// from createReservation/updateReservationStatus above) - a real
+// "reservation expiring in 30 minutes" reminder would need a scheduled
+// job this demo environment has no infrastructure for, so that one isn't
+// covered here.
+//
+// Like lib/otp.ts, only actual SMS delivery is stubbed (no gateway
+// credentials exist in this environment) - everything else (who gets
+// notified, when, with what message) is real and wired to real events.
+// ---------------------------------------------------------------------
+export interface Notification {
+  id: string;
+  storeId: string;
+  recipient: "seller" | "shopper";
+  phone: string;
+  trigger: "reservation_created" | "reservation_fulfilled" | "reservation_cancelled";
+  message: string;
+  createdAt: string;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioNotifications: Notification[] | undefined;
+}
+
+export const notifications: Notification[] = globalThis.__sioNotifications ?? (globalThis.__sioNotifications = loadPersisted("notifications", [] as Notification[]));
+
+function notify(storeId: string, phone: string, recipient: "seller" | "shopper", trigger: Notification["trigger"], message: string) {
+  console.log(`[SMS -> +91${phone}] ${message}`);
+  const record: Notification = {
+    id: `notif-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    storeId,
+    recipient,
+    phone,
+    trigger,
+    message,
+    createdAt: new Date().toISOString(),
+  };
+  notifications.unshift(record);
+  persist("notifications", notifications);
+}
+
+export function getStoreNotifications(storeId: string): Notification[] {
+  return notifications.filter((n) => n.storeId === storeId);
 }
 
 // ---------------------------------------------------------------------
@@ -1278,6 +1366,10 @@ export interface BillingSettings {
   // slab, without this pretending to be a full compliance product.
   taxRatePercent: number;
   nextInvoiceNumber: number;
+  // Free-text line printed at the foot of every invoice (e.g. an exchange
+  // policy, a thank-you note) - seller-authored, since this platform has
+  // no basis to assert a shop's own return/exchange terms on their behalf.
+  invoiceNote?: string;
 }
 
 export interface BillItem {
@@ -1298,8 +1390,11 @@ export interface Bill {
   invoiceNumber: string;
   storeId: string;
   storeName: string;
-  // Snapshotted at creation - changing settings later must never rewrite
-  // the tax mode/rate/GSTIN on a bill that's already gone out to a customer.
+  // Snapshotted at creation, same as mode/gstin/taxRatePercent below - a
+  // store's own address/note can change later and must never rewrite what
+  // already printed on a customer's copy.
+  storeAddress?: string;
+  invoiceNote?: string;
   mode: "gst" | "normal";
   gstin?: string;
   taxRatePercent: number;
@@ -1308,6 +1403,7 @@ export interface Bill {
   cgst: number;
   sgst: number;
   grandTotal: number;
+  totalQuantity: number;
   paymentMode: "cash" | "upi" | "card" | "other";
   customerName?: string;
   customerPhone?: string;
@@ -1334,7 +1430,7 @@ export function getBillingSettings(storeId: string): BillingSettings {
 
 export function updateBillingSettings(
   storeId: string,
-  patch: { mode?: "gst" | "normal"; gstin?: string; taxRatePercent?: number }
+  patch: { mode?: "gst" | "normal"; gstin?: string; taxRatePercent?: number; invoiceNote?: string }
 ): BillingSettings {
   const current = getBillingSettings(storeId);
   const next: BillingSettings = {
@@ -1342,6 +1438,7 @@ export function updateBillingSettings(
     ...(patch.mode !== undefined ? { mode: patch.mode } : {}),
     ...(patch.gstin !== undefined ? { gstin: patch.gstin } : {}),
     ...(patch.taxRatePercent !== undefined ? { taxRatePercent: patch.taxRatePercent } : {}),
+    ...(patch.invoiceNote !== undefined ? { invoiceNote: patch.invoiceNote } : {}),
   };
   billingSettingsStore[storeId] = next;
   persist("billingSettings", billingSettingsStore);
@@ -1414,6 +1511,8 @@ export function createBill(input: {
     invoiceNumber,
     storeId: store.id,
     storeName: store.name,
+    storeAddress: [store.localMarket, store.city].filter(Boolean).join(", ") + (store.pincode ? ` - ${store.pincode}` : ""),
+    invoiceNote: settings.invoiceNote,
     mode: settings.mode,
     gstin: isGst ? settings.gstin : undefined,
     taxRatePercent,
@@ -1422,6 +1521,7 @@ export function createBill(input: {
     cgst,
     sgst,
     grandTotal,
+    totalQuantity: items.reduce((sum, i) => sum + i.quantity, 0),
     paymentMode: input.paymentMode,
     customerName: input.customerName,
     customerPhone: input.customerPhone,
@@ -1703,6 +1803,59 @@ export function getStoreAnalytics(storeId: string) {
   };
 }
 
+// Revenue/sales analytics, computed from the in-store billing data (see
+// createBill) rather than the footfall-only analytics above - a separate
+// function/route since the two answer different questions ("who's looking"
+// vs. "who's actually buying") and existed independently before this was
+// added.
+export function getSalesAnalytics(storeId: string) {
+  // Void bills didn't result in an actual sale - excluded from every
+  // figure here, same as they'd be excluded from a real books/ledger view.
+  const storeBills = getStoreBills(storeId).filter((b) => b.status === "issued");
+
+  const totalRevenue = storeBills.reduce((sum, b) => sum + b.grandTotal, 0);
+  const totalBills = storeBills.length;
+  const billQuantity = (b: Bill) => b.totalQuantity ?? b.items.reduce((sum, i) => sum + i.quantity, 0);
+  const totalItemsSold = storeBills.reduce((sum, b) => sum + billQuantity(b), 0);
+
+  const revenueByProduct = new Map<string, { title: string; quantity: number; revenue: number }>();
+  for (const bill of storeBills) {
+    for (const item of bill.items) {
+      const existing = revenueByProduct.get(item.productId);
+      if (existing) {
+        existing.quantity += item.quantity;
+        existing.revenue += item.total;
+      } else {
+        revenueByProduct.set(item.productId, { title: item.title, quantity: item.quantity, revenue: item.total });
+      }
+    }
+  }
+  const topProducts = [...revenueByProduct.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
+  const last7Days = Array.from({ length: 7 }).map((_, i) => {
+    const day = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000);
+    const key = day.toISOString().slice(0, 10);
+    const dayBills = storeBills.filter((b) => b.createdAt.slice(0, 10) === key);
+    return { date: key, revenue: dayBills.reduce((sum, b) => sum + b.grandTotal, 0), count: dayBills.length };
+  });
+
+  const byPaymentMode: Record<string, number> = {};
+  for (const bill of storeBills) {
+    byPaymentMode[bill.paymentMode] = (byPaymentMode[bill.paymentMode] ?? 0) + 1;
+  }
+
+  // A customer counts as "repeat" once their phone number shows up on 2+
+  // separate bills - the only identity a walk-in customer has here.
+  const billsPerPhone = new Map<string, number>();
+  for (const bill of storeBills) {
+    if (!bill.customerPhone) continue;
+    billsPerPhone.set(bill.customerPhone, (billsPerPhone.get(bill.customerPhone) ?? 0) + 1);
+  }
+  const repeatCustomers = [...billsPerPhone.values()].filter((count) => count >= 2).length;
+
+  return { totalRevenue, totalBills, totalItemsSold, topProducts, last7Days, byPaymentMode, repeatCustomers };
+}
+
 // ---------------------------------------------------------------------
 // Product reviews & similar products - powers the product detail page.
 // ---------------------------------------------------------------------
@@ -1884,6 +2037,20 @@ export function getRatingSummary(productId: string) {
     count: productReviews.filter((r) => r.rating === star).length,
   }));
   return { average, count, breakdown };
+}
+
+// A trust signal for the store as a whole (like a shop's Google rating),
+// not just one product - important on a marketplace of many small, mostly
+// unknown-to-the-shopper sellers, where "is this shop reliable" matters as
+// much as "is this specific item good". Aggregates every review left on
+// any of the store's products rather than requiring a separate per-store
+// review flow.
+export function getStoreRatingSummary(storeId: string): { average: number; count: number } {
+  const storeProductIds = new Set(getStoreProducts(storeId).map((p) => p.id));
+  const storeReviews = reviews.filter((r) => storeProductIds.has(r.productId));
+  const count = storeReviews.length;
+  const average = count === 0 ? 0 : Math.round((storeReviews.reduce((sum, r) => sum + r.rating, 0) / count) * 10) / 10;
+  return { average, count };
 }
 
 export function addReview(productId: string, input: { authorName: string; rating: number; title?: string; comment: string }): Review {
