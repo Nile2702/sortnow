@@ -1,8 +1,10 @@
 "use client";
 
-// No real auth service in this demo (see database/schema.sql · shoppers table
-// for the intended model) - this mocks OTP login and remembers the shopper
-// in localStorage.
+// Sign-in itself is real (lib/otp.ts + the Shopper profile in
+// lib/seed-data.ts) - this just remembers the signed-in shopper on this
+// device so they aren't asked to re-verify on every visit. Signing in on a
+// different device still works (the profile is looked up server-side by
+// phone), it just won't carry this device's local state over.
 
 const STORAGE_KEY = "sio:shopper";
 const EVENT = "sio:shopper-session-changed";
@@ -10,6 +12,9 @@ const EVENT = "sio:shopper-session-changed";
 export interface ShopperSession {
   name: string;
   phone: string;
+  email?: string;
+  preferredCategory?: "men" | "women" | "kids";
+  pincode?: string;
 }
 
 export function getShopperSession(): ShopperSession | null {

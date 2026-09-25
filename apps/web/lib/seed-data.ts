@@ -1346,6 +1346,74 @@ export function getStoreNotifications(storeId: string): Notification[] {
 }
 
 // ---------------------------------------------------------------------
+// Shopper profiles: created the first time a phone number completes OTP
+// sign-in (see /api/v1/shopper/profile). Lets the sign-in page tell a
+// genuinely first-time customer apart from one returning on a new device
+// (localStorage-only shopper-session.ts can't do that across devices),
+// and gives the platform somewhere to keep the preferences a first-time
+// signup collects (preferred category, home area) for later
+// personalization.
+// ---------------------------------------------------------------------
+export interface Shopper {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  preferredCategory?: Gender;
+  pincode?: string;
+  createdAt: string;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioShoppers: Shopper[] | undefined;
+}
+
+export const shoppers: Shopper[] = globalThis.__sioShoppers ?? (globalThis.__sioShoppers = loadPersisted("shoppers", [] as Shopper[]));
+
+export function findShopperByPhone(phone: string): Shopper | null {
+  const normalized = phone.replace(/\D/g, "").slice(-10);
+  return shoppers.find((s) => s.phone.replace(/\D/g, "").slice(-10) === normalized) ?? null;
+}
+
+export interface UpsertShopperInput {
+  name: string;
+  phone: string;
+  email?: string;
+  preferredCategory?: Gender;
+  pincode?: string;
+}
+
+// Creates a shopper the first time their phone verifies, or updates the
+// existing profile's editable fields on a later sign-in - either way the
+// caller gets back the current record plus whether this was a brand-new
+// signup, which is what the sign-in page uses to decide whether to show
+// the "tell us about you" step.
+export function upsertShopper(input: UpsertShopperInput): { shopper: Shopper; isNewCustomer: boolean } {
+  const existing = findShopperByPhone(input.phone);
+  if (existing) {
+    existing.name = input.name.trim() || existing.name;
+    if (input.email !== undefined) existing.email = input.email.trim() || undefined;
+    if (input.preferredCategory !== undefined) existing.preferredCategory = input.preferredCategory;
+    if (input.pincode !== undefined) existing.pincode = input.pincode.trim() || undefined;
+    persist("shoppers", shoppers);
+    return { shopper: existing, isNewCustomer: false };
+  }
+  const shopper: Shopper = {
+    id: `shopper-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    name: input.name.trim(),
+    phone: input.phone,
+    email: input.email?.trim() || undefined,
+    preferredCategory: input.preferredCategory,
+    pincode: input.pincode?.trim() || undefined,
+    createdAt: new Date().toISOString(),
+  };
+  shoppers.push(shopper);
+  persist("shoppers", shoppers);
+  return { shopper, isNewCustomer: true };
+}
+
+// ---------------------------------------------------------------------
 // In-store billing: lets a seller record a walk-in sale made in their own
 // physical shop as a proper bill/receipt - paid for in cash/UPI/card
 // directly to the seller, no money moves through this platform. Deducts
