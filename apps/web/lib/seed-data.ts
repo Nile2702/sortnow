@@ -1258,6 +1258,199 @@ export function effectiveReservationStatus(r: Reservation): ReservationStatus {
 }
 
 // ---------------------------------------------------------------------
+// In-store billing: lets a seller record a walk-in sale made in their own
+// physical shop as a proper bill/receipt - paid for in cash/UPI/card
+// directly to the seller, no money moves through this platform. Deducts
+// from the same `stockRemaining` every online listing already shows, so a
+// counter sale is reflected online immediately instead of a shopper being
+// able to reserve something that was just sold in person. Distinct from
+// the "Billing: plans, subscriptions" section below, which is what THIS
+// platform charges the seller - this section is what the seller charges
+// THEIR OWN customers.
+// ---------------------------------------------------------------------
+export interface BillingSettings {
+  mode: "gst" | "normal";
+  gstin?: string;
+  // A single flat rate applied in "gst" mode - real GST has different
+  // slabs (5/12/18%) per garment category and price point, which is a
+  // full tax-classification system in itself. A configurable flat rate is
+  // the honest middle ground for a small shop that mostly sells in one
+  // slab, without this pretending to be a full compliance product.
+  taxRatePercent: number;
+  nextInvoiceNumber: number;
+}
+
+export interface BillItem {
+  productId: string;
+  title: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Bill {
+  id: string;
+  invoiceNumber: string;
+  storeId: string;
+  storeName: string;
+  // Snapshotted at creation - changing settings later must never rewrite
+  // the tax mode/rate/GSTIN on a bill that's already gone out to a customer.
+  mode: "gst" | "normal";
+  gstin?: string;
+  taxRatePercent: number;
+  items: BillItem[];
+  subtotal: number;
+  cgst: number;
+  sgst: number;
+  grandTotal: number;
+  paymentMode: "cash" | "upi" | "card" | "other";
+  customerName?: string;
+  customerPhone?: string;
+  status: "issued" | "void";
+  voidReason?: string;
+  createdAt: string;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioBillingSettings: Record<string, BillingSettings> | undefined;
+  // eslint-disable-next-line no-var
+  var __sioBills: Bill[] | undefined;
+}
+
+const DEFAULT_BILLING_SETTINGS: Omit<BillingSettings, "nextInvoiceNumber"> = { mode: "normal", taxRatePercent: 5 };
+
+export const billingSettingsStore: Record<string, BillingSettings> =
+  globalThis.__sioBillingSettings ?? (globalThis.__sioBillingSettings = loadPersisted("billingSettings", {} as Record<string, BillingSettings>));
+
+export function getBillingSettings(storeId: string): BillingSettings {
+  return billingSettingsStore[storeId] ?? { ...DEFAULT_BILLING_SETTINGS, nextInvoiceNumber: 1 };
+}
+
+export function updateBillingSettings(
+  storeId: string,
+  patch: { mode?: "gst" | "normal"; gstin?: string; taxRatePercent?: number }
+): BillingSettings {
+  const current = getBillingSettings(storeId);
+  const next: BillingSettings = {
+    ...current,
+    ...(patch.mode !== undefined ? { mode: patch.mode } : {}),
+    ...(patch.gstin !== undefined ? { gstin: patch.gstin } : {}),
+    ...(patch.taxRatePercent !== undefined ? { taxRatePercent: patch.taxRatePercent } : {}),
+  };
+  billingSettingsStore[storeId] = next;
+  persist("billingSettings", billingSettingsStore);
+  return next;
+}
+
+export const bills: Bill[] = globalThis.__sioBills ?? (globalThis.__sioBills = loadPersisted("bills", [] as Bill[]));
+
+export type CreateBillResult = { bill: Bill } | { error: string };
+
+export function createBill(input: {
+  storeId: string;
+  items: { productId: string; quantity: number }[];
+  paymentMode: "cash" | "upi" | "card" | "other";
+  customerName?: string;
+  customerPhone?: string;
+}): CreateBillResult {
+  const store = stores.find((s) => s.id === input.storeId);
+  if (!store) return { error: "Store not found." };
+  if (input.items.length === 0) return { error: "Add at least one product to the bill." };
+
+  // Resolve and validate every line before mutating any stock, so a bill
+  // either goes through completely or not at all - never half-deducted.
+  const resolved: { product: Product; quantity: number }[] = [];
+  for (const line of input.items) {
+    const product = products.find((p) => p.id === line.productId && p.storeId === input.storeId);
+    if (!product) return { error: `Product ${line.productId} not found in this store.` };
+    if (!Number.isInteger(line.quantity) || line.quantity <= 0) {
+      return { error: `Invalid quantity for "${product.title}".` };
+    }
+    const available = product.stockRemaining ?? 0;
+    if (line.quantity > available) {
+      return { error: `Only ${available} left in stock for "${product.title}".` };
+    }
+    resolved.push({ product, quantity: line.quantity });
+  }
+
+  for (const { product, quantity } of resolved) {
+    product.stockRemaining = (product.stockRemaining ?? 0) - quantity;
+  }
+  persist("products", products);
+
+  const items: BillItem[] = resolved.map(({ product, quantity }) => ({
+    productId: product.id,
+    title: product.title,
+    quantity,
+    unitPrice: product.basePrice,
+    total: product.basePrice * quantity,
+  }));
+  const subtotal = items.reduce((sum, i) => sum + i.total, 0);
+
+  const settings = getBillingSettings(input.storeId);
+  const isGst = settings.mode === "gst";
+  const taxRatePercent = isGst ? settings.taxRatePercent : 0;
+  const totalTax = isGst ? Math.round(subtotal * taxRatePercent) / 100 : 0;
+  const cgst = Math.round(totalTax * 50) / 100;
+  const sgst = Math.round((totalTax - cgst) * 100) / 100;
+  const grandTotal = Math.round((subtotal + totalTax) * 100) / 100;
+
+  const invoiceNumber = `${isGst ? "GST" : "RCPT"}-${String(settings.nextInvoiceNumber).padStart(5, "0")}`;
+  billingSettingsStore[input.storeId] = { ...settings, nextInvoiceNumber: settings.nextInvoiceNumber + 1 };
+  persist("billingSettings", billingSettingsStore);
+
+  const bill: Bill = {
+    id: `bill-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+    invoiceNumber,
+    storeId: store.id,
+    storeName: store.name,
+    mode: settings.mode,
+    gstin: isGst ? settings.gstin : undefined,
+    taxRatePercent,
+    items,
+    subtotal,
+    cgst,
+    sgst,
+    grandTotal,
+    paymentMode: input.paymentMode,
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    status: "issued",
+    createdAt: new Date().toISOString(),
+  };
+  bills.unshift(bill);
+  persist("bills", bills);
+  return { bill };
+}
+
+export function getBill(id: string): Bill | undefined {
+  return bills.find((b) => b.id === id);
+}
+
+export function getStoreBills(storeId: string): Bill[] {
+  return bills.filter((b) => b.storeId === storeId);
+}
+
+// Restocks every line item - a void means the sale didn't actually happen
+// (rung up by mistake, or a full return), so the stock deducted at billing
+// time needs to come back for online listings to stay accurate. An
+// already-void bill can't be voided again.
+export function voidBill(id: string, reason: string): Bill | null {
+  const bill = bills.find((b) => b.id === id);
+  if (!bill || bill.status === "void") return null;
+  for (const item of bill.items) {
+    const product = products.find((p) => p.id === item.productId);
+    if (product) product.stockRemaining = (product.stockRemaining ?? 0) + item.quantity;
+  }
+  persist("products", products);
+  bill.status = "void";
+  bill.voidReason = reason;
+  persist("bills", bills);
+  return bill;
+}
+
+// ---------------------------------------------------------------------
 // Billing: plans, subscriptions, GST invoices - matches
 // docs/04-monetization-and-billing.md and the `plans`/`subscriptions`/
 // `gst_invoices` tables in database/schema.sql. No real PSP (Razorpay/

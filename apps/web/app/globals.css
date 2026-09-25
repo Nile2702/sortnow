@@ -690,3 +690,13 @@ body {
     display: none !important;
   }
 }
+
+/* A printed bill/invoice (seller/sales/[billId]) should show only the
+   invoice itself - the seller nav bar, back link, and Print button are all
+   there for on-screen use only, not part of what a customer's copy should
+   show. */
+@media print {
+  .sio-print-hide {
+    display: none !important;
+  }
+}

@@ -8,6 +8,7 @@ const TABS = [
   { label: "Dashboard", href: "/seller" },
   { label: "Products", href: "/seller/products" },
   { label: "Reservations", href: "/seller/reservations" },
+  { label: "Sales", href: "/seller/sales" },
   { label: "Theme Studio", href: "/seller/theme" },
   { label: "QR Marketing", href: "/seller/qr" },
   { label: "Analytics", href: "/seller/analytics" },
@@ -28,7 +29,7 @@ export function SellerNav() {
   }
 
   return (
-    <div style={{ background: "#0f172a", color: "#fff" }}>
+    <div className="sio-print-hide" style={{ background: "#0f172a", color: "#fff" }}>
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "14px 20px", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap" }}>
           🏪 Seller Portal
