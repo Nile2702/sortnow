@@ -3,16 +3,36 @@ import assert from "node:assert/strict";
 import { validateProductInput } from "./validate-product.ts";
 
 test("accepts a valid create payload", () => {
-  const { errors, data } = validateProductInput({ title: "Blue Kurti", basePrice: 999 }, true);
+  const { errors, data } = validateProductInput(
+    { title: "Blue Kurti", basePrice: 999, description: "A comfortable everyday kurti.", fabric: "Cotton" },
+    true
+  );
   assert.deepEqual(errors, []);
   assert.equal(data.title, "Blue Kurti");
   assert.equal(data.basePrice, 999);
 });
 
-test("requires title and basePrice on create", () => {
+test("requires title, basePrice, description, and fabric on create", () => {
   const { errors } = validateProductInput({}, true);
   assert.ok(errors.includes("title is required"));
   assert.ok(errors.includes("basePrice is required"));
+  assert.ok(errors.includes("description is required"));
+  assert.ok(errors.includes("fabric is required"));
+});
+
+test("rejects a blank or whitespace-only description/fabric on create", () => {
+  const { errors } = validateProductInput(
+    { title: "x", basePrice: 100, description: "   ", fabric: "   " },
+    true
+  );
+  assert.ok(errors.includes("description is required"));
+  assert.ok(errors.includes("fabric is required"));
+});
+
+test("does not require description/fabric on update", () => {
+  const { errors, data } = validateProductInput({ stockRemaining: 5 }, false);
+  assert.deepEqual(errors, []);
+  assert.equal(data.stockRemaining, 5);
 });
 
 test("does not require title/basePrice on update", () => {
@@ -110,7 +130,7 @@ test("blocks a listing whose title uses counterfeit marketing language", () => {
 
 test("does not flag ordinary fashion terms as banned content", () => {
   const { errors } = validateProductInput(
-    { title: "Nude Pumps", basePrice: 999, description: "Classic nude heels with a leopard print insole.", color: "Nude" },
+    { title: "Nude Pumps", basePrice: 999, description: "Classic nude heels with a leopard print insole.", fabric: "Synthetic leather", color: "Nude" },
     true
   );
   assert.deepEqual(errors, []);

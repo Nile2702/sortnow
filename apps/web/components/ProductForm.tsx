@@ -183,6 +183,10 @@ export function ProductForm({
     setMannequinError("");
     setPhotoStage("raw");
     setOriginalImage(null);
+    // A new photo hasn't been autofilled yet - without this, the button
+    // stayed locked from the previous photo's one-time use.
+    setAutofilled(false);
+    setAutofillError("");
     if (!file.type.startsWith("image/")) {
       setUploadError("Please choose an image file.");
       return;
@@ -443,7 +447,12 @@ export function ProductForm({
   }
 
   async function handleAutofill() {
-    if (!uploadedImage) return;
+    // One-time use per photo - each call is a paid AI request, and letting
+    // a seller re-click for the same photo (out of curiosity, or hoping for
+    // a different answer) would multiply that cost for no benefit, since
+    // the photo hasn't changed. Uploading a different photo (or removing
+    // and re-adding this one) resets this and allows it again.
+    if (!uploadedImage || autofilled) return;
     setAutofilling(true);
     setAutofillError("");
     const analysisImage = await resizeForAnalysis(uploadedImage).catch(() => uploadedImage);
@@ -536,6 +545,7 @@ export function ProductForm({
       <div>
         <label style={labelStyle()}>Description</label>
         <textarea
+          required
           value={form.description}
           onChange={(e) => update("description", e.target.value)}
           rows={5}
@@ -607,7 +617,7 @@ export function ProductForm({
 
       <div>
         <label style={labelStyle()}>Fabric</label>
-        <input value={form.fabric} onChange={(e) => update("fabric", e.target.value)} style={inputStyle()} placeholder="e.g. Cotton, Silk, Denim" />
+        <input required value={form.fabric} onChange={(e) => update("fabric", e.target.value)} style={inputStyle()} placeholder="e.g. Cotton, Silk, Denim" />
       </div>
 
       <div>
@@ -755,6 +765,8 @@ export function ProductForm({
                     setCutoutImage(null);
                     setSelectedBackground("transparent");
                     setAutoBackgroundLabel("");
+                    setAutofilled(false);
+                    setAutofillError("");
                   }}
                   aria-label="Remove photo"
                   style={{
@@ -921,29 +933,31 @@ export function ProductForm({
                   <button
                     type="button"
                     onClick={handleAutofill}
-                    disabled={autofilling}
+                    disabled={autofilling || autofilled}
                     style={{
                       padding: "0 16px",
                       borderRadius: 10,
                       border: "none",
-                      background: autofilling ? "#94a3b8" : "#7c3aed",
+                      background: autofilled ? "#16a34a" : autofilling ? "#94a3b8" : "#7c3aed",
                       color: "#fff",
                       fontSize: 13,
                       fontWeight: 600,
-                      cursor: autofilling ? "default" : "pointer",
+                      cursor: autofilling || autofilled ? "default" : "pointer",
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {autofilling ? "Thinking…" : "Auto-fill"}
+                    {autofilled ? "✓ Auto-filled" : autofilling ? "Thinking…" : "Auto-fill"}
                   </button>
                 </div>
                 {autofillError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 8 }}>{autofillError}</p>}
                 {autofilled && !autofillError && (
-                  <p style={{ fontSize: 12, color: "#16a34a", marginTop: 8 }}>✓ Title, category, and description filled in below — review and edit as needed.</p>
+                  <p style={{ fontSize: 12, color: "#16a34a", marginTop: 8 }}>
+                    ✓ Title, category, and description filled in below — review and edit as needed. Choose a different photo to auto-fill again.
+                  </p>
                 )}
                 <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 8, lineHeight: 1.5 }}>
                   Gemini looks at the photo (and your hint, if given) to suggest a title, category, and description. Price, stock, and sizes are
-                  yours to set.
+                  yours to set. Works once per photo.
                 </p>
               </div>
             )}

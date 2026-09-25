@@ -109,9 +109,12 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
     }
   }
 
+  if (requireCore && (typeof input.description !== "string" || !input.description.trim())) {
+    errors.push("description is required");
+  }
   if (input.description !== undefined && input.description !== null) {
-    if (typeof input.description !== "string") {
-      errors.push("description must be a string");
+    if (typeof input.description !== "string" || !input.description.trim()) {
+      errors.push("description must be a non-empty string");
     } else if (input.description.length > MAX_DESCRIPTION) {
       errors.push(`description must be ${MAX_DESCRIPTION} characters or fewer`);
     } else {
@@ -119,9 +122,12 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
     }
   }
 
+  if (requireCore && (typeof input.fabric !== "string" || !input.fabric.trim())) {
+    errors.push("fabric is required");
+  }
   if (input.fabric !== undefined && input.fabric !== null) {
-    if (typeof input.fabric !== "string") {
-      errors.push("fabric must be a string");
+    if (typeof input.fabric !== "string" || !input.fabric.trim()) {
+      errors.push("fabric must be a non-empty string");
     } else if (input.fabric.length > MAX_TEXT) {
       errors.push(`fabric must be ${MAX_TEXT} characters or fewer`);
     } else {
