@@ -18,6 +18,7 @@ export interface BillInput {
 export interface ValidatedBillItem {
   productId: string;
   quantity: number;
+  size?: string;
 }
 
 export interface ValidatedBillInput {
@@ -39,7 +40,7 @@ export function validateBillInput(input: BillInput): { errors: string[]; data: V
   const items: ValidatedBillItem[] = [];
   if (Array.isArray(input.items)) {
     for (const [i, raw] of input.items.entries()) {
-      const line = raw as { productId?: unknown; quantity?: unknown } | null;
+      const line = raw as { productId?: unknown; quantity?: unknown; size?: unknown } | null;
       if (!line || typeof line.productId !== "string" || !line.productId.trim()) {
         errors.push(`items[${i}].productId is required`);
         continue;
@@ -49,7 +50,15 @@ export function validateBillInput(input: BillInput): { errors: string[]; data: V
         errors.push(`items[${i}].quantity must be a positive integer up to ${MAX_QUANTITY}`);
         continue;
       }
-      items.push({ productId: line.productId.trim(), quantity });
+      let size: string | undefined;
+      if (line.size !== undefined && line.size !== null) {
+        if (typeof line.size !== "string" || line.size.length > MAX_TEXT) {
+          errors.push(`items[${i}].size must be a string of ${MAX_TEXT} characters or fewer`);
+          continue;
+        }
+        size = line.size.trim() || undefined;
+      }
+      items.push({ productId: line.productId.trim(), quantity, size });
     }
   }
 

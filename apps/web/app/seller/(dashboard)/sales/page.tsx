@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { showToast } from "../../../../lib/toast";
 
@@ -10,6 +11,7 @@ interface Product {
   title: string;
   basePrice: number;
   stockRemaining?: number;
+  sizes: string[];
 }
 
 interface BillingSettings {
@@ -23,7 +25,7 @@ interface Bill {
   id: string;
   invoiceNumber: string;
   mode: "gst" | "normal";
-  items: { productId: string; title: string; quantity: number; unitPrice: number; total: number }[];
+  items: { productId: string; title: string; size?: string; quantity: number; unitPrice: number; total: number }[];
   subtotal: number;
   cgst: number;
   sgst: number;
@@ -37,6 +39,7 @@ interface Bill {
 interface CartLine {
   productId: string;
   title: string;
+  size?: string;
   unitPrice: number;
   available: number;
   quantity: number;
@@ -54,12 +57,14 @@ function inputStyle(): React.CSSProperties {
 }
 
 export default function SellerSalesPage() {
+  const router = useRouter();
   const { store, loading: storeLoading } = useSellerStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [settings, setSettings] = useState<BillingSettings | null>(null);
   const [bills, setBills] = useState<Bill[]>([]);
 
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [paymentMode, setPaymentMode] = useState("cash");
@@ -128,23 +133,27 @@ export default function SellerSalesPage() {
     setCartError("");
     const product = products.find((p) => p.id === selectedProductId);
     if (!product) return;
+    // Stock itself is tracked once per product, not per size (the catalog
+    // has no per-size counts) - size here is only recorded on the bill so
+    // the receipt reflects what actually left the shop.
+    const size = product.sizes.length > 0 ? selectedSize || product.sizes[0] : undefined;
     const available = product.stockRemaining ?? 0;
-    const existing = cart.find((l) => l.productId === product.id);
-    const alreadyInCart = existing?.quantity ?? 0;
-    if (alreadyInCart + quantity > available) {
-      setCartError(`Only ${available} of "${product.title}" in stock (${alreadyInCart} already in this bill).`);
+    const existing = cart.find((l) => l.productId === product.id && l.size === size);
+    const totalForThisProduct = cart.filter((l) => l.productId === product.id).reduce((sum, l) => sum + l.quantity, 0);
+    if (totalForThisProduct + quantity > available) {
+      setCartError(`Only ${available} of "${product.title}" in stock (${totalForThisProduct} already in this bill).`);
       return;
     }
     if (existing) {
-      setCart((c) => c.map((l) => (l.productId === product.id ? { ...l, quantity: l.quantity + quantity } : l)));
+      setCart((c) => c.map((l) => (l.productId === product.id && l.size === size ? { ...l, quantity: l.quantity + quantity } : l)));
     } else {
-      setCart((c) => [...c, { productId: product.id, title: product.title, unitPrice: product.basePrice, available, quantity }]);
+      setCart((c) => [...c, { productId: product.id, title: product.title, size, unitPrice: product.basePrice, available, quantity }]);
     }
     setQuantity(1);
   }
 
-  function removeFromCart(productId: string) {
-    setCart((c) => c.filter((l) => l.productId !== productId));
+  function removeFromCart(productId: string, size: string | undefined) {
+    setCart((c) => c.filter((l) => !(l.productId === productId && l.size === size)));
   }
 
   const subtotal = cart.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
@@ -160,25 +169,23 @@ export default function SellerSalesPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+        items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity, size: l.size })),
         paymentMode,
         customerName: customerName.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
       }),
     });
     const result = await res.json().catch(() => null);
-    setSubmitting(false);
     if (!res.ok) {
+      setSubmitting(false);
       setCartError(result?.errors?.join(", ") ?? result?.message ?? "Couldn't create this bill.");
       return;
     }
-    setCart([]);
-    setCustomerName("");
-    setCustomerPhone("");
-    loadProducts();
-    loadBills();
-    loadSettings();
     showToast(`Bill ${result.invoiceNumber} created`, "success");
+    // Straight to the printable bill - a seller mid-sale wants the receipt
+    // in front of them immediately, not a reset form they have to navigate
+    // away from.
+    router.push(`/seller/sales/${result.id}`);
   }
 
   async function handleVoid(billId: string) {
@@ -303,7 +310,15 @@ export default function SellerSalesPage() {
         <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>New Bill</h2>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-          <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} style={{ ...inputStyle(), flex: 2, minWidth: 200 }}>
+          <select
+            value={selectedProductId}
+            onChange={(e) => {
+              setSelectedProductId(e.target.value);
+              const product = products.find((p) => p.id === e.target.value);
+              setSelectedSize(product?.sizes[0] ?? "");
+            }}
+            style={{ ...inputStyle(), flex: 2, minWidth: 200 }}
+          >
             <option value="">Select a product…</option>
             {products.map((p) => (
               <option key={p.id} value={p.id} disabled={(p.stockRemaining ?? 0) <= 0}>
@@ -311,6 +326,19 @@ export default function SellerSalesPage() {
               </option>
             ))}
           </select>
+          {(() => {
+            const selectedProduct = products.find((p) => p.id === selectedProductId);
+            if (!selectedProduct || selectedProduct.sizes.length === 0) return null;
+            return (
+              <select value={selectedSize} onChange={(e) => setSelectedSize(e.target.value)} style={{ ...inputStyle(), flex: "0 0 110px" }}>
+                {selectedProduct.sizes.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            );
+          })()}
           <input
             type="number"
             min={1}
@@ -341,17 +369,18 @@ export default function SellerSalesPage() {
           <div style={{ marginBottom: 16 }}>
             {cart.map((line) => (
               <div
-                key={line.productId}
+                key={`${line.productId}-${line.size ?? ""}`}
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}
               >
                 <span>
-                  {line.title} × {line.quantity}
+                  {line.title}
+                  {line.size ? ` (${line.size})` : ""} × {line.quantity}
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <strong>₹{line.unitPrice * line.quantity}</strong>
                   <button
                     type="button"
-                    onClick={() => removeFromCart(line.productId)}
+                    onClick={() => removeFromCart(line.productId, line.size)}
                     aria-label="Remove"
                     style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 12 }}
                   >

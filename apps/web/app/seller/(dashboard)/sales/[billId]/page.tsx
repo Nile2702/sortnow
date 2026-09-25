@@ -12,7 +12,7 @@ interface Bill {
   mode: "gst" | "normal";
   gstin?: string;
   taxRatePercent: number;
-  items: { productId: string; title: string; quantity: number; unitPrice: number; total: number }[];
+  items: { productId: string; title: string; size?: string; quantity: number; unitPrice: number; total: number }[];
   subtotal: number;
   cgst: number;
   sgst: number;
@@ -108,7 +108,10 @@ export default function SellerBillDetailPage() {
           <tbody>
             {bill.items.map((item) => (
               <tr key={item.productId} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                <td style={{ padding: "6px 4px" }}>{item.title}</td>
+                <td style={{ padding: "6px 4px" }}>
+                  {item.title}
+                  {item.size ? ` (${item.size})` : ""}
+                </td>
                 <td style={{ textAlign: "right", padding: "6px 4px" }}>{item.quantity}</td>
                 <td style={{ textAlign: "right", padding: "6px 4px" }}>₹{item.unitPrice.toFixed(2)}</td>
                 <td style={{ textAlign: "right", padding: "6px 4px" }}>₹{item.total.toFixed(2)}</td>

@@ -1283,6 +1283,11 @@ export interface BillingSettings {
 export interface BillItem {
   productId: string;
   title: string;
+  // Stock isn't tracked per-size in this catalog (Product.stockRemaining is
+  // one shared count across every size) - this is recorded purely so the
+  // seller's own bill/receipt reflects which size actually left the shop,
+  // not to enforce a per-size stock limit that doesn't exist.
+  size?: string;
   quantity: number;
   unitPrice: number;
   total: number;
@@ -1349,7 +1354,7 @@ export type CreateBillResult = { bill: Bill } | { error: string };
 
 export function createBill(input: {
   storeId: string;
-  items: { productId: string; quantity: number }[];
+  items: { productId: string; quantity: number; size?: string }[];
   paymentMode: "cash" | "upi" | "card" | "other";
   customerName?: string;
   customerPhone?: string;
@@ -1360,18 +1365,21 @@ export function createBill(input: {
 
   // Resolve and validate every line before mutating any stock, so a bill
   // either goes through completely or not at all - never half-deducted.
-  const resolved: { product: Product; quantity: number }[] = [];
+  const resolved: { product: Product; quantity: number; size?: string }[] = [];
   for (const line of input.items) {
     const product = products.find((p) => p.id === line.productId && p.storeId === input.storeId);
     if (!product) return { error: `Product ${line.productId} not found in this store.` };
     if (!Number.isInteger(line.quantity) || line.quantity <= 0) {
       return { error: `Invalid quantity for "${product.title}".` };
     }
+    if (line.size !== undefined && product.sizes.length > 0 && !product.sizes.includes(line.size)) {
+      return { error: `"${line.size}" isn't a valid size for "${product.title}".` };
+    }
     const available = product.stockRemaining ?? 0;
     if (line.quantity > available) {
       return { error: `Only ${available} left in stock for "${product.title}".` };
     }
-    resolved.push({ product, quantity: line.quantity });
+    resolved.push({ product, quantity: line.quantity, size: line.size });
   }
 
   for (const { product, quantity } of resolved) {
@@ -1379,9 +1387,10 @@ export function createBill(input: {
   }
   persist("products", products);
 
-  const items: BillItem[] = resolved.map(({ product, quantity }) => ({
+  const items: BillItem[] = resolved.map(({ product, quantity, size }) => ({
     productId: product.id,
     title: product.title,
+    size,
     quantity,
     unitPrice: product.basePrice,
     total: product.basePrice * quantity,

@@ -8,8 +8,27 @@ test("accepts a valid bill payload", () => {
     paymentMode: "cash",
   });
   assert.deepEqual(errors, []);
-  assert.deepEqual(data?.items, [{ productId: "p-1", quantity: 2 }]);
+  assert.deepEqual(data?.items, [{ productId: "p-1", quantity: 2, size: undefined }]);
   assert.equal(data?.paymentMode, "cash");
+});
+
+test("accepts and trims an optional size per line item", () => {
+  const { errors, data } = validateBillInput({
+    items: [{ productId: "p-1", quantity: 1, size: "  M  " }],
+    paymentMode: "cash",
+  });
+  assert.deepEqual(errors, []);
+  assert.equal(data?.items[0].size, "M");
+});
+
+test("treats a blank size as omitted", () => {
+  const { data } = validateBillInput({ items: [{ productId: "p-1", quantity: 1, size: "   " }], paymentMode: "cash" });
+  assert.equal(data?.items[0].size, undefined);
+});
+
+test("rejects a non-string size", () => {
+  const { errors } = validateBillInput({ items: [{ productId: "p-1", quantity: 1, size: 42 }], paymentMode: "cash" });
+  assert.ok(errors.some((e) => e.includes("size")));
 });
 
 test("rejects an empty items array", () => {
