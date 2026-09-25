@@ -6,13 +6,17 @@ import { getShopperSession, setShopperSession, clearShopperSession, ShopperSessi
 
 type Step = "phone" | "otp" | "profile";
 type Category = "men" | "women" | "kids";
+type Mode = "login" | "signup";
 
 const STEP_ORDER: Step[] = ["phone", "otp", "profile"];
 
 export default function AccountPage() {
   const [session, setSession] = useState<ShopperSession | null>(null);
   const [ready, setReady] = useState(false);
+  const [mode, setMode] = useState<Mode>("login");
   const [step, setStep] = useState<Step>("phone");
+  const [noAccountFound, setNoAccountFound] = useState(false);
+  const [alreadyHadAccount, setAlreadyHadAccount] = useState(false);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
@@ -79,6 +83,10 @@ export default function AccountPage() {
       // Returning customer, even on a fresh device/browser - their profile
       // lives server-side (lib/seed-data.ts Shopper), not just this
       // device's localStorage, so no need to ask them anything again.
+      // If they came in through "Sign up" for a number that already has an
+      // account, log them straight in rather than erroring - just flag it
+      // so the welcome screen can say so.
+      setAlreadyHadAccount(mode === "signup");
       const restored: ShopperSession = {
         name: existing.name,
         phone,
@@ -91,8 +99,9 @@ export default function AccountPage() {
       return;
     }
 
-    // First time this phone has ever signed in - collect a proper profile
-    // before letting them in.
+    // No account exists for this number yet - collect a proper profile
+    // before letting them in, whether they arrived via "Log in" or "Sign up".
+    setNoAccountFound(mode === "login");
     setStep("profile");
   }
 
@@ -139,7 +148,10 @@ export default function AccountPage() {
     clearShopperSession();
     setSession(null);
     setJustSignedUp(false);
+    setMode("login");
     setStep("phone");
+    setNoAccountFound(false);
+    setAlreadyHadAccount(false);
     setPhone("");
     setOtp("");
     setName("");
@@ -190,7 +202,12 @@ export default function AccountPage() {
               Your account is all set up{session.preferredCategory ? ` — we'll surface more ${session.preferredCategory}'s picks for you` : ""}.
             </p>
           )}
-          {!justSignedUp && <div style={{ marginBottom: 22 }} />}
+          {!justSignedUp && alreadyHadAccount && (
+            <p style={{ color: "var(--sio-muted)", marginBottom: 22, fontSize: 12.5 }}>
+              Looks like you already had an account with this number — logged you straight in.
+            </p>
+          )}
+          {!justSignedUp && !alreadyHadAccount && <div style={{ marginBottom: 22 }} />}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, textAlign: "left" }}>
             <AccountLink href="/reservations" icon="🕐" label="My Reservations" desc="Track pickup holds you've reserved at nearby stores." />
@@ -224,7 +241,7 @@ export default function AccountPage() {
   return (
     <main style={{ maxWidth: 420, margin: "56px auto", padding: 16 }} className="sio-fade-in">
       <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <h1 style={{ fontSize: 24, marginBottom: 8, fontWeight: 700 }}>Welcome to SORT IT OUT</h1>
+        <h1 style={{ fontSize: 24, marginBottom: 8, fontWeight: 700 }}>{mode === "login" ? "Log in" : "Create your account"}</h1>
         <p style={{ color: "var(--sio-muted)", fontSize: 13.5, lineHeight: 1.6 }}>
           Sign in to track reservations and sync your wishlist across devices. My Sorts, Wishlist, and Cart already work locally without an account.
         </p>
@@ -252,14 +269,47 @@ export default function AccountPage() {
                 style={inputStyle}
                 autoFocus
               />
-              <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>
-                New here? We'll set up your account right after you verify this number.
-              </p>
+              {mode === "signup" && (
+                <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>
+                  We'll set up your account right after you verify this number.
+                </p>
+              )}
             </div>
             {error && <ErrorBanner text={error} />}
             <button type="submit" disabled={sending} className="sio-btn-primary sio-shine-btn" style={{ ...buttonStyle, opacity: sending ? 0.7 : 1 }}>
               {sending ? "Sending…" : "Send OTP"}
             </button>
+            <p style={{ textAlign: "center", fontSize: 13, color: "var(--sio-muted)", margin: 0 }}>
+              {mode === "login" ? (
+                <>
+                  Don't have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("signup");
+                      setError("");
+                    }}
+                    style={linkButtonStyle}
+                  >
+                    Sign up
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("login");
+                      setError("");
+                    }}
+                    style={linkButtonStyle}
+                  >
+                    Log in
+                  </button>
+                </>
+              )}
+            </p>
           </form>
         )}
 
@@ -304,7 +354,9 @@ export default function AccountPage() {
         {step === "profile" && (
           <form onSubmit={handleCompleteProfile} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <p style={{ fontSize: 13, color: "var(--sio-muted)", textAlign: "center", marginTop: -4 }}>
-              🎉 Number verified. Tell us a little about you to finish setting up your account.
+              {noAccountFound
+                ? "We couldn't find an account for that number. Let's create one — tell us a little about you."
+                : "🎉 Number verified. Tell us a little about you to finish setting up your account."}
             </p>
             <div>
               <label style={labelStyle}>Full name *</label>
@@ -463,4 +515,15 @@ const buttonStyle: React.CSSProperties = {
   fontSize: 14,
   fontWeight: 600,
   cursor: "pointer",
+};
+
+const linkButtonStyle: React.CSSProperties = {
+  background: "none",
+  border: "none",
+  padding: 0,
+  color: "var(--sio-ink)",
+  fontWeight: 700,
+  fontSize: 13,
+  cursor: "pointer",
+  textDecoration: "underline",
 };
