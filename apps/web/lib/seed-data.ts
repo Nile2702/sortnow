@@ -1148,7 +1148,10 @@ export function activateStore(storeId: string): Store | null {
   return store;
 }
 
-export function updateStoreTheme(storeId: string, patch: { primary?: string; accent?: string; heroTitle?: string; heroSubtitle?: string }) {
+export function updateStoreTheme(
+  storeId: string,
+  patch: { primary?: string; accent?: string; heroTitle?: string; heroSubtitle?: string; backgroundId?: string | null }
+) {
   const theme = themes[storeId];
   if (!theme) return null;
   if (patch.primary) theme.brand.colors.primary = patch.primary;
@@ -1156,6 +1159,9 @@ export function updateStoreTheme(storeId: string, patch: { primary?: string; acc
   if (theme.layout.heroCarousel?.[0]) {
     if (patch.heroTitle) theme.layout.heroCarousel[0].title = patch.heroTitle;
     if (patch.heroSubtitle) theme.layout.heroCarousel[0].subtitle = patch.heroSubtitle;
+    // null clears back to the plain color-gradient hero; undefined leaves
+    // whatever was already selected untouched.
+    if (patch.backgroundId !== undefined) theme.layout.heroCarousel[0].backgroundId = patch.backgroundId ?? undefined;
   }
   persist("themes", themes);
   return theme;
