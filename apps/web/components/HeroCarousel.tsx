@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { getHeroBackgroundById, heroBackgroundImageUrl } from "../lib/hero-backgrounds";
 
 interface Slide {
   eyebrow?: string;
   title: string;
   subtitle?: string;
-  backgroundId?: string;
 }
 
 // Same structure and visual language as the homepage HeroSlider - a store's
@@ -21,7 +19,6 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
   const [active, setActive] = useState(0);
   if (!slides?.length) return null;
   const slide = slides[active];
-  const chosenBackground = getHeroBackgroundById(slide.backgroundId);
 
   return (
     <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", height: 340 }}>
@@ -29,9 +26,7 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
         style={{
           position: "absolute",
           inset: 0,
-          background: chosenBackground
-            ? `url(${heroBackgroundImageUrl(chosenBackground, 1200, 500)}) center/cover no-repeat`
-            : "linear-gradient(140deg, #14110f 0%, var(--store-primary, #1f2937) 55%, #14110f 100%)",
+          background: "linear-gradient(140deg, #14110f 0%, var(--store-primary, #1f2937) 55%, #14110f 100%)",
         }}
       />
       <div
