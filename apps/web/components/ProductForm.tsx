@@ -323,8 +323,17 @@ export function ProductForm({
       const maskBlob = await removeBackground(bgInput, {
         model: "isnet_fp16",
         output: { format: "image/png", type: "mask" },
+        // The library reports two very different phases through the same
+        // callback: fetching the ~80MB model (only slow the first time in a
+        // browser session - cached after) and actually running inference on
+        // this photo (slow every time, scales with pixel count). Previously
+        // both showed as "Processing… X%", which made a seller think the
+        // photo itself was taking a minute when it was really a one-time
+        // download - separating them so the wait reads accurately.
         progress: (key, current, total) => {
-          if (total > 0) setBgRemoveProgress(`Processing… ${Math.round((current / total) * 100)}%`);
+          if (total <= 0) return;
+          const pct = Math.round((current / total) * 100);
+          setBgRemoveProgress(key.startsWith("fetch") ? `Downloading model (one-time)… ${pct}%` : `Processing photo… ${pct}%`);
         },
       });
       const maskUrl = await blobToDataUrl(maskBlob);
@@ -1122,10 +1131,10 @@ function resizeForAnalysis(dataUrl: string, maxDimension = 768): Promise<string>
 // steps scale with pixel count - a raw 3000x4000+ phone photo makes that
 // postprocessing dramatically slower than it needs to be for a listing
 // photo, even though the model's internal inference runs at a fixed low
-// resolution regardless. 1600px is generous for an e-commerce product
-// photo (well above what most marketplaces display), so this trims
-// processing time with no visible quality loss.
-function resizeForBgRemoval(dataUrl: string, maxDimension = 1200): Promise<string> {
+// resolution regardless. Lowered from 1200 to 900px (still well above what
+// the final stored photo is capped to anyway - see resizeForStorage) to
+// cut real, reported wait time without touching the model itself.
+function resizeForBgRemoval(dataUrl: string, maxDimension = 900): Promise<string> {
   return resizeImage(dataUrl, maxDimension, 0.92);
 }
 
