@@ -483,6 +483,20 @@ export function ProductForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+
+    const mainImage = uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor);
+    const [storedMainImage, storedAdditionalImages] = await Promise.all([
+      resizeForStorage(mainImage).catch(() => mainImage),
+      Promise.all(additionalImages.map((url) => resizeForStorage(url).catch(() => url))),
+    ]);
+    const storedColorImages: Record<string, string> = {};
+    await Promise.all(
+      selectedColors.map(async (color) => {
+        const raw = colorImages[color];
+        if (raw) storedColorImages[color] = await resizeForStorage(raw).catch(() => raw);
+      })
+    );
+
     const basePayload = {
       description: form.description,
       fabric: form.fabric,
@@ -493,10 +507,7 @@ export function ProductForm({
       compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : undefined,
       sizes: form.sizes,
       stockRemaining: Number(form.stockRemaining),
-      images: [
-        { url: uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor) },
-        ...additionalImages.map((url) => ({ url })),
-      ],
+      images: [{ url: storedMainImage }, ...storedAdditionalImages.map((url) => ({ url }))],
     };
 
     if (mode === "create") {
@@ -511,7 +522,7 @@ export function ProductForm({
       const colorGroupId = colorsToCreate.length > 1 ? `cg-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}` : undefined;
       await Promise.all(
         colorsToCreate.map((color) => {
-          const colorImage = color ? colorImages[color] : undefined;
+          const colorImage = color ? storedColorImages[color] : undefined;
           return fetch(`/api/v1/seller/stores/${storeId}/products`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -521,7 +532,7 @@ export function ProductForm({
               color,
               colorGroupId,
               images: colorImage
-                ? [{ url: colorImage }, ...additionalImages.map((url) => ({ url }))]
+                ? [{ url: colorImage }, ...storedAdditionalImages.map((url) => ({ url }))]
                 : basePayload.images,
             }),
           });
@@ -1116,6 +1127,38 @@ function resizeForAnalysis(dataUrl: string, maxDimension = 768): Promise<string>
 // processing time with no visible quality loss.
 function resizeForBgRemoval(dataUrl: string, maxDimension = 1200): Promise<string> {
   return resizeImage(dataUrl, maxDimension, 0.92);
+}
+
+// Final pass before a photo is actually saved on the product - unlike the
+// two resizes above (which only speed up an intermediate processing step,
+// discarding their output), this is what ends up embedded in every product
+// listing/search API response as a base64 data URL (no real Media Pipeline/
+// CDN in this demo - see the upload note elsewhere in this form). Left
+// unresized, a real phone photo run through the mannequin/background steps
+// can end up several hundred KB to over a megabyte *per image*, and that
+// gets re-transferred and re-parsed on every single product-list page
+// (homepage, search, category, store pages), not just this one product's
+// detail page - a handful of real photos was enough to make the whole site
+// feel slow. 1000px is generous for how large a listing photo is ever
+// actually displayed. PNGs are re-encoded as PNG (preserves a transparent
+// cutout background), everything else as JPEG.
+function resizeForStorage(dataUrl: string, maxDimension = 1000, quality = 0.85): Promise<string> {
+  const isPng = dataUrl.startsWith("data:image/png");
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas not supported"));
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(isPng ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => reject(new Error("Couldn't load image for resizing"));
+    img.src = dataUrl;
+  });
 }
 
 function resizeImage(dataUrl: string, maxDimension: number, quality: number): Promise<string> {
