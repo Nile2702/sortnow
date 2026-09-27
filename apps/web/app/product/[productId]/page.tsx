@@ -9,6 +9,7 @@ import { showToast } from "../../../lib/toast";
 import { getShopperSession } from "../../../lib/shopper-session";
 import { COLOR_CATALOG } from "../../../lib/catalog-constants";
 import { LogoBadge } from "../../../components/LogoBadge";
+import { ProductCard } from "../../../components/ProductCard";
 
 interface ColorVariant {
   id: string;
@@ -69,24 +70,7 @@ function ProductStrip({ products }: { products: SimilarProduct[] }) {
   return (
     <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 24, marginTop: 20 }}>
       {products.map((p, i) => (
-        <Link
-          key={p.id}
-          href={`/product/${p.id}`}
-          className="sio-card sio-fade-in"
-          style={{ textDecoration: "none", color: "inherit", border: "1px solid var(--sio-line)", borderRadius: 14, overflow: "hidden", background: "#fff", animationDelay: `${i * 60}ms` }}
-        >
-          <div className="sio-zoom-hover">
-            <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
-          </div>
-          <div style={{ padding: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{p.title}</div>
-            <div style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 3, letterSpacing: "0.02em" }}>{p.storeName}</div>
-            <div style={{ marginTop: 8 }}>
-              <span style={{ fontWeight: 600 }}>₹{p.basePrice}</span>
-              {p.compareAtPrice && <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{p.compareAtPrice}</span>}
-            </div>
-          </div>
-        </Link>
+        <ProductCard key={p.id} product={p} index={i} />
       ))}
     </div>
   );

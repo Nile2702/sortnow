@@ -1,5 +1,4 @@
-import { TiltCard } from "./TiltCard";
-import { ProductCardInfo } from "./ProductCardInfo";
+import { ProductCard } from "./ProductCard";
 
 interface Props {
   storeId: string;
@@ -35,9 +34,10 @@ async function fetchProducts(storeId: string, opts: { categoryId?: string; sort?
   return res.json();
 }
 
-// Same card design as the homepage's "Shop in Sort" grid - white card, 14px
-// radius, subtle border/shadow, sio-card hover lift - so a store's catalog
-// looks like part of the same site rather than a differently-styled one.
+// Same card design as every other shopper-facing grid on the site (see
+// components/ProductCard.tsx) - full-bleed photo, dark gradient, bold white
+// overlay text - so a store's own catalog looks like part of the same site
+// rather than a differently-styled one.
 export async function ProductGrid({ storeId, gridStyle, title, categoryId, sort, limit }: Props) {
   const products = await fetchProducts(storeId, { categoryId, sort, limit });
   if (!products.length) return null;
@@ -47,26 +47,7 @@ export async function ProductGrid({ storeId, gridStyle, title, categoryId, sort,
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>{title}</h2>
       <div className={gridStyle === "list" ? undefined : "sio-product-grid"} style={{ display: "grid", gridTemplateColumns: COLUMNS[gridStyle], gap: 16 }}>
         {products.map((p: any, i: number) => (
-          <div key={p.id} className="sio-reveal" style={{ animationDelay: `${i * 60}ms` }}>
-            <TiltCard>
-              <a
-                href={`/product/${p.id}`}
-                className="sio-card"
-                style={{
-                  display: "block",
-                  textDecoration: "none",
-                  color: "inherit",
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  border: "1px solid #f1f5f9",
-                  background: "#fff",
-                }}
-              >
-                <img src={p.images?.[0]?.url} alt={p.title} loading="lazy" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />
-                <ProductCardInfo title={p.title} basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} stockRemaining={p.stockRemaining} />
-              </a>
-            </TiltCard>
-          </div>
+          <ProductCard key={p.id} product={p} index={i} showStore={false} />
         ))}
       </div>
     </div>

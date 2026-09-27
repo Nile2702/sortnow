@@ -5,12 +5,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ALL_SIZES, CATEGORY_TREE } from "../lib/catalog-constants";
 import { saveSmartSort } from "../lib/smart-sorts";
-import { toggleWishlist, isWishlisted } from "../lib/wishlist";
 import { QUICK_MARKETS, setLocationPref } from "../lib/location";
 import { HeroSlider } from "../components/HeroSlider";
 import { CategoryTiles } from "../components/CategoryTiles";
-import { TiltCard } from "../components/TiltCard";
-import { ProductCardInfo } from "../components/ProductCardInfo";
+import { ProductCard } from "../components/ProductCard";
 
 interface DiscoveredStore {
   id: string;
@@ -60,74 +58,6 @@ function SkeletonCard({ height = 220 }: { height?: number }) {
   return <div className="sio-skeleton" style={{ borderRadius: 14, height }} />;
 }
 
-function DiscountBadge({ basePrice, compareAtPrice }: { basePrice: number; compareAtPrice?: number }) {
-  if (!compareAtPrice || compareAtPrice <= basePrice) return null;
-  const pct = Math.round(((compareAtPrice - basePrice) / compareAtPrice) * 100);
-  return (
-    <span
-      style={{
-        position: "absolute",
-        top: 8,
-        left: 8,
-        background: "#16a34a",
-        color: "#fff",
-        fontSize: 11,
-        fontWeight: 700,
-        padding: "3px 8px",
-        borderRadius: 999,
-      }}
-    >
-      {pct}% OFF
-    </span>
-  );
-}
-
-function HeartButton({ product, size = 18 }: { product: SearchProduct; size?: number }) {
-  const [on, setOn] = useState(false);
-
-  useEffect(() => setOn(isWishlisted(product.id)), [product.id]);
-
-  return (
-    <button
-      className="sio-heart-btn"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const nowOn = toggleWishlist({
-          productId: product.id,
-          title: product.title,
-          storeSlug: product.storeSlug,
-          storeName: product.storeName,
-          price: product.basePrice,
-          imageUrl: product.images?.[0]?.url ?? "",
-        });
-        setOn(nowOn);
-      }}
-      aria-label="Toggle wishlist"
-      style={{
-        position: "absolute",
-        top: 8,
-        right: 8,
-        width: 30,
-        height: 30,
-        borderRadius: "50%",
-        border: "none",
-        background: "rgba(255,255,255,0.92)",
-        boxShadow: "0 2px 6px rgba(15,23,42,0.15)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-        color: on ? "#e11d48" : "#94a3b8",
-      }}
-    >
-      <svg width={size} height={size} viewBox="0 0 24 24" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-        <path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2 4.5 5.6 4c2-.3 3.8.7 4.9 2.4C11.6 4.7 13.4 3.7 15.4 4c3.6.5 5.3 4.1 3.6 7.7C19.5 16.4 12 21 12 21z" />
-      </svg>
-    </button>
-  );
-}
-
 function ProductRow({ products, loading }: { products: SearchProduct[]; loading: boolean }) {
   if (loading) {
     return (
@@ -142,31 +72,7 @@ function ProductRow({ products, loading }: { products: SearchProduct[]; loading:
   return (
     <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
       {products.map((p, i) => (
-        <div key={p.id} className="sio-fade-in" style={{ animationDelay: `${i * 40}ms` }}>
-          <TiltCard>
-            <Link
-              href={`/product/${p.id}`}
-              className="sio-card"
-              style={{
-                position: "relative",
-                display: "block",
-                textDecoration: "none",
-                color: "inherit",
-                borderRadius: 14,
-                overflow: "hidden",
-                border: "1px solid #f1f5f9",
-                background: "#fff",
-              }}
-            >
-              <div style={{ position: "relative" }}>
-                <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />
-                <DiscountBadge basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} />
-                <HeartButton product={p} />
-              </div>
-              <ProductCardInfo title={p.title} storeName={p.storeName} basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} stockRemaining={p.stockRemaining} />
-            </Link>
-          </TiltCard>
-        </div>
+        <ProductCard key={p.id} product={p} index={i} />
       ))}
     </div>
   );
@@ -607,31 +513,7 @@ function DiscoverPageInner() {
         ) : (
           <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
             {sortedProducts.map((p, i) => (
-              <div key={p.id} className="sio-fade-in" style={{ animationDelay: `${i * 40}ms` }}>
-                <TiltCard>
-                  <Link
-                    href={`/product/${p.id}`}
-                    className="sio-card"
-                    style={{
-                      position: "relative",
-                      display: "block",
-                      textDecoration: "none",
-                      color: "inherit",
-                      borderRadius: 14,
-                      overflow: "hidden",
-                      border: "1px solid #f1f5f9",
-                      background: "#fff",
-                    }}
-                  >
-                    <div style={{ position: "relative" }}>
-                      <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }} />
-                      <DiscountBadge basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} />
-                      <HeartButton product={p} />
-                    </div>
-                    <ProductCardInfo title={p.title} storeName={p.storeName} basePrice={p.basePrice} compareAtPrice={p.compareAtPrice} stockRemaining={p.stockRemaining} />
-                  </Link>
-                </TiltCard>
-              </div>
+              <ProductCard key={p.id} product={p} index={i} />
             ))}
           </div>
         )}
