@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { setLocationPref, hasSeenLocationPrompt, markLocationPromptSeen } from "../lib/location";
+import { setLocationPref, hasSeenLocationPrompt, markLocationPromptSeen, resolveAreaLabel, QUICK_MARKETS } from "../lib/location";
 import { isMobileAppShellPage } from "../lib/mobile-shell";
 
 // Asks a first-time visitor for their location (GPS, or a typed PIN code)
@@ -47,29 +47,52 @@ export function LocationGate() {
     setLocating(true);
     setError("");
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
+      async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
-        setLocationPref({ label: "Your Location", lat, lng });
+        // Resolving the friendly area name (a real reverse-geocoding call,
+        // see /api/v1/location/label) before closing the modal, so the
+        // header shows an actual place name on the very first paint
+        // instead of "Your Location" that then jumps to something else.
+        const label = await resolveAreaLabel({ lat, lng }, "Your Location");
+        setLocating(false);
+        setLocationPref({ label, lat, lng });
         finish();
         goToResults(`lat=${lat}&lng=${lng}`);
       },
-      () => {
+      (err) => {
         setLocating(false);
-        setError("Couldn't get your location - your browser may have blocked it. Enter a PIN code instead.");
         setMode("manual");
+        // GeolocationPositionError codes: 1 = PERMISSION_DENIED, 2 =
+        // POSITION_UNAVAILABLE, 3 = TIMEOUT - distinguished because "you
+        // said no" and "your device couldn't get a fix" need different
+        // fixes from the person reading this.
+        if (err.code === 1) {
+          setError(
+            "Location access was blocked. Your browser may not have shown a permission prompt, or you dismissed/denied it - check your browser's site settings to allow location for this page, or enter a PIN code below."
+          );
+        } else if (err.code === 3) {
+          setError("Getting your location took too long. Try again, or enter a PIN code below.");
+        } else {
+          setError("Couldn't determine your location (no GPS fix). Enter a PIN code below.");
+        }
       },
       { timeout: 8000 }
     );
   }
 
-  function handleManualSubmit(e: React.FormEvent) {
+  async function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!/^\d{6}$/.test(pincode)) {
       setError("Enter a valid 6-digit PIN code.");
       return;
     }
-    setLocationPref({ label: `PIN ${pincode}`, pincode });
+    // A curated market's own label ("T. Nagar, Chennai") beats the generic
+    // district/state a PIN-code lookup alone can give (see
+    // resolveAreaLabel) - only fall back to that real lookup when the
+    // typed PIN isn't one of these seven.
+    const known = QUICK_MARKETS.find((m) => m.pincode === pincode);
+    const label = known ? known.label : await resolveAreaLabel({ pincode }, `PIN ${pincode}`);
+    setLocationPref({ label, pincode });
     finish();
     goToResults(`pincode=${pincode}`);
   }

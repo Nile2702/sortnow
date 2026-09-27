@@ -23,11 +23,30 @@ export const QUICK_MARKETS: QuickMarket[] = [
 
 // A location can come from a typed/quick-picked PIN code (resolved
 // server-side via the india-post-pincode dataset) or directly from the
-// browser's Geolocation API - there's no reverse-geocoding service in this
-// demo to turn GPS coordinates into a PIN code, so raw lat/lng is carried
-// all the way through to discoverStores()/searchProducts() instead (see
-// lib/seed-data.ts), which compute distance from either the same way.
+// browser's Geolocation API. Raw lat/lng is carried all the way through to
+// discoverStores()/searchProducts() (see lib/seed-data.ts) rather than
+// converted to a PIN code, since that dataset has no reverse (coordinates
+// -> PIN) lookup - only /api/v1/location/label calls a real reverse-
+// geocoding service (OpenStreetMap Nominatim), and only to get a friendly
+// area name to display, not to drive the actual distance filtering.
 export type LocationPref = { label: string; pincode: string } | { label: string; lat: number; lng: number };
+
+// Looks up a real, friendly area name for a resolved location - "PIN
+// 400050" or a generic "Your Location" isn't something a shopper
+// recognizes. Best-effort: falls back to the given default label (e.g. the
+// raw PIN code, or "Your Location") if the lookup fails or comes back
+// empty, so a slow/blocked network request never blocks completing sign-up.
+export async function resolveAreaLabel(origin: { pincode: string } | { lat: number; lng: number }, fallback: string): Promise<string> {
+  try {
+    const params = "pincode" in origin ? `pincode=${origin.pincode}` : `lat=${origin.lat}&lng=${origin.lng}`;
+    const res = await fetch(`/api/v1/location/label?${params}`);
+    if (!res.ok) return fallback;
+    const data = await res.json();
+    return data.label || fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 const KEY = "sio_location_pref";
 const PROMPT_SEEN_KEY = "sio_location_prompt_seen";

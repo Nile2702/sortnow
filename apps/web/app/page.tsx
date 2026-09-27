@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ALL_SIZES, CATEGORY_TREE } from "../lib/catalog-constants";
 import { saveSmartSort } from "../lib/smart-sorts";
-import { QUICK_MARKETS, setLocationPref } from "../lib/location";
+import { QUICK_MARKETS, setLocationPref, resolveAreaLabel } from "../lib/location";
 import { HeroSlider } from "../components/HeroSlider";
 import { CategoryTiles } from "../components/CategoryTiles";
 import { ProductCard } from "../components/ProductCard";
@@ -127,7 +127,20 @@ function DiscoverPageInner() {
   useEffect(() => {
     if (geo) return;
     const match = QUICK_MARKETS.find((m) => m.pincode === pincode);
-    setLocationPref({ label: match?.label ?? `PIN ${pincode}`, pincode });
+    if (match) {
+      setLocationPref({ label: match.label, pincode });
+      return;
+    }
+    // Not one of the curated markets (a shopper typed their own PIN code
+    // directly here, rather than through the LocationGate prompt) - still
+    // worth a real area name instead of "PIN 400050", just resolved async.
+    let cancelled = false;
+    resolveAreaLabel({ pincode }, `PIN ${pincode}`).then((label) => {
+      if (!cancelled) setLocationPref({ label, pincode });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [pincode, geo]);
 
   // Nationwide (no pincode/radius) spotlight sections - unlike "Stores near
