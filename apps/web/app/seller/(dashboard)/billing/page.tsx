@@ -29,15 +29,31 @@ interface BillingData {
   plans: Plan[];
 }
 
+interface BoostPackage {
+  days: number;
+  price: number;
+  label: string;
+}
+
+interface BoostData {
+  boostedUntil: string | null;
+  packages: BoostPackage[];
+}
+
 export default function BillingPage() {
   const { store, loading: storeLoading } = useSellerStore();
   const [data, setData] = useState<BillingData | null>(null);
   const [switching, setSwitching] = useState<string | null>(null);
+  const [boost, setBoost] = useState<BoostData | null>(null);
+  const [boosting, setBoosting] = useState<number | null>(null);
 
   function load(storeId: string) {
     fetch(`/api/v1/seller/stores/${storeId}/billing`)
       .then((r) => r.json())
       .then(setData);
+    fetch(`/api/v1/seller/stores/${storeId}/boost`)
+      .then((r) => r.json())
+      .then(setBoost);
   }
 
   useEffect(() => {
@@ -56,9 +72,24 @@ export default function BillingPage() {
     setSwitching(null);
   }
 
-  if (storeLoading || !store || !data) {
+  async function handleBoost(days: number) {
+    if (!store) return;
+    setBoosting(days);
+    const res = await fetch(`/api/v1/seller/stores/${store.id}/boost`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ days }),
+    });
+    const result = await res.json().catch(() => null);
+    if (result) setBoost((b) => (b ? { ...b, boostedUntil: result.boostedUntil } : b));
+    setBoosting(null);
+  }
+
+  if (storeLoading || !store || !data || !boost) {
     return <main style={{ maxWidth: 1000, margin: "0 auto", padding: 40 }}>Loading…</main>;
   }
+
+  const boostActive = !!boost.boostedUntil && new Date(boost.boostedUntil).getTime() > Date.now();
 
   const currentPlan = data.plans.find((p) => p.code === data.subscription.planCode)!;
   const usagePct = Math.min(100, Math.round((data.skuCount / currentPlan.skuLimit) * 100));
@@ -150,6 +181,60 @@ export default function BillingPage() {
             </div>
           );
         })}
+      </div>
+
+      <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Boost Your Store</h2>
+      <p style={{ color: "#64748b", fontSize: 13, marginBottom: 14 }}>
+        Rank first in "Stores near you" and on /shops for a fixed window — the more shoppers see your store, the more that traffic is worth.
+      </p>
+      <div
+        className="sio-card"
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          border: boostActive ? "2px solid #d97706" : "1px solid #f1f5f9",
+          padding: 22,
+          marginBottom: 32,
+        }}
+      >
+        {boostActive ? (
+          <div style={{ marginBottom: 16 }}>
+            <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "#fef3c7", color: "#b45309" }}>
+              ⚡ Featured
+            </span>
+            <span style={{ marginLeft: 10, fontSize: 13, color: "#64748b" }}>
+              Active until {new Date(boost.boostedUntil!).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+            </span>
+          </div>
+        ) : (
+          <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 16 }}>Not currently boosted.</p>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+          {boost.packages.map((pkg) => (
+            <div key={pkg.days} style={{ border: "1px solid #f1f5f9", borderRadius: 12, padding: 16, textAlign: "center" }}>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>{pkg.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, margin: "6px 0" }}>₹{pkg.price}</div>
+              <button
+                onClick={() => handleBoost(pkg.days)}
+                disabled={boosting === pkg.days}
+                style={{
+                  width: "100%",
+                  padding: "9px",
+                  borderRadius: 999,
+                  border: "none",
+                  background: "#d97706",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: boosting === pkg.days ? "default" : "pointer",
+                  opacity: boosting === pkg.days ? 0.7 : 1,
+                }}
+              >
+                {boosting === pkg.days ? "Applying…" : boostActive ? "Extend" : "Boost"}
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>GST Invoices</h2>

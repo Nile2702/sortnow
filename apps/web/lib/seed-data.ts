@@ -50,6 +50,10 @@ export interface Store {
   // password (see /api/v1/seller/auth/otp/*). Not required at signup so
   // this doesn't break an existing password-only account.
   phone?: string;
+  // Paid featured placement (see BOOST_PACKAGES) - ranks this store first in
+  // "Stores near you" and /shops while active, same "flip an in-memory flag,
+  // no real payment processor" convention as changePlan()/photo credits.
+  boostedUntil?: string | null;
 }
 
 // Next.js dev-mode compiles route handlers on demand, which can give
@@ -1063,7 +1067,11 @@ export function discoverStores(opts: { pincode?: string; radiusKm?: number; gend
       distanceKm: origin ? Math.round(haversineKm(origin.lat, origin.lng, s.latitude, s.longitude) * 10) / 10 : null,
     }))
     .filter((s) => !origin || s.distanceKm === null || s.distanceKm <= radiusKm)
-    .sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
+    .sort((a, b) => {
+      const boosted = Number(isBoostActive(b.boostedUntil)) - Number(isBoostActive(a.boostedUntil));
+      if (boosted !== 0) return boosted;
+      return (a.distanceKm ?? 999) - (b.distanceKm ?? 999);
+    });
 }
 
 // Full store directory for the standalone /shops page - unfiltered by
@@ -1072,7 +1080,8 @@ export function discoverStores(opts: { pincode?: string; radiusKm?: number; gend
 export function getAllShops() {
   return stores
     .filter((s) => s.status === "active")
-    .map((s) => ({ ...s, productCount: products.filter((p) => p.storeId === s.id).length }));
+    .map((s) => ({ ...s, productCount: products.filter((p) => p.storeId === s.id).length }))
+    .sort((a, b) => Number(isBoostActive(b.boostedUntil)) - Number(isBoostActive(a.boostedUntil)));
 }
 
 // ---------------------------------------------------------------------
@@ -1111,8 +1120,10 @@ export function createProduct(storeId: string, input: Partial<Product>): Product
 export function updateProduct(id: string, patch: Partial<Product>): Product | null {
   const product = products.find((p) => p.id === id);
   if (!product) return null;
+  const previousStock = product.stockRemaining;
   Object.assign(product, patch);
   persist("products", products);
+  if ("stockRemaining" in patch) notifyWaitlistIfRestocked(product, previousStock);
   return product;
 }
 
@@ -1314,7 +1325,7 @@ export interface Notification {
   storeId: string;
   recipient: "seller" | "shopper";
   phone: string;
-  trigger: "reservation_created" | "reservation_fulfilled" | "reservation_cancelled";
+  trigger: "reservation_created" | "reservation_fulfilled" | "reservation_cancelled" | "back_in_stock" | "referral_joined";
   message: string;
   createdAt: string;
 }
@@ -1346,6 +1357,72 @@ export function getStoreNotifications(storeId: string): Notification[] {
 }
 
 // ---------------------------------------------------------------------
+// Back-in-stock waitlist: a shopper who hits a sold-out product can ask to
+// be told the moment it's restocked, instead of having to keep re-checking.
+// Reuses the same notify() SMS-style log used for reservations, so it shows
+// up in the shopper's phone the same way a reservation update would.
+// ---------------------------------------------------------------------
+export interface WaitlistEntry {
+  id: string;
+  productId: string;
+  storeId: string;
+  shopperName: string;
+  shopperPhone: string;
+  createdAt: string;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioWaitlist: WaitlistEntry[] | undefined;
+}
+
+export const waitlist: WaitlistEntry[] = globalThis.__sioWaitlist ?? (globalThis.__sioWaitlist = loadPersisted("waitlist", [] as WaitlistEntry[]));
+
+// Rejects a duplicate join (same phone, same product still waiting) rather
+// than silently piling up repeat entries every time an impatient shopper
+// re-submits the form.
+export function joinWaitlist(productId: string, shopperName: string, shopperPhone: string): { ok: true; entry: WaitlistEntry } | { ok: false; error: string } {
+  const product = products.find((p) => p.id === productId);
+  if (!product) return { ok: false, error: "Product not found." };
+  const normalized = shopperPhone.replace(/\D/g, "").slice(-10);
+  const already = waitlist.some((w) => w.productId === productId && w.shopperPhone.replace(/\D/g, "").slice(-10) === normalized);
+  if (already) return { ok: false, error: "You're already on the waitlist for this product." };
+
+  const entry: WaitlistEntry = {
+    id: `wait-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    productId,
+    storeId: product.storeId,
+    shopperName: shopperName.trim(),
+    shopperPhone: normalized,
+    createdAt: new Date().toISOString(),
+  };
+  waitlist.push(entry);
+  persist("waitlist", waitlist);
+  return { ok: true, entry };
+}
+
+export function getProductWaitlistCount(productId: string): number {
+  return waitlist.filter((w) => w.productId === productId).length;
+}
+
+// Notifies and clears everyone waiting on a product the moment it goes from
+// sold-out to back in stock - called from updateProduct() below, not fired
+// on every stock edit (e.g. a seller correcting 8 to 9 shouldn't spam
+// anyone who was never actually told "sold out").
+function notifyWaitlistIfRestocked(product: Product, previousStock: number | undefined) {
+  if ((previousStock ?? 0) > 0 || (product.stockRemaining ?? 0) <= 0) return;
+  const waiting = waitlist.filter((w) => w.productId === product.id);
+  if (waiting.length === 0) return;
+  for (const entry of waiting) {
+    notify(product.storeId, entry.shopperPhone, "shopper", "back_in_stock", `Good news - "${product.title}" is back in stock! Reserve it before it sells out again.`);
+  }
+  const remaining = waitlist.filter((w) => w.productId !== product.id);
+  waitlist.length = 0;
+  waitlist.push(...remaining);
+  persist("waitlist", waitlist);
+}
+
+// ---------------------------------------------------------------------
 // Shopper profiles: created the first time a phone number completes OTP
 // sign-in (see /api/v1/shopper/profile). Lets the sign-in page tell a
 // genuinely first-time customer apart from one returning on a new device
@@ -1362,6 +1439,12 @@ export interface Shopper {
   preferredCategory?: Gender;
   pincode?: string;
   createdAt: string;
+  // Referral program - a shareable code every shopper gets on signup (see
+  // /account "Invite friends"). No money changes hands (this platform takes
+  // no cut of a sale), so the reward is growing the shopper base itself:
+  // more shoppers makes a seller's subscription more worth paying for.
+  referralCode: string;
+  referredBy?: string;
 }
 
 declare global {
@@ -1373,7 +1456,35 @@ export const shoppers: Shopper[] = globalThis.__sioShoppers ?? (globalThis.__sio
 
 export function findShopperByPhone(phone: string): Shopper | null {
   const normalized = phone.replace(/\D/g, "").slice(-10);
-  return shoppers.find((s) => s.phone.replace(/\D/g, "").slice(-10) === normalized) ?? null;
+  const shopper = shoppers.find((s) => s.phone.replace(/\D/g, "").slice(-10) === normalized) ?? null;
+  // Self-healing backfill for a shopper who signed up before the referral
+  // program existed, on whichever code path reads them first (OTP verify,
+  // profile update, or the referrals endpoint) - not just the update path
+  // in upsertShopper, since a returning login never calls that.
+  if (shopper && !shopper.referralCode) {
+    shopper.referralCode = generateReferralCode(shopper.name);
+    persist("shoppers", shoppers);
+  }
+  return shopper;
+}
+
+export function findShopperByReferralCode(code: string): Shopper | null {
+  // Guards against shopper records persisted before referralCode existed
+  // (this field is new) - those have no code to match against, not a bug.
+  return shoppers.find((s) => s.referralCode && s.referralCode.toLowerCase() === code.toLowerCase()) ?? null;
+}
+
+export function getReferralCount(shopperId: string): number {
+  return shoppers.filter((s) => s.referredBy === shopperId).length;
+}
+
+function generateReferralCode(name: string): string {
+  const base = (name.replace(/[^A-Za-z]/g, "").slice(0, 5) || "SORT").toUpperCase();
+  let code = "";
+  do {
+    code = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+  } while (findShopperByReferralCode(code));
+  return code;
 }
 
 export interface UpsertShopperInput {
@@ -1382,6 +1493,9 @@ export interface UpsertShopperInput {
   email?: string;
   preferredCategory?: Gender;
   pincode?: string;
+  // Referral code from the invite link (?ref=CODE) the shopper signed up
+  // through - only ever applied on first creation, never on a later update.
+  referredByCode?: string;
 }
 
 // Creates a shopper the first time their phone verifies, or updates the
@@ -1399,6 +1513,7 @@ export function upsertShopper(input: UpsertShopperInput): { shopper: Shopper; is
     persist("shoppers", shoppers);
     return { shopper: existing, isNewCustomer: false };
   }
+  const referrer = input.referredByCode ? findShopperByReferralCode(input.referredByCode) : null;
   const shopper: Shopper = {
     id: `shopper-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     name: input.name.trim(),
@@ -1407,9 +1522,20 @@ export function upsertShopper(input: UpsertShopperInput): { shopper: Shopper; is
     preferredCategory: input.preferredCategory,
     pincode: input.pincode?.trim() || undefined,
     createdAt: new Date().toISOString(),
+    referralCode: generateReferralCode(input.name),
+    referredBy: referrer?.id,
   };
   shoppers.push(shopper);
   persist("shoppers", shoppers);
+  if (referrer) {
+    notify(
+      "platform",
+      referrer.phone,
+      "shopper",
+      "referral_joined",
+      `${shopper.name} just joined SORT IT OUT using your invite link! You've now referred ${getReferralCount(referrer.id)} friend${getReferralCount(referrer.id) === 1 ? "" : "s"}.`
+    );
+  }
   return { shopper, isNewCustomer: true };
 }
 
@@ -1694,6 +1820,42 @@ export function changePlan(storeId: string, planCode: Plan["code"]): Subscriptio
   subscriptions[storeId] = sub;
   persist("subscriptions", subscriptions);
   return sub;
+}
+
+// ---------------------------------------------------------------------
+// Store Boost: a direct answer to "how do I make money from traffic" - a
+// seller can pay to rank first in "Stores near you" and /shops for a fixed
+// window, turning the platform's one non-subscription revenue lever. Same
+// "flip an in-memory flag, no real payment processor" convention as
+// changePlan()/photo credits - a real deployment would redirect to a
+// payment gateway's checkout here instead.
+// ---------------------------------------------------------------------
+export interface BoostPackage {
+  days: number;
+  price: number;
+  label: string;
+}
+
+export const BOOST_PACKAGES: BoostPackage[] = [
+  { days: 3, price: 149, label: "3 days" },
+  { days: 7, price: 299, label: "7 days" },
+  { days: 30, price: 899, label: "30 days" },
+];
+
+export function isBoostActive(boostedUntil?: string | null): boolean {
+  return !!boostedUntil && new Date(boostedUntil).getTime() > Date.now();
+}
+
+export function boostStore(storeId: string, days: number): Store | null {
+  const store = stores.find((s) => s.id === storeId);
+  if (!store) return null;
+  // Stacks onto any remaining boosted time rather than overwriting it, so
+  // buying another package before the current one expires extends it
+  // instead of wasting the days already paid for.
+  const base = isBoostActive(store.boostedUntil) ? new Date(store.boostedUntil!).getTime() : Date.now();
+  store.boostedUntil = new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
+  persist("stores", stores);
+  return store;
 }
 
 // ---------------------------------------------------------------------
@@ -2152,4 +2314,48 @@ export function getSimilarProducts(productId: string, limit = 4) {
     .sort((a, b) => Math.abs(a.basePrice - product.basePrice) - Math.abs(b.basePrice - product.basePrice))
     .slice(0, limit)
     .map((p) => ({ ...p, storeName: storesById.get(p.storeId)?.name ?? "" }));
+}
+
+// A subcategory is either "the outfit" or "the accessory" for its gender -
+// "Complete the Look" pulls from whichever side the viewed product ISN'T
+// on, turning nearby competing sellers into complementary upsell partners
+// instead of alternatives to the same purchase (see getSimilarProducts).
+const ACCESSORY_SUBCATEGORIES: Record<Gender, string[]> = {
+  women: ["Footwear", "Jewellery & Accessories", "Handbags"],
+  men: ["Footwear", "Accessories"],
+  kids: ["Kids Footwear"],
+};
+
+// Cross-seller, not cross-store-of-your-own - deliberately excludes the
+// viewed product's own store so a shopper is pointed at a *different*
+// nearby seller, not more of the same one. Tries the exact local market
+// first (genuinely walkable), falls back to the same city, then anywhere
+// on the platform - a real deployment with many sellers per market would
+// rarely need to fall back past the first tier; this one seed store per
+// market/city does, every time, so the fallback is what actually makes the
+// section appear at all in this demo.
+export function getComplementaryProducts(productId: string, limit = 4) {
+  const product = products.find((p) => p.id === productId);
+  if (!product) return [];
+  const store = stores.find((s) => s.id === product.storeId);
+  if (!store) return [];
+
+  const targetSubcats = ACCESSORY_SUBCATEGORIES[product.gender].includes(product.subCategory)
+    ? CATEGORY_TREE.find((c) => c.value === product.gender)!.subCategories.filter((sc) => !ACCESSORY_SUBCATEGORIES[product.gender].includes(sc))
+    : ACCESSORY_SUBCATEGORIES[product.gender];
+
+  const storesById = new Map(stores.map((s) => [s.id, s]));
+  const candidates = products
+    .filter((p) => p.storeId !== product.storeId)
+    .filter((p) => p.gender === product.gender && targetSubcats.includes(p.subCategory))
+    .filter((p) => storesById.get(p.storeId)?.status === "active")
+    .map((p) => ({ ...p, storeName: storesById.get(p.storeId)?.name ?? "", _otherStore: storesById.get(p.storeId) }));
+
+  const tiers = [
+    candidates.filter((p) => p._otherStore?.localMarket === store.localMarket),
+    candidates.filter((p) => p._otherStore?.city === store.city),
+    candidates,
+  ];
+  const pool = tiers.find((t) => t.length > 0) ?? [];
+  return pool.slice(0, limit).map(({ _otherStore, ...p }) => p);
 }

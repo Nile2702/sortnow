@@ -65,6 +65,33 @@ interface SimilarProduct {
   storeSlug: string;
 }
 
+function ProductStrip({ products }: { products: SimilarProduct[] }) {
+  return (
+    <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 24, marginTop: 20 }}>
+      {products.map((p, i) => (
+        <Link
+          key={p.id}
+          href={`/product/${p.id}`}
+          className="sio-card sio-fade-in"
+          style={{ textDecoration: "none", color: "inherit", border: "1px solid var(--sio-line)", borderRadius: 14, overflow: "hidden", background: "#fff", animationDelay: `${i * 60}ms` }}
+        >
+          <div className="sio-zoom-hover">
+            <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
+          </div>
+          <div style={{ padding: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{p.title}</div>
+            <div style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 3, letterSpacing: "0.02em" }}>{p.storeName}</div>
+            <div style={{ marginTop: 8 }}>
+              <span style={{ fontWeight: 600 }}>₹{p.basePrice}</span>
+              {p.compareAtPrice && <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{p.compareAtPrice}</span>}
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
     <span style={{ display: "inline-flex", gap: 2 }}>
@@ -94,10 +121,17 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [waitlistName, setWaitlistName] = useState("");
+  const [waitlistPhone, setWaitlistPhone] = useState("");
+  const [waitlistJoined, setWaitlistJoined] = useState(false);
+  const [waitlistError, setWaitlistError] = useState("");
+  const [waitlistSubmitting, setWaitlistSubmitting] = useState(false);
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [summary, setSummary] = useState<RatingSummary>({ average: 0, count: 0, breakdown: [] });
   const [similar, setSimilar] = useState<SimilarProduct[]>([]);
+  const [complementary, setComplementary] = useState<SimilarProduct[]>([]);
 
   const [checkPincode, setCheckPincode] = useState("");
   const [checkingDistance, setCheckingDistance] = useState(false);
@@ -107,8 +141,33 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     const shopper = getShopperSession();
-    if (shopper) setReviewForm((f) => (f.authorName ? f : { ...f, authorName: shopper.name }));
+    if (shopper) {
+      setReviewForm((f) => (f.authorName ? f : { ...f, authorName: shopper.name }));
+      setWaitlistName(shopper.name);
+      setWaitlistPhone(shopper.phone);
+    }
   }, []);
+
+  async function handleJoinWaitlist(e: React.FormEvent) {
+    e.preventDefault();
+    if (!product) return;
+    setWaitlistError("");
+    if (!waitlistName.trim()) return setWaitlistError("Enter your name.");
+    if (!/^\d{10}$/.test(waitlistPhone)) return setWaitlistError("Enter a valid 10-digit mobile number.");
+    setWaitlistSubmitting(true);
+    const res = await fetch(`/api/v1/products/${product.id}/waitlist`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shopperName: waitlistName, shopperPhone: waitlistPhone }),
+    });
+    const result = await res.json().catch(() => null);
+    setWaitlistSubmitting(false);
+    if (!res.ok) {
+      setWaitlistError(result?.message ?? "Couldn't join the waitlist. Try again.");
+      return;
+    }
+    setWaitlistJoined(true);
+  }
 
   useEffect(() => {
     if (!zoomOpen) return;
@@ -139,6 +198,9 @@ export default function ProductDetailPage() {
     fetch(`/api/v1/products/${productId}/similar`)
       .then((r) => r.json())
       .then(setSimilar);
+    fetch(`/api/v1/products/${productId}/complementary`)
+      .then((r) => r.json())
+      .then(setComplementary);
   }, [productId]);
 
   if (!product) {
@@ -430,10 +492,15 @@ export default function ProductDetailPage() {
           )}
           <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 20 }}>Inclusive of all taxes</div>
 
-          {product.stockRemaining != null && product.stockRemaining <= 5 && (
-            <div className="sio-breathe" style={{ color: "var(--sio-bronze-dark)", fontSize: 13, fontWeight: 500, marginBottom: 20, display: "inline-block" }}>
-              Only {product.stockRemaining} left in stock
-            </div>
+          {product.stockRemaining === 0 ? (
+            <div style={{ color: "#b91c1c", fontSize: 13, fontWeight: 700, marginBottom: 20, display: "inline-block" }}>Sold Out</div>
+          ) : (
+            product.stockRemaining != null &&
+            product.stockRemaining <= 5 && (
+              <div className="sio-breathe" style={{ color: "var(--sio-bronze-dark)", fontSize: 13, fontWeight: 500, marginBottom: 20, display: "inline-block" }}>
+                Only {product.stockRemaining} left in stock
+              </div>
+            )
           )}
 
           {(product.color || (product.colorVariants && product.colorVariants.length > 0)) && (
@@ -534,24 +601,44 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          <div className="sio-product-inline-actions" style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-            <button
-              onClick={handleAddToCart}
-              className="sio-btn-primary sio-shine-btn"
-              style={{
-                flex: 1,
-                padding: "16px 24px",
-                borderRadius: 999,
-                border: "none",
-                background: added ? "var(--sio-bronze-dark)" : "var(--sio-ink)",
-                color: "#fff",
-                fontSize: 14.5,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              {added ? "Added to Sort" : "Add to Sort"}
-            </button>
+          <div className="sio-product-inline-actions" style={{ display: "flex", gap: 10, marginBottom: waitlistOpen ? 14 : 24 }}>
+            {product.stockRemaining === 0 ? (
+              <button
+                onClick={() => setWaitlistOpen((o) => !o)}
+                disabled={waitlistJoined}
+                style={{
+                  flex: 1,
+                  padding: "16px 24px",
+                  borderRadius: 999,
+                  border: "1px solid var(--sio-line)",
+                  background: waitlistJoined ? "#f0fdf4" : "#fff",
+                  color: waitlistJoined ? "#16a34a" : "var(--sio-ink)",
+                  fontSize: 14.5,
+                  fontWeight: 600,
+                  cursor: waitlistJoined ? "default" : "pointer",
+                }}
+              >
+                {waitlistJoined ? "✓ We'll notify you" : "🔔 Notify me when back in stock"}
+              </button>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                className="sio-btn-primary sio-shine-btn"
+                style={{
+                  flex: 1,
+                  padding: "16px 24px",
+                  borderRadius: 999,
+                  border: "none",
+                  background: added ? "var(--sio-bronze-dark)" : "var(--sio-ink)",
+                  color: "#fff",
+                  fontSize: 14.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {added ? "Added to Sort" : "Add to Sort"}
+              </button>
+            )}
             <button
               onClick={handleToggleWishlist}
               className="sio-heart-btn"
@@ -575,6 +662,32 @@ export default function ProductDetailPage() {
               </svg>
             </button>
           </div>
+
+          {product.stockRemaining === 0 && waitlistOpen && !waitlistJoined && (
+            <form onSubmit={handleJoinWaitlist} style={{ ...SECTION_CARD, padding: 16, marginBottom: 24, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ fontSize: 12.5, color: "var(--sio-muted)" }}>We'll text you the moment this is back in stock.</div>
+              <input
+                value={waitlistName}
+                onChange={(e) => setWaitlistName(e.target.value)}
+                placeholder="Your name"
+                style={{ padding: "10px 14px", border: "1px solid var(--sio-line)", borderRadius: 10, fontSize: 14 }}
+              />
+              <input
+                value={waitlistPhone}
+                onChange={(e) => setWaitlistPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                placeholder="10-digit mobile number"
+                style={{ padding: "10px 14px", border: "1px solid var(--sio-line)", borderRadius: 10, fontSize: 14 }}
+              />
+              {waitlistError && <div style={{ color: "#b91c1c", fontSize: 12.5 }}>{waitlistError}</div>}
+              <button
+                type="submit"
+                disabled={waitlistSubmitting}
+                style={{ padding: "11px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}
+              >
+                {waitlistSubmitting ? "Joining…" : "Notify me"}
+              </button>
+            </form>
+          )}
 
           {/* Distance check - reserve-and-pickup, so this tells shoppers how
               far the store is instead of a fake shipping estimate */}
@@ -801,32 +914,24 @@ export default function ProductDetailPage() {
         </div>
       </section>
 
+      {/* Complete the Look - complementary items from OTHER nearby sellers
+          (accessories/footwear if viewing a garment, or vice versa), unlike
+          "You Might Also Like" below which is same-category alternatives. */}
+      {complementary.length > 0 && (
+        <section className="sio-fade-in" style={{ animationDelay: "300ms" }}>
+          <SectionHeading>Complete the Look</SectionHeading>
+          <p style={{ fontSize: 12.5, color: "var(--sio-muted)", marginTop: -12, marginBottom: 16 }}>
+            Pairs well with this, from other nearby stores.
+          </p>
+          <ProductStrip products={complementary} />
+        </section>
+      )}
+
       {/* Similar products */}
       {similar.length > 0 && (
         <section className="sio-fade-in" style={{ animationDelay: "330ms" }}>
           <SectionHeading>You Might Also Like</SectionHeading>
-          <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 24, marginTop: 20 }}>
-            {similar.map((p, i) => (
-              <Link
-                key={p.id}
-                href={`/product/${p.id}`}
-                className="sio-card sio-fade-in"
-                style={{ textDecoration: "none", color: "inherit", border: "1px solid var(--sio-line)", borderRadius: 14, overflow: "hidden", background: "#fff", animationDelay: `${i * 60}ms` }}
-              >
-                <div className="sio-zoom-hover">
-                  <img src={p.images?.[0]?.url} alt={p.title} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
-                </div>
-                <div style={{ padding: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{p.title}</div>
-                  <div style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 3, letterSpacing: "0.02em" }}>{p.storeName}</div>
-                  <div style={{ marginTop: 8 }}>
-                    <span style={{ fontWeight: 600 }}>₹{p.basePrice}</span>
-                    {p.compareAtPrice && <span style={{ textDecoration: "line-through", marginLeft: 6, opacity: 0.55, fontSize: 12 }}>₹{p.compareAtPrice}</span>}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <ProductStrip products={similar} />
         </section>
       )}
 
@@ -907,8 +1012,18 @@ export default function ProductDetailPage() {
             <path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2 4.5 5.6 4c2-.3 3.8.7 4.9 2.4C11.6 4.7 13.4 3.7 15.4 4c3.6.5 5.3 4.1 3.6 7.7C19.5 16.4 12 21 12 21z" />
           </svg>
         </button>
-        <button type="button" onClick={handleAddToCart} className="sio-product-action-cta">
-          {added ? "Added ✓" : `Add to Sort — ₹${product.basePrice}`}
+        <button
+          type="button"
+          onClick={product.stockRemaining === 0 ? () => setWaitlistOpen(true) : handleAddToCart}
+          className="sio-product-action-cta"
+        >
+          {product.stockRemaining === 0
+            ? waitlistJoined
+              ? "✓ We'll notify you"
+              : "🔔 Notify me when back in stock"
+            : added
+            ? "Added ✓"
+            : `Add to Sort — ₹${product.basePrice}`}
         </button>
       </div>
     </main>

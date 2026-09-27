@@ -21,10 +21,15 @@ interface DiscoveredStore {
   localMarket: string;
   distanceKm: number | null;
   liveSale?: { headline: string; discountLabel: string; endsAt: string } | null;
+  boostedUntil?: string | null;
 }
 
 function isSaleActive(sale?: DiscoveredStore["liveSale"]) {
   return !!sale && new Date(sale.endsAt).getTime() > Date.now();
+}
+
+function isBoosted(boostedUntil?: string | null) {
+  return !!boostedUntil && new Date(boostedUntil).getTime() > Date.now();
 }
 
 interface SearchProduct {
@@ -484,6 +489,13 @@ function DiscoverPageInner() {
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{s.name}</h3>
+                  {isBoosted(s.boostedUntil) && (
+                    <span
+                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "#b45309", border: "1px solid #d97706", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
+                    >
+                      ⚡ Featured
+                    </span>
+                  )}
                   {isSaleActive(s.liveSale) && (
                     <span
                       className="sio-breathe"

@@ -36,11 +36,25 @@ export default function AccountPage() {
   const [category, setCategory] = useState<Category | "">("");
   const [pincode, setPincode] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [referredByCode, setReferredByCode] = useState("");
+  const [referrals, setReferrals] = useState<{ referralCode: string; count: number } | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   useEffect(() => {
     setSession(getShopperSession());
     setReady(true);
+    // ?ref=CODE on the invite link a shopper shared - only ever consulted
+    // for a brand-new signup (see handleCompleteProfile), never on login.
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) setReferredByCode(ref);
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    fetch(`/api/v1/shopper/referrals?phone=${session.phone}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setReferrals);
+  }, [session]);
 
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
@@ -123,6 +137,7 @@ export default function AccountPage() {
         email: email.trim() || undefined,
         preferredCategory: category || undefined,
         pincode: pincode.trim() || undefined,
+        referredByCode: referredByCode || undefined,
       }),
     });
     const result = await res.json().catch(() => null);
@@ -214,6 +229,45 @@ export default function AccountPage() {
             <AccountLink href="/wishlist" icon="🤍" label="Wishlist" desc="Items you've saved for later." />
             <AccountLink href="/sorts" icon="🧭" label="My Sorts" desc="Saved filters across nearby stores." />
           </div>
+
+          {referrals && (
+            <div
+              style={{
+                marginTop: 18,
+                textAlign: "left",
+                border: "1px solid var(--sio-line)",
+                borderRadius: 14,
+                padding: "14px 16px",
+                background: "var(--sio-cream)",
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>🎁 Invite friends</div>
+              <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 10 }}>
+                {referrals.count === 0
+                  ? "Share your link — friends who sign up help you both discover more nearby stores."
+                  : `You've referred ${referrals.count} friend${referrals.count === 1 ? "" : "s"} so far.`}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  readOnly
+                  value={typeof window !== "undefined" ? `${window.location.origin}/?ref=${referrals.referralCode}` : ""}
+                  style={{ ...inputStyle, flex: 1, fontSize: 12, background: "#fff" }}
+                  onFocus={(e) => e.target.select()}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(`${window.location.origin}/?ref=${referrals.referralCode}`);
+                    setInviteCopied(true);
+                    setTimeout(() => setInviteCopied(false), 2000);
+                  }}
+                  style={{ padding: "0 16px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+                >
+                  {inviteCopied ? "Copied ✓" : "Copy"}
+                </button>
+              </div>
+            </div>
+          )}
 
           <button
             onClick={handleSignOut}

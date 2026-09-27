@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     email: body.email || undefined,
     preferredCategory: body.preferredCategory || undefined,
     pincode: body.pincode || undefined,
+    referredByCode: typeof body.referredByCode === "string" ? body.referredByCode : undefined,
   });
 
   return NextResponse.json({ ok: true, shopper, isNewCustomer });
