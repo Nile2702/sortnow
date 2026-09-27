@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { ALL_SIZES, CATEGORY_TREE } from "../lib/catalog-constants";
 import { saveSmartSort } from "../lib/smart-sorts";
 import { QUICK_MARKETS, setLocationPref } from "../lib/location";
+import { HeroSlider } from "../components/HeroSlider";
+import { CategoryTiles } from "../components/CategoryTiles";
 import { ProductCard } from "../components/ProductCard";
 
 interface DiscoveredStore {
@@ -104,6 +106,7 @@ function DiscoverPageInner() {
   const [savedMsg, setSavedMsg] = useState("");
 
   const [newArrivals, setNewArrivals] = useState<SearchProduct[]>([]);
+  const [bestDeals, setBestDeals] = useState<SearchProduct[]>([]);
   const [spotlightLoading, setSpotlightLoading] = useState(true);
 
   // Mirrors whatever pincode is actually driving this page's search into the
@@ -114,15 +117,23 @@ function DiscoverPageInner() {
     setLocationPref({ label: match?.label ?? `PIN ${pincode}`, pincode });
   }, [pincode]);
 
-  // Nationwide (no pincode/radius) spotlight row - unlike the store
-  // directory and "Shop in Sort" below, this isn't scoped to the shopper's
-  // location or filter choices, so it's fetched once on mount rather than
-  // re-running every time pincode/radius/gender/etc. change.
+  // Nationwide (no pincode/radius) spotlight sections - unlike "Stores near
+  // you" and "Shop in Sort" below, these aren't scoped to the shopper's
+  // location or filter choices, so they're fetched once on mount rather
+  // than re-running every time pincode/radius/gender/etc. change.
   useEffect(() => {
     setSpotlightLoading(true);
-    fetch(`/api/v1/products/search?sort=newest`)
-      .then((r) => r.json())
-      .then((newest: SearchProduct[]) => setNewArrivals(newest.slice(0, 8)))
+    Promise.all([
+      fetch(`/api/v1/products/search?sort=newest`).then((r) => r.json()),
+      fetch(`/api/v1/products/search?sort=newest`).then((r) => r.json()),
+    ])
+      .then(([newest, forDeals]: [SearchProduct[], SearchProduct[]]) => {
+        setNewArrivals(newest.slice(0, 8));
+        const discounted = forDeals
+          .filter((p) => p.compareAtPrice && p.compareAtPrice > p.basePrice)
+          .sort((a, b) => (b.compareAtPrice! - b.basePrice) / b.compareAtPrice! - (a.compareAtPrice! - a.basePrice) / a.compareAtPrice!);
+        setBestDeals(discounted.slice(0, 8));
+      })
       .finally(() => setSpotlightLoading(false));
   }, []);
 
@@ -188,71 +199,8 @@ function DiscoverPageInner() {
 
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "16px 16px 40px" }}>
-      {/* Store-directory-first structure: the first decision a shopper
-          actually makes here is "which market am I shopping", not "here's
-          a promotional banner" - this replaces the old rotating hero
-          slider as the page's opening section. */}
-      <section
-        className="sio-card"
-        style={{
-          background: "#fff",
-          padding: 22,
-          borderRadius: 18,
-          boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
-          border: "1px solid #f1f5f9",
-          marginBottom: 20,
-        }}
-      >
-        <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Where are you shopping today?</h1>
-        <p style={{ fontSize: 13.5, color: "#64748b", marginBottom: 16 }}>
-          SORT IT OUT shows you the real boutiques near that spot - pick a market, or enter your own PIN code.
-        </p>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-          {QUICK_MARKETS.map((m) => (
-            <button
-              key={m.pincode}
-              onClick={() => setPincode(m.pincode)}
-              style={{
-                padding: "8px 14px",
-                borderRadius: 999,
-                border: "1px solid #e2e8f0",
-                background: pincode === m.pincode ? "#0f172a" : "#fff",
-                color: pincode === m.pincode ? "#fff" : "#334155",
-                cursor: "pointer",
-                fontSize: 13.5,
-                fontWeight: 600,
-              }}
-            >
-              📍 {m.label}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-          <input
-            value={pincode}
-            onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            placeholder="Or enter your 6-digit PIN code"
-            maxLength={6}
-            style={{ padding: "11px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 16, width: 220 }}
-          />
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-            within
-            <select
-              value={radius}
-              onChange={(e) => setRadius(Number(e.target.value))}
-              style={{ padding: "9px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}
-            >
-              {[1, 3, 5, 10, 15, 25].map((r) => (
-                <option key={r} value={r}>
-                  {r} km
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </section>
+      <HeroSlider />
+      <CategoryTiles />
 
       {liveSaleStores.length > 0 && (
         <section style={{ marginBottom: 28 }}>
@@ -297,59 +245,115 @@ function DiscoverPageInner() {
         </div>
       )}
 
-      {/* Store directory - the main content of this page, not a product
-          feed. Category chips filter WHICH STORES show (a store counts if
-          it carries anything in that gender/subcategory), same as they
-          used to filter a separate "Shop by Category" tile section. */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10, marginBottom: 4 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>🏬 Shops near you</h2>
-      </div>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-        <button
-          onClick={() => {
-            setGender("all");
-            setSubCategory("");
-          }}
-          style={pillStyle(gender === "all")}
-        >
-          All
-        </button>
-        {CATEGORY_TREE.map((c) => (
+      <section
+        className="sio-card"
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 12,
+          alignItems: "center",
+          background: "#fff",
+          padding: 18,
+          borderRadius: 16,
+          boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
+          border: "1px solid #f1f5f9",
+          marginBottom: 20,
+        }}
+      >
+        <input
+          value={pincode}
+          onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          placeholder="Enter 6-digit PIN code"
+          maxLength={6}
+          style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 16, width: 200 }}
+        />
+
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+          Radius
+          <select
+            value={radius}
+            onChange={(e) => setRadius(Number(e.target.value))}
+            style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}
+          >
+            {[1, 3, 5, 10, 15, 25].map((r) => (
+              <option key={r} value={r}>
+                {r} km
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <button
-            key={c.value}
             onClick={() => {
-              setGender(c.value);
+              setGender("all");
               setSubCategory("");
             }}
-            style={pillStyle(gender === c.value)}
+            style={pillStyle(gender === "all")}
           >
-            {c.label}
+            All
           </button>
-        ))}
-      </div>
-      {activeSubCategories.length > 0 && (
-        <div className="sio-fade-in" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-          {activeSubCategories.map((sc) => (
+          {CATEGORY_TREE.map((c) => (
             <button
-              key={sc}
-              onClick={() => setSubCategory(subCategory === sc ? "" : sc)}
+              key={c.value}
+              onClick={() => {
+                setGender(c.value);
+                setSubCategory("");
+              }}
+              style={pillStyle(gender === c.value)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        {activeSubCategories.length > 0 && (
+          <div className="sio-fade-in" style={{ display: "flex", gap: 6, flexWrap: "wrap", width: "100%", marginTop: 4 }}>
+            {activeSubCategories.map((sc) => (
+              <button
+                key={sc}
+                onClick={() => setSubCategory(subCategory === sc ? "" : sc)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: "1px solid #e2e8f0",
+                  background: subCategory === sc ? "#e0e7ff" : "#f8fafc",
+                  color: subCategory === sc ? "#1e3a8a" : "#475569",
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                {sc}
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 8, fontWeight: 600 }}>📍 Popular markets</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {QUICK_MARKETS.map((m) => (
+            <button
+              key={m.pincode}
+              onClick={() => setPincode(m.pincode)}
               style={{
                 padding: "6px 12px",
-                borderRadius: 999,
+                borderRadius: 8,
                 border: "1px solid #e2e8f0",
-                background: subCategory === sc ? "#e0e7ff" : "#f8fafc",
-                color: subCategory === sc ? "#1e3a8a" : "#475569",
+                background: pincode === m.pincode ? "#e0e7ff" : "#fff",
+                color: pincode === m.pincode ? "#1e3a8a" : "#334155",
                 cursor: "pointer",
                 fontSize: 13,
               }}
             >
-              {sc}
+              {m.label}
             </button>
           ))}
         </div>
-      )}
-      <div style={{ marginBottom: 20 }} />
+      </section>
 
+      <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>Stores near you</h2>
       {loading ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 44 }}>
           {[1, 2, 3].map((i) => (
@@ -428,13 +432,17 @@ function DiscoverPageInner() {
         </div>
       )}
 
-      {/* One discovery row, not three overlapping ones (this used to sit
-          alongside a separate "Best Deals" row) - product-first browsing is
-          a secondary path here, not the homepage's main job. */}
       <section style={{ marginBottom: 44 }}>
-        <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>🔥 Trending Near You</h2>
+        <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>✨ New Arrivals</h2>
         <ProductRow products={newArrivals} loading={spotlightLoading} />
       </section>
+
+      {(spotlightLoading || bestDeals.length > 0) && (
+        <section style={{ marginBottom: 44 }}>
+          <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>🔥 Best Deals</h2>
+          <ProductRow products={bestDeals} loading={spotlightLoading} />
+        </section>
+      )}
 
       <section style={{ background: "#fff", borderRadius: 18, padding: 24, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", border: "1px solid #f1f5f9" }}>
         <h2 style={{ fontSize: 20, marginBottom: 4, fontWeight: 700 }}>🧭 Shop in Sort</h2>
