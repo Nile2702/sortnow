@@ -26,6 +26,15 @@ function CategoryIcon({ active }: { active: boolean }) {
   );
 }
 
+function DiscoverIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+      <rect x="6" y="4" width="12" height="16" rx="2.5" transform="rotate(-8 12 12)" opacity={active ? 0.5 : 1} />
+      <rect x="6" y="4" width="12" height="16" rx="2.5" transform="rotate(6 12 12)" />
+    </svg>
+  );
+}
+
 function ReservationIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
@@ -47,6 +56,7 @@ function AccountIcon({ active }: { active: boolean }) {
 const TABS = [
   { href: "/", label: "Home", Icon: HomeIcon, match: (p: string) => p === "/" },
   { href: "/search", label: "Category", Icon: CategoryIcon, match: (p: string) => p === "/search" || p.startsWith("/category/") },
+  { href: "/discover", label: "Discover", Icon: DiscoverIcon, match: (p: string) => p.startsWith("/discover") },
   { href: "/reservations", label: "Reservations", Icon: ReservationIcon, match: (p: string) => p.startsWith("/reservations") },
   { href: "/account", label: "Account", Icon: AccountIcon, match: (p: string) => p.startsWith("/account") },
 ];
