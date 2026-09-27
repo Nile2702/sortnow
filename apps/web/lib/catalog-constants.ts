@@ -87,6 +87,34 @@ export function defaultSizedSubCategoryFor(gender: Gender): string {
   return tree.subCategories.find((sc) => getSizeOptionsFor(sc).length > 1) ?? tree.subCategories[0];
 }
 
+// Common fabrics across the catalog's actual mix (ethnic wear, casual
+// wear, footwear) - a dropdown for the common case, with an explicit
+// "Other" that reveals a free-text field (see ProductForm), since a fixed
+// list alone would block real values already in this catalog like
+// "Jamdani Cotton" or "Mesh & EVA".
+export const FABRIC_OPTIONS: string[] = [
+  "Cotton",
+  "Cotton Blend",
+  "Silk",
+  "Silk Blend",
+  "Linen",
+  "Denim",
+  "Georgette",
+  "Chiffon",
+  "Organza",
+  "Net",
+  "Velvet",
+  "Wool",
+  "Polyester",
+  "Rayon",
+  "Viscose",
+  "Crepe",
+  "Satin",
+  "Khadi",
+  "Chanderi",
+  "Leather",
+];
+
 // A shared color catalog so a seller can list one product across several
 // colors by picking swatches instead of photographing and re-uploading
 // every colorway separately - see components/ProductForm.tsx, which creates

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../lib/catalog-constants";
+import { CATEGORY_TREE, COLOR_CATALOG, FABRIC_OPTIONS, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../lib/catalog-constants";
 import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, cutoutFromMask } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
@@ -104,6 +104,12 @@ export function ProductForm({
   // photo, only the color attribute differs - so a seller doesn't have to
   // photograph and re-list every colorway of the same item separately.
   const [selectedColors, setSelectedColors] = useState<string[]>(initial?.color ? [initial.color] : []);
+
+  // "Other" reveals a free-text field instead of the dropdown - an editing
+  // session (or Gemini autofill) can land on a fabric name not in
+  // FABRIC_OPTIONS (e.g. "Jamdani Cotton"), which should still show as
+  // whatever it actually is, not silently snap to a wrong dropdown value.
+  const [fabricIsOther, setFabricIsOther] = useState(() => !!initial?.fabric && !FABRIC_OPTIONS.includes(initial.fabric));
 
   // A colorway can get its own real photo instead of reusing the main
   // upload for every variant - a seller who's actually photographed each
@@ -478,6 +484,7 @@ export function ProductForm({
       setAutofillError(result?.message ?? "Couldn't suggest details for this photo. Try again.");
       return;
     }
+    if (result.fabric) setFabricIsOther(!FABRIC_OPTIONS.includes(result.fabric));
     setForm((f) => ({
       ...f,
       title: result.title || f.title,
@@ -640,7 +647,40 @@ export function ProductForm({
 
       <div>
         <label style={labelStyle()}>Fabric</label>
-        <input required value={form.fabric} onChange={(e) => update("fabric", e.target.value)} style={inputStyle()} placeholder="e.g. Cotton, Silk, Denim" />
+        <select
+          required={!fabricIsOther}
+          value={fabricIsOther ? "__other__" : form.fabric}
+          onChange={(e) => {
+            if (e.target.value === "__other__") {
+              setFabricIsOther(true);
+              update("fabric", "");
+            } else {
+              setFabricIsOther(false);
+              update("fabric", e.target.value);
+            }
+          }}
+          style={inputStyle()}
+        >
+          <option value="" disabled>
+            Select a fabric…
+          </option>
+          {FABRIC_OPTIONS.map((f) => (
+            <option key={f} value={f}>
+              {f}
+            </option>
+          ))}
+          <option value="__other__">Other (type my own)</option>
+        </select>
+        {fabricIsOther && (
+          <input
+            required
+            autoFocus
+            value={form.fabric}
+            onChange={(e) => update("fabric", e.target.value)}
+            style={{ ...inputStyle(), marginTop: 8 }}
+            placeholder="Enter the fabric, e.g. Jamdani Cotton"
+          />
+        )}
       </div>
 
       <div>
