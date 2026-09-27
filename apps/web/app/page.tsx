@@ -58,21 +58,29 @@ function SkeletonCard({ height = 220 }: { height?: number }) {
   return <div className="sio-skeleton" style={{ borderRadius: 14, height }} />;
 }
 
+// Curated "collection" row - horizontal scroll rather than a wrapping grid,
+// per the "Package I - Conversion-Optimized DTC" pattern: showing fewer
+// items at once here reads as an edited selection, not the full catalog
+// (that's what "Shop in Sort" below, with its filters, is for).
 function ProductRow({ products, loading }: { products: SearchProduct[]; loading: boolean }) {
   if (loading) {
     return (
-      <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+      <div className="sio-scroll-row">
         {[1, 2, 3, 4].map((i) => (
-          <SkeletonCard key={i} height={260} />
+          <div key={i} style={{ minWidth: 160, flex: "0 0 160px" }}>
+            <SkeletonCard height={260} />
+          </div>
         ))}
       </div>
     );
   }
   if (products.length === 0) return null;
   return (
-    <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+    <div className="sio-scroll-row">
       {products.map((p, i) => (
-        <ProductCard key={p.id} product={p} index={i} />
+        <div key={p.id} style={{ minWidth: 160, flex: "0 0 160px", scrollSnapAlign: "start" }}>
+          <ProductCard product={p} index={i} />
+        </div>
       ))}
     </div>
   );

@@ -37,6 +37,23 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Horizontal "collection" row (Package I - Conversion-Optimized DTC): a
+   curated strip of cards you swipe through sideways, instead of a grid that
+   wraps to show everything at once. Scrollbar hidden across browsers since
+   the snap points + visible partial-next-card already signal "scroll me". */
+.sio-scroll-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 4px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.sio-scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
 /* Any text input/select/textarea under 16px makes iOS Safari zoom the whole
    page in on focus (its long-standing auto-zoom heuristic) - jarring on a
    phone and not something any individual form noticed one at a time. Every
