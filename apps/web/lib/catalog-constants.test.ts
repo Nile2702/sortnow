@@ -2,9 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { getSizeOptionsFor } from "./catalog-constants.ts";
 
-test("clothing subcategories offer standard S-XXL sizes plus Free Size", () => {
+test("clothing subcategories offer standard XS-XXL sizes plus Free Size", () => {
   const sizes = getSizeOptionsFor("Shirts");
-  assert.deepEqual(sizes, ["S", "M", "L", "XL", "XXL", "Free Size"]);
+  assert.deepEqual(sizes, ["XS", "S", "M", "L", "XL", "XXL", "Free Size"]);
 });
 
 test("footwear offers shoe sizes, not clothing sizes", () => {
@@ -35,6 +35,6 @@ test("jewellery, accessories, and handbags have no sizes at all", () => {
 });
 
 test("falls back to standard clothing sizes for an unrecognized subcategory", () => {
-  assert.deepEqual(getSizeOptionsFor("Some New Category"), ["S", "M", "L", "XL", "XXL", "Free Size"]);
-  assert.deepEqual(getSizeOptionsFor(undefined), ["S", "M", "L", "XL", "XXL", "Free Size"]);
+  assert.deepEqual(getSizeOptionsFor("Some New Category"), ["XS", "S", "M", "L", "XL", "XXL", "Free Size"]);
+  assert.deepEqual(getSizeOptionsFor(undefined), ["XS", "S", "M", "L", "XL", "XXL", "Free Size"]);
 });

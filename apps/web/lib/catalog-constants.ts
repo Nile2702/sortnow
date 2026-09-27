@@ -12,10 +12,10 @@ export type Gender = "men" | "women" | "kids";
 // (the seller's product form, a category page) should use
 // getSizeOptionsFor(subCategory) instead, so a shirt listing doesn't offer
 // shoe sizes and vice versa.
-export const ALL_SIZES = ["S", "M", "L", "XL", "XXL", "Free Size", "28", "30", "32", "34", "36", "6", "7", "8", "9", "10", "11", "2-3Y", "4-5Y", "6-7Y", "8-9Y", "10-12Y"];
+export const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "Free Size", "28", "30", "32", "34", "36", "6", "7", "8", "9", "10", "11", "2-3Y", "4-5Y", "6-7Y", "8-9Y", "10-12Y"];
 
 const SIZE_GROUPS = {
-  clothing: ["S", "M", "L", "XL", "XXL"],
+  clothing: ["XS", "S", "M", "L", "XL", "XXL"],
   freeSize: ["Free Size"],
   waist: ["28", "30", "32", "34", "36", "38"],
   footwear: ["6", "7", "8", "9", "10", "11"],
