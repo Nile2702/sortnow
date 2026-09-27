@@ -7,6 +7,7 @@ import { Footer } from "../components/Footer";
 import { CursorGlow } from "../components/CursorGlow";
 import { ScrollRevealInit } from "../components/ScrollRevealInit";
 import { ToastHost } from "../components/ToastHost";
+import { LocationGate } from "../components/LocationGate";
 
 // A rounded, friendly sans-serif for headings instead of the earlier
 // Cormorant Garamond serif - the serif read as a formal fashion-magazine
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CursorGlow />
         <ScrollRevealInit />
         <ToastHost />
+        <LocationGate />
         <SiteHeader />
         <MobileAppHeader />
         <div style={{ flex: 1, position: "relative" }}>{children}</div>

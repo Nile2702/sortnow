@@ -40,13 +40,14 @@ export default function DiscoverPage() {
     setDeck(null);
     setIndex(0);
     setSavedCount(0);
-    const { pincode } = getLocationPref();
+    const pref = getLocationPref();
     // radius=20000 effectively disables distance filtering (nothing on the
     // platform is >20,000km away) while still computing a real distance for
     // display - a deliberately large deck shouldn't come up empty just
     // because this demo's seed stores are spread across seven different
     // cities with one seller each.
-    fetch(`/api/v1/products/search?pincode=${pincode}&radius=20000&sort=newest`)
+    const originParams = "lat" in pref ? `lat=${pref.lat}&lng=${pref.lng}` : `pincode=${pref.pincode}`;
+    fetch(`/api/v1/products/search?${originParams}&radius=20000&sort=newest`)
       .then((r) => r.json())
       .then((all: DeckProduct[]) => {
         const inStock = all.filter((p) => p.stockRemaining !== 0);

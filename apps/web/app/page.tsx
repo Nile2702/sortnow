@@ -90,6 +90,15 @@ function DiscoverPageInner() {
   const searchParams = useSearchParams();
 
   const [pincode, setPincode] = useState(searchParams.get("pincode") ?? "400050");
+  // Set when the shopper allowed GPS location access (see LocationGate) -
+  // takes priority over pincode for actual distance/filtering while it's
+  // present; typing a PIN code or picking a quick market clears it, since
+  // those are a deliberate override of "use my current location".
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(
+    searchParams.get("lat") && searchParams.get("lng")
+      ? { lat: Number(searchParams.get("lat")), lng: Number(searchParams.get("lng")) }
+      : null
+  );
   const [radius, setRadius] = useState(Number(searchParams.get("radius") ?? 10));
   const [gender, setGender] = useState(searchParams.get("gender") ?? "all");
   const [subCategory, setSubCategory] = useState(searchParams.get("subCategory") ?? "");
@@ -109,13 +118,17 @@ function DiscoverPageInner() {
   const [bestDeals, setBestDeals] = useState<SearchProduct[]>([]);
   const [spotlightLoading, setSpotlightLoading] = useState(true);
 
-  // Mirrors whatever pincode is actually driving this page's search into the
-  // shared location preference, so the mobile app-style header (rendered
-  // outside this page, in the root layout) can show it and jump back here.
+  // Mirrors whatever location is actually driving this page's search into
+  // the shared preference, so the mobile app-style header (rendered outside
+  // this page, in the root layout) can show it and jump back here. Skipped
+  // while `geo` (GPS) is set - that's saved directly where it's acquired
+  // (LocationGate), and re-deriving a pincode-based pref here every render
+  // would immediately stomp over it back to the default PIN code.
   useEffect(() => {
+    if (geo) return;
     const match = QUICK_MARKETS.find((m) => m.pincode === pincode);
     setLocationPref({ label: match?.label ?? `PIN ${pincode}`, pincode });
-  }, [pincode]);
+  }, [pincode, geo]);
 
   // Nationwide (no pincode/radius) spotlight sections - unlike "Stores near
   // you" and "Shop in Sort" below, these aren't scoped to the shopper's
@@ -144,6 +157,9 @@ function DiscoverPageInner() {
   // local filter state whenever the query string changes.
   useEffect(() => {
     setPincode(searchParams.get("pincode") ?? "400050");
+    const lat = searchParams.get("lat");
+    const lng = searchParams.get("lng");
+    setGeo(lat && lng ? { lat: Number(lat), lng: Number(lng) } : null);
     setRadius(Number(searchParams.get("radius") ?? 10));
     setGender(searchParams.get("gender") ?? "all");
     setSubCategory(searchParams.get("subCategory") ?? "");
@@ -156,8 +172,12 @@ function DiscoverPageInner() {
 
   useEffect(() => {
     setLoading(true);
-    const storeParams = new URLSearchParams({ pincode, radius: String(radius), gender });
-    const productParams = new URLSearchParams({ pincode, radius: String(radius), gender, sort: sortBy });
+    // GPS coordinates (from LocationGate) take priority over a typed PIN
+    // code for actual filtering, while both may briefly coexist in state -
+    // see discoverStores()/searchProducts() in lib/seed-data.ts.
+    const originParams: Record<string, string> = geo ? { lat: String(geo.lat), lng: String(geo.lng) } : { pincode };
+    const storeParams = new URLSearchParams({ ...originParams, radius: String(radius), gender });
+    const productParams = new URLSearchParams({ ...originParams, radius: String(radius), gender, sort: sortBy });
     if (subCategory) {
       storeParams.set("subCategory", subCategory);
       productParams.set("subCategory", subCategory);
@@ -176,7 +196,7 @@ function DiscoverPageInner() {
         setSortedProducts(productResults);
       })
       .finally(() => setLoading(false));
-  }, [pincode, radius, gender, subCategory, minPrice, maxPrice, size, sortBy, q]);
+  }, [pincode, geo, radius, gender, subCategory, minPrice, maxPrice, size, sortBy, q]);
 
   const activeSubCategories = CATEGORY_TREE.find((c) => c.value === gender)?.subCategories ?? [];
 
@@ -260,9 +280,24 @@ function DiscoverPageInner() {
           marginBottom: 20,
         }}
       >
+        {geo && (
+          <div style={{ width: "100%", fontSize: 12.5, color: "#2563eb", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            📍 Using your current location
+            <button
+              type="button"
+              onClick={() => setGeo(null)}
+              style={{ background: "none", border: "none", color: "#64748b", fontSize: 12, textDecoration: "underline", cursor: "pointer", padding: 0 }}
+            >
+              switch to a PIN code
+            </button>
+          </div>
+        )}
         <input
           value={pincode}
-          onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          onChange={(e) => {
+            setGeo(null);
+            setPincode(e.target.value.replace(/\D/g, "").slice(0, 6));
+          }}
           placeholder="Enter 6-digit PIN code"
           maxLength={6}
           style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 16, width: 200 }}
@@ -336,7 +371,10 @@ function DiscoverPageInner() {
           {QUICK_MARKETS.map((m) => (
             <button
               key={m.pincode}
-              onClick={() => setPincode(m.pincode)}
+              onClick={() => {
+                setGeo(null);
+                setPincode(m.pincode);
+              }}
               style={{
                 padding: "6px 12px",
                 borderRadius: 8,

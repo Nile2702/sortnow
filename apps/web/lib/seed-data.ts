@@ -974,6 +974,8 @@ export function resolvePincode(pincode: string): { lat: number; lng: number; cit
 // than picking one store first. See docs/01-product-and-personas.md §3.
 export function searchProducts(opts: {
   pincode?: string;
+  lat?: number;
+  lng?: number;
   radiusKm?: number;
   gender?: string;
   subCategory?: string;
@@ -983,8 +985,9 @@ export function searchProducts(opts: {
   sort?: string;
   q?: string;
 }) {
-  const { pincode, radiusKm = 10, gender, subCategory, minPrice, maxPrice, size, sort, q } = opts;
-  const origin = pincode ? resolvePincode(pincode) : undefined;
+  const { pincode, lat, lng, radiusKm = 10, gender, subCategory, minPrice, maxPrice, size, sort, q } = opts;
+  // See discoverStores() above for why raw coordinates take priority.
+  const origin = lat != null && lng != null ? { lat, lng } : pincode ? resolvePincode(pincode) : undefined;
   const query = q?.trim().toLowerCase();
 
   const storesById = new Map(stores.map((s) => [s.id, s]));
@@ -1045,9 +1048,14 @@ export function getCategoryTileCounts() {
   }));
 }
 
-export function discoverStores(opts: { pincode?: string; radiusKm?: number; gender?: string; subCategory?: string }) {
-  const { pincode, radiusKm = 10, gender, subCategory } = opts;
-  const origin = pincode ? resolvePincode(pincode) : undefined;
+export function discoverStores(opts: { pincode?: string; lat?: number; lng?: number; radiusKm?: number; gender?: string; subCategory?: string }) {
+  const { pincode, lat, lng, radiusKm = 10, gender, subCategory } = opts;
+  // Real GPS coordinates (from the browser's Geolocation API) take priority
+  // over a typed PIN code when both are somehow present - there's no
+  // reverse-geocoding service in this demo to turn coordinates into a PIN
+  // code, so distance is computed directly from them instead, the same way
+  // haversineKm already works from a resolved PIN code's lat/lng.
+  const origin = lat != null && lng != null ? { lat, lng } : pincode ? resolvePincode(pincode) : undefined;
 
   const matchingStoreIds =
     gender && gender !== "all"

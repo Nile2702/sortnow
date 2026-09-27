@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { QUICK_MARKETS, getLocationPref, setLocationPref, LOCATION_CHANGED_EVENT, type QuickMarket } from "../lib/location";
+import { QUICK_MARKETS, getLocationPref, setLocationPref, LOCATION_CHANGED_EVENT, type QuickMarket, type LocationPref } from "../lib/location";
 import { isMobileAppShellPage } from "../lib/mobile-shell";
 import { showToast } from "../lib/toast";
 import { QrScannerModal } from "./QrScannerModal";
@@ -89,7 +89,7 @@ export function MobileAppHeader() {
   // every page navigation instead of just the first screen a shopper sees.
   const isHome = isAppPage && pathname === "/";
 
-  const [location, setLocation] = useState<QuickMarket>(QUICK_MARKETS[0]);
+  const [location, setLocation] = useState<LocationPref>(QUICK_MARKETS[0]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [listening, setListening] = useState(false);
@@ -100,7 +100,7 @@ export function MobileAppHeader() {
   useEffect(() => {
     setLocation(getLocationPref());
     function onChange(e: Event) {
-      setLocation((e as CustomEvent<QuickMarket>).detail);
+      setLocation((e as CustomEvent<LocationPref>).detail);
     }
     window.addEventListener(LOCATION_CHANGED_EVENT, onChange);
     return () => window.removeEventListener(LOCATION_CHANGED_EVENT, onChange);
@@ -253,7 +253,7 @@ export function MobileAppHeader() {
                         padding: "8px 10px",
                         borderRadius: 8,
                         border: "none",
-                        background: m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
+                        background: "pincode" in location && m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
                         color: "var(--sio-ink)",
                         fontSize: 13,
                         cursor: "pointer",
@@ -350,7 +350,7 @@ export function MobileAppHeader() {
                       padding: "8px 10px",
                       borderRadius: 8,
                       border: "none",
-                      background: m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
+                      background: "pincode" in location && m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
                       color: "var(--sio-ink)",
                       fontSize: 13,
                       cursor: "pointer",

@@ -21,10 +21,19 @@ export const QUICK_MARKETS: QuickMarket[] = [
   { label: "Gariahat, Kolkata", pincode: "700019" },
 ];
 
+// A location can come from a typed/quick-picked PIN code (resolved
+// server-side via the india-post-pincode dataset) or directly from the
+// browser's Geolocation API - there's no reverse-geocoding service in this
+// demo to turn GPS coordinates into a PIN code, so raw lat/lng is carried
+// all the way through to discoverStores()/searchProducts() instead (see
+// lib/seed-data.ts), which compute distance from either the same way.
+export type LocationPref = { label: string; pincode: string } | { label: string; lat: number; lng: number };
+
 const KEY = "sio_location_pref";
+const PROMPT_SEEN_KEY = "sio_location_prompt_seen";
 export const LOCATION_CHANGED_EVENT = "sio:location-changed";
 
-export function getLocationPref(): QuickMarket {
+export function getLocationPref(): LocationPref {
   if (typeof window === "undefined") return QUICK_MARKETS[0];
   try {
     const raw = localStorage.getItem(KEY);
@@ -36,12 +45,32 @@ export function getLocationPref(): QuickMarket {
   return QUICK_MARKETS[0];
 }
 
-export function setLocationPref(pref: QuickMarket) {
+export function setLocationPref(pref: LocationPref) {
   try {
     localStorage.setItem(KEY, JSON.stringify(pref));
     window.dispatchEvent(new CustomEvent(LOCATION_CHANGED_EVENT, { detail: pref }));
   } catch {
     // Best-effort - a shopper in private/blocked-storage mode just doesn't
     // get their location remembered across pages, nothing else breaks.
+  }
+}
+
+// Whether the "allow location access" prompt has already been shown once on
+// this device - it should ask on a shopper's very first visit, not on
+// every single page load or return trip.
+export function hasSeenLocationPrompt(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return localStorage.getItem(PROMPT_SEEN_KEY) === "1";
+  } catch {
+    return true;
+  }
+}
+
+export function markLocationPromptSeen() {
+  try {
+    localStorage.setItem(PROMPT_SEEN_KEY, "1");
+  } catch {
+    // Best-effort - worst case the prompt reappears next visit.
   }
 }
