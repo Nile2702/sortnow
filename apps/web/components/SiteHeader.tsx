@@ -9,6 +9,7 @@ import { CATEGORY_TREE } from "../lib/catalog-constants";
 import { LogoBadge } from "./LogoBadge";
 import { getShopperSession, onShopperSessionChange, ShopperSession } from "../lib/shopper-session";
 import { isMobileAppShellPage, isProductDetailPage } from "../lib/mobile-shell";
+import { LocationPicker } from "./LocationPicker";
 
 function HeartIcon() {
   return (
@@ -242,6 +243,8 @@ export function SiteHeader() {
             Shops
           </Link>
         </nav>
+
+        <LocationPicker />
 
         <form
           ref={searchRef}

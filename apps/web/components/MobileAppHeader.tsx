@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { QUICK_MARKETS, getLocationPref, setLocationPref, LOCATION_CHANGED_EVENT, type QuickMarket, type LocationPref } from "../lib/location";
 import { isMobileAppShellPage } from "../lib/mobile-shell";
@@ -70,6 +71,82 @@ function getSpeechRecognition(): (new () => any) | undefined {
   return (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
 }
 
+// The homepage's top row (logo + location) collapses via
+// `overflow: hidden` + `max-height` as the page scrolls, so its own picker
+// dropdown would otherwise render inside that clipping box and be
+// completely invisible - toggling the button worked, but nothing ever
+// appeared to tap. Rendered through a portal into document.body instead,
+// positioned from the toggle button's own on-screen rect, so it always
+// escapes any ancestor's overflow/height clipping regardless of which of
+// the header's two picker instances (top hero row vs. the persistent
+// compact row) opened it.
+function LocationDropdown({
+  anchorRef,
+  align,
+  location,
+  onPick,
+}: {
+  anchorRef: React.RefObject<HTMLElement>;
+  align: "left" | "right";
+  location: LocationPref;
+  onPick: (m: QuickMarket) => void;
+}) {
+  const [rect, setRect] = useState<{ top: number; left?: number; right?: number } | null>(null);
+
+  useEffect(() => {
+    if (!anchorRef.current) return;
+    const r = anchorRef.current.getBoundingClientRect();
+    setRect(
+      align === "left"
+        ? { top: r.bottom + 8, left: r.left }
+        : { top: r.bottom + 8, right: window.innerWidth - r.right }
+    );
+  }, [anchorRef, align]);
+
+  if (!rect) return null;
+
+  return createPortal(
+    <div
+      className="sio-fade-in sio-glass"
+      data-location-portal=""
+      style={{
+        position: "fixed",
+        top: rect.top,
+        left: rect.left,
+        right: rect.right,
+        zIndex: 1000,
+        borderRadius: 12,
+        padding: 8,
+        minWidth: 220,
+        boxShadow: "0 12px 32px rgba(0,0,0,0.14)",
+      }}
+    >
+      {QUICK_MARKETS.map((m) => (
+        <button
+          key={m.pincode}
+          type="button"
+          onClick={() => onPick(m)}
+          style={{
+            display: "block",
+            width: "100%",
+            textAlign: "left",
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: "none",
+            background: "pincode" in location && m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
+            color: "var(--sio-ink)",
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
+          {m.label}
+        </button>
+      ))}
+    </div>,
+    document.body
+  );
+}
+
 // The app-style header (location + voice search + QR scan) shown in place
 // of the normal site header on the two pages it makes sense for - the
 // homepage and the search results list - per the seller/shopper feedback
@@ -121,7 +198,14 @@ export function MobileAppHeader() {
   useEffect(() => {
     if (!pickerOpen) return;
     function handleClickOutside(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
+      const target = e.target as Node;
+      // The dropdown itself renders via a portal into document.body (see
+      // LocationDropdown above), so it's never inside pickerRef's own DOM
+      // subtree - without this check, a mousedown on a market button would
+      // close the picker (unmounting the portal) before the button's own
+      // click handler ever got to run.
+      if (target instanceof Element && target.closest("[data-location-portal]")) return;
+      if (pickerRef.current && !pickerRef.current.contains(target)) setPickerOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -227,43 +311,7 @@ export function MobileAppHeader() {
                 <ChevronDown />
               </button>
 
-              {pickerOpen && (
-                <div
-                  className="sio-fade-in sio-glass"
-                  style={{
-                    position: "absolute",
-                    top: "calc(100% + 8px)",
-                    right: 0,
-                    zIndex: 25,
-                    borderRadius: 12,
-                    padding: 8,
-                    minWidth: 220,
-                    boxShadow: "0 12px 32px rgba(0,0,0,0.14)",
-                  }}
-                >
-                  {QUICK_MARKETS.map((m) => (
-                    <button
-                      key={m.pincode}
-                      type="button"
-                      onClick={() => pickMarket(m)}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        textAlign: "left",
-                        padding: "8px 10px",
-                        borderRadius: 8,
-                        border: "none",
-                        background: "pincode" in location && m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
-                        color: "var(--sio-ink)",
-                        fontSize: 13,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {pickerOpen && <LocationDropdown anchorRef={pickerRef} align="right" location={location} onPick={pickMarket} />}
             </div>
           </div>
         )}
@@ -324,43 +372,7 @@ export function MobileAppHeader() {
               <ChevronDown />
             </button>
 
-            {pickerOpen && (
-              <div
-                className="sio-fade-in sio-glass"
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 8px)",
-                  left: 0,
-                  zIndex: 25,
-                  borderRadius: 12,
-                  padding: 8,
-                  minWidth: 220,
-                  boxShadow: "0 12px 32px rgba(0,0,0,0.14)",
-                }}
-              >
-                {QUICK_MARKETS.map((m) => (
-                  <button
-                    key={m.pincode}
-                    type="button"
-                    onClick={() => pickMarket(m)}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "8px 10px",
-                      borderRadius: 8,
-                      border: "none",
-                      background: "pincode" in location && m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
-                      color: "var(--sio-ink)",
-                      fontSize: 13,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            {pickerOpen && <LocationDropdown anchorRef={pickerRef} align="left" location={location} onPick={pickMarket} />}
           </div>
 
           <button
