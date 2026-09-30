@@ -71,7 +71,20 @@ function CategoryPageInner() {
 
       <section
         className="sio-card"
-        style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", background: "#fff", padding: 16, borderRadius: 16, border: "1px solid #f1f5f9", marginBottom: 24 }}
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 12,
+          alignItems: "center",
+          background: "#fff",
+          padding: 16,
+          borderRadius: 16,
+          border: "1px solid #f1f5f9",
+          marginBottom: 24,
+          position: "sticky",
+          top: 88,
+          zIndex: 15,
+        }}
       >
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <button onClick={() => setQuery("subCategory", "")} style={pillStyle(!subCategory)}>

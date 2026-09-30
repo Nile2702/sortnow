@@ -107,6 +107,10 @@ function SearchPageInner() {
           marginTop: 14,
           marginBottom: 24,
           flexWrap: "wrap",
+          position: "sticky",
+          top: 88,
+          zIndex: 15,
+          background: "#fff",
         }}
       >
         {SORT_TABS.map((tab) => (

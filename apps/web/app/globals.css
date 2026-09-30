@@ -29,8 +29,18 @@
 
 html,
 body {
-  overflow-x: hidden;
   max-width: 100%;
+}
+
+/* Only html, not body, clips horizontal overflow - setting overflow-x on
+   both makes body its own scroll container distinct from the viewport
+   (html keeps scrolling normally, but body's own scrollport never moves),
+   which silently breaks position: sticky for every element inside body -
+   the sticky search-results sidebar and header already relied on this
+   working. html's own overflow-x: hidden still fully prevents the
+   horizontal-scroll/off-screen-icons bug this was added for. */
+html {
+  overflow-x: hidden;
 }
 
 html {
@@ -216,6 +226,25 @@ html {
   .sio-product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px !important;
+  }
+}
+
+/* Between mobile and desktop, an auto-fill/minmax grid lands on whatever
+   column count happens to fit (5, 6, 7...) depending on the exact viewport
+   width - pinned to 3 instead, so a tablet-width screen looks intentional
+   rather than accidental. */
+@media (min-width: 641px) and (max-width: 960px) {
+  .sio-product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Same reasoning above tablet width: fixed at 4 columns so card size (and
+   the page's overall density) stays consistent across desktop monitors
+   instead of drifting wider the more screen space is available. */
+@media (min-width: 961px) {
+  .sio-product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 }
 

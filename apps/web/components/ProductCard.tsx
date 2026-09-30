@@ -13,6 +13,7 @@ export interface ProductCardData {
   storeSlug: string;
   storeName?: string;
   stockRemaining?: number;
+  distanceKm?: number | null;
 }
 
 // The one shared product card for every shopper-facing grid (homepage,
@@ -139,6 +140,24 @@ export function ProductCard({
               <path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2 4.5 5.6 4c2-.3 3.8.7 4.9 2.4C11.6 4.7 13.4 3.7 15.4 4c3.6.5 5.3 4.1 3.6 7.7C19.5 16.4 12 21 12 21z" />
             </svg>
           </button>
+
+          {product.distanceKm != null && (
+            <span
+              style={{
+                position: "absolute",
+                bottom: 8,
+                left: 8,
+                background: "rgba(255,255,255,0.92)",
+                color: "#1e3a8a",
+                fontSize: 10.5,
+                fontWeight: 700,
+                padding: "3px 8px",
+                borderRadius: 999,
+              }}
+            >
+              📍 {product.distanceKm} km
+            </span>
+          )}
         </div>
 
         <div style={{ padding: "10px 12px 12px" }}>
