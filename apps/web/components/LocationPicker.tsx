@@ -89,7 +89,10 @@ export function LocationPicker() {
         setLocating(false);
         setError(err.code === 1 ? "Location access was blocked - check your browser's site settings." : "Couldn't get your location.");
       },
-      { timeout: 8000 }
+      // See LocationGate's own handler for why: 8s was too tight for a
+      // real device to get a fix, and maximumAge lets a recently-cached
+      // position answer instantly instead of forcing a fresh one.
+      { timeout: 20000, maximumAge: 300000 }
     );
   }
 

@@ -76,7 +76,14 @@ export function LocationGate() {
           setError("Couldn't determine your location (no GPS fix). Enter a PIN code below.");
         }
       },
-      { timeout: 8000 }
+      // 8s was too tight for a real phone to get a fix on the first ask -
+      // indoors, or on a weak signal, acquiring a position (even a coarse,
+      // network-based one) can genuinely take longer than that, which was
+      // surfacing as a false "took too long" error on devices that had
+      // actually granted permission fine. maximumAge accepts a position
+      // the OS already has cached from the last few minutes instead of
+      // forcing a fresh fix every time.
+      { timeout: 20000, maximumAge: 300000 }
     );
   }
 
