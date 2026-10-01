@@ -2277,18 +2277,80 @@ export function getRatingSummary(productId: string) {
   return { average, count, breakdown };
 }
 
+// ---------------------------------------------------------------------
+// Store reviews - a shopper rating the shop itself (service, authenticity,
+// how the pickup/reservation experience went), not any one product. Kept
+// as its own list rather than folded into `reviews` above since a shop
+// review has no productId to hang off of.
+// ---------------------------------------------------------------------
+export interface StoreReview {
+  id: string;
+  storeId: string;
+  authorName: string;
+  rating: number; // 1-5
+  comment: string;
+  createdAt: string;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioStoreReviews: StoreReview[] | undefined;
+}
+
+const SEED_STORE_REVIEWS: StoreReview[] = [
+  {
+    id: "storerev-1",
+    storeId: "store-urban-vogue",
+    authorName: "Priya S.",
+    rating: 5,
+    comment: "Reserved online and the staff had everything ready when I walked in. Easy, no-pressure experience.",
+    createdAt: "2026-08-16T12:00:00.000Z",
+  },
+  {
+    id: "storerev-2",
+    storeId: "store-urban-vogue",
+    authorName: "Rohan M.",
+    rating: 4,
+    comment: "Good selection and friendly staff. Store gets crowded on weekends so go on a weekday if you can.",
+    createdAt: "2026-08-25T16:30:00.000Z",
+  },
+];
+
+export const storeReviews: StoreReview[] = globalThis.__sioStoreReviews ?? (globalThis.__sioStoreReviews = loadPersisted("storeReviews", SEED_STORE_REVIEWS));
+
+export function getStoreReviews(storeId: string): StoreReview[] {
+  return storeReviews.filter((r) => r.storeId === storeId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+export function addStoreReview(storeId: string, input: { authorName: string; rating: number; comment: string }): StoreReview {
+  const review: StoreReview = {
+    id: `storerev-custom-${Date.now().toString(36)}`,
+    storeId,
+    authorName: input.authorName || "Anonymous",
+    rating: Math.min(5, Math.max(1, input.rating)),
+    comment: input.comment,
+    createdAt: new Date().toISOString(),
+  };
+  storeReviews.unshift(review);
+  persist("storeReviews", storeReviews);
+  return review;
+}
+
 // A trust signal for the store as a whole (like a shop's Google rating),
 // not just one product - important on a marketplace of many small, mostly
 // unknown-to-the-shopper sellers, where "is this shop reliable" matters as
-// much as "is this specific item good". Aggregates every review left on
-// any of the store's products rather than requiring a separate per-store
-// review flow.
-export function getStoreRatingSummary(storeId: string): { average: number; count: number } {
+// much as "is this specific item good". Blends every review left on any of
+// the store's products with direct shop reviews (service/experience,
+// rather than any one item) into a single number, since a shopper reading
+// "4.6 stars" on a store page doesn't think in terms of two separate
+// rating systems.
+export function getStoreRatingSummary(storeId: string): { average: number; count: number; breakdown: { star: number; count: number }[] } {
   const storeProductIds = new Set(getStoreProducts(storeId).map((p) => p.id));
-  const storeReviews = reviews.filter((r) => storeProductIds.has(r.productId));
-  const count = storeReviews.length;
-  const average = count === 0 ? 0 : Math.round((storeReviews.reduce((sum, r) => sum + r.rating, 0) / count) * 10) / 10;
-  return { average, count };
+  const ratings = [...reviews.filter((r) => storeProductIds.has(r.productId)), ...getStoreReviews(storeId)].map((r) => r.rating);
+  const count = ratings.length;
+  const average = count === 0 ? 0 : Math.round((ratings.reduce((sum, r) => sum + r, 0) / count) * 10) / 10;
+  const breakdown = [5, 4, 3, 2, 1].map((star) => ({ star, count: ratings.filter((r) => r === star).length }));
+  return { average, count, breakdown };
 }
 
 export function addReview(productId: string, input: { authorName: string; rating: number; title?: string; comment: string }): Review {

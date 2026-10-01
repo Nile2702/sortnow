@@ -7,6 +7,7 @@ import { ProductGrid } from "../../../components/ProductGrid";
 import { CategoryNav } from "../../../components/CategoryNav";
 import { TrackPageView } from "../../../components/TrackPageView";
 import { StoreRatingBadge } from "../../../components/StoreRatingBadge";
+import { StoreReviews } from "../../../components/StoreReviews";
 
 interface Props {
   params: { slug: string };
@@ -84,6 +85,7 @@ export default async function StorefrontPage({ params }: Props) {
             </section>
           )
         )}
+        <StoreReviews storeId={store.id} />
       </main>
     </>
   );
