@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 
+const LOW_STOCK_THRESHOLD = 5;
+
 interface Product {
   id: string;
   title: string;
   basePrice: number;
   compareAtPrice?: number;
+  costPrice?: number;
   images: { url: string }[];
   sizes: string[];
   stockRemaining?: number;
@@ -26,13 +29,52 @@ export default function SellerProductsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [search, setSearch] = useState("");
+  const [lowStockOnly, setLowStockOnly] = useState(false);
+  // Per-row draft value while a seller is typing a new stock count - kept
+  // separate from `products` so the input doesn't fight their typing before
+  // the PATCH round-trip completes, and so a value they haven't committed
+  // yet (still focused, no blur/Enter) doesn't get overwritten by a reload.
+  const [stockDrafts, setStockDrafts] = useState<Record<string, string>>({});
+  const [savingStockId, setSavingStockId] = useState<string | null>(null);
 
-  const filteredProducts = search.trim()
-    ? products.filter((p) => {
-        const q = search.trim().toLowerCase();
-        return p.title.toLowerCase().includes(q) || (p.productCode ?? "").toLowerCase().includes(q);
-      })
-    : products;
+  const lowStockCount = products.filter((p) => p.stockRemaining != null && p.stockRemaining <= LOW_STOCK_THRESHOLD).length;
+  const inventoryValue = products.reduce((sum, p) => sum + (p.costPrice ?? 0) * (p.stockRemaining ?? 0), 0);
+  const inventoryUnits = products.reduce((sum, p) => sum + (p.stockRemaining ?? 0), 0);
+
+  const filteredProducts = products
+    .filter((p) => !lowStockOnly || (p.stockRemaining != null && p.stockRemaining <= LOW_STOCK_THRESHOLD))
+    .filter((p) => {
+      if (!search.trim()) return true;
+      const q = search.trim().toLowerCase();
+      return p.title.toLowerCase().includes(q) || (p.productCode ?? "").toLowerCase().includes(q);
+    });
+
+  async function handleStockCommit(id: string, rawValue: string) {
+    const value = Number(rawValue);
+    const product = products.find((p) => p.id === id);
+    if (!product || !Number.isFinite(value) || value < 0 || value === product.stockRemaining) {
+      setStockDrafts((d) => {
+        const { [id]: _omit, ...rest } = d;
+        return rest;
+      });
+      return;
+    }
+    setSavingStockId(id);
+    const res = await fetch(`/api/v1/seller/products/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stockRemaining: Math.floor(value) }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setProducts((ps) => ps.map((p) => (p.id === id ? { ...p, stockRemaining: updated.stockRemaining } : p)));
+    }
+    setStockDrafts((d) => {
+      const { [id]: _omit, ...rest } = d;
+      return rest;
+    });
+    setSavingStockId(null);
+  }
 
   function load(storeId: string) {
     setLoading(true);
@@ -99,12 +141,46 @@ export default function SellerProductsPage() {
       </div>
 
       {products.length > 0 && (
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by title or product code…"
-          style={{ width: "100%", maxWidth: 360, padding: "9px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, marginBottom: 16 }}
-        />
+        <>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+            <div style={{ background: "#fff", border: "1px solid #f1f5f9", borderRadius: 12, padding: "10px 16px" }}>
+              <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Units in stock</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{inventoryUnits}</div>
+            </div>
+            <div style={{ background: "#fff", border: "1px solid #f1f5f9", borderRadius: 12, padding: "10px 16px" }}>
+              <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Inventory value</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>
+                {inventoryValue > 0 ? `₹${inventoryValue.toLocaleString("en-IN")}` : "—"}
+              </div>
+              {inventoryValue === 0 && <div style={{ fontSize: 10, color: "#94a3b8" }}>Set cost price on products to see this</div>}
+            </div>
+            <button
+              type="button"
+              onClick={() => setLowStockOnly((v) => !v)}
+              style={{
+                background: lowStockOnly ? "#fef2f2" : "#fff",
+                border: `1px solid ${lowStockOnly ? "#fecdd3" : "#f1f5f9"}`,
+                borderRadius: 12,
+                padding: "10px 16px",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              <div style={{ fontSize: 11, color: lowStockOnly ? "#e11d48" : "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                Low stock (≤{LOW_STOCK_THRESHOLD})
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: lowStockOnly ? "#e11d48" : "#0f172a" }}>
+                {lowStockCount} {lowStockOnly ? "· showing" : "· tap to filter"}
+              </div>
+            </button>
+          </div>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by title or product code…"
+            style={{ width: "100%", maxWidth: 360, padding: "9px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, marginBottom: 16 }}
+          />
+        </>
       )}
 
       {loading ? (
@@ -112,7 +188,9 @@ export default function SellerProductsPage() {
       ) : products.length === 0 ? (
         <p style={{ color: "#64748b" }}>No products yet. Add your first one to go live.</p>
       ) : filteredProducts.length === 0 ? (
-        <p style={{ color: "#64748b" }}>No products match "{search}".</p>
+        <p style={{ color: "#64748b" }}>
+          {lowStockOnly && !search.trim() ? "No products are low on stock right now." : `No products match "${search}".`}
+        </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filteredProducts.map((p) => (
@@ -138,10 +216,35 @@ export default function SellerProductsPage() {
                   {p.color ? ` · ${p.color}` : ""} · {p.sizes.join(", ")}
                 </div>
               </div>
-              <div style={{ textAlign: "right", minWidth: 90, flexShrink: 0 }}>
+              <div style={{ textAlign: "right", minWidth: 110, flexShrink: 0 }}>
                 <div style={{ fontWeight: 700 }}>₹{p.basePrice}</div>
                 {p.stockRemaining != null && (
-                  <div style={{ fontSize: 12, color: p.stockRemaining <= 5 ? "#e11d48" : "#64748b" }}>{p.stockRemaining} in stock</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, marginTop: 2 }}>
+                    <input
+                      type="number"
+                      min={0}
+                      value={stockDrafts[p.id] ?? p.stockRemaining}
+                      onChange={(e) => setStockDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
+                      onBlur={(e) => handleStockCommit(p.id, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                      }}
+                      disabled={savingStockId === p.id}
+                      title="Click to adjust stock"
+                      style={{
+                        width: 52,
+                        padding: "3px 6px",
+                        borderRadius: 6,
+                        border: "1px solid #e2e8f0",
+                        fontSize: 12,
+                        textAlign: "right",
+                        color: p.stockRemaining <= LOW_STOCK_THRESHOLD ? "#e11d48" : "#0f172a",
+                      }}
+                    />
+                    <span style={{ fontSize: 12, color: p.stockRemaining <= LOW_STOCK_THRESHOLD ? "#e11d48" : "#64748b" }}>
+                      {savingStockId === p.id ? "saving…" : "in stock"}
+                    </span>
+                  </div>
                 )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
