@@ -35,6 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
     paymentMode: data.paymentMode,
     customerName: data.customerName,
     customerPhone: data.customerPhone,
+    discountPercent: data.discountPercent,
   });
   if ("error" in result) {
     return NextResponse.json({ error: "invalid_input", message: result.error }, { status: 400 });

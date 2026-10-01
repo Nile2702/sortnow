@@ -43,8 +43,8 @@ function parseCsvLine(line: string): string[] {
   return result;
 }
 
-export const SAMPLE_CSV = `title,gender,subCategory,basePrice,compareAtPrice,fabric,sizes,stockRemaining,description,productCode
-Printed Rayon Kurti,women,Kurtis,749,999,Rayon,S;M;L;XL,15,Everyday printed rayon kurti with 3/4 sleeves,RK-101
-Linen Casual Shirt,men,Shirts,1199,,Linen,M;L;XL,10,Breathable linen shirt for summer,LS-207
-Kids Cotton Frock,kids,Girls,599,799,Cotton,2-3Y;4-5Y;6-7Y,12,Soft cotton frock with floral print,
+export const SAMPLE_CSV = `title,gender,subCategory,basePrice,compareAtPrice,costPrice,fabric,sizes,stockRemaining,description,productCode
+Printed Rayon Kurti,women,Kurtis,749,999,420,Rayon,S;M;L;XL,15,Everyday printed rayon kurti with 3/4 sleeves,RK-101
+Linen Casual Shirt,men,Shirts,1199,,650,Linen,M;L;XL,10,Breathable linen shirt for summer,LS-207
+Kids Cotton Frock,kids,Girls,599,799,,Cotton,2-3Y;4-5Y;6-7Y,12,Soft cotton frock with floral print,
 `;

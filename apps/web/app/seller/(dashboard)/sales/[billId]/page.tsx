@@ -16,6 +16,8 @@ interface Bill {
   taxRatePercent: number;
   items: { productId: string; title: string; size?: string; quantity: number; unitPrice: number; total: number }[];
   subtotal: number;
+  discountPercent?: number;
+  discountAmount?: number;
   cgst: number;
   sgst: number;
   grandTotal: number;
@@ -184,6 +186,12 @@ export default function SellerBillDetailPage() {
             <span>Subtotal</span>
             <span>₹{bill.subtotal.toFixed(2)}</span>
           </div>
+          {!!bill.discountAmount && (
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: "#16a34a" }}>
+              <span>Discount ({bill.discountPercent}%)</span>
+              <span>-₹{bill.discountAmount.toFixed(2)}</span>
+            </div>
+          )}
           {bill.mode === "gst" && (
             <>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: "#64748b" }}>

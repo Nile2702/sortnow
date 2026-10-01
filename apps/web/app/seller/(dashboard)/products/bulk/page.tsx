@@ -63,11 +63,12 @@ export default function BulkImportPage() {
       </div>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Bulk Upload</h1>
       <p style={{ color: "#64748b", marginBottom: 24 }}>
-        Import many SKUs at once for {store.name} via CSV — columns: <code>title, gender, subCategory, basePrice, compareAtPrice, fabric,
-        sizes, stockRemaining, description, productCode</code>. <code>basePrice</code> is your selling price; <code>compareAtPrice</code> is
-        the MRP — set it higher than <code>basePrice</code> to show a discount to shoppers, or leave it blank for no discount. Use{" "}
-        <code>;</code> to separate multiple sizes. <code>productCode</code> is optional — your own lookup code, shown to shoppers so they can
-        quote it at your shop.
+        Import many SKUs at once for {store.name} via CSV — columns: <code>title, gender, subCategory, basePrice, compareAtPrice, costPrice,
+        fabric, sizes, stockRemaining, description, productCode</code>. <code>basePrice</code> is your selling price; <code>compareAtPrice</code> is
+        the MRP — set it higher than <code>basePrice</code> to show a discount to shoppers, or leave it blank for no discount.{" "}
+        <code>costPrice</code> is optional — what you paid to source each item, never shown to shoppers, only used to calculate profit in
+        Reports. Use <code>;</code> to separate multiple sizes. <code>productCode</code> is optional — your own lookup code, shown to shoppers
+        so they can quote it at your shop.
       </p>
 
       <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 24 }}>

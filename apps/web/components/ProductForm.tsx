@@ -19,6 +19,7 @@ interface ProductFormData {
   subCategory: string;
   basePrice: number;
   compareAtPrice?: number;
+  costPrice?: number;
   sizes: string[];
   stockRemaining: number;
   imageColor: string;
@@ -111,6 +112,11 @@ export function ProductForm({
   // whatever it actually is, not silently snap to a wrong dropdown value.
   const [fabricIsOther, setFabricIsOther] = useState(() => !!initial?.fabric && !FABRIC_OPTIONS.includes(initial.fabric));
 
+  // Cost price is optional and most sellers won't want to bother with it -
+  // collapsed behind a toggle by default so the form stays uncluttered,
+  // except when editing a product that already has one set.
+  const [costPriceEnabled, setCostPriceEnabled] = useState(() => initial?.costPrice != null);
+
   // A colorway can get its own real photo instead of reusing the main
   // upload for every variant - a seller who's actually photographed each
   // color (the normal real-world case) lists them as genuinely distinct
@@ -128,6 +134,7 @@ export function ProductForm({
     subCategory: initial?.subCategory ?? defaultSizedSubCategoryFor((initial?.gender ?? "women") as Gender),
     basePrice: initial?.basePrice ?? 999,
     compareAtPrice: initial?.compareAtPrice,
+    costPrice: initial?.costPrice,
     sizes: initial?.sizes ?? ["Free Size"],
     stockRemaining: initial?.stockRemaining ?? 10,
     imageColor: initial?.imageColor ?? SWATCHES[0],
@@ -521,6 +528,7 @@ export function ProductForm({
       subCategory: form.subCategory,
       basePrice: Number(form.basePrice),
       compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : undefined,
+      costPrice: costPriceEnabled && form.costPrice !== undefined && form.costPrice !== null ? Number(form.costPrice) : undefined,
       sizes: form.sizes,
       stockRemaining: Number(form.stockRemaining),
       images: [{ url: storedMainImage }, ...storedAdditionalImages.map((url) => ({ url }))],
@@ -644,6 +652,58 @@ export function ProductForm({
           <input required type="number" min={0} value={form.stockRemaining} onChange={(e) => update("stockRemaining", Number(e.target.value) as any)} style={inputStyle()} />
         </div>
       </div>
+
+      {costPriceEnabled ? (
+        <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <label style={{ ...labelStyle(), marginBottom: 0 }}>Cost Price (₹) — optional</label>
+            <button
+              type="button"
+              onClick={() => {
+                setCostPriceEnabled(false);
+                update("costPrice", undefined);
+              }}
+              style={{ background: "none", border: "none", color: "#64748b", fontSize: 12, textDecoration: "underline", cursor: "pointer", padding: 0 }}
+            >
+              Remove
+            </button>
+          </div>
+          <input
+            type="number"
+            min={0}
+            value={form.costPrice ?? ""}
+            onChange={(e) => update("costPrice", (e.target.value ? Number(e.target.value) : undefined) as any)}
+            style={inputStyle()}
+            placeholder="What you paid to source/make this item"
+          />
+          {form.costPrice != null && form.costPrice > 0 && (
+            <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+              Profit per unit: ₹{(Number(form.basePrice) - form.costPrice).toFixed(2)} (
+              {form.basePrice > 0 ? Math.round(((Number(form.basePrice) - form.costPrice) / Number(form.basePrice)) * 100) : 0}% margin)
+            </p>
+          )}
+          <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+            Never shown to shoppers - only used to calculate profit in your Reports.
+          </p>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setCostPriceEnabled(true)}
+          style={{
+            alignSelf: "flex-start",
+            background: "none",
+            border: "1px dashed #cbd5e1",
+            borderRadius: 10,
+            padding: "9px 14px",
+            fontSize: 13,
+            color: "#475569",
+            cursor: "pointer",
+          }}
+        >
+          + Add cost price (optional, for profit tracking)
+        </button>
+      )}
 
       <div>
         <label style={labelStyle()}>Fabric</label>

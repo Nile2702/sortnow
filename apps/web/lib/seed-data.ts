@@ -553,6 +553,12 @@ export interface Product {
   productCode?: string;
   basePrice: number;
   compareAtPrice?: number;
+  // Optional - what the seller paid to source/make this item. Never shown
+  // to shoppers (it has no storefront UI), only used to compute profit in
+  // the seller's own reports. A seller who skips it just doesn't get a
+  // profit figure for that product's sales, rather than the form forcing
+  // them to guess a number.
+  costPrice?: number;
   images: { url: string }[];
   sizes: string[];
   stockRemaining?: number;
@@ -1590,6 +1596,12 @@ export interface BillItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  // Snapshotted from Product.costPrice at the moment of sale (like
+  // unitPrice above) so a later edit to a product's cost never rewrites
+  // the profit this bill already reported. Undefined whenever the product
+  // had no cost price set - that sale just isn't counted in P&L, rather
+  // than silently treating a missing cost as zero profit.
+  unitCost?: number;
 }
 
 export interface Bill {
@@ -1607,6 +1619,11 @@ export interface Bill {
   taxRatePercent: number;
   items: BillItem[];
   subtotal: number;
+  // Optional overall discount applied before tax - a quick "knock off 10%"
+  // for a regular customer, the same everyday haggling a shopkeeper already
+  // does, instead of needing to edit each line item's price individually.
+  discountPercent?: number;
+  discountAmount?: number;
   cgst: number;
   sgst: number;
   grandTotal: number;
@@ -1662,10 +1679,14 @@ export function createBill(input: {
   paymentMode: "cash" | "upi" | "card" | "other";
   customerName?: string;
   customerPhone?: string;
+  discountPercent?: number;
 }): CreateBillResult {
   const store = stores.find((s) => s.id === input.storeId);
   if (!store) return { error: "Store not found." };
   if (input.items.length === 0) return { error: "Add at least one product to the bill." };
+  if (input.discountPercent !== undefined && (input.discountPercent < 0 || input.discountPercent > 100)) {
+    return { error: "Discount must be between 0 and 100%." };
+  }
 
   // Resolve and validate every line before mutating any stock, so a bill
   // either goes through completely or not at all - never half-deducted.
@@ -1698,16 +1719,20 @@ export function createBill(input: {
     quantity,
     unitPrice: product.basePrice,
     total: product.basePrice * quantity,
+    unitCost: product.costPrice,
   }));
   const subtotal = items.reduce((sum, i) => sum + i.total, 0);
+  const discountPercent = input.discountPercent || undefined;
+  const discountAmount = discountPercent ? Math.round(subtotal * discountPercent) / 100 : 0;
+  const taxableAmount = subtotal - discountAmount;
 
   const settings = getBillingSettings(input.storeId);
   const isGst = settings.mode === "gst";
   const taxRatePercent = isGst ? settings.taxRatePercent : 0;
-  const totalTax = isGst ? Math.round(subtotal * taxRatePercent) / 100 : 0;
+  const totalTax = isGst ? Math.round(taxableAmount * taxRatePercent) / 100 : 0;
   const cgst = Math.round(totalTax * 50) / 100;
   const sgst = Math.round((totalTax - cgst) * 100) / 100;
-  const grandTotal = Math.round((subtotal + totalTax) * 100) / 100;
+  const grandTotal = Math.round((taxableAmount + totalTax) * 100) / 100;
 
   const invoiceNumber = `${isGst ? "GST" : "RCPT"}-${String(settings.nextInvoiceNumber).padStart(5, "0")}`;
   billingSettingsStore[input.storeId] = { ...settings, nextInvoiceNumber: settings.nextInvoiceNumber + 1 };
@@ -1725,6 +1750,8 @@ export function createBill(input: {
     taxRatePercent,
     items,
     subtotal,
+    discountPercent,
+    discountAmount: discountAmount || undefined,
     cgst,
     sgst,
     grandTotal,
@@ -2096,7 +2123,42 @@ export function getSalesAnalytics(storeId: string) {
   }
   const repeatCustomers = [...billsPerPhone.values()].filter((count) => count >= 2).length;
 
-  return { totalRevenue, totalBills, totalItemsSold, topProducts, last7Days, byPaymentMode, repeatCustomers };
+  // Profit & loss - only possible for line items sold while their product
+  // had a cost price set (see Product.costPrice), since cost is optional
+  // and this app has no other way to know what a seller paid for an item.
+  // Computed from each item's pre-tax total (not the GST-inclusive
+  // grandTotal) since tax collected on a shopper's behalf was never the
+  // seller's margin to begin with.
+  let costedRevenue = 0;
+  let totalCost = 0;
+  let itemsWithCostSold = 0;
+  for (const bill of storeBills) {
+    for (const item of bill.items) {
+      if (item.unitCost == null) continue;
+      costedRevenue += item.total;
+      totalCost += item.unitCost * item.quantity;
+      itemsWithCostSold += item.quantity;
+    }
+  }
+  const totalProfit = Math.round((costedRevenue - totalCost) * 100) / 100;
+  const profitMarginPercent = costedRevenue > 0 ? Math.round((totalProfit / costedRevenue) * 1000) / 10 : 0;
+
+  return {
+    totalRevenue,
+    totalBills,
+    totalItemsSold,
+    topProducts,
+    last7Days,
+    byPaymentMode,
+    repeatCustomers,
+    profitAndLoss: {
+      totalCost: Math.round(totalCost * 100) / 100,
+      totalProfit,
+      profitMarginPercent,
+      itemsWithCostSold,
+      totalItemsSold,
+    },
+  };
 }
 
 // ---------------------------------------------------------------------

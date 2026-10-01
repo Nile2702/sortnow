@@ -72,6 +72,7 @@ export default function SellerSalesPage() {
   const [paymentMode, setPaymentMode] = useState("cash");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [cartError, setCartError] = useState("");
 
@@ -161,9 +162,12 @@ export default function SellerSalesPage() {
   }
 
   const subtotal = cart.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
+  const discountPct = Number(discountPercent) || 0;
+  const discountAmount = discountPct ? Math.round(subtotal * discountPct) / 100 : 0;
+  const taxableAmount = subtotal - discountAmount;
   const isGst = settings?.mode === "gst";
-  const taxAmount = isGst ? Math.round(subtotal * (settings?.taxRatePercent ?? 0)) / 100 : 0;
-  const grandTotal = subtotal + taxAmount;
+  const taxAmount = isGst ? Math.round(taxableAmount * (settings?.taxRatePercent ?? 0)) / 100 : 0;
+  const grandTotal = taxableAmount + taxAmount;
 
   async function createBill() {
     if (!store || cart.length === 0) return;
@@ -177,6 +181,7 @@ export default function SellerSalesPage() {
         paymentMode,
         customerName: customerName.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
+        discountPercent: discountPct || undefined,
       }),
     });
     const result = await res.json().catch(() => null);
@@ -407,11 +412,31 @@ export default function SellerSalesPage() {
                 </span>
               </div>
             ))}
-            <div style={{ paddingTop: 10, fontSize: 13 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 10 }}>
+              <label style={{ fontSize: 12, color: "#64748b" }}>Discount</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+                placeholder="0"
+                style={{ width: 70, padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13 }}
+              />
+              <span style={{ fontSize: 12, color: "#64748b" }}>%</span>
+            </div>
+            <div style={{ paddingTop: 6, fontSize: 13 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>Subtotal</span>
                 <span>₹{subtotal.toFixed(2)}</span>
               </div>
+              {discountAmount > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", color: "#16a34a" }}>
+                  <span>Discount ({discountPct}%)</span>
+                  <span>-₹{discountAmount.toFixed(2)}</span>
+                </div>
+              )}
               {isGst && (
                 <div style={{ display: "flex", justifyContent: "space-between", color: "#64748b" }}>
                   <span>Tax ({settings.taxRatePercent}%)</span>

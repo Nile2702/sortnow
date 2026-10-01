@@ -19,6 +19,13 @@ interface SalesAnalytics {
   last7Days: { date: string; revenue: number; count: number }[];
   byPaymentMode: Record<string, number>;
   repeatCustomers: number;
+  profitAndLoss: {
+    totalCost: number;
+    totalProfit: number;
+    profitMarginPercent: number;
+    itemsWithCostSold: number;
+    totalItemsSold: number;
+  };
 }
 
 export default function AnalyticsPage() {
@@ -81,6 +88,37 @@ export default function AnalyticsPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "#64748b" }}>Profit &amp; Loss</div>
+            {sales.profitAndLoss.itemsWithCostSold === 0 ? (
+              <p style={{ color: "#94a3b8", fontSize: 13, background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}>
+                No profit figures yet — set a cost price on your products (optional, on the Add/Edit Product page) to see profit here.
+              </p>
+            ) : (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
+                  {[
+                    { label: "Total Cost", value: `₹${sales.profitAndLoss.totalCost.toFixed(0)}`, icon: "📦" },
+                    { label: "Total Profit", value: `₹${sales.profitAndLoss.totalProfit.toFixed(0)}`, icon: "📈" },
+                    { label: "Profit Margin", value: `${sales.profitAndLoss.profitMarginPercent}%`, icon: "🎯" },
+                  ].map((s) => (
+                    <div key={s.label} className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20 }}>
+                      <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
+                      <div style={{ fontSize: 24, fontWeight: 700 }}>{s.value}</div>
+                      <div style={{ fontSize: 13, color: "#64748b" }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                {sales.profitAndLoss.itemsWithCostSold < sales.profitAndLoss.totalItemsSold && (
+                  <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>
+                    Based on {sales.profitAndLoss.itemsWithCostSold} of {sales.profitAndLoss.totalItemsSold} items sold — the rest had no cost
+                    price set, so they're left out of this figure rather than assumed to have zero cost.
+                  </p>
+                )}
+              </>
+            )}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 32 }}>

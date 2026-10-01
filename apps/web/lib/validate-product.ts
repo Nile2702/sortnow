@@ -24,6 +24,7 @@ export interface ProductInput {
   subCategory?: unknown;
   basePrice?: unknown;
   compareAtPrice?: unknown;
+  costPrice?: unknown;
   sizes?: unknown;
   stockRemaining?: unknown;
   images?: unknown;
@@ -46,6 +47,7 @@ export interface ValidatedProductInput {
   subCategory?: string;
   basePrice?: number;
   compareAtPrice?: number;
+  costPrice?: number;
   sizes?: string[];
   stockRemaining?: number;
   images?: { url: string }[];
@@ -92,6 +94,15 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
       errors.push(`compareAtPrice must be a number greater than 0 and at most ${MAX_PRICE}`);
     } else {
       data.compareAtPrice = compareAt;
+    }
+  }
+
+  if (input.costPrice !== undefined && input.costPrice !== null && input.costPrice !== "") {
+    const cost = Number(input.costPrice);
+    if (!Number.isFinite(cost) || cost < 0 || cost > MAX_PRICE) {
+      errors.push(`costPrice must be a non-negative number and at most ${MAX_PRICE}`);
+    } else {
+      data.costPrice = cost;
     }
   }
 

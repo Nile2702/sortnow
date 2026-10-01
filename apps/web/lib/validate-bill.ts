@@ -13,6 +13,7 @@ export interface BillInput {
   paymentMode?: unknown;
   customerName?: unknown;
   customerPhone?: unknown;
+  discountPercent?: unknown;
 }
 
 export interface ValidatedBillItem {
@@ -26,6 +27,7 @@ export interface ValidatedBillInput {
   paymentMode: "cash" | "upi" | "card" | "other";
   customerName?: string;
   customerPhone?: string;
+  discountPercent?: number;
 }
 
 export function validateBillInput(input: BillInput): { errors: string[]; data: ValidatedBillInput | null } {
@@ -84,6 +86,16 @@ export function validateBillInput(input: BillInput): { errors: string[]; data: V
     }
   }
 
+  let discountPercent: number | undefined;
+  if (input.discountPercent !== undefined && input.discountPercent !== null && input.discountPercent !== "") {
+    const pct = Number(input.discountPercent);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      errors.push("discountPercent must be a number between 0 and 100");
+    } else {
+      discountPercent = pct;
+    }
+  }
+
   if (errors.length > 0) return { errors, data: null };
 
   return {
@@ -93,6 +105,7 @@ export function validateBillInput(input: BillInput): { errors: string[]; data: V
       paymentMode: input.paymentMode as "cash" | "upi" | "card" | "other",
       customerName,
       customerPhone,
+      discountPercent,
     },
   };
 }

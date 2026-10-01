@@ -29,6 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
         subCategory: row.subCategory || "Other",
         basePrice: row.basePrice !== undefined && row.basePrice !== "" ? Number(row.basePrice) : undefined,
         compareAtPrice: row.compareAtPrice ? Number(row.compareAtPrice) : undefined,
+        costPrice: row.costPrice !== undefined && row.costPrice !== "" ? Number(row.costPrice) : undefined,
         sizes: row.sizes ? String(row.sizes).split(";").map((s: string) => s.trim()).filter(Boolean) : undefined,
         stockRemaining: row.stockRemaining ? Number(row.stockRemaining) : undefined,
         productCode: row.productCode || undefined,

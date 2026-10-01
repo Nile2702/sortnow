@@ -36,6 +36,7 @@ interface Draft {
   description: string;
   basePrice: number;
   compareAtPrice: number | undefined;
+  costPrice: number | undefined;
   stockRemaining: number;
 }
 
@@ -70,6 +71,7 @@ export default function BulkPhotoUploadPage() {
   const [bulkFabric, setBulkFabric] = useState("");
   const [bulkBasePrice, setBulkBasePrice] = useState("");
   const [bulkCompareAtPrice, setBulkCompareAtPrice] = useState("");
+  const [bulkCostPrice, setBulkCostPrice] = useState("");
   const [bulkStockRemaining, setBulkStockRemaining] = useState("");
 
   // Lets a seller pick a whole mixed batch in one file dialog - some photos
@@ -119,6 +121,7 @@ export default function BulkPhotoUploadPage() {
         if (bulkFabric) patch.fabric = bulkFabric;
         if (bulkBasePrice !== "") patch.basePrice = Number(bulkBasePrice);
         if (bulkCompareAtPrice !== "") patch.compareAtPrice = Number(bulkCompareAtPrice);
+        if (bulkCostPrice !== "") patch.costPrice = Number(bulkCostPrice);
         if (bulkStockRemaining !== "") patch.stockRemaining = Number(bulkStockRemaining);
         return { ...d, ...patch };
       })
@@ -151,6 +154,7 @@ export default function BulkPhotoUploadPage() {
         description: "",
         basePrice: 999,
         compareAtPrice: undefined,
+        costPrice: undefined,
         stockRemaining: 10,
       });
     }
@@ -282,6 +286,7 @@ export default function BulkPhotoUploadPage() {
               subCategory: d.subCategory,
               basePrice: d.basePrice,
               compareAtPrice: d.compareAtPrice,
+              costPrice: d.costPrice,
               stockRemaining: d.stockRemaining,
               // No size picker in this quick-publish flow - default to every
               // size valid for the category (e.g. all shoe sizes for
@@ -388,7 +393,7 @@ export default function BulkPhotoUploadPage() {
             Set any field here and apply it to every ready draft at once — leave a field blank to leave that field untouched on each
             draft. Handy when a whole batch is the same category, price, or fabric.
           </p>
-          <div className="sio-draft-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+          <div className="sio-draft-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 12 }}>
             <select
               value={bulkGender}
               onChange={(e) => {
@@ -430,6 +435,14 @@ export default function BulkPhotoUploadPage() {
             <input
               type="number"
               min={0}
+              value={bulkCostPrice}
+              onChange={(e) => setBulkCostPrice(e.target.value)}
+              placeholder="Cost price (unchanged)"
+              style={inputStyle()}
+            />
+            <input
+              type="number"
+              min={0}
               value={bulkStockRemaining}
               onChange={(e) => setBulkStockRemaining(e.target.value)}
               placeholder="Stock (unchanged)"
@@ -439,20 +452,20 @@ export default function BulkPhotoUploadPage() {
           <button
             type="button"
             onClick={handleApplyToAll}
-            disabled={!bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkStockRemaining === ""}
+            disabled={!bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkCostPrice === "" && bulkStockRemaining === ""}
             style={{
               padding: "10px 20px",
               borderRadius: 999,
               border: "none",
               background:
-                !bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkStockRemaining === ""
+                !bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkCostPrice === "" && bulkStockRemaining === ""
                   ? "#94a3b8"
                   : "#0f172a",
               color: "#fff",
               fontWeight: 600,
               fontSize: 13,
               cursor:
-                !bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkStockRemaining === ""
+                !bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkCostPrice === "" && bulkStockRemaining === ""
                   ? "default"
                   : "pointer",
             }}
@@ -626,6 +639,14 @@ export default function BulkPhotoUploadPage() {
                       value={d.compareAtPrice ?? ""}
                       onChange={(e) => updateDraft(d.localId, { compareAtPrice: e.target.value ? Number(e.target.value) : undefined })}
                       placeholder="MRP (optional)"
+                      style={inputStyle()}
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      value={d.costPrice ?? ""}
+                      onChange={(e) => updateDraft(d.localId, { costPrice: e.target.value ? Number(e.target.value) : undefined })}
+                      placeholder="Cost price (optional)"
                       style={inputStyle()}
                     />
                     <input
