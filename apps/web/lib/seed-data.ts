@@ -1073,6 +1073,7 @@ export function discoverStores(opts: { pincode?: string; lat?: number; lng?: num
     .map((s) => ({
       ...s,
       distanceKm: origin ? Math.round(haversineKm(origin.lat, origin.lng, s.latitude, s.longitude) * 10) / 10 : null,
+      rating: getStoreRatingSummary(s.id),
     }))
     .filter((s) => !origin || s.distanceKm === null || s.distanceKm <= radiusKm)
     .sort((a, b) => {
@@ -1088,7 +1089,11 @@ export function discoverStores(opts: { pincode?: string; lat?: number; lng?: num
 export function getAllShops() {
   return stores
     .filter((s) => s.status === "active")
-    .map((s) => ({ ...s, productCount: products.filter((p) => p.storeId === s.id).length }))
+    .map((s) => ({
+      ...s,
+      productCount: products.filter((p) => p.storeId === s.id).length,
+      rating: getStoreRatingSummary(s.id),
+    }))
     .sort((a, b) => Number(isBoostActive(b.boostedUntil)) - Number(isBoostActive(a.boostedUntil)));
 }
 

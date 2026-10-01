@@ -9,6 +9,7 @@ import { QUICK_MARKETS, setLocationPref, resolveAreaLabel } from "../lib/locatio
 import { HeroSlider } from "../components/HeroSlider";
 import { CategoryTiles } from "../components/CategoryTiles";
 import { ProductCard } from "../components/ProductCard";
+import { StoreRatingBadge } from "../components/StoreRatingBadge";
 
 interface DiscoveredStore {
   id: string;
@@ -18,6 +19,7 @@ interface DiscoveredStore {
   city: string;
   localMarket: string;
   distanceKm: number | null;
+  rating: { average: number; count: number };
   liveSale?: { headline: string; discountLabel: string; endsAt: string } | null;
   boostedUntil?: string | null;
 }
@@ -474,6 +476,11 @@ function DiscoverPageInner() {
                   {s.localMarket}, {s.city}
                 </div>
                 {s.distanceKm != null && <div style={{ fontSize: 12, marginTop: 4, color: "#2563eb", fontWeight: 600 }}>{s.distanceKm} km away</div>}
+                {s.rating.count > 0 && (
+                  <div style={{ marginTop: 6 }}>
+                    <StoreRatingBadge average={s.rating.average} count={s.rating.count} />
+                  </div>
+                )}
                 {isSaleActive(s.liveSale) && (
                   <div style={{ fontSize: 12, color: "#dc2626", marginTop: 4, fontWeight: 600 }}>{s.liveSale!.discountLabel}</div>
                 )}
