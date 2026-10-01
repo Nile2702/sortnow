@@ -76,14 +76,14 @@ export function LocationGate() {
           setError("Couldn't determine your location (no GPS fix). Enter a PIN code below.");
         }
       },
-      // 8s was too tight for a real phone to get a fix on the first ask -
-      // indoors, or on a weak signal, acquiring a position (even a coarse,
-      // network-based one) can genuinely take longer than that, which was
-      // surfacing as a false "took too long" error on devices that had
-      // actually granted permission fine. maximumAge accepts a position
-      // the OS already has cached from the last few minutes instead of
-      // forcing a fresh fix every time.
-      { timeout: 20000, maximumAge: 300000 }
+      // Without enableHighAccuracy, the browser defaults to coarse
+      // WiFi/cell-tower triangulation instead of GPS - fast, but easily
+      // off by 1-3km, which was exactly the "2km away" reports. True GPS
+      // takes longer to get a fix (hence the 20s timeout, up from 8s),
+      // which is why this wasn't on from the start. maximumAge accepts a
+      // position the OS already has cached from the last few minutes
+      // instead of forcing a fresh fix every time.
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 300000 }
     );
   }
 
