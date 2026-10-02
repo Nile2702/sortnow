@@ -60,6 +60,20 @@ function inputStyle(): React.CSSProperties {
   return { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 };
 }
 
+// `fetch()` itself throws a bare "Failed to fetch" TypeError whenever the
+// request never reaches a server at all (dropped connection, offline,
+// DNS hiccup) - as opposed to the server responding with a real error
+// message. Surfacing that raw string verbatim reads as a broken feature
+// ("what does that even mean?"); this names what's actually going on
+// instead, so it's at least clear a retry has a real chance of working.
+function friendlyErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof TypeError && /fetch/i.test(err.message)) {
+    return "Network error - couldn't reach the server. Check your connection and try again.";
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
+
 export default function BulkPhotoUploadPage() {
   const router = useRouter();
   const { store, loading: storeLoading } = useSellerStore();
@@ -299,7 +313,7 @@ export default function BulkPhotoUploadPage() {
         updateDraft(draft.localId, { image: aligned, bgRemoved: true, status: "ready" });
       } catch (err) {
         console.error(err);
-        updateDraft(draft.localId, { status: "error", error: "Couldn't remove the background for this photo." });
+        updateDraft(draft.localId, { status: "error", error: friendlyErrorMessage(err, "Couldn't remove the background for this photo.") });
       }
     }
 
@@ -334,8 +348,8 @@ export default function BulkPhotoUploadPage() {
           gender: result.gender ?? "women",
           subCategory: result.subCategory ?? defaultSizedSubCategoryFor((result.gender ?? "women") as Gender),
         });
-      } catch (err: any) {
-        updateDraft(draft.localId, { status: "error", error: err?.message ?? "Couldn't process this photo." });
+      } catch (err) {
+        updateDraft(draft.localId, { status: "error", error: friendlyErrorMessage(err, "Couldn't process this photo.") });
       }
     }
 
@@ -394,8 +408,8 @@ export default function BulkPhotoUploadPage() {
           }
           updateDraft(d.localId, { status: "published" });
           return true;
-        } catch (err: any) {
-          updateDraft(d.localId, { status: "error", error: err?.message || "Couldn't publish this product." });
+        } catch (err) {
+          updateDraft(d.localId, { status: "error", error: friendlyErrorMessage(err, "Couldn't publish this product.") });
           return false;
         }
       })
