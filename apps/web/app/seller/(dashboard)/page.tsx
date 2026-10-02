@@ -74,11 +74,16 @@ export default function SellerDashboard() {
 
   const lowStock = products.filter((p) => (p.stockRemaining ?? 0) <= 5).length;
 
-  const stats = [
-    { label: "Total Products", value: products.length, icon: "📦" },
-    { label: "Pending Reservations", value: pendingReservations, icon: "🕐" },
-    { label: "Low Stock Alerts", value: lowStock, icon: "⚠️" },
-    { label: "Plan", value: planName ?? "…", icon: "⭐" },
+  // Styled identically to the "Quick actions" cards below (same sio-card
+  // hover lift), so a stat that isn't actually clickable reads as a bug
+  // ("why doesn't this do anything") rather than plain information - every
+  // stat with a real destination gets one, except Store Status, which has
+  // nowhere to go.
+  const stats: { label: string; value: string | number; icon: string; href?: string }[] = [
+    { label: "Total Products", value: products.length, icon: "📦", href: "/seller/products" },
+    { label: "Pending Reservations", value: pendingReservations, icon: "🕐", href: "/seller/reservations" },
+    { label: "Low Stock Alerts", value: lowStock, icon: "⚠️", href: "/seller/products?lowStock=1" },
+    { label: "Plan", value: planName ?? "…", icon: "⭐", href: "/seller/billing" },
     { label: "Store Status", value: store.status, icon: "🟢" },
   ];
 
@@ -90,13 +95,25 @@ export default function SellerDashboard() {
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
-        {stats.map((s) => (
-          <div key={s.label} className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20 }}>
-            <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, textTransform: "capitalize" }}>{s.value}</div>
-            <div style={{ fontSize: 13, color: "#64748b" }}>{s.label}</div>
-          </div>
-        ))}
+        {stats.map((s) => {
+          const cardStyle: React.CSSProperties = { background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, display: "block", textDecoration: "none", color: "inherit" };
+          const content = (
+            <>
+              <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, textTransform: "capitalize" }}>{s.value}</div>
+              <div style={{ fontSize: 13, color: "#64748b" }}>{s.label}</div>
+            </>
+          );
+          return s.href ? (
+            <Link key={s.label} href={s.href} className="sio-card" style={cardStyle}>
+              {content}
+            </Link>
+          ) : (
+            <div key={s.label} style={cardStyle}>
+              {content}
+            </div>
+          );
+        })}
       </div>
 
       <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, marginBottom: 32 }}>

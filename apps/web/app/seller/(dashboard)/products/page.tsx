@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -21,7 +22,8 @@ interface Product {
   productCode?: string;
 }
 
-export default function SellerProductsPage() {
+function SellerProductsPageInner() {
+  const searchParams = useSearchParams();
   const { store, loading: storeLoading } = useSellerStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +31,10 @@ export default function SellerProductsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [search, setSearch] = useState("");
-  const [lowStockOnly, setLowStockOnly] = useState(false);
+  // Lets the dashboard's "Low Stock Alerts" tile deep-link straight into
+  // this filter already applied, instead of landing here and making the
+  // seller find and click it themselves.
+  const [lowStockOnly, setLowStockOnly] = useState(() => searchParams.get("lowStock") === "1");
   // Per-row draft value while a seller is typing a new stock count - kept
   // separate from `products` so the input doesn't fight their typing before
   // the PATCH round-trip completes, and so a value they haven't committed
@@ -305,5 +310,13 @@ export default function SellerProductsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function SellerProductsPage() {
+  return (
+    <Suspense fallback={<main style={{ maxWidth: 1440, margin: "0 auto", padding: 40 }}>Loading…</main>}>
+      <SellerProductsPageInner />
+    </Suspense>
   );
 }
