@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
 import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
-import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, cutoutFromMask } from "../../../../../lib/image-enhance";
+import { autoAlignAndZoom, cutoutFromMask } from "../../../../../lib/image-enhance";
 import { showToast } from "../../../../../lib/toast";
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
@@ -274,9 +274,11 @@ export default function BulkPhotoUploadPage() {
       setProgressLabel(`Removing background ${i + 1} of ${queue.length}: ${draft.fileName}`);
       updateDraft(draft.localId, { status: "removing-bg", error: "" });
       try {
-        const litInput = await stabilizeLighting(draft.originalImage).catch(() => draft.originalImage);
-        const enhancedInput = await autoEnhanceQuality(litInput).catch(() => litInput);
-        const smoothedInput = await reduceWrinkles(enhancedInput).catch(() => enhancedInput);
+        // Just the cutout - no lighting/quality/wrinkle correction bundled
+        // in. Those used to run here unconditionally, which meant this
+        // button never did only what its name said; a seller who wanted a
+        // plain background removal had no way to get one without the photo
+        // also being auto-corrected.
         const { removeBackground } = (await import(
           /* webpackIgnore: true */ "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
         )) as {
@@ -285,14 +287,14 @@ export default function BulkPhotoUploadPage() {
         // isnet_fp16, not the smaller isnet_quint8 - see ProductForm.tsx's
         // handleRemoveBackground for why (quint8 is documented as
         // occasionally artifact-prone, and reproduced one on a real photo).
-        const maskBlob = await removeBackground(smoothedInput, { model: "isnet_fp16", output: { format: "image/png", type: "mask" } });
+        const maskBlob = await removeBackground(draft.originalImage, { model: "isnet_fp16", output: { format: "image/png", type: "mask" } });
         const maskUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = reject;
           reader.readAsDataURL(maskBlob);
         });
-        const cutoutUrl = await cutoutFromMask(smoothedInput, maskUrl);
+        const cutoutUrl = await cutoutFromMask(draft.originalImage, maskUrl);
         const aligned = await autoAlignAndZoom(cutoutUrl).catch(() => cutoutUrl);
         updateDraft(draft.localId, { image: aligned, bgRemoved: true, status: "ready" });
       } catch (err) {
@@ -674,7 +676,7 @@ export default function BulkPhotoUploadPage() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    🪄 Enhanced
+                    ✂️ Background removed
                   </span>
                 )}
               </div>
