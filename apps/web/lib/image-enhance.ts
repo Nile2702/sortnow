@@ -160,6 +160,73 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
       closed = patched;
     }
 
+    // A stray fragment of misjudged background can stay attached to the
+    // main subject by a sliver just 1-2px wide (a thread-thin bridge) rather
+    // than sitting fully disconnected - the keep-largest-component pass
+    // below only removes pieces that are already disconnected, so a
+    // thread-bridged fragment survives it untouched. Eroding by a small
+    // radius breaks any connection that thin (while still-connected regions
+    // wider than the radius survive), then dilating by the same radius
+    // restores the main subject's own shape - the fragment, now genuinely
+    // disconnected, gets caught by the component filter right after.
+    closed = boxMorph(boxMorph(closed, width, height, 2, false), width, height, 2, true);
+
+    // The model's confidence map can also misjudge small, disconnected
+    // patches of plain background as foreground - scattered "island" specks
+    // that survive the cutout well away from the actual garment, the mirror
+    // image of the enclosed-background-pocket problem the block above
+    // fixes. A real product photo has exactly one foreground subject (the
+    // garment, hand, or body wearing it), so keeping only the largest
+    // connected foreground component and dropping every smaller, disjoint
+    // one removes this noise without a size threshold that could just as
+    // easily erase a real thin part (a strap, a finger) still attached to
+    // the main garment.
+    {
+      const componentId = new Int32Array(pixelCount).fill(-1);
+      const componentSizes: number[] = [];
+      const stack: number[] = [];
+      for (let start = 0; start < pixelCount; start++) {
+        if (closed[start] !== 1 || componentId[start] !== -1) continue;
+        const id = componentSizes.length;
+        let size = 0;
+        stack.length = 0;
+        stack.push(start);
+        componentId[start] = id;
+        while (stack.length) {
+          const i = stack.pop() as number;
+          size++;
+          const x = i % width;
+          const y = (i / width) | 0;
+          if (x > 0 && closed[i - 1] === 1 && componentId[i - 1] === -1) {
+            componentId[i - 1] = id;
+            stack.push(i - 1);
+          }
+          if (x < width - 1 && closed[i + 1] === 1 && componentId[i + 1] === -1) {
+            componentId[i + 1] = id;
+            stack.push(i + 1);
+          }
+          if (y > 0 && closed[i - width] === 1 && componentId[i - width] === -1) {
+            componentId[i - width] = id;
+            stack.push(i - width);
+          }
+          if (y < height - 1 && closed[i + width] === 1 && componentId[i + width] === -1) {
+            componentId[i + width] = id;
+            stack.push(i + width);
+          }
+        }
+        componentSizes.push(size);
+      }
+      if (componentSizes.length > 1) {
+        let largestId = 0;
+        for (let i = 1; i < componentSizes.length; i++) {
+          if (componentSizes[i] > componentSizes[largestId]) largestId = i;
+        }
+        for (let i = 0; i < pixelCount; i++) {
+          if (closed[i] === 1 && componentId[i] !== largestId) closed[i] = 0;
+        }
+      }
+    }
+
     // Two follow-up fixes (interior-erosion forcing, then a larger fp16
     // model) each closed off one specific way the model's confidence could
     // wobble mid-garment and leave a patch at partial alpha - showing the
@@ -195,9 +262,56 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
       outData[o + 2] = originalData[o + 2];
       outData[o + 3] = closed[i] === 1 ? 255 : 0;
     }
+    // A fully-transparent pixel keeps the real photo's own color at that
+    // spot (whatever the backdrop looked like there) - see the note at the
+    // top of this function. That's invisible on its own, but every
+    // downstream step that resizes this cutout (autoAlignAndZoom's final
+    // drawImage, a background-preset composite) uses smoothing that blends
+    // a sliver of each invisible pixel's real color into its visible
+    // neighbors. Most edges are simple enough that sliver is imperceptible;
+    // a convoluted one (overlapping fingers, folded fabric, where visible
+    // and invisible pixels interleave tightly) blends in enough of those
+    // unrelated backdrop colors to show up as visible speckle right there.
+    // Extending each visible pixel's color a few pixels into the invisible
+    // region first means any such blending mixes similar colors instead of
+    // unrelated ones.
+    bleedEdgeColor(outData, closed, width, height, 6);
     outCtx.putImageData(outImageData, 0, 0);
     return outCanvas.toDataURL("image/png");
   });
+}
+
+// Multi-pass flood fill from the opaque region outward: each pass, every
+// not-yet-colored pixel adjacent to an already-colored one (opaque, or
+// colored by an earlier pass) copies that neighbor's RGB. `steps` passes
+// reach `steps` pixels past the opaque boundary - more than enough to
+// absorb the 1-2px of smoothing a resize blends across an edge, without
+// the cost of flood-filling the entire (possibly much larger) transparent
+// region, most of which no resize ever touches. Never touches alpha -
+// only gives transparent pixels a less-arbitrary color to blend from.
+function bleedEdgeColor(data: Uint8ClampedArray, opaque: Uint8Array, width: number, height: number, steps: number) {
+  let frontier = opaque;
+  for (let s = 0; s < steps; s++) {
+    const next = frontier.slice();
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = y * width + x;
+        if (frontier[i]) continue;
+        let ni = -1;
+        if (x > 0 && frontier[i - 1]) ni = i - 1;
+        else if (x < width - 1 && frontier[i + 1]) ni = i + 1;
+        else if (y > 0 && frontier[i - width]) ni = i - width;
+        else if (y < height - 1 && frontier[i + width]) ni = i + width;
+        if (ni !== -1) {
+          data[i * 4] = data[ni * 4];
+          data[i * 4 + 1] = data[ni * 4 + 1];
+          data[i * 4 + 2] = data[ni * 4 + 2];
+          next[i] = 1;
+        }
+      }
+    }
+    frontier = next;
+  }
 }
 
 function loadImage(dataUrl: string): Promise<HTMLImageElement> {
