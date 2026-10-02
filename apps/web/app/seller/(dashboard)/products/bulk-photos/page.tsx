@@ -348,7 +348,14 @@ export default function BulkPhotoUploadPage() {
     setPublishing(true);
     const toPublish = drafts.filter((d) => d.status === "ready");
 
-    await Promise.all(
+    // Tracks what actually happened to each draft, rather than assuming
+    // every attempt succeeded - this used to always report every attempted
+    // draft as published and navigate away regardless of the real outcome,
+    // so a failed publish (e.g. a required field left blank) looked
+    // identical to a successful one: same success toast, same redirect,
+    // with the actual error visible only on the page the seller had
+    // already been whisked away from.
+    const results = await Promise.all(
       toPublish.map(async (d) => {
         updateDraft(d.localId, { status: "publishing" });
         try {
@@ -375,19 +382,45 @@ export default function BulkPhotoUploadPage() {
               images: [{ url: d.image }, ...d.additionalImages.map((url) => ({ url }))],
             }),
           });
-          if (!res.ok) throw new Error("Publish failed");
+          if (!res.ok) {
+            const body = await res.json().catch(() => null);
+            // The actual reason (e.g. "description is required", a content-
+            // moderation block) was being discarded in favor of this same
+            // generic message no matter what went wrong - a seller had no
+            // way to tell "you forgot to fill something in" apart from
+            // "the server is broken right now".
+            const message = Array.isArray(body?.errors) ? body.errors.join("; ") : body?.message;
+            throw new Error(message || "Publish failed");
+          }
           updateDraft(d.localId, { status: "published" });
-        } catch {
-          updateDraft(d.localId, { status: "error", error: "Couldn't publish this product." });
+          return true;
+        } catch (err: any) {
+          updateDraft(d.localId, { status: "error", error: err?.message || "Couldn't publish this product." });
+          return false;
         }
       })
     );
 
     setPublishing(false);
-    const publishedCount = toPublish.length;
-    showToast(`Published ${publishedCount} product${publishedCount === 1 ? "" : "s"}.`, "success");
-    router.push("/seller/products");
-    router.refresh();
+    const publishedCount = results.filter(Boolean).length;
+    const failedCount = results.length - publishedCount;
+
+    if (publishedCount > 0) {
+      showToast(`Published ${publishedCount} product${publishedCount === 1 ? "" : "s"}.`, "success");
+    }
+    if (failedCount > 0) {
+      showToast(
+        `${failedCount} product${failedCount === 1 ? "" : "s"} couldn't be published - see the error under each one below.`,
+        "default"
+      );
+    }
+    // Only leaves this page once everything that was attempted actually
+    // went through - a failure needs to stay visible and fixable here, not
+    // scroll out of view on a page the seller no longer has a reason to be on.
+    if (failedCount === 0 && publishedCount > 0) {
+      router.push("/seller/products");
+      router.refresh();
+    }
   }
 
   if (storeLoading || !store) {
@@ -711,6 +744,12 @@ export default function BulkPhotoUploadPage() {
                   </button>
                 </div>
 
+                {d.status === "ready" && (!d.description.trim() || !d.fabric.trim()) && (
+                  <p style={{ fontSize: 12, color: "#b45309", marginBottom: 8 }}>
+                    ⚠️ Won&rsquo;t publish yet - still needs {[!d.description.trim() && "a description", !d.fabric.trim() && "a fabric"].filter(Boolean).join(" and ")}.
+                    Run Auto-fill Details or fill it in below.
+                  </p>
+                )}
                 {d.status === "queued" ? (
                   <p style={{ fontSize: 13, color: "#94a3b8" }}>{d.fileName} — waiting to be processed.</p>
                 ) : d.status === "removing-bg" ? (
