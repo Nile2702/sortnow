@@ -14,6 +14,7 @@ interface ProductFormData {
   description: string;
   fabric: string;
   color?: string;
+  brand?: string;
   productCode?: string;
   gender: string;
   subCategory: string;
@@ -124,6 +125,7 @@ export function ProductForm({
     title: initial?.title ?? "",
     description: initial?.description ?? "",
     fabric: initial?.fabric ?? "",
+    brand: initial?.brand ?? "",
     productCode: initial?.productCode ?? "",
     gender: initial?.gender ?? "women",
     subCategory: initial?.subCategory ?? defaultSizedSubCategoryFor((initial?.gender ?? "women") as Gender),
@@ -181,6 +183,26 @@ export function ProductForm({
     fetch(`/api/v1/seller/stores/${storeId}/photo-credits`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setCredits(d?.balance ?? null));
+  }, [storeId]);
+
+  // Quick-pick chips for Brand, below - a multi-brand/reseller store tends
+  // to reuse the same handful of labels across many products, so offering
+  // the ones already used on this store's own catalog beats retyping the
+  // same name every time. Purely a convenience; the field stays free text
+  // either way, so a brand that's never been used yet just gets typed once.
+  const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
+  useEffect(() => {
+    fetch(`/api/v1/seller/stores/${storeId}/products`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((products: { brand?: string }[]) => {
+        const seen = new Set<string>();
+        for (const p of products) {
+          const b = p.brand?.trim();
+          if (b) seen.add(b);
+        }
+        setBrandSuggestions([...seen].sort((a, b) => a.localeCompare(b)));
+      })
+      .catch(() => {});
   }, [storeId]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -472,6 +494,7 @@ export function ProductForm({
     const basePayload = {
       description: form.description,
       fabric: form.fabric,
+      brand: form.brand?.trim() || undefined,
       productCode: form.productCode?.trim() || undefined,
       gender: form.gender,
       subCategory: form.subCategory,
@@ -669,6 +692,38 @@ export function ProductForm({
         <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
           Shown to shoppers online so they can quote it when they reach your shop — useful for fast lookup at the counter.
         </p>
+      </div>
+
+      <div>
+        <label style={labelStyle()}>Brand (optional)</label>
+        <input
+          value={form.brand ?? ""}
+          onChange={(e) => update("brand", e.target.value)}
+          style={inputStyle()}
+          placeholder="e.g. Biba, or your own house label"
+        />
+        {brandSuggestions.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+            {brandSuggestions.map((b) => (
+              <button
+                type="button"
+                key={b}
+                onClick={() => update("brand", b)}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  border: form.brand === b ? "1px solid #0f172a" : "1px solid #e2e8f0",
+                  background: form.brand === b ? "#0f172a" : "#fff",
+                  color: form.brand === b ? "#fff" : "#334155",
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                {b}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>

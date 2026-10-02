@@ -11,6 +11,7 @@ interface Product {
   description?: string;
   fabric?: string;
   color?: string;
+  brand?: string;
   gender: string;
   subCategory: string;
   basePrice: number;
@@ -50,6 +51,7 @@ export default function EditProductPage() {
           description: product.description ?? "",
           fabric: product.fabric ?? "",
           color: product.color,
+          brand: product.brand,
           gender: product.gender,
           subCategory: product.subCategory,
           basePrice: product.basePrice,

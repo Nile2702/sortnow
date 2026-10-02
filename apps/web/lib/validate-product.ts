@@ -18,6 +18,7 @@ export interface ProductInput {
   description?: unknown;
   fabric?: unknown;
   color?: unknown;
+  brand?: unknown;
   colorGroupId?: unknown;
   productCode?: unknown;
   gender?: unknown;
@@ -35,6 +36,11 @@ export interface ValidatedProductInput {
   description?: string;
   fabric?: string;
   color?: string;
+  // Optional, seller-assigned - a multi-brand store (e.g. a reseller
+  // boutique) can tag which label an item is, so a shopper can filter or
+  // just know what they're buying. Skipped entirely by a single-brand
+  // store, same as color/productCode.
+  brand?: string;
   // Shared across every colorway created together from the same "select
   // colors" step in the product form, so the product page can look up and
   // show the sibling colors as swatches. Not user-facing text, so it skips
@@ -167,6 +173,16 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
       errors.push(`color must be ${MAX_TEXT} characters or fewer`);
     } else {
       data.color = input.color;
+    }
+  }
+
+  if (input.brand !== undefined && input.brand !== null) {
+    if (typeof input.brand !== "string") {
+      errors.push("brand must be a string");
+    } else if (input.brand.length > MAX_TEXT) {
+      errors.push(`brand must be ${MAX_TEXT} characters or fewer`);
+    } else {
+      data.brand = input.brand.trim() || undefined;
     }
   }
 

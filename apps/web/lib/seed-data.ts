@@ -542,6 +542,12 @@ export interface Product {
   description?: string;
   fabric?: string;
   color?: string;
+  // Optional, seller-assigned - lets a multi-brand/reseller store tag which
+  // label an item is. Free text, but the product form offers a quick-pick
+  // list of this store's own previously-used brand names (see
+  // GET .../products:brand suggestions on the client) instead of retyping
+  // the same label on every product.
+  brand?: string;
   // Shared by every colorway listed together from one "select colors" step
   // in the product form - lets the product page look up and show the
   // sibling colors as swatches. Undefined for anything created singly
@@ -1124,6 +1130,7 @@ export function createProduct(storeId: string, input: Partial<Product>): Product
     description: input.description,
     fabric: input.fabric,
     color: input.color,
+    brand: input.brand,
     colorGroupId: input.colorGroupId,
     productCode: input.productCode,
     basePrice: input.basePrice ?? 0,

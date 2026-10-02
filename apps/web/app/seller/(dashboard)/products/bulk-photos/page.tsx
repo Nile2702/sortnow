@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
@@ -55,6 +55,7 @@ interface Draft {
   costPrice: number | undefined;
   stockRemaining: number;
   color: string | undefined;
+  brand: string | undefined;
   sizes: string[];
   // Shared across every draft linked together as "same product, different
   // colors" (see handleLinkAsColorVariants) - same meaning as Product's own
@@ -106,10 +107,32 @@ export default function BulkPhotoUploadPage() {
   const [bulkGender, setBulkGender] = useState("");
   const [bulkSubCategory, setBulkSubCategory] = useState("");
   const [bulkFabric, setBulkFabric] = useState("");
+  const [bulkBrand, setBulkBrand] = useState("");
   const [bulkBasePrice, setBulkBasePrice] = useState("");
   const [bulkCompareAtPrice, setBulkCompareAtPrice] = useState("");
   const [bulkCostPrice, setBulkCostPrice] = useState("");
   const [bulkStockRemaining, setBulkStockRemaining] = useState("");
+
+  // Quick-pick chips for Brand, shown on each draft below - a multi-
+  // brand/reseller store tends to reuse the same handful of labels across
+  // many products, so offering the ones already used on this store's own
+  // catalog beats retyping the same name on every draft. Purely a
+  // convenience; the field stays free text either way.
+  const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
+  useEffect(() => {
+    if (!store) return;
+    fetch(`/api/v1/seller/stores/${store.id}/products`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((products: { brand?: string }[]) => {
+        const seen = new Set<string>();
+        for (const p of products) {
+          const b = p.brand?.trim();
+          if (b) seen.add(b);
+        }
+        setBrandSuggestions([...seen].sort((a, b) => a.localeCompare(b)));
+      })
+      .catch(() => {});
+  }, [store]);
 
   // Lets a seller pick a whole mixed batch in one file dialog - some photos
   // of the same product, others of different products - then sort it out
@@ -161,6 +184,7 @@ export default function BulkPhotoUploadPage() {
           gender: primary.gender,
           subCategory: primary.subCategory,
           fabric: primary.fabric,
+          brand: primary.brand,
           description: primary.description,
           basePrice: primary.basePrice,
           compareAtPrice: primary.compareAtPrice,
@@ -232,6 +256,7 @@ export default function BulkPhotoUploadPage() {
           patch.sizes = getSizeOptionsFor(bulkSubCategory);
         }
         if (bulkFabric) patch.fabric = bulkFabric;
+        if (bulkBrand) patch.brand = bulkBrand;
         if (bulkBasePrice !== "") patch.basePrice = Number(bulkBasePrice);
         if (bulkCompareAtPrice !== "") patch.compareAtPrice = Number(bulkCompareAtPrice);
         if (bulkCostPrice !== "") patch.costPrice = Number(bulkCostPrice);
@@ -274,6 +299,7 @@ export default function BulkPhotoUploadPage() {
         costPrice: undefined,
         stockRemaining: 10,
         color: undefined,
+        brand: undefined,
         colorGroupId: undefined,
         // Every size valid for the default subcategory, matching what
         // publishing used to hardcode - a seller who doesn't touch this can
@@ -439,6 +465,7 @@ export default function BulkPhotoUploadPage() {
               costPrice: d.costPrice,
               stockRemaining: d.stockRemaining,
               color: d.color,
+              brand: d.brand,
               colorGroupId: d.colorGroupId,
               sizes: d.sizes,
               images: [{ url: d.image }, ...d.additionalImages.map((url) => ({ url }))],
@@ -607,6 +634,7 @@ export default function BulkPhotoUploadPage() {
               ))}
             </select>
             <input value={bulkFabric} onChange={(e) => setBulkFabric(e.target.value)} placeholder="Fabric (unchanged)" style={inputStyle()} />
+            <input value={bulkBrand} onChange={(e) => setBulkBrand(e.target.value)} placeholder="Brand (unchanged)" style={inputStyle()} />
             <input
               type="number"
               min={0}
@@ -643,20 +671,20 @@ export default function BulkPhotoUploadPage() {
           <button
             type="button"
             onClick={handleApplyToAll}
-            disabled={!bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkCostPrice === "" && bulkStockRemaining === ""}
+            disabled={!bulkGender && !bulkFabric && !bulkBrand && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkCostPrice === "" && bulkStockRemaining === ""}
             style={{
               padding: "10px 20px",
               borderRadius: 999,
               border: "none",
               background:
-                !bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkCostPrice === "" && bulkStockRemaining === ""
+                !bulkGender && !bulkFabric && !bulkBrand && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkCostPrice === "" && bulkStockRemaining === ""
                   ? "#94a3b8"
                   : "#0f172a",
               color: "#fff",
               fontWeight: 600,
               fontSize: 13,
               cursor:
-                !bulkGender && !bulkFabric && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkCostPrice === "" && bulkStockRemaining === ""
+                !bulkGender && !bulkFabric && !bulkBrand && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkCostPrice === "" && bulkStockRemaining === ""
                   ? "default"
                   : "pointer",
             }}
@@ -942,6 +970,36 @@ export default function BulkPhotoUploadPage() {
                       placeholder="Stock"
                       style={inputStyle()}
                     />
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <input
+                        value={d.brand ?? ""}
+                        onChange={(e) => updateDraft(d.localId, { brand: e.target.value || undefined })}
+                        placeholder="Brand (optional)"
+                        style={inputStyle()}
+                      />
+                      {brandSuggestions.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                          {brandSuggestions.map((b) => (
+                            <button
+                              type="button"
+                              key={b}
+                              onClick={() => updateDraft(d.localId, { brand: b })}
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: 999,
+                                border: d.brand === b ? "1px solid #0f172a" : "1px solid #e2e8f0",
+                                background: d.brand === b ? "#0f172a" : "#fff",
+                                color: d.brand === b ? "#fff" : "#334155",
+                                fontSize: 12,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {b}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <div style={{ gridColumn: "1 / -1" }}>
                       <p style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Sizes</p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
