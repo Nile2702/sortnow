@@ -636,7 +636,7 @@ export default function BulkPhotoUploadPage() {
                 padding: 16,
               }}
             >
-              <div style={{ position: "relative", flexShrink: 0 }}>
+              <div style={{ position: "relative", flexShrink: 0, alignSelf: "flex-start" }}>
                 {mergeable && drafts.filter((o) => o.status === "queued" || o.status === "error" || o.status === "ready").length > 1 && (
                   <input
                     type="checkbox"
