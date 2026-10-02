@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { showToast } from "../../../lib/toast";
+import { validatePassword } from "../../../lib/validate-password";
 
 const CATEGORIES = [
   { value: "apparel", label: "All Types of Apparel" },
@@ -35,8 +36,9 @@ export default function SellerSignupPage() {
       setError("Passwords don't match.");
       return;
     }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const passwordCheck = validatePassword(password);
+    if (passwordCheck.errors.length > 0) {
+      setError(passwordCheck.errors[0]);
       return;
     }
 
@@ -143,7 +145,7 @@ export default function SellerSignupPage() {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
+              placeholder="At least 8 characters, with a letter and a number"
               required
               minLength={8}
               autoComplete="new-password"

@@ -9,6 +9,7 @@
 import { loadPersisted, persist } from "./persist";
 import { Gender, ALL_SIZES, CATEGORY_TREE } from "./catalog-constants";
 import { hashPassword, verifyPassword } from "./auth/password";
+import { validatePassword } from "./validate-password";
 import { lookupPincode } from "india-post-pincode";
 import { fuzzyBestScore } from "./fuzzy-search";
 
@@ -223,7 +224,8 @@ export function createStore(input: CreateStoreInput): { store: Store } | { error
   if (!name) return { error: "Store name is required." };
   if (name.length > 120) return { error: "Store name is too long." };
   if (!input.localMarket.trim()) return { error: "Local market or area is required." };
-  if (!input.password || input.password.length < 8) return { error: "Password must be at least 8 characters." };
+  const passwordCheck = validatePassword(input.password);
+  if (passwordCheck.errors.length > 0) return { error: passwordCheck.errors[0] };
 
   const geo = resolvePincode(input.pincode);
   if (!geo) return { error: "Couldn't recognize that PIN code." };
