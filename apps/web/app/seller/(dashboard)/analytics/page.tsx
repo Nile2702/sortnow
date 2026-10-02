@@ -52,7 +52,7 @@ export default function AnalyticsPage() {
 
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 20px 60px" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Analytics</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Analytics &amp; Reports</h1>
       <p style={{ color: "#64748b", marginBottom: 20 }}>{store.name}</p>
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Sales — from your in-store bills</h2>
@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 20 }}>
+          <div id="profit-and-loss" style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "#64748b" }}>Profit &amp; Loss</div>
             {sales.profitAndLoss.itemsWithCostSold === 0 ? (
               <p style={{ color: "#94a3b8", fontSize: 13, background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}>

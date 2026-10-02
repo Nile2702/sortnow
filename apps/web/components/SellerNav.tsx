@@ -12,7 +12,7 @@ const TABS = [
   { label: "Notifications", href: "/seller/notifications" },
   { label: "Theme Studio", href: "/seller/theme" },
   { label: "QR Marketing", href: "/seller/qr" },
-  { label: "Analytics", href: "/seller/analytics" },
+  { label: "Analytics & Reports", href: "/seller/analytics" },
   { label: "Billing", href: "/seller/billing" },
   { label: "AI Photo Credits", href: "/seller/photo-credits" },
   { label: "Onboarding", href: "/seller/onboarding" },
