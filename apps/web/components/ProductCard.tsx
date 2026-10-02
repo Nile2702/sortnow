@@ -65,24 +65,6 @@ export function ProductCard({
             style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }}
           />
 
-          {discountPct > 0 && (
-            <span
-              style={{
-                position: "absolute",
-                top: 8,
-                left: 8,
-                background: "#16a34a",
-                color: "#fff",
-                fontSize: 10.5,
-                fontWeight: 700,
-                padding: "3px 8px",
-                borderRadius: 4,
-              }}
-            >
-              {discountPct}% OFF
-            </span>
-          )}
-
           {soldOut && (
             <span
               style={{
@@ -193,11 +175,12 @@ export function ProductCard({
           >
             {product.title}
           </div>
-          <div style={{ marginTop: 5, display: "flex", alignItems: "baseline", gap: 6 }}>
+          <div style={{ marginTop: 5, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontWeight: 800, fontSize: 15, color: "#111" }}>₹{product.basePrice}</span>
             {product.compareAtPrice && product.compareAtPrice > product.basePrice && (
               <span style={{ opacity: 0.55, fontSize: 11.5, textDecoration: "line-through", color: "#111" }}>₹{product.compareAtPrice}</span>
             )}
+            {discountPct > 0 && <span style={{ fontSize: 11.5, fontWeight: 700, color: "#16a34a" }}>{discountPct}% off</span>}
           </div>
           {lowStock && <div style={{ fontSize: 10.5, color: "#dc2626", fontWeight: 600, marginTop: 3 }}>Only {product.stockRemaining} left</div>}
         </div>
