@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
-import { CATEGORY_TREE, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
+import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
 import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, cutoutFromMask } from "../../../../../lib/image-enhance";
 import { showToast } from "../../../../../lib/toast";
 
@@ -38,6 +38,12 @@ interface Draft {
   compareAtPrice: number | undefined;
   costPrice: number | undefined;
   stockRemaining: number;
+  color: string | undefined;
+  // Shared across every draft linked together as "same product, different
+  // colors" (see handleLinkAsColorVariants) - same meaning as Product's own
+  // colorGroupId, letting the storefront show these as swatches of one
+  // listing instead of unrelated products once published.
+  colorGroupId: string | undefined;
 }
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -102,6 +108,39 @@ export default function BulkPhotoUploadPage() {
     );
   }
 
+  // Unlike merging, each photo stays its own draft/product - they just share
+  // a colorGroupId (and the first draft's title/category/price/etc, which
+  // the seller can still tweak per draft after) so the storefront shows
+  // them as swatches of one listing, the same as picking multiple colors in
+  // the single-product form does.
+  function handleLinkAsColorVariants() {
+    const selected = drafts.filter((d) => selectedForMerge.includes(d.localId));
+    if (selected.length < 2) return;
+    const primary = selected[0];
+    const colorGroupId = `cg-bulk-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+    const selectedIds = new Set(selected.map((d) => d.localId));
+    setDrafts((ds) =>
+      ds.map((d) => {
+        if (!selectedIds.has(d.localId)) return d;
+        if (d.localId === primary.localId) return { ...d, colorGroupId };
+        return {
+          ...d,
+          colorGroupId,
+          title: primary.title,
+          gender: primary.gender,
+          subCategory: primary.subCategory,
+          fabric: primary.fabric,
+          description: primary.description,
+          basePrice: primary.basePrice,
+          compareAtPrice: primary.compareAtPrice,
+          costPrice: primary.costPrice,
+        };
+      })
+    );
+    setSelectedForMerge([]);
+    showToast(`Linked ${selected.length} photos as color variants of one product — set each one's color below.`, "success");
+  }
+
   function updateDraft(localId: string, patch: Partial<Draft>) {
     setDrafts((ds) => ds.map((d) => (d.localId === localId ? { ...d, ...patch } : d)));
   }
@@ -156,6 +195,8 @@ export default function BulkPhotoUploadPage() {
         compareAtPrice: undefined,
         costPrice: undefined,
         stockRemaining: 10,
+        color: undefined,
+        colorGroupId: undefined,
       });
     }
     setDrafts((ds) => [...ds, ...newDrafts]);
@@ -279,7 +320,11 @@ export default function BulkPhotoUploadPage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              title: d.title || d.fileName,
+              // Matches the single-product form's own "multiple colors"
+              // behavior - the color is appended to the title so two
+              // variants of the same product don't publish with identical
+              // titles.
+              title: d.colorGroupId && d.color ? `${d.title || d.fileName} — ${d.color}` : d.title || d.fileName,
               description: d.description,
               fabric: d.fabric,
               gender: d.gender,
@@ -288,6 +333,8 @@ export default function BulkPhotoUploadPage() {
               compareAtPrice: d.compareAtPrice,
               costPrice: d.costPrice,
               stockRemaining: d.stockRemaining,
+              color: d.color,
+              colorGroupId: d.colorGroupId,
               // No size picker in this quick-publish flow - default to every
               // size valid for the category (e.g. all shoe sizes for
               // Footwear) rather than "Free Size" for everything, which was
@@ -495,7 +542,7 @@ export default function BulkPhotoUploadPage() {
           }}
         >
           <span style={{ fontSize: 13, fontWeight: 600, minWidth: 0 }}>
-            {selectedForMerge.length} photos selected — are these the same product?
+            {selectedForMerge.length} photos selected — same product (multiple angles), different colors of it, or unrelated?
           </span>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
             <button
@@ -504,6 +551,13 @@ export default function BulkPhotoUploadPage() {
               style={{ background: "none", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 999, padding: "6px 14px", fontSize: 12, cursor: "pointer" }}
             >
               Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleLinkAsColorVariants}
+              style={{ background: "none", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 999, padding: "6px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+            >
+              Same Product, Different Colors
             </button>
             <button
               type="button"
@@ -579,8 +633,25 @@ export default function BulkPhotoUploadPage() {
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <StatusBadge status={d.status} />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <StatusBadge status={d.status} />
+                    {d.colorGroupId && (
+                      <span
+                        style={{
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          color: "#7c3aed",
+                          background: "#faf5ff",
+                          border: "1px solid #e9d5ff",
+                          borderRadius: 999,
+                          padding: "2px 8px",
+                        }}
+                      >
+                        🎨 Color variant — {drafts.filter((o) => o.colorGroupId === d.colorGroupId).length} linked
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => removeDraft(d.localId)}
@@ -655,6 +726,14 @@ export default function BulkPhotoUploadPage() {
                       placeholder="Fabric"
                       style={inputStyle()}
                     />
+                    <select value={d.color ?? ""} onChange={(e) => updateDraft(d.localId, { color: e.target.value || undefined })} style={inputStyle()}>
+                      <option value="">Color (optional)</option>
+                      {COLOR_CATALOG.map((c) => (
+                        <option key={c.name} value={c.name}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
                     <input
                       type="number"
                       min={0}
