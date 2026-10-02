@@ -39,6 +39,7 @@ interface Draft {
   costPrice: number | undefined;
   stockRemaining: number;
   color: string | undefined;
+  sizes: string[];
   // Shared across every draft linked together as "same product, different
   // colors" (see handleLinkAsColorVariants) - same meaning as Product's own
   // colorGroupId, letting the storefront show these as swatches of one
@@ -134,6 +135,7 @@ export default function BulkPhotoUploadPage() {
           basePrice: primary.basePrice,
           compareAtPrice: primary.compareAtPrice,
           costPrice: primary.costPrice,
+          sizes: primary.sizes,
         };
       })
     );
@@ -145,6 +147,12 @@ export default function BulkPhotoUploadPage() {
     setDrafts((ds) => ds.map((d) => (d.localId === localId ? { ...d, ...patch } : d)));
   }
 
+  function toggleDraftSize(localId: string, size: string) {
+    setDrafts((ds) =>
+      ds.map((d) => (d.localId === localId ? { ...d, sizes: d.sizes.includes(size) ? d.sizes.filter((s) => s !== size) : [...d.sizes, size] } : d))
+    );
+  }
+
   function handleApplyToAll() {
     const applyCount = drafts.filter((d) => d.status === "ready").length;
     setDrafts((ds) =>
@@ -154,8 +162,10 @@ export default function BulkPhotoUploadPage() {
         if (bulkGender) {
           patch.gender = bulkGender;
           patch.subCategory = bulkSubCategory || defaultSizedSubCategoryFor(bulkGender as Gender);
+          patch.sizes = getSizeOptionsFor(patch.subCategory);
         } else if (bulkSubCategory && GENDER_SUBCATEGORIES[d.gender]?.includes(bulkSubCategory)) {
           patch.subCategory = bulkSubCategory;
+          patch.sizes = getSizeOptionsFor(bulkSubCategory);
         }
         if (bulkFabric) patch.fabric = bulkFabric;
         if (bulkBasePrice !== "") patch.basePrice = Number(bulkBasePrice);
@@ -197,6 +207,10 @@ export default function BulkPhotoUploadPage() {
         stockRemaining: 10,
         color: undefined,
         colorGroupId: undefined,
+        // Every size valid for the default subcategory, matching what
+        // publishing used to hardcode - a seller who doesn't touch this can
+        // still publish exactly as before, but can now narrow it down.
+        sizes: getSizeOptionsFor(defaultSizedSubCategoryFor("women")),
       });
     }
     setDrafts((ds) => [...ds, ...newDrafts]);
@@ -237,22 +251,28 @@ export default function BulkPhotoUploadPage() {
     );
   }
 
-  // Runs free background removal + AI autofill across every queued photo,
-  // one at a time - sequential rather than parallel so a browser doesn't
-  // try to run several heavy WASM segmentation models at once, and so the
-  // autofill calls stay comfortably under the API's rate limit regardless
-  // of batch size. Each draft's fields become editable as soon as its own
-  // processing finishes, without waiting for the rest of the batch.
-  async function handleProcessAll() {
+  // Eligible for either action below: never started, failed last time, or
+  // already finished one of the two independent steps (ready) - everything
+  // except currently mid-flight or already published.
+  function eligibleForProcessing(d: Draft) {
+    return d.status === "queued" || d.status === "error" || d.status === "ready";
+  }
+
+  // Background removal and AI autofill used to run as one combined "Process
+  // All" pipeline - a seller who only wanted one of the two (photo's
+  // background is already fine, or they'd rather write their own title) had
+  // no way to skip the other, the same complaint that already split these
+  // two steps apart on the single-product form. Each runs independently
+  // here too, in either order, sequential rather than parallel so a browser
+  // doesn't try to run several heavy WASM segmentation models at once.
+  async function handleRemoveBackgroundsAll() {
     setProcessing(true);
-    const queue = drafts.filter((d) => d.status === "queued" || d.status === "error");
+    const queue = drafts.filter(eligibleForProcessing);
 
     for (let i = 0; i < queue.length; i++) {
       const draft = queue[i];
-      setProgressLabel(`Processing photo ${i + 1} of ${queue.length}: ${draft.fileName}`);
+      setProgressLabel(`Removing background ${i + 1} of ${queue.length}: ${draft.fileName}`);
       updateDraft(draft.localId, { status: "removing-bg", error: "" });
-
-      let currentImage = draft.originalImage;
       try {
         const litInput = await stabilizeLighting(draft.originalImage).catch(() => draft.originalImage);
         const enhancedInput = await autoEnhanceQuality(litInput).catch(() => litInput);
@@ -273,20 +293,34 @@ export default function BulkPhotoUploadPage() {
           reader.readAsDataURL(maskBlob);
         });
         const cutoutUrl = await cutoutFromMask(smoothedInput, maskUrl);
-        currentImage = await autoAlignAndZoom(cutoutUrl).catch(() => cutoutUrl);
-        updateDraft(draft.localId, { image: currentImage, bgRemoved: true });
+        const aligned = await autoAlignAndZoom(cutoutUrl).catch(() => cutoutUrl);
+        updateDraft(draft.localId, { image: aligned, bgRemoved: true, status: "ready" });
       } catch (err) {
         console.error(err);
-        // Background removal failing isn't fatal - autofill can still run
-        // on the original photo, and the seller can retry bg removal later.
+        updateDraft(draft.localId, { status: "error", error: "Couldn't remove the background for this photo." });
       }
+    }
 
-      updateDraft(draft.localId, { status: "autofilling" });
+    setProgressLabel("");
+    setProcessing(false);
+  }
+
+  async function handleAutofillAll() {
+    setProcessing(true);
+    const queue = drafts.filter(eligibleForProcessing);
+
+    for (let i = 0; i < queue.length; i++) {
+      const draft = queue[i];
+      setProgressLabel(`Asking AI about photo ${i + 1} of ${queue.length}: ${draft.fileName}`);
+      updateDraft(draft.localId, { status: "autofilling", error: "" });
       try {
         const res = await fetch("/api/v1/seller/photo-autofill", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageDataUrl: currentImage }),
+          // Whatever's currently shown for this draft - the background-
+          // removed version if that step already ran, otherwise the raw
+          // upload. Autofill doesn't care which; it works from either.
+          body: JSON.stringify({ imageDataUrl: draft.image }),
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result?.message ?? "Autofill failed");
@@ -335,12 +369,7 @@ export default function BulkPhotoUploadPage() {
               stockRemaining: d.stockRemaining,
               color: d.color,
               colorGroupId: d.colorGroupId,
-              // No size picker in this quick-publish flow - default to every
-              // size valid for the category (e.g. all shoe sizes for
-              // Footwear) rather than "Free Size" for everything, which was
-              // wrong for any category that isn't genuinely one-size. The
-              // seller can narrow it down later via Edit.
-              sizes: getSizeOptionsFor(d.subCategory),
+              sizes: d.sizes,
               images: [{ url: d.image }, ...d.additionalImages.map((url) => ({ url }))],
             }),
           });
@@ -364,7 +393,7 @@ export default function BulkPhotoUploadPage() {
   }
 
   const readyCount = drafts.filter((d) => d.status === "ready").length;
-  const hasQueuedOrError = drafts.some((d) => d.status === "queued" || d.status === "error");
+  const hasEligible = drafts.some(eligibleForProcessing);
 
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 20px 60px" }}>
@@ -377,9 +406,10 @@ export default function BulkPhotoUploadPage() {
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>✨ AI Bulk Upload</h1>
       <p style={{ color: "#64748b", marginBottom: 24, maxWidth: 640 }}>
         Upload several raw product photos at once for {store.name} — mix photos of different products and multiple angles of the same
-        product in one go. Each photo becomes its own product by default, automatically getting its background removed, centered, and
-        zoomed to fill the frame (free), plus a title, category, and description suggested by AI. If a few photos are really the same
-        product, check them below and merge them into one before publishing.
+        product in one go. Each photo becomes its own product by default. Remove Backgrounds centers and zooms every photo to fill the
+        frame with its background removed (free); Auto-fill Details asks AI for a title, category, and description - run either one,
+        both, or neither, in any order. If a few photos are really the same product, check them below and merge them into one before
+        publishing.
       </p>
 
       <div
@@ -391,23 +421,40 @@ export default function BulkPhotoUploadPage() {
         <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>Up to 3MB per photo. Add more photos any time before processing.</p>
 
         {drafts.length > 0 && (
-          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
             <button
               type="button"
-              onClick={handleProcessAll}
-              disabled={processing || !hasQueuedOrError}
+              onClick={handleRemoveBackgroundsAll}
+              disabled={processing || !hasEligible}
               style={{
                 padding: "10px 20px",
                 borderRadius: 999,
                 border: "none",
-                background: processing || !hasQueuedOrError ? "#94a3b8" : "#7c3aed",
+                background: processing || !hasEligible ? "#94a3b8" : "#0891b2",
                 color: "#fff",
                 fontWeight: 600,
                 fontSize: 13,
-                cursor: processing || !hasQueuedOrError ? "default" : "pointer",
+                cursor: processing || !hasEligible ? "default" : "pointer",
               }}
             >
-              {processing ? progressLabel || "Processing…" : "✨ Process All (Free)"}
+              {processing ? progressLabel || "Processing…" : "✂️ Remove Backgrounds (Free)"}
+            </button>
+            <button
+              type="button"
+              onClick={handleAutofillAll}
+              disabled={processing || !hasEligible}
+              style={{
+                padding: "10px 20px",
+                borderRadius: 999,
+                border: "none",
+                background: processing || !hasEligible ? "#94a3b8" : "#7c3aed",
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: processing || !hasEligible ? "default" : "pointer",
+              }}
+            >
+              {processing ? progressLabel || "Processing…" : "✨ Auto-fill Details (AI)"}
             </button>
             <button
               type="button"
@@ -682,14 +729,21 @@ export default function BulkPhotoUploadPage() {
                     />
                     <select
                       value={d.gender}
-                      onChange={(e) => updateDraft(d.localId, { gender: e.target.value, subCategory: defaultSizedSubCategoryFor(e.target.value as Gender) })}
+                      onChange={(e) => {
+                        const nextSubCategory = defaultSizedSubCategoryFor(e.target.value as Gender);
+                        updateDraft(d.localId, { gender: e.target.value, subCategory: nextSubCategory, sizes: getSizeOptionsFor(nextSubCategory) });
+                      }}
                       style={inputStyle()}
                     >
                       <option value="women">Women</option>
                       <option value="men">Men</option>
                       <option value="kids">Kids</option>
                     </select>
-                    <select value={d.subCategory} onChange={(e) => updateDraft(d.localId, { subCategory: e.target.value })} style={inputStyle()}>
+                    <select
+                      value={d.subCategory}
+                      onChange={(e) => updateDraft(d.localId, { subCategory: e.target.value, sizes: getSizeOptionsFor(e.target.value) })}
+                      style={inputStyle()}
+                    >
                       {GENDER_SUBCATEGORIES[d.gender].map((sc) => (
                         <option key={sc} value={sc}>
                           {sc}
@@ -742,6 +796,32 @@ export default function BulkPhotoUploadPage() {
                       placeholder="Stock"
                       style={inputStyle()}
                     />
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Sizes</p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {getSizeOptionsFor(d.subCategory).map((sz) => {
+                          const active = d.sizes.includes(sz);
+                          return (
+                            <button
+                              key={sz}
+                              type="button"
+                              onClick={() => toggleDraftSize(d.localId, sz)}
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: 7,
+                                border: active ? "1px solid #0f172a" : "1px solid #e2e8f0",
+                                background: active ? "#0f172a" : "#fff",
+                                color: active ? "#fff" : "#334155",
+                                fontSize: 12,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {sz}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                     <textarea
                       value={d.description}
                       onChange={(e) => updateDraft(d.localId, { description: e.target.value })}
