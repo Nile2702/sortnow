@@ -26,9 +26,11 @@ interface SalesAnalytics {
     profitMarginPercent: number;
     itemsWithCostSold: number;
     totalItemsSold: number;
-    byProduct: { title: string; quantity: number; revenue: number; cost: number; profit: number; marginPercent: number }[];
+    monthly: { month: string; revenue: number; cost: number; profit: number; marginPercent: number; itemsWithCostSold: number; totalItemsSold: number }[];
   };
 }
+
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 // A plain stat tile with nowhere to navigate to - no hover lift, so it
 // doesn't invite a click that does nothing.
@@ -59,6 +61,7 @@ export default function AnalyticsPage() {
   const { store, loading: storeLoading } = useSellerStore();
   const [data, setData] = useState<Analytics | null>(null);
   const [sales, setSales] = useState<SalesAnalytics | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
   useEffect(() => {
     if (!store) return;
@@ -76,6 +79,19 @@ export default function AnalyticsPage() {
 
   const maxDay = Math.max(1, ...data.last7Days.map((d) => d.count));
   const maxSalesDay = Math.max(1, ...sales.last7Days.map((d) => d.revenue));
+
+  // Years that actually have a bill, newest first - falls back to the
+  // current year so the selector still has something to show on a brand
+  // new store with no sales yet.
+  const availableYears = [...new Set(sales.profitAndLoss.monthly.map((m) => Number(m.month.slice(0, 4))))].sort((a, b) => b - a);
+  const currentYear = new Date().getFullYear();
+  const year = selectedYear ?? availableYears[0] ?? currentYear;
+  const monthsForYear = sales.profitAndLoss.monthly.filter((m) => m.month.startsWith(String(year)));
+  const yearTotal = monthsForYear.reduce(
+    (acc, m) => ({ revenue: acc.revenue + m.revenue, cost: acc.cost + m.cost, profit: acc.profit + m.profit, itemsWithCostSold: acc.itemsWithCostSold + m.itemsWithCostSold }),
+    { revenue: 0, cost: 0, profit: 0, itemsWithCostSold: 0 }
+  );
+  const yearMarginPercent = yearTotal.revenue > 0 ? Math.round((yearTotal.profit / yearTotal.revenue) * 1000) / 10 : 0;
 
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 20px 60px" }}>
@@ -110,7 +126,22 @@ export default function AnalyticsPage() {
           </div>
 
           <div id="profit-and-loss" style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "#64748b" }}>Profit &amp; Loss</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#64748b" }}>Profit &amp; Loss</div>
+              {availableYears.length > 0 && (
+                <select
+                  value={year}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}
+                >
+                  {availableYears.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
             {sales.profitAndLoss.itemsWithCostSold === 0 ? (
               <p style={{ color: "#94a3b8", fontSize: 13, background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}>
                 No profit figures yet — set a cost price on your products (optional, on the Add/Edit Product page) to see profit here.
@@ -118,44 +149,54 @@ export default function AnalyticsPage() {
             ) : (
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
-                  <StatTile icon="📦" value={`₹${sales.profitAndLoss.totalCost.toFixed(0)}`} label="Total Cost" />
-                  <StatTile icon="📈" value={`₹${sales.profitAndLoss.totalProfit.toFixed(0)}`} label="Total Profit" />
-                  <StatTile icon="🎯" value={`${sales.profitAndLoss.profitMarginPercent}%`} label="Profit Margin" />
+                  <StatTile icon="📦" value={`₹${yearTotal.cost.toFixed(0)}`} label={`${year} Cost`} />
+                  <StatTile icon="📈" value={`₹${yearTotal.profit.toFixed(0)}`} label={`${year} Profit`} />
+                  <StatTile icon="🎯" value={`${yearMarginPercent}%`} label={`${year} Margin`} />
                 </div>
                 {sales.profitAndLoss.itemsWithCostSold < sales.profitAndLoss.totalItemsSold && (
                   <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>
-                    Based on {sales.profitAndLoss.itemsWithCostSold} of {sales.profitAndLoss.totalItemsSold} items sold — the rest had no cost
-                    price set, so they're left out of this figure rather than assumed to have zero cost.
+                    Figures only cover items sold while their product had a cost price set — items sold without one are left out rather than
+                    assumed to have zero cost.
                   </p>
                 )}
 
                 <div style={{ marginTop: 20 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                    Profit by product
+                    Monthly breakdown — {year}
                   </div>
-                  <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", overflow: "hidden" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", padding: "8px 16px", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", borderBottom: "1px solid #f1f5f9" }}>
-                      <span>Product</span>
-                      <span style={{ textAlign: "right" }}>Qty</span>
-                      <span style={{ textAlign: "right" }}>Revenue</span>
-                      <span style={{ textAlign: "right" }}>Cost</span>
-                      <span style={{ textAlign: "right" }}>Profit</span>
-                    </div>
-                    {sales.profitAndLoss.byProduct.map((p) => (
-                      <div
-                        key={p.title}
-                        style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", padding: "10px 16px", fontSize: 13, borderBottom: "1px solid #f8fafc", alignItems: "center" }}
-                      >
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</span>
-                        <span style={{ textAlign: "right", color: "#64748b" }}>{p.quantity}</span>
-                        <span style={{ textAlign: "right" }}>₹{p.revenue.toFixed(0)}</span>
-                        <span style={{ textAlign: "right", color: "#64748b" }}>₹{p.cost.toFixed(0)}</span>
-                        <span style={{ textAlign: "right", fontWeight: 700, color: p.profit >= 0 ? "#16a34a" : "#dc2626" }}>
-                          ₹{p.profit.toFixed(0)} <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: 11 }}>({p.marginPercent}%)</span>
+                  {monthsForYear.length === 0 ? (
+                    <p style={{ color: "#94a3b8", fontSize: 13 }}>No costed sales in {year}.</p>
+                  ) : (
+                    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", overflow: "hidden" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1fr", padding: "8px 16px", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", borderBottom: "1px solid #f1f5f9" }}>
+                        <span>Month</span>
+                        <span style={{ textAlign: "right" }}>Revenue</span>
+                        <span style={{ textAlign: "right" }}>Cost</span>
+                        <span style={{ textAlign: "right" }}>Profit</span>
+                      </div>
+                      {monthsForYear.map((m) => (
+                        <div
+                          key={m.month}
+                          style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1fr", padding: "10px 16px", fontSize: 13, borderBottom: "1px solid #f8fafc", alignItems: "center" }}
+                        >
+                          <span>{MONTH_LABELS[Number(m.month.slice(5, 7)) - 1]}</span>
+                          <span style={{ textAlign: "right" }}>₹{m.revenue.toFixed(0)}</span>
+                          <span style={{ textAlign: "right", color: "#64748b" }}>₹{m.cost.toFixed(0)}</span>
+                          <span style={{ textAlign: "right", fontWeight: 700, color: m.profit >= 0 ? "#16a34a" : "#dc2626" }}>
+                            ₹{m.profit.toFixed(0)} <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: 11 }}>({m.marginPercent}%)</span>
+                          </span>
+                        </div>
+                      ))}
+                      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1fr", padding: "10px 16px", fontSize: 13, background: "#f8fafc", fontWeight: 700 }}>
+                        <span>{year} Total</span>
+                        <span style={{ textAlign: "right" }}>₹{yearTotal.revenue.toFixed(0)}</span>
+                        <span style={{ textAlign: "right", color: "#64748b" }}>₹{yearTotal.cost.toFixed(0)}</span>
+                        <span style={{ textAlign: "right", color: yearTotal.profit >= 0 ? "#16a34a" : "#dc2626" }}>
+                          ₹{yearTotal.profit.toFixed(0)} <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: 11 }}>({yearMarginPercent}%)</span>
                         </span>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

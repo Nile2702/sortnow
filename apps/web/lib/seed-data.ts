@@ -2090,38 +2090,19 @@ export function getSalesAnalytics(storeId: string) {
   const billQuantity = (b: Bill) => b.totalQuantity ?? b.items.reduce((sum, i) => sum + i.quantity, 0);
   const totalItemsSold = storeBills.reduce((sum, b) => sum + billQuantity(b), 0);
 
-  const revenueByProduct = new Map<string, { title: string; quantity: number; revenue: number; cost: number; costedQuantity: number }>();
+  const revenueByProduct = new Map<string, { title: string; quantity: number; revenue: number }>();
   for (const bill of storeBills) {
     for (const item of bill.items) {
       const existing = revenueByProduct.get(item.productId);
-      const cost = item.unitCost != null ? item.unitCost * item.quantity : 0;
-      const costedQuantity = item.unitCost != null ? item.quantity : 0;
       if (existing) {
         existing.quantity += item.quantity;
         existing.revenue += item.total;
-        existing.cost += cost;
-        existing.costedQuantity += costedQuantity;
       } else {
-        revenueByProduct.set(item.productId, { title: item.title, quantity: item.quantity, revenue: item.total, cost, costedQuantity });
+        revenueByProduct.set(item.productId, { title: item.title, quantity: item.quantity, revenue: item.total });
       }
     }
   }
   const topProducts = [...revenueByProduct.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-  // Only products with at least one costed sale get a profit figure - a
-  // product never assigned a cost price has nothing to subtract, not a
-  // profit of "equal to its full revenue".
-  const profitByProduct = [...revenueByProduct.values()]
-    .filter((p) => p.costedQuantity > 0)
-    .map((p) => {
-      // Revenue is prorated to the costed share of units sold, so a
-      // product sold partly before and partly after its cost price was set
-      // doesn't compare uncosted revenue against costed cost.
-      const costedRevenueShare = (p.revenue / p.quantity) * p.costedQuantity;
-      const profit = Math.round((costedRevenueShare - p.cost) * 100) / 100;
-      const marginPercent = costedRevenueShare > 0 ? Math.round((profit / costedRevenueShare) * 1000) / 10 : 0;
-      return { title: p.title, quantity: p.costedQuantity, revenue: Math.round(costedRevenueShare * 100) / 100, cost: Math.round(p.cost * 100) / 100, profit, marginPercent };
-    })
-    .sort((a, b) => b.profit - a.profit);
 
   const last7Days = Array.from({ length: 7 }).map((_, i) => {
     const day = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000);
@@ -2164,6 +2145,40 @@ export function getSalesAnalytics(storeId: string) {
   const totalProfit = Math.round((costedRevenue - totalCost) * 100) / 100;
   const profitMarginPercent = costedRevenue > 0 ? Math.round((totalProfit / costedRevenue) * 1000) / 10 : 0;
 
+  // One bucket per calendar month a bill was issued in (not just the last
+  // 7 days, like last7Days above) - a seller comparing "how did this month
+  // go vs last month" or pulling a year's numbers together needs the full
+  // history, not a rolling week.
+  const monthly = new Map<string, { revenue: number; cost: number; itemsWithCostSold: number; totalItemsSold: number }>();
+  for (const bill of storeBills) {
+    const monthKey = bill.createdAt.slice(0, 7); // "YYYY-MM"
+    const entry = monthly.get(monthKey) ?? { revenue: 0, cost: 0, itemsWithCostSold: 0, totalItemsSold: 0 };
+    for (const item of bill.items) {
+      entry.totalItemsSold += item.quantity;
+      if (item.unitCost != null) {
+        entry.revenue += item.total;
+        entry.cost += item.unitCost * item.quantity;
+        entry.itemsWithCostSold += item.quantity;
+      }
+    }
+    monthly.set(monthKey, entry);
+  }
+  const monthlyProfitAndLoss = [...monthly.entries()]
+    .map(([month, v]) => {
+      const profit = Math.round((v.revenue - v.cost) * 100) / 100;
+      const marginPercent = v.revenue > 0 ? Math.round((profit / v.revenue) * 1000) / 10 : 0;
+      return {
+        month,
+        revenue: Math.round(v.revenue * 100) / 100,
+        cost: Math.round(v.cost * 100) / 100,
+        profit,
+        marginPercent,
+        itemsWithCostSold: v.itemsWithCostSold,
+        totalItemsSold: v.totalItemsSold,
+      };
+    })
+    .sort((a, b) => b.month.localeCompare(a.month));
+
   return {
     totalRevenue,
     totalBills,
@@ -2176,9 +2191,9 @@ export function getSalesAnalytics(storeId: string) {
       totalCost: Math.round(totalCost * 100) / 100,
       totalProfit,
       profitMarginPercent,
-      byProduct: profitByProduct,
       itemsWithCostSold,
       totalItemsSold,
+      monthly: monthlyProfitAndLoss,
     },
   };
 }
