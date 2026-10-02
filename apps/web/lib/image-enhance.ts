@@ -80,7 +80,15 @@ function getRmbgModel() {
   if (!rmbgModelPromise) {
     rmbgModelPromise = (async () => {
       const { AutoModel, AutoProcessor } = await getTransformersModule();
-      const model = await AutoModel.from_pretrained("briaai/RMBG-1.4", { config: { model_type: "custom" } });
+      // Explicitly pinned to the 8-bit quantized weights (~45MB) rather than
+      // left to the library's own per-device default - WebGPU's default is
+      // fp32 (~176MB), and tried first here, it cost minutes instead of
+      // seconds: either a slow download of that much larger file, or
+      // software-emulated (non-hardware-accelerated) WebGPU, depending on
+      // the device. q8 on WASM is the same dtype this model was already
+      // verified correct on, just smaller and guaranteed instead of
+      // whatever a future default happens to pick.
+      const model = await AutoModel.from_pretrained("briaai/RMBG-1.4", { config: { model_type: "custom" }, dtype: "q8" });
       const processor = await AutoProcessor.from_pretrained("briaai/RMBG-1.4", {
         config: {
           do_normalize: true,
@@ -102,6 +110,29 @@ function getRmbgModel() {
     });
   }
   return rmbgModelPromise;
+}
+
+// The model's own inference always runs at a fixed 1024x1024 regardless of
+// input size, but decoding the photo and then upscaling the output mask back
+// up to the input's resolution both scale with pixel count - a raw
+// 3000x4000+ phone photo makes that surrounding work dramatically slower
+// than it needs to be for a listing photo. Caller passes this through before
+// removeBackgroundRMBG (and feeds the same resized copy to cutoutFromMask
+// right after, so the mask and the color data it's paired with stay the same
+// size) - matching the single-product form's own already-proven fix for
+// this (see ProductForm.tsx's resizeForBgRemoval).
+export function resizeForBgRemoval(dataUrl: string, maxDimension = 900): Promise<string> {
+  return loadImage(dataUrl).then((img) => {
+    const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+    if (scale === 1) return dataUrl;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas not supported");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.92);
+  });
 }
 
 // Runs RMBG-1.4 and returns a mask image in the same "alpha channel =

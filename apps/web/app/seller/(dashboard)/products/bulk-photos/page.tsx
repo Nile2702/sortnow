@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
 import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
-import { autoAlignAndZoom, cutoutFromMask, removeBackgroundRMBG } from "../../../../../lib/image-enhance";
+import { autoAlignAndZoom, cutoutFromMask, removeBackgroundRMBG, resizeForBgRemoval } from "../../../../../lib/image-enhance";
 import { showToast } from "../../../../../lib/toast";
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
@@ -293,8 +293,9 @@ export default function BulkPhotoUploadPage() {
         // button never did only what its name said; a seller who wanted a
         // plain background removal had no way to get one without the photo
         // also being auto-corrected.
-        const maskUrl = await removeBackgroundRMBG(draft.originalImage);
-        const cutoutUrl = await cutoutFromMask(draft.originalImage, maskUrl);
+        const bgInput = await resizeForBgRemoval(draft.originalImage).catch(() => draft.originalImage);
+        const maskUrl = await removeBackgroundRMBG(bgInput);
+        const cutoutUrl = await cutoutFromMask(bgInput, maskUrl);
         const aligned = await autoAlignAndZoom(cutoutUrl).catch(() => cutoutUrl);
         updateDraft(draft.localId, { image: aligned, bgRemoved: true, status: "ready" });
       } catch (err) {
