@@ -163,11 +163,9 @@ export default function ShopsPage() {
                 <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4, textTransform: "capitalize" }}>
                   {s.category} · {s.productCount} products
                 </div>
-                {s.rating.count > 0 && (
-                  <div style={{ marginTop: 6 }}>
-                    <StoreRatingBadge average={s.rating.average} count={s.rating.count} />
-                  </div>
-                )}
+                <div style={{ marginTop: 6 }}>
+                  <StoreRatingBadge average={s.rating.average} count={s.rating.count} />
+                </div>
                 {isSaleActive(s.liveSale) && (
                   <div style={{ fontSize: 12, color: "#dc2626", marginTop: 4, fontWeight: 600 }}>{s.liveSale!.discountLabel}</div>
                 )}

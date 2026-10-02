@@ -69,11 +69,9 @@ export default async function StorefrontPage({ params }: Props) {
             LIVE SALE — {store.liveSale.headline} · {store.liveSale.discountLabel}
           </div>
         )}
-        {rating.count > 0 && (
-          <div style={{ maxWidth: 1440, margin: "0 auto", padding: "12px 16px 0" }}>
-            <StoreRatingBadge average={rating.average} count={rating.count} />
-          </div>
-        )}
+        <div style={{ maxWidth: 1440, margin: "0 auto", padding: "12px 16px 0" }}>
+          <StoreRatingBadge average={rating.average} count={rating.count} />
+        </div>
         {theme.layout.sectionOrder.map((key, i) =>
           key === "hero" ? (
             <div key={key} data-section={key} style={{ maxWidth: 1440, margin: "0 auto", padding: "16px 16px 0" }}>

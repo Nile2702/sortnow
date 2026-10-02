@@ -476,11 +476,9 @@ function DiscoverPageInner() {
                   {s.localMarket}, {s.city}
                 </div>
                 {s.distanceKm != null && <div style={{ fontSize: 12, marginTop: 4, color: "#2563eb", fontWeight: 600 }}>{s.distanceKm} km away</div>}
-                {s.rating.count > 0 && (
-                  <div style={{ marginTop: 6 }}>
-                    <StoreRatingBadge average={s.rating.average} count={s.rating.count} />
-                  </div>
-                )}
+                <div style={{ marginTop: 6 }}>
+                  <StoreRatingBadge average={s.rating.average} count={s.rating.count} />
+                </div>
                 {isSaleActive(s.liveSale) && (
                   <div style={{ fontSize: 12, color: "#dc2626", marginTop: 4, fontWeight: 600 }}>{s.liveSale!.discountLabel}</div>
                 )}
