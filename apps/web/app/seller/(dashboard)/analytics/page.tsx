@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 
 interface Analytics {
@@ -25,7 +26,33 @@ interface SalesAnalytics {
     profitMarginPercent: number;
     itemsWithCostSold: number;
     totalItemsSold: number;
+    byProduct: { title: string; quantity: number; revenue: number; cost: number; profit: number; marginPercent: number }[];
   };
+}
+
+// A plain stat tile with nowhere to navigate to - no hover lift, so it
+// doesn't invite a click that does nothing.
+function StatTile({ icon, value, label }: { icon: string; value: string | number; label: string }) {
+  return (
+    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20 }}>
+      <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
+      <div style={{ fontSize: 24, fontWeight: 700 }}>{value}</div>
+      <div style={{ fontSize: 13, color: "#64748b" }}>{label}</div>
+    </div>
+  );
+}
+
+// Same tile, but a real link - for stats that have an actual page behind
+// them (the bills, the QR standees) - keeps the sio-card hover lift, since
+// here it's honest: something happens on click.
+function StatLink({ icon, value, label, href }: { icon: string; value: string | number; label: string; href: string }) {
+  return (
+    <Link href={href} className="sio-card" style={{ display: "block", background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, textDecoration: "none", color: "inherit" }}>
+      <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
+      <div style={{ fontSize: 24, fontWeight: 700 }}>{value}</div>
+      <div style={{ fontSize: 13, color: "#64748b" }}>{label}</div>
+    </Link>
+  );
 }
 
 export default function AnalyticsPage() {
@@ -57,18 +84,10 @@ export default function AnalyticsPage() {
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Sales — from your in-store bills</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 20 }}>
-        {[
-          { label: "Total Revenue", value: `₹${sales.totalRevenue.toFixed(0)}`, icon: "💰" },
-          { label: "Bills Issued", value: sales.totalBills, icon: "🧾" },
-          { label: "Items Sold", value: sales.totalItemsSold, icon: "👕" },
-          { label: "Repeat Customers", value: sales.repeatCustomers, icon: "🔁" },
-        ].map((s) => (
-          <div key={s.label} className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20 }}>
-            <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
-            <div style={{ fontSize: 24, fontWeight: 700 }}>{s.value}</div>
-            <div style={{ fontSize: 13, color: "#64748b" }}>{s.label}</div>
-          </div>
-        ))}
+        <StatLink icon="💰" value={`₹${sales.totalRevenue.toFixed(0)}`} label="Total Revenue" href="/seller/sales" />
+        <StatLink icon="🧾" value={sales.totalBills} label="Bills Issued" href="/seller/sales" />
+        <StatLink icon="👕" value={sales.totalItemsSold} label="Items Sold" href="/seller/sales" />
+        <StatTile icon="🔁" value={sales.repeatCustomers} label="Repeat Customers" />
       </div>
 
       {sales.totalBills === 0 ? (
@@ -77,7 +96,7 @@ export default function AnalyticsPage() {
         </p>
       ) : (
         <>
-          <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, marginBottom: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, marginBottom: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#64748b" }}>Revenue — last 7 days</div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 120 }}>
               {sales.last7Days.map((d) => (
@@ -99,17 +118,9 @@ export default function AnalyticsPage() {
             ) : (
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
-                  {[
-                    { label: "Total Cost", value: `₹${sales.profitAndLoss.totalCost.toFixed(0)}`, icon: "📦" },
-                    { label: "Total Profit", value: `₹${sales.profitAndLoss.totalProfit.toFixed(0)}`, icon: "📈" },
-                    { label: "Profit Margin", value: `${sales.profitAndLoss.profitMarginPercent}%`, icon: "🎯" },
-                  ].map((s) => (
-                    <div key={s.label} className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20 }}>
-                      <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
-                      <div style={{ fontSize: 24, fontWeight: 700 }}>{s.value}</div>
-                      <div style={{ fontSize: 13, color: "#64748b" }}>{s.label}</div>
-                    </div>
-                  ))}
+                  <StatTile icon="📦" value={`₹${sales.profitAndLoss.totalCost.toFixed(0)}`} label="Total Cost" />
+                  <StatTile icon="📈" value={`₹${sales.profitAndLoss.totalProfit.toFixed(0)}`} label="Total Profit" />
+                  <StatTile icon="🎯" value={`${sales.profitAndLoss.profitMarginPercent}%`} label="Profit Margin" />
                 </div>
                 {sales.profitAndLoss.itemsWithCostSold < sales.profitAndLoss.totalItemsSold && (
                   <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>
@@ -117,6 +128,35 @@ export default function AnalyticsPage() {
                     price set, so they're left out of this figure rather than assumed to have zero cost.
                   </p>
                 )}
+
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                    Profit by product
+                  </div>
+                  <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", overflow: "hidden" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", padding: "8px 16px", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", borderBottom: "1px solid #f1f5f9" }}>
+                      <span>Product</span>
+                      <span style={{ textAlign: "right" }}>Qty</span>
+                      <span style={{ textAlign: "right" }}>Revenue</span>
+                      <span style={{ textAlign: "right" }}>Cost</span>
+                      <span style={{ textAlign: "right" }}>Profit</span>
+                    </div>
+                    {sales.profitAndLoss.byProduct.map((p) => (
+                      <div
+                        key={p.title}
+                        style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", padding: "10px 16px", fontSize: 13, borderBottom: "1px solid #f8fafc", alignItems: "center" }}
+                      >
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</span>
+                        <span style={{ textAlign: "right", color: "#64748b" }}>{p.quantity}</span>
+                        <span style={{ textAlign: "right" }}>₹{p.revenue.toFixed(0)}</span>
+                        <span style={{ textAlign: "right", color: "#64748b" }}>₹{p.cost.toFixed(0)}</span>
+                        <span style={{ textAlign: "right", fontWeight: 700, color: p.profit >= 0 ? "#16a34a" : "#dc2626" }}>
+                          ₹{p.profit.toFixed(0)} <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: 11 }}>({p.marginPercent}%)</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -152,21 +192,13 @@ export default function AnalyticsPage() {
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Footfall — online discovery and QR standees</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 32 }}>
-        {[
-          { label: "Total Page Views", value: data.totalPageViews, icon: "👁️" },
-          { label: "Online Discovery", value: data.onlineViews, icon: "🔍" },
-          { label: "QR Scans", value: data.totalQrScans, icon: "📱" },
-        ].map((s) => (
-          <div key={s.label} className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20 }}>
-            <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
-            <div style={{ fontSize: 26, fontWeight: 700 }}>{s.value}</div>
-            <div style={{ fontSize: 13, color: "#64748b" }}>{s.label}</div>
-          </div>
-        ))}
+        <StatTile icon="👁️" value={data.totalPageViews} label="Total Page Views" />
+        <StatTile icon="🔍" value={data.onlineViews} label="Online Discovery" />
+        <StatLink icon="📱" value={data.totalQrScans} label="QR Scans" href="/seller/qr" />
       </div>
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Views — last 7 days</h2>
-      <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, marginBottom: 32 }}>
+      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, marginBottom: 32 }}>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 140 }}>
           {data.last7Days.map((d) => (
             <div key={d.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
