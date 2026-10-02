@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CATEGORY_TREE, COLOR_CATALOG, FABRIC_OPTIONS, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../lib/catalog-constants";
-import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, cutoutFromMask } from "../lib/image-enhance";
+import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, cutoutFromMask, removeBackgroundRMBG } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
 type PhotoStage = "raw" | "bg-removed" | "mannequin" | "restored";
@@ -275,22 +275,14 @@ export function ProductForm({
     }
   }
 
-  // Free, runs entirely client-side via a WASM ML model - no API key, no
-  // server call, no per-image cost. Only the optional mannequin step below
-  // costs a credit. Independent of the enhance step above - operates on
-  // whatever uploadedImage currently is, enhanced or not, so either button
-  // can be used first or on its own.
-  //
-  // Loaded from jsDelivr's ESM CDN via a webpackIgnore'd dynamic import
-  // rather than the npm package - @imgly/background-removal's own docs say
-  // "currently only NextJS 15 is supported" (this app is on 14), and in
-  // practice its onnxruntime-web dependency ships Node/WebGPU runtime files
-  // referenced via `new URL(...)` that Next 14's webpack tries to minify
-  // with Terser and fails on (invalid module syntax for a script-mode
-  // parse). Loading it as a plain browser ES module sidesteps that build
-  // pipeline entirely - verified working end-to-end (a real
-  // background-removal call against a canvas-generated test image
-  // succeeded), just not exercised through webpack at all.
+  // Free, runs entirely client-side via a WASM/WebGPU ML model (RMBG-1.4,
+  // loaded lazily from jsDelivr's ESM CDN the same way the rest of this
+  // codebase avoids installing ML libraries as npm packages - see
+  // removeBackgroundRMBG in lib/image-enhance.ts) - no API key, no server
+  // call, no per-image cost. Only the optional mannequin step below costs a
+  // credit. Independent of the enhance step above - operates on whatever
+  // uploadedImage currently is, enhanced or not, so either button can be
+  // used first or on its own.
   async function handleRemoveBackground() {
     if (!uploadedImage) return;
     setBgRemoving(true);
@@ -299,52 +291,14 @@ export function ProductForm({
     if (!originalImage) setOriginalImage(uploadedImage);
 
     try {
-      // Cast since the npm package (and its types) isn't installed - it's
-      // loaded as a plain ES module from a CDN URL instead (see comment
-      // above), which TypeScript can't resolve a module path for.
-      const { removeBackground } = (await import(
-        /* webpackIgnore: true */ "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
-      )) as {
-        removeBackground: (
-          image: string,
-          config?: {
-            model?: string;
-            output?: { format?: string; type?: string };
-            progress?: (key: string, current: number, total: number) => void;
-          }
-        ) => Promise<Blob>;
-      };
       const bgInput = await resizeForBgRemoval(uploadedImage).catch(() => uploadedImage);
-      // Asks for just the opacity mask (output.type: "mask"), not the
-      // model's own composited cutout - see cutoutFromMask for why: its
-      // RGB output isn't trustworthy at every alpha level, only its
-      // judgment of what's foreground is.
-      //
-      // Model is "isnet_fp16" (the library's own default), not the smaller
-      // "isnet_quint8" - the library's own docs describe quint8 as
-      // occasionally showing artifacts, being a quantized model, and a real
-      // photo confirmed it: a low-confidence wobble on a fabric wrinkle
-      // that fp16 doesn't reproduce. Costs a larger one-time model download
-      // (~80MB vs ~40MB) for meaningfully more reliable segmentation -
-      // worth it now that correctness has been the recurring problem, not
-      // speed.
-      const maskBlob = await removeBackground(bgInput, {
-        model: "isnet_fp16",
-        output: { format: "image/png", type: "mask" },
-        // The library reports two very different phases through the same
-        // callback: fetching the ~80MB model (only slow the first time in a
-        // browser session - cached after) and actually running inference on
-        // this photo (slow every time, scales with pixel count). Previously
-        // both showed as "Processing… X%", which made a seller think the
-        // photo itself was taking a minute when it was really a one-time
-        // download - separating them so the wait reads accurately.
-        progress: (key, current, total) => {
-          if (total <= 0) return;
-          const pct = Math.round((current / total) * 100);
-          setBgRemoveProgress(key.startsWith("fetch") ? `Downloading model (one-time)… ${pct}%` : `Processing photo… ${pct}%`);
-        },
-      });
-      const maskUrl = await blobToDataUrl(maskBlob);
+      // RMBG-1.4 - a model purpose-built for background removal (unlike
+      // isnet, a repurposed generic salient-object-detection model), picked
+      // after isnet kept leaving speckle/noise artifacts on real seller
+      // photos that no amount of post-processing fully chased away.
+      setBgRemoveProgress("Downloading model (one-time, first use only)…");
+      const maskUrl = await removeBackgroundRMBG(bgInput);
+      setBgRemoveProgress("Processing photo…");
       const cutoutUrl = await cutoutFromMask(bgInput, maskUrl);
       setBgRemoveProgress("Aligning and framing…");
       const dataUrl = await autoAlignAndZoom(cutoutUrl).catch(() => cutoutUrl);
@@ -1169,14 +1123,6 @@ function escapeXml(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
 
 // Downscales an image before sending it for AI analysis - a full 3MB photo
 // takes noticeably longer to upload and for the model to process than it

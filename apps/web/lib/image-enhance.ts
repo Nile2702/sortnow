@@ -21,6 +21,117 @@
 // small radius) can only bridge a gap narrower than ~2x the radius, so a
 // thin false-positive strip gets closed while a real neckline or armpit
 // opening (much wider) is left alone.
+// RMBG-1.4's own repo doesn't ship a config.json transformers.js recognizes
+// (its real architecture, a Segformer variant, isn't in the library's
+// supported-task list - routing it through the generic `pipeline()` helper
+// fails with "Unsupported model type: SegformerForSemanticSegmentation").
+// Loading it through AutoModel/AutoProcessor directly and overriding
+// model_type to "custom" bypasses that architecture check entirely, running
+// the ONNX graph by its raw input/output names instead - confirmed working
+// pattern from the model's own HF discussion board. The processor config is
+// supplied explicitly for the same reason: RMBG-1.4 doesn't ship a
+// preprocessor_config.json transformers.js can read on its own.
+interface TransformersModule {
+  AutoModel: { from_pretrained: (id: string, options?: Record<string, unknown>) => Promise<RmbgModel> };
+  AutoProcessor: { from_pretrained: (id: string, options?: Record<string, unknown>) => Promise<RmbgProcessor> };
+  RawImage: {
+    fromURL: (url: string) => Promise<{ width: number; height: number }>;
+    fromTensor: (tensor: unknown) => { resize: (w: number, h: number) => Promise<{ data: Uint8Array; width: number; height: number }> };
+  };
+  env: { backends: { onnx: { wasm: { proxy: boolean; numThreads: number } } } };
+}
+interface RmbgTensor {
+  mul: (n: number) => { to: (dtype: string) => unknown };
+}
+type RmbgModel = (input: { input: unknown }) => Promise<{ output: RmbgTensor[] }>;
+type RmbgProcessor = (image: unknown) => Promise<{ pixel_values: unknown }>;
+
+let transformersModulePromise: Promise<TransformersModule> | null = null;
+function getTransformersModule(): Promise<TransformersModule> {
+  if (!transformersModulePromise) {
+    transformersModulePromise = (
+      import(/* webpackIgnore: true */ "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.2.4/+esm") as unknown as Promise<TransformersModule>
+    ).then((mod) => {
+      // onnxruntime-web's default WASM backend spawns Worker(s) from its own
+      // script URL for both its optional "proxy" mode and its multi-threaded
+      // execution pool - which, loaded from a CDN, is cross-origin from this
+      // page and gets blocked ("SecurityError: Failed to construct
+      // 'Worker'"). Disabling both (proxy off, single-threaded) keeps
+      // everything on the main thread instead, sidestepping Worker creation
+      // entirely; the only cost is inference briefly blocking the UI thread,
+      // same as every other canvas-based step in this file already does.
+      mod.env.backends.onnx.wasm.proxy = false;
+      mod.env.backends.onnx.wasm.numThreads = 1;
+      return mod;
+    });
+  }
+  return transformersModulePromise;
+}
+
+// Lazily loads the RMBG-1.4 model (~45MB, cached by the browser after first
+// use) exactly once per page load, shared across every photo processed in a
+// bulk-upload batch or the single-product form. RMBG-1.4 is a model
+// purpose-built for background removal (unlike isnet, a repurposed generic
+// salient-object-detection model) - picked after isnet kept leaving
+// speckle/noise artifacts on real seller photos that no amount of
+// post-processing fully chased away.
+let rmbgModelPromise: Promise<{ model: RmbgModel; processor: RmbgProcessor }> | null = null;
+function getRmbgModel() {
+  if (!rmbgModelPromise) {
+    rmbgModelPromise = (async () => {
+      const { AutoModel, AutoProcessor } = await getTransformersModule();
+      const model = await AutoModel.from_pretrained("briaai/RMBG-1.4", { config: { model_type: "custom" } });
+      const processor = await AutoProcessor.from_pretrained("briaai/RMBG-1.4", {
+        config: {
+          do_normalize: true,
+          do_pad: false,
+          do_rescale: true,
+          do_resize: true,
+          image_mean: [0.5, 0.5, 0.5],
+          feature_extractor_type: "ImageFeatureExtractor",
+          image_std: [1, 1, 1],
+          resample: 2,
+          rescale_factor: 1 / 255,
+          size: { width: 1024, height: 1024 },
+        },
+      });
+      return { model, processor };
+    })().catch((err) => {
+      rmbgModelPromise = null;
+      throw err;
+    });
+  }
+  return rmbgModelPromise;
+}
+
+// Runs RMBG-1.4 and returns a mask image in the same "alpha channel =
+// confidence, RGB unused" format cutoutFromMask expects, so every caller
+// just swaps this in for the old removeBackground() call and nothing else
+// downstream needs to change. RawImage.fromTensor(...).resize(...) handles
+// scaling the model's own fixed-size (1024x1024) output mask back up to the
+// original photo's resolution.
+export async function removeBackgroundRMBG(dataUrl: string): Promise<string> {
+  const { RawImage } = await getTransformersModule();
+  const { model, processor } = await getRmbgModel();
+
+  const image = await RawImage.fromURL(dataUrl);
+  const { pixel_values } = await processor(image);
+  const { output } = await model({ input: pixel_values });
+  const mask = await RawImage.fromTensor((output[0].mul(255) as ReturnType<RmbgTensor["mul"]>).to("uint8")).resize(image.width, image.height);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = mask.width;
+  canvas.height = mask.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported");
+  const imageData = ctx.createImageData(mask.width, mask.height);
+  for (let i = 0; i < mask.data.length; i++) {
+    imageData.data[i * 4 + 3] = mask.data[i]; // grayscale confidence -> alpha; RGB unused
+  }
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
 export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Promise<string> {
   return Promise.all([loadImage(originalDataUrl), loadImage(maskDataUrl)]).then(([originalImg, maskImg]) => {
     const width = originalImg.width;

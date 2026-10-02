@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
 import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
-import { autoAlignAndZoom, cutoutFromMask } from "../../../../../lib/image-enhance";
+import { autoAlignAndZoom, cutoutFromMask, removeBackgroundRMBG } from "../../../../../lib/image-enhance";
 import { showToast } from "../../../../../lib/toast";
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
@@ -293,21 +293,7 @@ export default function BulkPhotoUploadPage() {
         // button never did only what its name said; a seller who wanted a
         // plain background removal had no way to get one without the photo
         // also being auto-corrected.
-        const { removeBackground } = (await import(
-          /* webpackIgnore: true */ "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
-        )) as {
-          removeBackground: (image: string, config?: { model?: string; output?: { format?: string; type?: string } }) => Promise<Blob>;
-        };
-        // isnet_fp16, not the smaller isnet_quint8 - see ProductForm.tsx's
-        // handleRemoveBackground for why (quint8 is documented as
-        // occasionally artifact-prone, and reproduced one on a real photo).
-        const maskBlob = await removeBackground(draft.originalImage, { model: "isnet_fp16", output: { format: "image/png", type: "mask" } });
-        const maskUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(maskBlob);
-        });
+        const maskUrl = await removeBackgroundRMBG(draft.originalImage);
         const cutoutUrl = await cutoutFromMask(draft.originalImage, maskUrl);
         const aligned = await autoAlignAndZoom(cutoutUrl).catch(() => cutoutUrl);
         updateDraft(draft.localId, { image: aligned, bgRemoved: true, status: "ready" });
