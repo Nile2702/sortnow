@@ -5,7 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
 import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
-import { autoAlignAndZoom, cutoutFromMask, removeBackgroundRMBG, resizeForBgRemoval } from "../../../../../lib/image-enhance";
+import {
+  autoAlignAndZoom,
+  cutoutFromMask,
+  removeBackgroundRMBG,
+  resizeForBgRemoval,
+  compositeBackground,
+  pickAutoBackground,
+  BACKGROUND_PRESETS,
+} from "../../../../../lib/image-enhance";
 import { showToast } from "../../../../../lib/toast";
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
@@ -27,6 +35,14 @@ interface Draft {
   // product form already makes for its own "Additional Photos".
   additionalImages: string[];
   bgRemoved: boolean;
+  // The transparent cutout, kept around separately from `image` (what's
+  // actually shown/published) so switching backgrounds always recomposites
+  // from this clean original - never from whatever backdrop is currently
+  // showing, which would bake one backdrop's edges into the next.
+  cutoutImage: string | undefined;
+  selectedBackground: string;
+  autoBackgroundLabel: string;
+  backgroundBusy: boolean;
   status: DraftStatus;
   error: string;
   title: string;
@@ -167,6 +183,40 @@ export default function BulkPhotoUploadPage() {
     );
   }
 
+  // Studio-backdrop picker for a single draft, same catalog and compositing
+  // logic the single-product form already uses - always recomposited from
+  // d.cutoutImage (the clean transparent cutout), never from whatever
+  // backdrop happens to be showing right now, so switching back and forth
+  // never degrades the image or leaves a previous backdrop showing through.
+  async function handleChooseBackgroundForDraft(localId: string, presetKey: string) {
+    const draft = drafts.find((d) => d.localId === localId);
+    if (!draft?.cutoutImage) return;
+    const preset = BACKGROUND_PRESETS.find((p) => p.key === presetKey);
+    if (!preset) return;
+    updateDraft(localId, { backgroundBusy: true, autoBackgroundLabel: "" });
+    try {
+      const composited = await compositeBackground(draft.cutoutImage, preset);
+      updateDraft(localId, { image: composited, selectedBackground: presetKey, backgroundBusy: false });
+    } catch (err) {
+      console.error(err);
+      updateDraft(localId, { backgroundBusy: false, error: "Couldn't apply that background. Try a different one." });
+    }
+  }
+
+  async function handleAutoBackgroundForDraft(localId: string) {
+    const draft = drafts.find((d) => d.localId === localId);
+    if (!draft?.cutoutImage) return;
+    updateDraft(localId, { backgroundBusy: true });
+    try {
+      const preset = await pickAutoBackground(draft.cutoutImage);
+      const composited = await compositeBackground(draft.cutoutImage, preset);
+      updateDraft(localId, { image: composited, selectedBackground: preset.key, autoBackgroundLabel: preset.label, backgroundBusy: false });
+    } catch (err) {
+      console.error(err);
+      updateDraft(localId, { backgroundBusy: false, error: "Couldn't pick a background automatically. Try choosing one instead." });
+    }
+  }
+
   function handleApplyToAll() {
     const applyCount = drafts.filter((d) => d.status === "ready").length;
     setDrafts((ds) =>
@@ -208,6 +258,10 @@ export default function BulkPhotoUploadPage() {
         image: dataUrl,
         additionalImages: [],
         bgRemoved: false,
+        cutoutImage: undefined,
+        selectedBackground: "transparent",
+        autoBackgroundLabel: "",
+        backgroundBusy: false,
         status: "queued",
         error: "",
         title: "",
@@ -297,7 +351,14 @@ export default function BulkPhotoUploadPage() {
         const maskUrl = await removeBackgroundRMBG(bgInput);
         const cutoutUrl = await cutoutFromMask(bgInput, maskUrl);
         const aligned = await autoAlignAndZoom(cutoutUrl).catch(() => cutoutUrl);
-        updateDraft(draft.localId, { image: aligned, bgRemoved: true, status: "ready" });
+        updateDraft(draft.localId, {
+          image: aligned,
+          cutoutImage: aligned,
+          selectedBackground: "transparent",
+          autoBackgroundLabel: "",
+          bgRemoved: true,
+          status: "ready",
+        });
       } catch (err) {
         console.error(err);
         updateDraft(draft.localId, { status: "error", error: friendlyErrorMessage(err, "Couldn't remove the background for this photo.") });
@@ -763,6 +824,49 @@ export default function BulkPhotoUploadPage() {
                   <p style={{ fontSize: 13, color: "#16a34a" }}>✓ Published as "{d.title}"</p>
                 ) : (
                   <div className="sio-draft-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 8 }}>
+                    {d.cutoutImage && (
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Background</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            onClick={() => handleAutoBackgroundForDraft(d.localId)}
+                            disabled={d.backgroundBusy}
+                            style={{
+                              padding: "5px 10px",
+                              borderRadius: 999,
+                              border: "1px solid #c4b5fd",
+                              background: "#faf5ff",
+                              color: "#7c3aed",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              cursor: d.backgroundBusy ? "default" : "pointer",
+                            }}
+                          >
+                            {d.backgroundBusy ? "Picking…" : d.autoBackgroundLabel ? `✨ Auto-picked: ${d.autoBackgroundLabel}` : "✨ Auto-pick for me"}
+                          </button>
+                          {BACKGROUND_PRESETS.map((preset) => (
+                            <button
+                              type="button"
+                              key={preset.key}
+                              onClick={() => handleChooseBackgroundForDraft(d.localId, preset.key)}
+                              disabled={d.backgroundBusy}
+                              title={preset.label}
+                              aria-label={preset.label}
+                              style={{
+                                width: 26,
+                                height: 26,
+                                borderRadius: "50%",
+                                background: preset.swatch,
+                                border: d.selectedBackground === preset.key ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                                cursor: d.backgroundBusy ? "default" : "pointer",
+                                flexShrink: 0,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <input
                       value={d.title}
                       onChange={(e) => updateDraft(d.localId, { title: e.target.value })}
