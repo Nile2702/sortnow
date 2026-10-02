@@ -6,6 +6,7 @@ import { MobileBottomNav } from "../components/MobileBottomNav";
 import { Footer } from "../components/Footer";
 import { CursorGlow } from "../components/CursorGlow";
 import { ScrollRevealInit } from "../components/ScrollRevealInit";
+import { ScrollToTop } from "../components/ScrollToTop";
 import { ToastHost } from "../components/ToastHost";
 import { LocationGate } from "../components/LocationGate";
 
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         }}
       >
         <CursorGlow />
+        <ScrollToTop />
         <ScrollRevealInit />
         <ToastHost />
         <LocationGate />
