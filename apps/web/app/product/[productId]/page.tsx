@@ -441,9 +441,21 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="sio-fade-in" style={{ animationDelay: "90ms" }}>
-          <div style={{ fontSize: 12, letterSpacing: "0.1em", color: "var(--sio-bronze)", fontWeight: 600, marginBottom: 10, textTransform: "uppercase" }}>
+          <Link
+            href={`/store/${product.storeSlug}`}
+            style={{
+              display: "inline-block",
+              fontSize: 12,
+              letterSpacing: "0.1em",
+              color: "var(--sio-bronze)",
+              fontWeight: 600,
+              marginBottom: 10,
+              textTransform: "uppercase",
+              textDecoration: "none",
+            }}
+          >
             {product.store.name}
-          </div>
+          </Link>
           <h1 className="sio-product-title" style={{ fontSize: 32, fontWeight: 600, marginBottom: 12, lineHeight: 1.2 }}>{product.title}</h1>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
