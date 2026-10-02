@@ -22,6 +22,13 @@ export default function AccountPage() {
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  // Alternative to the OTP step for a returning shopper who set a password
+  // during an earlier signup - OTP always still works regardless (see the
+  // "Use OTP instead" link below), this is purely a skip-the-SMS-wait
+  // convenience, never the only way in.
+  const [usePasswordLogin, setUsePasswordLogin] = useState(false);
+  const [loginPassword, setLoginPassword] = useState("");
+  const [passwordLoggingIn, setPasswordLoggingIn] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [justSignedUp, setJustSignedUp] = useState(false);
   // Shown only because no real SMS gateway is connected yet (see
@@ -35,7 +42,11 @@ export default function AccountPage() {
   const [email, setEmail] = useState("");
   const [category, setCategory] = useState<Category | "">("");
   const [pincode, setPincode] = useState("");
+  const [city, setCity] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [password, setPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [referredByCode, setReferredByCode] = useState("");
   const [referrals, setReferrals] = useState<{ referralCode: string; count: number } | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
@@ -76,6 +87,36 @@ export default function AccountPage() {
     setStep("otp");
   }
 
+  async function handlePasswordLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!/^\d{10}$/.test(phone)) return setError("Enter a valid 10-digit mobile number.");
+    if (!loginPassword) return setError("Enter your password.");
+    setPasswordLoggingIn(true);
+    const res = await fetch("/api/v1/shopper/auth/password-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, password: loginPassword }),
+    });
+    const result = await res.json().catch(() => null);
+    setPasswordLoggingIn(false);
+    if (!res.ok) {
+      setError(result?.message ?? "Incorrect phone or password.");
+      return;
+    }
+    const restored: ShopperSession = {
+      name: result.shopper.name,
+      phone,
+      email: result.shopper.email,
+      preferredCategory: result.shopper.preferredCategory,
+      pincode: result.shopper.pincode,
+      city: result.shopper.city,
+      dateOfBirth: result.shopper.dateOfBirth,
+    };
+    setShopperSession(restored);
+    setSession(restored);
+  }
+
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -107,6 +148,8 @@ export default function AccountPage() {
         email: existing.email,
         preferredCategory: existing.preferredCategory,
         pincode: existing.pincode,
+        city: existing.city,
+        dateOfBirth: existing.dateOfBirth,
       };
       setShopperSession(restored);
       setSession(restored);
@@ -126,6 +169,10 @@ export default function AccountPage() {
     if (!agreed) return setError("Please accept the Terms & Privacy Policy to continue.");
     if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Enter a valid email, or leave it blank.");
     if (pincode.trim() && !/^\d{6}$/.test(pincode.trim())) return setError("Pincode must be 6 digits, or leave it blank.");
+    if (dateOfBirth && new Date(dateOfBirth) > new Date()) return setError("Date of birth can't be in the future.");
+    if (password && (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password))) {
+      return setError("Password must be at least 8 characters and include a letter and a number, or leave it blank.");
+    }
 
     setSavingProfile(true);
     const res = await fetch("/api/v1/shopper/profile", {
@@ -137,6 +184,10 @@ export default function AccountPage() {
         email: email.trim() || undefined,
         preferredCategory: category || undefined,
         pincode: pincode.trim() || undefined,
+        city: city.trim() || undefined,
+        dateOfBirth: dateOfBirth || undefined,
+        marketingOptIn,
+        password: password || undefined,
         referredByCode: referredByCode || undefined,
       }),
     });
@@ -153,6 +204,8 @@ export default function AccountPage() {
       email: result.shopper.email,
       preferredCategory: result.shopper.preferredCategory,
       pincode: result.shopper.pincode,
+      city: result.shopper.city,
+      dateOfBirth: result.shopper.dateOfBirth,
     };
     setShopperSession(newSession);
     setJustSignedUp(true);
@@ -173,7 +226,13 @@ export default function AccountPage() {
     setEmail("");
     setCategory("");
     setPincode("");
+    setCity("");
+    setDateOfBirth("");
+    setPassword("");
     setAgreed(false);
+    setMarketingOptIn(false);
+    setUsePasswordLogin(false);
+    setLoginPassword("");
   }
 
   if (!ready) return <main style={{ maxWidth: 440, margin: "60px auto", padding: 16 }} />;
@@ -312,7 +371,55 @@ export default function AccountPage() {
           boxShadow: "0 20px 40px rgba(22, 20, 15, 0.05)",
         }}
       >
-        {step === "phone" && (
+        {step === "phone" && mode === "login" && usePasswordLogin && (
+          <form onSubmit={handlePasswordLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={labelStyle}>Mobile number</label>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                placeholder="10-digit mobile number"
+                style={inputStyle}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Password</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="Your password"
+                style={inputStyle}
+              />
+            </div>
+            {error && <ErrorBanner text={error} />}
+            <button
+              type="submit"
+              disabled={passwordLoggingIn}
+              className="sio-btn-primary sio-shine-btn"
+              style={{ ...buttonStyle, opacity: passwordLoggingIn ? 0.7 : 1 }}
+            >
+              {passwordLoggingIn ? "Logging in…" : "Log in"}
+            </button>
+            <p style={{ textAlign: "center", fontSize: 13, color: "var(--sio-muted)", margin: 0 }}>
+              Didn't set a password, or forgot it?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setUsePasswordLogin(false);
+                  setError("");
+                  setLoginPassword("");
+                }}
+                style={linkButtonStyle}
+              >
+                Use OTP instead
+              </button>
+            </p>
+          </form>
+        )}
+
+        {step === "phone" && !(mode === "login" && usePasswordLogin) && (
           <form onSubmit={handleSendOtp} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label style={labelStyle}>Mobile number</label>
@@ -364,6 +471,21 @@ export default function AccountPage() {
                 </>
               )}
             </p>
+            {mode === "login" && (
+              <p style={{ textAlign: "center", fontSize: 13, color: "var(--sio-muted)", margin: 0 }}>
+                Have a password set up?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsePasswordLogin(true);
+                    setError("");
+                  }}
+                  style={linkButtonStyle}
+                >
+                  Log in with password instead
+                </button>
+              </p>
+            )}
           </form>
         )}
 
@@ -452,21 +574,58 @@ export default function AccountPage() {
                 ))}
               </div>
             </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>City (optional)</label>
+                <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Mumbai" style={inputStyle} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>Pincode (optional)</label>
+                <input
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="e.g. 400050"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+            <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: -8 }}>Helps us default "Stores near you" to your area.</p>
             <div>
-              <label style={labelStyle}>Home area pincode (optional)</label>
+              <label style={labelStyle}>Date of birth (optional)</label>
               <input
-                value={pincode}
-                onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="e.g. 400050"
+                type="date"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                style={inputStyle}
+              />
+              <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>So we can send you a birthday treat.</p>
+            </div>
+            <div>
+              <label style={labelStyle}>Set a password (optional)</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 8 characters, a letter and a number"
                 style={inputStyle}
               />
               <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>
-                Helps us default "Stores near you" to your area.
+                You can always log in with just an OTP - set a password if you'd rather skip waiting for one next time.
               </p>
             </div>
             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "var(--sio-muted)", cursor: "pointer" }}>
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: 2 }} />
               <span>I agree to SORT IT OUT's Terms of Service and Privacy Policy.</span>
+            </label>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "var(--sio-muted)", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={marketingOptIn}
+                onChange={(e) => setMarketingOptIn(e.target.checked)}
+                style={{ marginTop: 2 }}
+              />
+              <span>Send me offers, restocks, and nearby sales on WhatsApp/SMS (optional).</span>
             </label>
             {error && <ErrorBanner text={error} />}
             <button

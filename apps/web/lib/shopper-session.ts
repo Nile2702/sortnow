@@ -15,6 +15,8 @@ export interface ShopperSession {
   email?: string;
   preferredCategory?: "men" | "women" | "kids";
   pincode?: string;
+  city?: string;
+  dateOfBirth?: string;
 }
 
 export function getShopperSession(): ShopperSession | null {

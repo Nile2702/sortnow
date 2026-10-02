@@ -1466,6 +1466,24 @@ export interface Shopper {
   email?: string;
   preferredCategory?: Gender;
   pincode?: string;
+  // Free text, paired with pincode on the profile - a human-readable area
+  // name reads better than a bare 6-digit code anywhere this is shown back
+  // to the shopper.
+  city?: string;
+  // YYYY-MM-DD, optional - lets a real deployment send a birthday offer,
+  // the one piece of personalization a phone+pincode profile can't give it.
+  dateOfBirth?: string;
+  // Separate from the Terms & Privacy checkbox (which is mandatory) - this
+  // one is an opt-in for promotional contact, off by default, consistent
+  // with how a real signup keeps "required to use the service" and "okay to
+  // market to me" as two different questions.
+  marketingOptIn?: boolean;
+  // Optional - OTP alone is always enough to sign in (see
+  // /api/v1/auth/otp/verify), so this is purely a convenience for a shopper
+  // who'd rather skip the SMS wait next time (see
+  // /api/v1/shopper/auth/password-login). scrypt salt+hash, same format as
+  // seller passwords - see lib/auth/password.ts.
+  passwordHash?: string;
   createdAt: string;
   // Referral program - a shareable code every shopper gets on signup (see
   // /account "Invite friends"). No money changes hands (this platform takes
@@ -1521,6 +1539,12 @@ export interface UpsertShopperInput {
   email?: string;
   preferredCategory?: Gender;
   pincode?: string;
+  city?: string;
+  dateOfBirth?: string;
+  marketingOptIn?: boolean;
+  // Plain text in, hashed before storage - optional, and only ever set
+  // explicitly (never cleared implicitly by an update that omits it).
+  password?: string;
   // Referral code from the invite link (?ref=CODE) the shopper signed up
   // through - only ever applied on first creation, never on a later update.
   referredByCode?: string;
@@ -1538,6 +1562,10 @@ export function upsertShopper(input: UpsertShopperInput): { shopper: Shopper; is
     if (input.email !== undefined) existing.email = input.email.trim() || undefined;
     if (input.preferredCategory !== undefined) existing.preferredCategory = input.preferredCategory;
     if (input.pincode !== undefined) existing.pincode = input.pincode.trim() || undefined;
+    if (input.city !== undefined) existing.city = input.city.trim() || undefined;
+    if (input.dateOfBirth !== undefined) existing.dateOfBirth = input.dateOfBirth || undefined;
+    if (input.marketingOptIn !== undefined) existing.marketingOptIn = input.marketingOptIn;
+    if (input.password) existing.passwordHash = hashPassword(input.password);
     persist("shoppers", shoppers);
     return { shopper: existing, isNewCustomer: false };
   }
@@ -1549,6 +1577,10 @@ export function upsertShopper(input: UpsertShopperInput): { shopper: Shopper; is
     email: input.email?.trim() || undefined,
     preferredCategory: input.preferredCategory,
     pincode: input.pincode?.trim() || undefined,
+    city: input.city?.trim() || undefined,
+    dateOfBirth: input.dateOfBirth || undefined,
+    marketingOptIn: input.marketingOptIn ?? false,
+    passwordHash: input.password ? hashPassword(input.password) : undefined,
     createdAt: new Date().toISOString(),
     referralCode: generateReferralCode(input.name),
     referredBy: referrer?.id,
@@ -1565,6 +1597,19 @@ export function upsertShopper(input: UpsertShopperInput): { shopper: Shopper; is
     );
   }
   return { shopper, isNewCustomer: true };
+}
+
+// Alternative to OTP for a shopper who set a password - OTP always still
+// works (see /api/v1/auth/otp/verify) regardless of whether this is set, so
+// this is purely a skip-the-SMS-wait convenience, not a second factor.
+// Returns null for "wrong phone", "wrong password", and "never set a
+// password" alike, same as a seller login's invalid_credentials - nothing
+// here should let a caller distinguish those cases.
+export function verifyShopperPassword(phone: string, password: string): Shopper | null {
+  const shopper = findShopperByPhone(phone);
+  if (!shopper?.passwordHash) return null;
+  if (!verifyPassword(password, shopper.passwordHash)) return null;
+  return shopper;
 }
 
 // ---------------------------------------------------------------------

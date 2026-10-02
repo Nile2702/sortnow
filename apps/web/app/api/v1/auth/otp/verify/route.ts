@@ -21,5 +21,9 @@ export async function POST(req: NextRequest) {
   }
 
   const existing = findShopperByPhone(body.phone);
-  return NextResponse.json({ ok: true, existingShopper: existing });
+  // passwordHash never leaves the server, same reasoning as the profile
+  // endpoint - the client only ever needs to know a password exists, not
+  // its hash.
+  const safeExisting = existing ? (({ passwordHash: _passwordHash, ...rest }) => rest)(existing) : null;
+  return NextResponse.json({ ok: true, existingShopper: safeExisting });
 }
