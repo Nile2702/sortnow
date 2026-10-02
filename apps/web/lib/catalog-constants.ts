@@ -115,6 +115,52 @@ export const FABRIC_OPTIONS: string[] = [
   "Leather",
 ];
 
+// Common apparel/footwear/accessory brands across the catalog's actual mix
+// (ethnic wear, Western wear, footwear) - a dropdown for the common case, so
+// a multi-brand/reseller store can tag an item in one click instead of
+// typing the same label every time. Combined at the call site (see
+// ProductForm, bulk-photos) with whatever brand names a store has already
+// typed in on its own products, since a smaller house label or a regional
+// brand not in this list obviously can't be pre-empted here - "+ Add new
+// brand" (same pattern as Fabric's "Other") covers everything else.
+export const BRAND_OPTIONS: string[] = [
+  "Biba",
+  "W",
+  "Aurelia",
+  "Global Desi",
+  "Libas",
+  "Soch",
+  "Fabindia",
+  "Anouk",
+  "Manyavar",
+  "Nalli",
+  "Sabyasachi",
+  "Westside",
+  "Max Fashion",
+  "Pantaloons",
+  "Zara",
+  "H&M",
+  "Levi's",
+  "Wrangler",
+  "Lee",
+  "Peter England",
+  "Van Heusen",
+  "Allen Solly",
+  "Louis Philippe",
+  "Arrow",
+  "US Polo Assn.",
+  "Jack & Jones",
+  "Flying Machine",
+  "Puma",
+  "Nike",
+  "Adidas",
+  "Skechers",
+  "Bata",
+  "Woodland",
+  "Hidesign",
+  "Caprese",
+];
+
 // A shared color catalog so a seller can list one product across several
 // colors by picking swatches instead of photographing and re-uploading
 // every colorway separately - see components/ProductForm.tsx, which creates

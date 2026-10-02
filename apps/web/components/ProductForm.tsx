@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CATEGORY_TREE, COLOR_CATALOG, FABRIC_OPTIONS, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../lib/catalog-constants";
+import { CATEGORY_TREE, COLOR_CATALOG, FABRIC_OPTIONS, BRAND_OPTIONS, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../lib/catalog-constants";
 import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, cutoutFromMask, removeBackgroundRMBG } from "../lib/image-enhance";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
@@ -185,12 +185,16 @@ export function ProductForm({
       .then((d) => setCredits(d?.balance ?? null));
   }, [storeId]);
 
-  // Quick-pick chips for Brand, below - a multi-brand/reseller store tends
-  // to reuse the same handful of labels across many products, so offering
-  // the ones already used on this store's own catalog beats retyping the
-  // same name every time. Purely a convenience; the field stays free text
-  // either way, so a brand that's never been used yet just gets typed once.
-  const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
+  // Brand dropdown below: BRAND_OPTIONS' common apparel/footwear labels,
+  // plus whatever this store has already typed in on its own products (a
+  // smaller house label or regional brand BRAND_OPTIONS can't anticipate) -
+  // merged and deduped so either source shows up the same way. "+ Add new
+  // brand" reveals a free-text field instead, the same escape hatch Fabric
+  // already has, since a brand that's never been used yet obviously isn't
+  // in either list.
+  const [storeBrands, setStoreBrands] = useState<string[]>([]);
+  const brandOptions = [...new Set([...BRAND_OPTIONS, ...storeBrands])].sort((a, b) => a.localeCompare(b));
+  const [brandIsOther, setBrandIsOther] = useState(() => !!initial?.brand && !BRAND_OPTIONS.includes(initial.brand));
   useEffect(() => {
     fetch(`/api/v1/seller/stores/${storeId}/products`)
       .then((r) => (r.ok ? r.json() : []))
@@ -200,9 +204,12 @@ export function ProductForm({
           const b = p.brand?.trim();
           if (b) seen.add(b);
         }
-        setBrandSuggestions([...seen].sort((a, b) => a.localeCompare(b)));
+        const list = [...seen].sort((a, b) => a.localeCompare(b));
+        setStoreBrands(list);
+        if (initial?.brand) setBrandIsOther(!BRAND_OPTIONS.includes(initial.brand) && !list.includes(initial.brand));
       })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -696,33 +703,35 @@ export function ProductForm({
 
       <div>
         <label style={labelStyle()}>Brand (optional)</label>
-        <input
-          value={form.brand ?? ""}
-          onChange={(e) => update("brand", e.target.value)}
+        <select
+          value={brandIsOther ? "__other__" : form.brand ?? ""}
+          onChange={(e) => {
+            if (e.target.value === "__other__") {
+              setBrandIsOther(true);
+              update("brand", "");
+            } else {
+              setBrandIsOther(false);
+              update("brand", e.target.value || undefined);
+            }
+          }}
           style={inputStyle()}
-          placeholder="e.g. Biba, or your own house label"
-        />
-        {brandSuggestions.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-            {brandSuggestions.map((b) => (
-              <button
-                type="button"
-                key={b}
-                onClick={() => update("brand", b)}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  border: form.brand === b ? "1px solid #0f172a" : "1px solid #e2e8f0",
-                  background: form.brand === b ? "#0f172a" : "#fff",
-                  color: form.brand === b ? "#fff" : "#334155",
-                  fontSize: 12,
-                  cursor: "pointer",
-                }}
-              >
-                {b}
-              </button>
-            ))}
-          </div>
+        >
+          <option value="">No brand</option>
+          {brandOptions.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
+          <option value="__other__">+ Add new brand</option>
+        </select>
+        {brandIsOther && (
+          <input
+            autoFocus
+            value={form.brand ?? ""}
+            onChange={(e) => update("brand", e.target.value)}
+            style={{ ...inputStyle(), marginTop: 8 }}
+            placeholder="e.g. Biba, or your own house label"
+          />
         )}
       </div>
 

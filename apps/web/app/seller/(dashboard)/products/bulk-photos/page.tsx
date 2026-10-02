@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
-import { CATEGORY_TREE, COLOR_CATALOG, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
+import { CATEGORY_TREE, COLOR_CATALOG, BRAND_OPTIONS, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
 import {
   autoAlignAndZoom,
   cutoutFromMask,
@@ -56,6 +56,13 @@ interface Draft {
   stockRemaining: number;
   color: string | undefined;
   brand: string | undefined;
+  // Whether this draft's Brand dropdown is showing the "+ Add new brand"
+  // free-text field instead of the dropdown itself - tracked per draft
+  // (rather than derived from `brand` not matching a known suggestion)
+  // because a brand typed partway through, or cleared back to empty while
+  // still in "new brand" mode, must keep showing the text field rather than
+  // snapping back to the dropdown.
+  brandIsOther: boolean;
   sizes: string[];
   // Shared across every draft linked together as "same product, different
   // colors" (see handleLinkAsColorVariants) - same meaning as Product's own
@@ -108,17 +115,18 @@ export default function BulkPhotoUploadPage() {
   const [bulkSubCategory, setBulkSubCategory] = useState("");
   const [bulkFabric, setBulkFabric] = useState("");
   const [bulkBrand, setBulkBrand] = useState("");
+  const [bulkBrandIsOther, setBulkBrandIsOther] = useState(false);
   const [bulkBasePrice, setBulkBasePrice] = useState("");
   const [bulkCompareAtPrice, setBulkCompareAtPrice] = useState("");
   const [bulkCostPrice, setBulkCostPrice] = useState("");
   const [bulkStockRemaining, setBulkStockRemaining] = useState("");
 
-  // Quick-pick chips for Brand, shown on each draft below - a multi-
-  // brand/reseller store tends to reuse the same handful of labels across
-  // many products, so offering the ones already used on this store's own
-  // catalog beats retyping the same name on every draft. Purely a
-  // convenience; the field stays free text either way.
-  const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
+  // Brand dropdown, shown on each draft below (and in the Apply to all bar):
+  // BRAND_OPTIONS' common apparel/footwear labels, plus whatever this store
+  // has already typed in on its own products - merged and deduped. "+ Add
+  // new brand" reveals a free-text field instead.
+  const [storeBrands, setStoreBrands] = useState<string[]>([]);
+  const brandOptions = [...new Set([...BRAND_OPTIONS, ...storeBrands])].sort((a, b) => a.localeCompare(b));
   useEffect(() => {
     if (!store) return;
     fetch(`/api/v1/seller/stores/${store.id}/products`)
@@ -129,7 +137,7 @@ export default function BulkPhotoUploadPage() {
           const b = p.brand?.trim();
           if (b) seen.add(b);
         }
-        setBrandSuggestions([...seen].sort((a, b) => a.localeCompare(b)));
+        setStoreBrands([...seen].sort((a, b) => a.localeCompare(b)));
       })
       .catch(() => {});
   }, [store]);
@@ -185,6 +193,7 @@ export default function BulkPhotoUploadPage() {
           subCategory: primary.subCategory,
           fabric: primary.fabric,
           brand: primary.brand,
+          brandIsOther: primary.brandIsOther,
           description: primary.description,
           basePrice: primary.basePrice,
           compareAtPrice: primary.compareAtPrice,
@@ -256,7 +265,10 @@ export default function BulkPhotoUploadPage() {
           patch.sizes = getSizeOptionsFor(bulkSubCategory);
         }
         if (bulkFabric) patch.fabric = bulkFabric;
-        if (bulkBrand) patch.brand = bulkBrand;
+        if (bulkBrand) {
+          patch.brand = bulkBrand;
+          patch.brandIsOther = !brandOptions.includes(bulkBrand);
+        }
         if (bulkBasePrice !== "") patch.basePrice = Number(bulkBasePrice);
         if (bulkCompareAtPrice !== "") patch.compareAtPrice = Number(bulkCompareAtPrice);
         if (bulkCostPrice !== "") patch.costPrice = Number(bulkCostPrice);
@@ -300,6 +312,7 @@ export default function BulkPhotoUploadPage() {
         stockRemaining: 10,
         color: undefined,
         brand: undefined,
+        brandIsOther: false,
         colorGroupId: undefined,
         // Every size valid for the default subcategory, matching what
         // publishing used to hardcode - a seller who doesn't touch this can
@@ -634,7 +647,38 @@ export default function BulkPhotoUploadPage() {
               ))}
             </select>
             <input value={bulkFabric} onChange={(e) => setBulkFabric(e.target.value)} placeholder="Fabric (unchanged)" style={inputStyle()} />
-            <input value={bulkBrand} onChange={(e) => setBulkBrand(e.target.value)} placeholder="Brand (unchanged)" style={inputStyle()} />
+            <div>
+              <select
+                value={bulkBrandIsOther ? "__other__" : bulkBrand}
+                onChange={(e) => {
+                  if (e.target.value === "__other__") {
+                    setBulkBrandIsOther(true);
+                    setBulkBrand("");
+                  } else {
+                    setBulkBrandIsOther(false);
+                    setBulkBrand(e.target.value);
+                  }
+                }}
+                style={inputStyle()}
+              >
+                <option value="">Brand (unchanged)</option>
+                {brandOptions.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+                <option value="__other__">+ Add new brand</option>
+              </select>
+              {bulkBrandIsOther && (
+                <input
+                  autoFocus
+                  value={bulkBrand}
+                  onChange={(e) => setBulkBrand(e.target.value)}
+                  placeholder="Enter the brand name"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+              )}
+            </div>
             <input
               type="number"
               min={0}
@@ -971,33 +1015,33 @@ export default function BulkPhotoUploadPage() {
                       style={inputStyle()}
                     />
                     <div style={{ gridColumn: "1 / -1" }}>
-                      <input
-                        value={d.brand ?? ""}
-                        onChange={(e) => updateDraft(d.localId, { brand: e.target.value || undefined })}
-                        placeholder="Brand (optional)"
+                      <select
+                        value={d.brandIsOther ? "__other__" : d.brand ?? ""}
+                        onChange={(e) => {
+                          if (e.target.value === "__other__") {
+                            updateDraft(d.localId, { brand: "", brandIsOther: true });
+                          } else {
+                            updateDraft(d.localId, { brand: e.target.value || undefined, brandIsOther: false });
+                          }
+                        }}
                         style={inputStyle()}
-                      />
-                      {brandSuggestions.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                          {brandSuggestions.map((b) => (
-                            <button
-                              type="button"
-                              key={b}
-                              onClick={() => updateDraft(d.localId, { brand: b })}
-                              style={{
-                                padding: "4px 10px",
-                                borderRadius: 999,
-                                border: d.brand === b ? "1px solid #0f172a" : "1px solid #e2e8f0",
-                                background: d.brand === b ? "#0f172a" : "#fff",
-                                color: d.brand === b ? "#fff" : "#334155",
-                                fontSize: 12,
-                                cursor: "pointer",
-                              }}
-                            >
-                              {b}
-                            </button>
-                          ))}
-                        </div>
+                      >
+                        <option value="">Brand (optional)</option>
+                        {brandOptions.map((b) => (
+                          <option key={b} value={b}>
+                            {b}
+                          </option>
+                        ))}
+                        <option value="__other__">+ Add new brand</option>
+                      </select>
+                      {d.brandIsOther && (
+                        <input
+                          autoFocus
+                          value={d.brand ?? ""}
+                          onChange={(e) => updateDraft(d.localId, { brand: e.target.value })}
+                          placeholder="Enter the brand name"
+                          style={{ ...inputStyle(), marginTop: 8 }}
+                        />
                       )}
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>
