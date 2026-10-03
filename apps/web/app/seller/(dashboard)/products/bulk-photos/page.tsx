@@ -427,13 +427,25 @@ export default function BulkPhotoUploadPage() {
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result?.message ?? "Autofill failed");
+        // Falls back to whatever the draft already had, not a blank/default
+        // value, for any field the AI didn't return - this used to
+        // overwrite a seller's own typed title/fabric/description with ""
+        // and gender/category back to "women" whenever the AI response
+        // omitted them, silently wiping real data instead of leaving it
+        // alone. subCategory changing also means the sizes picked for the
+        // OLD category (possibly not valid for the new one, e.g. Sarees vs.
+        // Footwear) need resetting too, the same way the manual
+        // gender/subCategory dropdowns already do below.
+        const nextGender = result.gender || draft.gender;
+        const nextSubCategory = result.subCategory || defaultSizedSubCategoryFor(nextGender as Gender);
         updateDraft(draft.localId, {
           status: "ready",
-          title: result.title ?? "",
-          description: result.description ?? "",
-          fabric: result.fabric ?? "",
-          gender: result.gender ?? "women",
-          subCategory: result.subCategory ?? defaultSizedSubCategoryFor((result.gender ?? "women") as Gender),
+          title: result.title || draft.title,
+          description: result.description || draft.description,
+          fabric: result.fabric || draft.fabric,
+          gender: nextGender,
+          subCategory: nextSubCategory,
+          sizes: nextSubCategory !== draft.subCategory ? getSizeOptionsFor(nextSubCategory) : draft.sizes,
         });
       } catch (err) {
         updateDraft(draft.localId, { status: "error", error: friendlyErrorMessage(err, "Couldn't process this photo.") });

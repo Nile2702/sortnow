@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { upsertShopper } from "../../../../../lib/seed-data";
 import { validatePassword } from "../../../../../lib/validate-password";
+import { consumePhoneVerification } from "../../../../../lib/otp";
 
 const VALID_CATEGORIES = new Set(["men", "women", "kids"]);
 
@@ -40,6 +41,18 @@ export async function POST(req: NextRequest) {
   if (body.password !== undefined && body.password !== null && body.password !== "") {
     const { errors } = validatePassword(body.password);
     if (errors.length > 0) return NextResponse.json({ error: "invalid_request", message: errors.join(" ") }, { status: 400 });
+  }
+
+  // Proof the caller actually just verified an OTP for this exact phone -
+  // without this, anyone could POST any phone number here and rewrite that
+  // shopper's name or set a login password for their account, since
+  // upsertShopper trusts whatever phone the request claims. Single-use,
+  // consumed here, same lifetime as the OTP verification it rides on.
+  if (!consumePhoneVerification(body.phone)) {
+    return NextResponse.json(
+      { error: "not_verified", message: "Verify your phone with an OTP before saving a profile." },
+      { status: 401 }
+    );
   }
 
   const { shopper, isNewCustomer } = upsertShopper({

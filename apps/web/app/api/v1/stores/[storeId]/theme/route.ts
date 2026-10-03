@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { storeId: s
   const denied = requireSellerForStore(store.id, store.slug);
   if (denied) return denied;
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
   const { primary, accent, heroTitle, heroSubtitle } = body ?? {};
   const HEX_COLOR = /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
 

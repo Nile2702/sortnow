@@ -18,10 +18,10 @@ const PLATFORM_ROOT_DOMAIN = "sortitout.in";
 // instead of falling through to "domain not configured".
 const LAN_IP_HOST = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)[\d.]+(:\d+)?$/;
 
-// Public dev-tunnel hostnames (localtunnel, ngrok, Cloudflare quick tunnels)
-// - the standard workaround when a firewall or network policy blocks direct
-// LAN access to this machine.
-const DEV_TUNNEL_HOST = /\.(loca\.lt|ngrok-free\.app|ngrok\.io|ngrok\.app|trycloudflare\.com)$/;
+// Public dev-tunnel hostnames (localtunnel, ngrok, Cloudflare quick tunnels,
+// localhost.run's SSH-based tunnel) - the standard workaround when a
+// firewall or network policy blocks direct LAN access to this machine.
+const DEV_TUNNEL_HOST = /\.(loca\.lt|ngrok-free\.app|ngrok\.io|ngrok\.app|trycloudflare\.com|lhr\.life)$/;
 
 // Explicit opt-in rather than an `process.env.NODE_ENV !== "production"`
 // check: `next start` (used to test a real production build, e.g. for

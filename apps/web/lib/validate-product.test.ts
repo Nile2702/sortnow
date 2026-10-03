@@ -135,3 +135,31 @@ test("does not flag ordinary fashion terms as banned content", () => {
   );
   assert.deepEqual(errors, []);
 });
+
+// `null` is a deliberate "clear this field" signal on update, distinct from
+// the key being absent entirely ("not mentioned, leave the existing value
+// alone") - see ProductForm.tsx's handleSubmit. A seller clearing an
+// optional field (e.g. ending a discount by blanking MRP) used to have no
+// way to express that: `undefined` just drops the key from the JSON body,
+// which the server reads as "unchanged".
+test("null explicitly clears compareAtPrice, costPrice, brand, and productCode on update", () => {
+  const { errors, data } = validateProductInput({ compareAtPrice: null, costPrice: null, brand: null, productCode: null }, false);
+  assert.deepEqual(errors, []);
+  assert.ok("compareAtPrice" in data);
+  assert.equal(data.compareAtPrice, undefined);
+  assert.ok("costPrice" in data);
+  assert.equal(data.costPrice, undefined);
+  assert.ok("brand" in data);
+  assert.equal(data.brand, undefined);
+  assert.ok("productCode" in data);
+  assert.equal(data.productCode, undefined);
+});
+
+test("omitting compareAtPrice, costPrice, brand, and productCode leaves them untouched on update", () => {
+  const { errors, data } = validateProductInput({ title: "Updated title" }, false);
+  assert.deepEqual(errors, []);
+  assert.ok(!("compareAtPrice" in data));
+  assert.ok(!("costPrice" in data));
+  assert.ok(!("brand" in data));
+  assert.ok(!("productCode" in data));
+});

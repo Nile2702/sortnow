@@ -54,8 +54,16 @@ export default function SellerDashboard() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(saleForm),
     });
-    setLiveSale(await res.json());
+    const body = await res.json().catch(() => null);
     setSavingSale(false);
+    // A rejected save (e.g. a blank headline) used to still show the
+    // success toast and leave liveSale untouched, so the seller believed
+    // a sale was running when the server never actually started one.
+    if (!res.ok) {
+      showToast(body?.message ?? "Couldn't start the Live Sale. Check the fields and try again.", "default");
+      return;
+    }
+    setLiveSale(body);
     showToast("Live Sale started — shoppers will see it now", "success");
   }
 

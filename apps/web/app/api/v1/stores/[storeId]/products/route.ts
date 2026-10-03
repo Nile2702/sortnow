@@ -21,5 +21,8 @@ export async function GET(req: NextRequest, { params }: { params: { storeId: str
   if (sort === "price_asc") list = [...list].sort((a, b) => a.basePrice - b.basePrice);
   if (sort === "price_desc") list = [...list].sort((a, b) => b.basePrice - a.basePrice);
 
-  return NextResponse.json(list.slice(0, limit));
+  // Public, shopper-facing route - costPrice (the seller's own purchase
+  // cost) must never leave the seller dashboard, see Product.costPrice.
+  const publicList = list.slice(0, limit).map(({ costPrice: _costPrice, ...p }) => p);
+  return NextResponse.json(publicList);
 }

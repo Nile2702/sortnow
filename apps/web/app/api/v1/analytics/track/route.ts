@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
   const { ok } = rateLimit(`analytics:${clientIp(req)}`, 60, 60_000);
   if (!ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
-  const { storeSlug, qrPosition } = await req.json();
+  const body = await req.json().catch(() => null);
+  const { storeSlug, qrPosition } = body ?? {};
   if (typeof storeSlug !== "string") {
     return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   }

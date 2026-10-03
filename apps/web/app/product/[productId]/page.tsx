@@ -163,6 +163,7 @@ export default function ProductDetailPage() {
   }, [zoomOpen]);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   useEffect(() => {
     fetch(`/api/v1/products/${productId}`)
@@ -274,12 +275,24 @@ export default function ProductDetailPage() {
   async function handleSubmitReview(e: React.FormEvent) {
     e.preventDefault();
     setSubmittingReview(true);
+    setReviewError("");
     const res = await fetch(`/api/v1/products/${productId}/reviews`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(reviewForm),
     });
-    const newReview = await res.json();
+    const body = await res.json().catch(() => null);
+    setSubmittingReview(false);
+    // A rejected review (blank comment, rate-limited) used to get pushed
+    // into the list and averaged in anyway - the response in that case is
+    // an error object with no `rating`, which silently turned the running
+    // average into NaN and inflated the review count for a review that was
+    // never actually saved.
+    if (!res.ok) {
+      setReviewError(body?.message ?? "Couldn't submit your review. Try again.");
+      return;
+    }
+    const newReview = body;
     setReviews((r) => [newReview, ...r]);
     setSummary((s) => ({
       average: Math.round((((s.average * s.count) + newReview.rating) / (s.count + 1)) * 10) / 10,
@@ -287,7 +300,6 @@ export default function ProductDetailPage() {
       breakdown: s.breakdown.map((b) => (b.star === newReview.rating ? { ...b, count: b.count + 1 } : b)),
     }));
     setReviewForm({ authorName: "", rating: 5, title: "", comment: "" });
-    setSubmittingReview(false);
     setReviewSubmitted(true);
     setTimeout(() => setReviewSubmitted(false), 3000);
   }
@@ -591,7 +603,10 @@ export default function ProductDetailPage() {
                 −
               </button>
               <span style={{ width: 44, textAlign: "center", fontWeight: 600, fontSize: 14 }}>{quantity}</span>
-              <button onClick={() => setQuantity((q) => q + 1)} style={qtyBtnStyle()}>
+              <button
+                onClick={() => setQuantity((q) => (product.stockRemaining != null ? Math.min(product.stockRemaining, q + 1) : q + 1))}
+                style={qtyBtnStyle()}
+              >
                 +
               </button>
             </div>
@@ -903,6 +918,11 @@ export default function ProductDetailPage() {
               {reviewSubmitted && (
                 <span className="sio-fade-in" style={{ color: "var(--sio-bronze-dark)", fontSize: 13 }}>
                   Thanks for your review.
+                </span>
+              )}
+              {reviewError && (
+                <span className="sio-fade-in" style={{ color: "#dc2626", fontSize: 13 }}>
+                  {reviewError}
                 </span>
               )}
             </form>

@@ -13,7 +13,8 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
   const denied = requireSellerForStore(store.id, store.slug);
   if (denied) return denied;
 
-  const { rows } = await req.json();
+  const body = await req.json().catch(() => null);
+  const rows = body?.rows;
   if (!Array.isArray(rows)) return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
 
   const errors: { row: number; message: string }[] = [];

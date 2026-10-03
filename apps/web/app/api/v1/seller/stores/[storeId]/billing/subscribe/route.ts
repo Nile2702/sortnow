@@ -10,8 +10,8 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
   const denied = requireSellerForStore(store.id, store.slug);
   if (denied) return denied;
 
-  const { planCode } = await req.json();
-  const subscription = changePlan(store.id, planCode);
+  const body = await req.json().catch(() => null);
+  const subscription = changePlan(store.id, body?.planCode);
   if (!subscription) {
     return NextResponse.json({ error: "invalid_plan", message: "planCode must be one of the published plans" }, { status: 400 });
   }

@@ -12,10 +12,12 @@ interface Product {
   fabric?: string;
   color?: string;
   brand?: string;
+  productCode?: string;
   gender: string;
   subCategory: string;
   basePrice: number;
   compareAtPrice?: number;
+  costPrice?: number;
   sizes: string[];
   stockRemaining?: number;
   images: { url: string }[];
@@ -27,7 +29,10 @@ export default function EditProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    fetch(`/api/v1/products/${productId}`)
+    // The seller-authenticated route, not the public /api/v1/products one -
+    // that route strips costPrice (never meant to reach a shopper), which
+    // left this Edit page unable to show or re-save it.
+    fetch(`/api/v1/seller/products/${productId}`)
       .then((r) => r.json())
       .then(setProduct);
   }, [productId]);
@@ -52,10 +57,12 @@ export default function EditProductPage() {
           fabric: product.fabric ?? "",
           color: product.color,
           brand: product.brand,
+          productCode: product.productCode,
           gender: product.gender,
           subCategory: product.subCategory,
           basePrice: product.basePrice,
           compareAtPrice: product.compareAtPrice,
+          costPrice: product.costPrice,
           sizes: product.sizes,
           stockRemaining: product.stockRemaining ?? 0,
         }}

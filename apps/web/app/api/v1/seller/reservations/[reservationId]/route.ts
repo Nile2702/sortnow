@@ -9,7 +9,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { reservatio
   const denied = requireSellerForStore(existing.storeId, existingStore?.slug);
   if (denied) return denied;
 
-  const { status } = (await req.json()) as { status: "fulfilled" | "cancelled" };
+  const body = (await req.json().catch(() => null)) as { status: "fulfilled" | "cancelled" } | null;
+  const status = body?.status;
   if (status !== "fulfilled" && status !== "cancelled") {
     return NextResponse.json({ error: "invalid_status" }, { status: 400 });
   }

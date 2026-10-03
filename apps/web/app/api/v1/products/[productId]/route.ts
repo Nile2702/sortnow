@@ -10,5 +10,10 @@ export async function GET(_req: NextRequest, { params }: { params: { productId: 
     .map((p) => ({ id: p.id, color: p.color, thumbnail: p.images[0]?.url }))
     .filter((v) => v.color);
 
-  return NextResponse.json({ ...product, store, colorVariants });
+  // costPrice is the seller's own purchase cost, never meant to leave the
+  // seller dashboard (see Product.costPrice) - this is a shopper-facing
+  // route, so it's stripped before responding rather than spread straight
+  // through.
+  const { costPrice: _costPrice, ...publicProduct } = product;
+  return NextResponse.json({ ...publicProduct, store, colorVariants });
 }

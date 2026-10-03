@@ -5,7 +5,8 @@ import { createSellerSessionToken, SELLER_SESSION_COOKIE } from "../../../../../
 import { rateLimit, clientIp } from "../../../../../../lib/rate-limit";
 
 export async function POST(req: NextRequest) {
-  const { storeSlug, password } = await req.json();
+  const body = await req.json().catch(() => null);
+  const { storeSlug, password } = body ?? {};
   if (typeof storeSlug !== "string" || typeof password !== "string") {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }

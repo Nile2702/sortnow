@@ -53,6 +53,7 @@ export function ProductForm({
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialImageUrl ?? null);
   const [uploadError, setUploadError] = useState("");
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -470,20 +471,30 @@ export function ProductForm({
       return;
     }
     if (result.fabric) setFabricIsOther(!FABRIC_OPTIONS.includes(result.fabric));
-    setForm((f) => ({
-      ...f,
-      title: result.title || f.title,
-      description: result.description || f.description,
-      fabric: result.fabric || f.fabric,
-      gender: result.gender || f.gender,
-      subCategory: result.subCategory || defaultSizedSubCategoryFor(result.gender as Gender) || f.subCategory,
-    }));
+    setForm((f) => {
+      const nextSubCategory = result.subCategory || defaultSizedSubCategoryFor(result.gender as Gender) || f.subCategory;
+      // A changed subCategory can make the previously-picked sizes invalid
+      // (e.g. Sarees vs. Footwear) - filtered down the same way the manual
+      // Category/Subcategory dropdowns above already do, rather than left
+      // stale and pointing at options no longer even shown.
+      const validSizes = getSizeOptionsFor(nextSubCategory);
+      return {
+        ...f,
+        title: result.title || f.title,
+        description: result.description || f.description,
+        fabric: result.fabric || f.fabric,
+        gender: result.gender || f.gender,
+        subCategory: nextSubCategory,
+        sizes: nextSubCategory !== f.subCategory ? f.sizes.filter((s) => validSizes.includes(s)) : f.sizes,
+      };
+    });
     setAutofilled(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setSaveError("");
 
     const mainImage = uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor);
     const [storedMainImage, storedAdditionalImages] = await Promise.all([
@@ -498,21 +509,30 @@ export function ProductForm({
       })
     );
 
+    // On edit, a blank optional field means "clear this" - sending
+    // `undefined` for it would just drop the key from the JSON body
+    // entirely, which the server (correctly) reads as "not mentioned, leave
+    // the existing value alone", so a seller clearing MRP to end a discount
+    // (for example) saw it silently keep showing. `null` is this codebase's
+    // explicit "clear it" signal (see validate-product.ts); on create there
+    // is no previous value to clear, so blank just means "don't set it".
+    const emptyToClear = mode === "edit" ? null : undefined;
     const basePayload = {
       description: form.description,
       fabric: form.fabric,
-      brand: form.brand?.trim() || undefined,
-      productCode: form.productCode?.trim() || undefined,
+      brand: form.brand?.trim() || emptyToClear,
+      productCode: form.productCode?.trim() || emptyToClear,
       gender: form.gender,
       subCategory: form.subCategory,
       basePrice: Number(form.basePrice),
-      compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : undefined,
-      costPrice: form.costPrice !== undefined && form.costPrice !== null ? Number(form.costPrice) : undefined,
+      compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : emptyToClear,
+      costPrice: form.costPrice !== undefined && form.costPrice !== null ? Number(form.costPrice) : emptyToClear,
       sizes: form.sizes,
       stockRemaining: Number(form.stockRemaining),
       images: [{ url: storedMainImage }, ...storedAdditionalImages.map((url) => ({ url }))],
     };
 
+    let responses: Response[];
     if (mode === "create") {
       // Selecting 2+ colors lists the same item once per color, sharing
       // every other field, instead of the seller re-typing details for each
@@ -523,7 +543,7 @@ export function ProductForm({
       // each other later - a single-color/no-color create has no siblings,
       // so it gets no colorGroupId at all.
       const colorGroupId = colorsToCreate.length > 1 ? `cg-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}` : undefined;
-      await Promise.all(
+      responses = await Promise.all(
         colorsToCreate.map((color) => {
           const colorImage = color ? storedColorImages[color] : undefined;
           return fetch(`/api/v1/seller/stores/${storeId}/products`, {
@@ -542,12 +562,29 @@ export function ProductForm({
         })
       );
     } else {
-      await fetch(`/api/v1/seller/products/${initial?.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...basePayload, title: form.title, color: selectedColors[0] }),
-      });
+      responses = [
+        await fetch(`/api/v1/seller/products/${initial?.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...basePayload, title: form.title, color: selectedColors[0] }),
+        }),
+      ];
     }
+
+    // Every single-product form submission used to redirect unconditionally,
+    // so a rejected save (a 0 price, moderation-blocked text, a dropped
+    // network request) looked identical to a successful one - the seller
+    // was sent back to the product list with no product actually
+    // saved/changed and no indication anything went wrong.
+    const failed = responses.filter((r) => !r.ok);
+    if (failed.length > 0) {
+      const bodies = await Promise.all(failed.map((r) => r.json().catch(() => null)));
+      const messages = bodies.map((b) => (Array.isArray(b?.errors) ? b.errors.join("; ") : b?.message)).filter(Boolean);
+      setSaving(false);
+      setSaveError(messages[0] || "Couldn't save this product. Check the fields above and try again.");
+      return;
+    }
+
     router.push("/seller/products");
     router.refresh();
   }
@@ -1148,6 +1185,14 @@ export function ProductForm({
             <input type="file" accept="image/*" multiple onChange={handleAdditionalFilesChange} style={{ fontSize: 13, width: "100%", maxWidth: "100%" }} />
           )}
           {additionalUploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{additionalUploadError}</p>}
+        </div>
+      )}
+
+      {saveError && (
+        <div
+          style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: 10, padding: "10px 12px", fontSize: 13 }}
+        >
+          {saveError}
         </div>
       )}
 

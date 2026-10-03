@@ -94,7 +94,15 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
     }
   }
 
-  if (input.compareAtPrice !== undefined && input.compareAtPrice !== null) {
+  // `null` is a deliberate "clear this field" signal, distinct from the key
+  // being absent entirely ("not mentioned, leave the existing value alone")
+  // - see ProductForm.tsx's handleSubmit. Setting `data.compareAtPrice =
+  // undefined` as an own property (rather than just never assigning it)
+  // means updateProduct's Object.assign actually overwrites the existing
+  // value with undefined instead of leaving the key out of the patch.
+  if (input.compareAtPrice === null) {
+    data.compareAtPrice = undefined;
+  } else if (input.compareAtPrice !== undefined) {
     const compareAt = Number(input.compareAtPrice);
     if (!Number.isFinite(compareAt) || compareAt <= 0 || compareAt > MAX_PRICE) {
       errors.push(`compareAtPrice must be a number greater than 0 and at most ${MAX_PRICE}`);
@@ -103,7 +111,9 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
     }
   }
 
-  if (input.costPrice !== undefined && input.costPrice !== null && input.costPrice !== "") {
+  if (input.costPrice === null) {
+    data.costPrice = undefined;
+  } else if (input.costPrice !== undefined && input.costPrice !== "") {
     const cost = Number(input.costPrice);
     if (!Number.isFinite(cost) || cost < 0 || cost > MAX_PRICE) {
       errors.push(`costPrice must be a non-negative number and at most ${MAX_PRICE}`);
@@ -156,7 +166,9 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
     }
   }
 
-  if (input.productCode !== undefined && input.productCode !== null) {
+  if (input.productCode === null) {
+    data.productCode = undefined;
+  } else if (input.productCode !== undefined) {
     if (typeof input.productCode !== "string") {
       errors.push("productCode must be a string");
     } else if (input.productCode.length > MAX_TEXT) {
@@ -176,7 +188,9 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
     }
   }
 
-  if (input.brand !== undefined && input.brand !== null) {
+  if (input.brand === null) {
+    data.brand = undefined;
+  } else if (input.brand !== undefined) {
     if (typeof input.brand !== "string") {
       errors.push("brand must be a string");
     } else if (input.brand.length > MAX_TEXT) {

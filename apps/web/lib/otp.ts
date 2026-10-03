@@ -25,6 +25,30 @@ const otps = globalThis.__sioOtps ?? (globalThis.__sioOtps = new Map());
 const OTP_TTL_MS = 5 * 60 * 1000;
 const MAX_VERIFY_ATTEMPTS = 5;
 
+// A verified-OTP grant, consumed once by /api/v1/shopper/profile right
+// after a successful verify - without this, that endpoint had no proof the
+// caller actually owns the phone number it was given. It used to accept any
+// {name, phone, password} and overwrite an EXISTING shopper's name and set
+// a login password for them, since upsertShopper's "existing" branch just
+// trusts whatever phone is in the request body - anyone could take over any
+// shopper account by phone number alone. Short-lived (just long enough to
+// complete the profile step right after verifying) and single-use, same
+// reasoning as the OTP code itself.
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioVerifiedPhones: Map<string, number> | undefined;
+}
+const verifiedPhones = globalThis.__sioVerifiedPhones ?? (globalThis.__sioVerifiedPhones = new Map());
+const PHONE_VERIFICATION_TTL_MS = 10 * 60 * 1000;
+
+/** Consumes a recent OTP-verification grant for this phone - true only once per verify. */
+export function consumePhoneVerification(phone: string): boolean {
+  const key = normalizePhone(phone);
+  const expiresAt = verifiedPhones.get(key);
+  verifiedPhones.delete(key);
+  return !!expiresAt && Date.now() <= expiresAt;
+}
+
 export function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, "").slice(-10);
 }
@@ -67,6 +91,7 @@ export function verifyOtp(phone: string, code: string): boolean {
   }
   if (record.code !== code.trim()) return false;
   otps.delete(key); // single-use - a verified code can't be replayed
+  verifiedPhones.set(key, Date.now() + PHONE_VERIFICATION_TTL_MS);
   return true;
 }
 

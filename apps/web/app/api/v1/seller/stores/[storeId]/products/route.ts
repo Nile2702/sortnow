@@ -21,7 +21,8 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
   const denied = requireSellerForStore(store.id, store.slug);
   if (denied) return denied;
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   const { errors, data } = validateProductInput(body, true);
   if (errors.length > 0) {
     return NextResponse.json({ error: "invalid_input", errors }, { status: 400 });

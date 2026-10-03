@@ -17,7 +17,8 @@ export async function POST(req: NextRequest, { params }: { params: { productId: 
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   const rating = Number(body.rating);
   if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
     return NextResponse.json({ error: "invalid_input", message: "rating must be a number from 1 to 5" }, { status: 400 });

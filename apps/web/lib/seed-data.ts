@@ -1042,7 +1042,9 @@ export function searchProducts(opts: {
   else if (query) results = [...results].sort((a, b) => b.searchScore - a.searchScore || (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
   else results = [...results].sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
 
-  return results.map(({ searchScore, ...p }) => p);
+  // costPrice (seller's own purchase cost) must never reach this
+  // shopper-facing search result, same reasoning as searchScore itself.
+  return results.map(({ searchScore, costPrice: _costPrice, ...p }) => p);
 }
 
 
@@ -1135,6 +1137,7 @@ export function createProduct(storeId: string, input: Partial<Product>): Product
     productCode: input.productCode,
     basePrice: input.basePrice ?? 0,
     compareAtPrice: input.compareAtPrice,
+    costPrice: input.costPrice,
     images: input.images?.length ? input.images : [{ url: placeholderImage(input.title ?? "New product", "#334155", "#f1f5f9") }],
     sizes: input.sizes?.length ? input.sizes : ["Free Size"],
     stockRemaining: input.stockRemaining ?? 10,
@@ -1744,6 +1747,13 @@ export function createBill(input: {
 
   // Resolve and validate every line before mutating any stock, so a bill
   // either goes through completely or not at all - never half-deducted.
+  // Tracks how much of each product this same bill has already claimed
+  // (e.g. two lines for the same product in different sizes) - checking
+  // each line only against the product's own stockRemaining, independently,
+  // would let two lines of 3 each both pass against a stock of 4, since
+  // neither line's check sees the other's claim until stock is actually
+  // decremented afterward.
+  const claimedByProduct = new Map<string, number>();
   const resolved: { product: Product; quantity: number; size?: string }[] = [];
   for (const line of input.items) {
     const product = products.find((p) => p.id === line.productId && p.storeId === input.storeId);
@@ -1754,10 +1764,12 @@ export function createBill(input: {
     if (line.size !== undefined && product.sizes.length > 0 && !product.sizes.includes(line.size)) {
       return { error: `"${line.size}" isn't a valid size for "${product.title}".` };
     }
-    const available = product.stockRemaining ?? 0;
+    const alreadyClaimed = claimedByProduct.get(product.id) ?? 0;
+    const available = (product.stockRemaining ?? 0) - alreadyClaimed;
     if (line.quantity > available) {
       return { error: `Only ${available} left in stock for "${product.title}".` };
     }
+    claimedByProduct.set(product.id, alreadyClaimed + line.quantity);
     resolved.push({ product, quantity: line.quantity, size: line.size });
   }
 
@@ -1836,11 +1848,15 @@ export function getStoreBills(storeId: string): Bill[] {
 export function voidBill(id: string, reason: string): Bill | null {
   const bill = bills.find((b) => b.id === id);
   if (!bill || bill.status === "void") return null;
+  // Goes through updateProduct (same as any other stock change) rather than
+  // mutating stockRemaining directly, so a void that brings a sold-out
+  // product back into stock also runs notifyWaitlistIfRestocked - shoppers
+  // who joined the waitlist while this bill held the last unit otherwise
+  // never heard it came back.
   for (const item of bill.items) {
     const product = products.find((p) => p.id === item.productId);
-    if (product) product.stockRemaining = (product.stockRemaining ?? 0) + item.quantity;
+    if (product) updateProduct(product.id, { stockRemaining: (product.stockRemaining ?? 0) + item.quantity });
   }
-  persist("products", products);
   bill.status = "void";
   bill.voidReason = reason;
   persist("bills", bills);
@@ -2111,10 +2127,14 @@ export function getStoreAnalytics(storeId: string) {
     byPosition[key] = (byPosition[key] ?? 0) + 1;
   }
 
+  // Counted from pageViews, not the combined `events` - a QR-code visit logs
+  // both a page_view and a qr_scan event for the same single visit (see
+  // trackPageView), so counting every event here double-counted each QR
+  // visit against totalPageViews below, which only counts page_view events.
   const last7Days = Array.from({ length: 7 }).map((_, i) => {
     const day = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000);
     const key = day.toISOString().slice(0, 10);
-    const count = events.filter((e) => e.occurredAt.slice(0, 10) === key).length;
+    const count = pageViews.filter((e) => e.occurredAt.slice(0, 10) === key).length;
     return { date: key, count };
   });
 
@@ -2142,15 +2162,24 @@ export function getSalesAnalytics(storeId: string) {
   const billQuantity = (b: Bill) => b.totalQuantity ?? b.items.reduce((sum, i) => sum + i.quantity, 0);
   const totalItemsSold = storeBills.reduce((sum, b) => sum + billQuantity(b), 0);
 
+  // A bill's discountPercent is applied to the whole subtotal, not per line
+  // (see createBill) - so a line item's own realized revenue is its own
+  // pre-tax total scaled down by that same bill-wide discount factor, not
+  // the sticker-price `item.total` on its own. Without this, a heavily
+  // discounted bill's items counted as full-price revenue here even though
+  // grandTotal (used everywhere else, e.g. totalRevenue below) already
+  // reflects the discount - overstating per-product revenue and profit.
   const revenueByProduct = new Map<string, { title: string; quantity: number; revenue: number }>();
   for (const bill of storeBills) {
+    const discountFactor = 1 - (bill.discountPercent ?? 0) / 100;
     for (const item of bill.items) {
+      const realizedRevenue = Math.round(item.total * discountFactor * 100) / 100;
       const existing = revenueByProduct.get(item.productId);
       if (existing) {
         existing.quantity += item.quantity;
-        existing.revenue += item.total;
+        existing.revenue += realizedRevenue;
       } else {
-        revenueByProduct.set(item.productId, { title: item.title, quantity: item.quantity, revenue: item.total });
+        revenueByProduct.set(item.productId, { title: item.title, quantity: item.quantity, revenue: realizedRevenue });
       }
     }
   }
@@ -2187,9 +2216,14 @@ export function getSalesAnalytics(storeId: string) {
   let totalCost = 0;
   let itemsWithCostSold = 0;
   for (const bill of storeBills) {
+    // Same bill-wide discount factor as revenueByProduct above - a
+    // discounted sale's realized revenue is lower than item.total, but what
+    // the seller actually paid for the item (unitCost) is unaffected by the
+    // discount they chose to give the shopper.
+    const discountFactor = 1 - (bill.discountPercent ?? 0) / 100;
     for (const item of bill.items) {
       if (item.unitCost == null) continue;
-      costedRevenue += item.total;
+      costedRevenue += item.total * discountFactor;
       totalCost += item.unitCost * item.quantity;
       itemsWithCostSold += item.quantity;
     }
@@ -2204,11 +2238,12 @@ export function getSalesAnalytics(storeId: string) {
   const monthly = new Map<string, { revenue: number; cost: number; itemsWithCostSold: number; totalItemsSold: number }>();
   for (const bill of storeBills) {
     const monthKey = bill.createdAt.slice(0, 7); // "YYYY-MM"
+    const discountFactor = 1 - (bill.discountPercent ?? 0) / 100;
     const entry = monthly.get(monthKey) ?? { revenue: 0, cost: 0, itemsWithCostSold: 0, totalItemsSold: 0 };
     for (const item of bill.items) {
       entry.totalItemsSold += item.quantity;
       if (item.unitCost != null) {
-        entry.revenue += item.total;
+        entry.revenue += item.total * discountFactor;
         entry.cost += item.unitCost * item.quantity;
         entry.itemsWithCostSold += item.quantity;
       }
@@ -2539,7 +2574,7 @@ export function getSimilarProducts(productId: string, limit = 4) {
     .filter((p) => storesById.get(p.storeId)?.status === "active")
     .sort((a, b) => Math.abs(a.basePrice - product.basePrice) - Math.abs(b.basePrice - product.basePrice))
     .slice(0, limit)
-    .map((p) => ({ ...p, storeName: storesById.get(p.storeId)?.name ?? "" }));
+    .map(({ costPrice: _costPrice, ...p }) => ({ ...p, storeName: storesById.get(p.storeId)?.name ?? "" }));
 }
 
 // A subcategory is either "the outfit" or "the accessory" for its gender -
@@ -2583,5 +2618,5 @@ export function getComplementaryProducts(productId: string, limit = 4) {
     candidates,
   ];
   const pool = tiers.find((t) => t.length > 0) ?? [];
-  return pool.slice(0, limit).map(({ _otherStore, ...p }) => p);
+  return pool.slice(0, limit).map(({ _otherStore, costPrice: _costPrice, ...p }) => p);
 }
