@@ -58,7 +58,9 @@ export function ProductCard({
         href={`/product/${product.id}`}
         className="sio-card"
         style={{
-          display: "block",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
           textDecoration: "none",
           color: "inherit",
           borderRadius: 10,
@@ -135,7 +137,7 @@ export function ProductCard({
 
         </div>
 
-        <div style={{ padding: "10px 12px 12px" }}>
+        <div style={{ padding: "10px 12px 12px", display: "flex", flexDirection: "column", flex: 1 }}>
           {showStore && product.storeName && (
             <div
               style={{
@@ -175,12 +177,21 @@ export function ProductCard({
             )}
             {discountPct > 0 && <span style={{ fontSize: 11.5, fontWeight: 700, color: "#16a34a" }}>{discountPct}% off</span>}
           </div>
-          {product.distanceKm != null && (
-            <div style={{ fontSize: 10.5, fontWeight: 600, color: "#2563eb", marginTop: 4 }}>
-              📍 {product.distanceKm} km away • Try on in {walkingMinutes(product.distanceKm)} mins
-            </div>
-          )}
-          {lowStock && <div style={{ fontSize: 10.5, color: "#dc2626", fontWeight: 600, marginTop: 3 }}>Only {product.stockRemaining} left</div>}
+          {/* Pinned to the bottom of the card (marginTop: auto fills whatever
+              space is left in the flex column above) rather than sitting
+              directly under the price - cards vary in how many of these
+              trailing lines they actually have (distance, low-stock, both,
+              or neither), and without this the cards in the same row ended
+              up visibly different heights/bottoms depending on which lines
+              a given product happened to need. */}
+          <div style={{ marginTop: "auto", paddingTop: 4 }}>
+            {product.distanceKm != null && (
+              <div style={{ fontSize: 10.5, fontWeight: 600, color: "#2563eb" }}>
+                📍 {product.distanceKm} km away • Try on in {walkingMinutes(product.distanceKm)} mins
+              </div>
+            )}
+            {lowStock && <div style={{ fontSize: 10.5, color: "#dc2626", fontWeight: 600, marginTop: 3 }}>Only {product.stockRemaining} left</div>}
+          </div>
         </div>
       </Link>
     </div>
