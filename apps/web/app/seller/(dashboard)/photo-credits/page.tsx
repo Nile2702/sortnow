@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { showToast } from "../../../../lib/toast";
+import { PageSkeleton } from "../../../../components/PageSkeleton";
 
 interface CreditPackage {
   id: string;
@@ -69,7 +70,7 @@ export default function PhotoCreditsPage() {
   }
 
   if (storeLoading || !store || !data) {
-    return <main style={{ maxWidth: 900, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <PageSkeleton maxWidth={900} />;
   }
 
   return (

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSellerStore } from "../../../../lib/use-seller-store";
+import { PageSkeleton } from "../../../../components/PageSkeleton";
 
 interface Analytics {
   totalPageViews: number;
@@ -98,7 +99,7 @@ export default function AnalyticsPage() {
   }
 
   if (storeLoading || !store || !data || !sales) {
-    return <main style={{ maxWidth: 1000, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <PageSkeleton maxWidth={1000} />;
   }
 
   const maxDay = Math.max(1, ...data.last7Days.map((d) => d.count));

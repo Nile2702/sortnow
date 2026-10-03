@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSellerStore } from "../../../../lib/use-seller-store";
+import { PageSkeleton } from "../../../../components/PageSkeleton";
 
 interface Plan {
   code: string;
@@ -107,7 +108,7 @@ export default function BillingPage() {
   }
 
   if (storeLoading || !store || !data || !boost) {
-    return <main style={{ maxWidth: 1000, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <PageSkeleton maxWidth={1000} />;
   }
 
   const boostActive = !!boost.boostedUntil && new Date(boost.boostedUntil).getTime() > Date.now();

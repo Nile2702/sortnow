@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ALL_SIZES, CATEGORY_TREE } from "../lib/catalog-constants";
 import { saveSmartSort } from "../lib/smart-sorts";
+import { PageSkeleton } from "../components/PageSkeleton";
 import { QUICK_MARKETS, setLocationPref, resolveAreaLabel } from "../lib/location";
 import { HeroSlider } from "../components/HeroSlider";
 import { CategoryTiles } from "../components/CategoryTiles";
@@ -616,7 +617,7 @@ function pillStyle(active: boolean): React.CSSProperties {
 
 export default function DiscoverPage() {
   return (
-    <Suspense fallback={<main style={{ maxWidth: 1440, margin: "0 auto", padding: 16 }}>Loading…</main>}>
+    <Suspense fallback={<PageSkeleton maxWidth={1440} />}>
       <DiscoverPageInner />
     </Suspense>
   );

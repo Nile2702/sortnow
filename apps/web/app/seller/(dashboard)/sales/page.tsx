@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { showToast } from "../../../../lib/toast";
+import { PageSkeleton } from "../../../../components/PageSkeleton";
 
 interface Product {
   id: string;
@@ -238,7 +239,7 @@ export default function SellerSalesPage() {
   }
 
   if (storeLoading || !store || !settings) {
-    return <main style={{ maxWidth: 1000, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <PageSkeleton maxWidth={1000} />;
   }
 
   return (

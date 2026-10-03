@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
 import { ProductForm } from "../../../../../components/ProductForm";
+import { PageSkeleton } from "../../../../../components/PageSkeleton";
 
 interface Product {
   id: string;
@@ -65,7 +66,7 @@ export default function EditProductPage() {
   }
 
   if (storeLoading || !store || !product) {
-    return <main style={{ maxWidth: 700, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <PageSkeleton maxWidth={700} />;
   }
 
   return (
