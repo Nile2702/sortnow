@@ -40,6 +40,7 @@ export default function ShopsPage() {
     fetch("/api/v1/shops")
       .then((r) => r.json())
       .then(setShops)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 

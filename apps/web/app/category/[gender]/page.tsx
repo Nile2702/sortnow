@@ -46,6 +46,7 @@ function CategoryPageInner() {
     fetch(`/api/v1/products/search?${params}`)
       .then((r) => r.json())
       .then(setProducts)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [gender, subCategory, sort]);
 

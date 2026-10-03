@@ -28,6 +28,7 @@ export default function SellerNotificationsPage() {
     fetch(`/api/v1/seller/stores/${store.id}/notifications`)
       .then((r) => r.json())
       .then(setNotifications)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [store]);
 

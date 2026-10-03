@@ -162,6 +162,7 @@ function DiscoverPageInner() {
           .sort((a, b) => (b.compareAtPrice! - b.basePrice) / b.compareAtPrice! - (a.compareAtPrice! - a.basePrice) / a.compareAtPrice!);
         setBestDeals(discounted.slice(0, 8));
       })
+      .catch(() => {})
       .finally(() => setSpotlightLoading(false));
   }, []);
 
@@ -210,6 +211,7 @@ function DiscoverPageInner() {
         setStores(storeResults);
         setSortedProducts(productResults);
       })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [pincode, geo, radius, gender, subCategory, minPrice, maxPrice, size, sortBy, q]);
 

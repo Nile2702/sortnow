@@ -72,13 +72,19 @@ export default function SellerBillDetailPage() {
 
   useEffect(() => {
     if (!store) return;
-    fetch(`/api/v1/seller/stores/${store.id}/bills/${billId}`).then((r) => {
-      if (!r.ok) {
-        setNotFound(true);
-        return;
-      }
-      r.json().then(setBill);
-    });
+    fetch(`/api/v1/seller/stores/${store.id}/bills/${billId}`)
+      .then((r) => {
+        if (!r.ok) {
+          setNotFound(true);
+          return;
+        }
+        return r.json().then(setBill);
+      })
+      // A dropped/failed request (network hiccup) used to be an unhandled
+      // rejection here - `bill` stayed null forever and this page was stuck
+      // on "Loading…" permanently. Reuses the existing not-found screen,
+      // since from here "couldn't load" and "doesn't exist" look the same.
+      .catch(() => setNotFound(true));
   }, [store, billId]);
 
   if (storeLoading || !store || (!bill && !notFound)) {

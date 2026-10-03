@@ -62,16 +62,40 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<Analytics | null>(null);
   const [sales, setSales] = useState<SalesAnalytics | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  function load(storeId: string) {
+    setLoadError(false);
+    // Without the .catch() on each of these, a dropped/failed request was
+    // an unhandled rejection - data/sales stayed null forever and this page
+    // was stuck on "Loading…" permanently with no error and no way to retry.
+    fetch(`/api/v1/seller/stores/${storeId}/analytics`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(setData)
+      .catch(() => setLoadError(true));
+    fetch(`/api/v1/seller/stores/${storeId}/sales-analytics`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(setSales)
+      .catch(() => setLoadError(true));
+  }
 
   useEffect(() => {
-    if (!store) return;
-    fetch(`/api/v1/seller/stores/${store.id}/analytics`)
-      .then((r) => r.json())
-      .then(setData);
-    fetch(`/api/v1/seller/stores/${store.id}/sales-analytics`)
-      .then((r) => r.json())
-      .then(setSales);
+    if (store) load(store.id);
   }, [store]);
+
+  if (loadError) {
+    return (
+      <main style={{ maxWidth: 1000, margin: "0 auto", padding: 40, textAlign: "center" }}>
+        <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load analytics.</p>
+        <button
+          onClick={() => store && load(store.id)}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+        >
+          Retry
+        </button>
+      </main>
+    );
+  }
 
   if (storeLoading || !store || !data || !sales) {
     return <main style={{ maxWidth: 1000, margin: "0 auto", padding: 40 }}>Loading…</main>;

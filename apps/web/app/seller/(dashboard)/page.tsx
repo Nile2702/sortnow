@@ -29,18 +29,27 @@ export default function SellerDashboard() {
 
   useEffect(() => {
     if (!store) return;
+    // None of these four gate the page (it renders with whatever's loaded
+    // so far), but each was still an unhandled rejection on a dropped/failed
+    // request - harmless by itself, but exactly the kind of error that was
+    // masking the real stuck-loading bugs elsewhere on pages that DO gate on
+    // their data. Guarded the same way for consistency.
     fetch(`/api/v1/seller/stores/${store.id}/products`)
       .then((r) => r.json())
-      .then(setProducts);
+      .then(setProducts)
+      .catch(() => {});
     fetch(`/api/v1/seller/stores/${store.id}/billing`)
       .then((r) => r.json())
-      .then((d) => setPlanName(d.plans.find((p: any) => p.code === d.subscription.planCode)?.name ?? null));
+      .then((d) => setPlanName(d.plans.find((p: any) => p.code === d.subscription.planCode)?.name ?? null))
+      .catch(() => {});
     fetch(`/api/v1/stores/${store.id}`)
       .then((r) => r.json())
-      .then((d) => setLiveSale(d.liveSale ?? null));
+      .then((d) => setLiveSale(d.liveSale ?? null))
+      .catch(() => {});
     fetch(`/api/v1/seller/stores/${store.id}/reservations`)
       .then((r) => r.json())
-      .then((list) => setPendingReservations(list.filter((r: any) => r.status === "pending").length));
+      .then((list) => setPendingReservations(list.filter((r: any) => r.status === "pending").length))
+      .catch(() => {});
   }, [store]);
 
   const saleIsActive = !!liveSale && new Date(liveSale.endsAt).getTime() > Date.now();

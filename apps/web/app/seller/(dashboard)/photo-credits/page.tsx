@@ -19,11 +19,17 @@ export default function PhotoCreditsPage() {
   const { store, loading: storeLoading } = useSellerStore();
   const [data, setData] = useState<CreditsData | null>(null);
   const [buying, setBuying] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   function load(storeId: string) {
+    setLoadError(false);
     fetch(`/api/v1/seller/stores/${storeId}/photo-credits`)
-      .then((r) => r.json())
-      .then(setData);
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(setData)
+      // Without this, a dropped/failed request was an unhandled rejection -
+      // `data` stayed null forever and this page was stuck on "Loading…"
+      // permanently with no error and no way to retry.
+      .catch(() => setLoadError(true));
   }
 
   useEffect(() => {
@@ -46,6 +52,20 @@ export default function PhotoCreditsPage() {
     const result = await res.json();
     setData((d) => (d ? { ...d, balance: result.balance } : d));
     showToast("Credits added — ready to use.", "success");
+  }
+
+  if (loadError) {
+    return (
+      <main style={{ maxWidth: 900, margin: "0 auto", padding: 40, textAlign: "center" }}>
+        <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load your photo credits.</p>
+        <button
+          onClick={() => store && load(store.id)}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+        >
+          Retry
+        </button>
+      </main>
+    );
   }
 
   if (storeLoading || !store || !data) {

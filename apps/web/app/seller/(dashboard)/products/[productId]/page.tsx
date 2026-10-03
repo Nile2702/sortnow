@@ -27,15 +27,42 @@ export default function EditProductPage() {
   const { productId } = useParams<{ productId: string }>();
   const { store, loading: storeLoading } = useSellerStore();
   const [product, setProduct] = useState<Product | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     // The seller-authenticated route, not the public /api/v1/products one -
     // that route strips costPrice (never meant to reach a shopper), which
     // left this Edit page unable to show or re-save it.
     fetch(`/api/v1/seller/products/${productId}`)
-      .then((r) => r.json())
-      .then(setProduct);
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(setProduct)
+      // Without this, a dropped/failed request here was an unhandled
+      // rejection - `product` stayed null forever, and the "Loading…" gate
+      // below has no way to tell "still loading" apart from "never going
+      // to", so the page was stuck on it permanently.
+      .catch(() => setLoadFailed(true));
   }, [productId]);
+
+  if (loadFailed) {
+    return (
+      <main style={{ maxWidth: 700, margin: "0 auto", padding: 40, textAlign: "center" }}>
+        <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load this product.</p>
+        <button
+          onClick={() => {
+            setLoadFailed(false);
+            setProduct(null);
+            fetch(`/api/v1/seller/products/${productId}`)
+              .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+              .then(setProduct)
+              .catch(() => setLoadFailed(true));
+          }}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+        >
+          Retry
+        </button>
+      </main>
+    );
+  }
 
   if (storeLoading || !store || !product) {
     return <main style={{ maxWidth: 700, margin: "0 auto", padding: 40 }}>Loading…</main>;

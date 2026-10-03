@@ -86,6 +86,7 @@ function SellerProductsPageInner() {
     fetch(`/api/v1/seller/stores/${storeId}/products`)
       .then((r) => r.json())
       .then(setProducts)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }
 

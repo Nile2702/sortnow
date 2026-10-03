@@ -70,6 +70,7 @@ function SearchPageInner() {
     fetch(`/api/v1/products/search?${params}`)
       .then((r) => (r.ok ? r.json() : []))
       .then(setProducts)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [q, gender, subCategory, minPrice, maxPrice, size, sort]);
 

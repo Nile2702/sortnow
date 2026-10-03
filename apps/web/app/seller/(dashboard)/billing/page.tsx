@@ -46,14 +46,21 @@ export default function BillingPage() {
   const [switching, setSwitching] = useState<string | null>(null);
   const [boost, setBoost] = useState<BoostData | null>(null);
   const [boosting, setBoosting] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
+  // Without the .catch() on each of these, a dropped/failed request was an
+  // unhandled rejection - data/boost stayed null forever and this page was
+  // stuck on "Loading…" permanently with no error and no way to retry.
   function load(storeId: string) {
+    setLoadError(false);
     fetch(`/api/v1/seller/stores/${storeId}/billing`)
-      .then((r) => r.json())
-      .then(setData);
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(setData)
+      .catch(() => setLoadError(true));
     fetch(`/api/v1/seller/stores/${storeId}/boost`)
-      .then((r) => r.json())
-      .then(setBoost);
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(setBoost)
+      .catch(() => setLoadError(true));
   }
 
   useEffect(() => {
@@ -83,6 +90,20 @@ export default function BillingPage() {
     const result = await res.json().catch(() => null);
     if (result) setBoost((b) => (b ? { ...b, boostedUntil: result.boostedUntil } : b));
     setBoosting(null);
+  }
+
+  if (loadError) {
+    return (
+      <main style={{ maxWidth: 1000, margin: "0 auto", padding: 40, textAlign: "center" }}>
+        <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load billing details.</p>
+        <button
+          onClick={() => store && load(store.id)}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+        >
+          Retry
+        </button>
+      </main>
+    );
   }
 
   if (storeLoading || !store || !data || !boost) {

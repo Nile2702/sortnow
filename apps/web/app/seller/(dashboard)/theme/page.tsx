@@ -18,18 +18,27 @@ export default function ThemeStudioPage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
-  useEffect(() => {
-    if (!store) return;
-    fetch(`/api/v1/stores/${store.id}/theme`)
-      .then((r) => r.json())
+  function load(storeId: string) {
+    setLoadError(false);
+    fetch(`/api/v1/stores/${storeId}/theme`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((t: Theme) => {
         setTheme(t);
         setPrimary(t.brand.colors.primary);
         setAccent(t.brand.colors.accent);
         setHeroTitle(t.layout.heroCarousel?.[0]?.title ?? "");
         setHeroSubtitle(t.layout.heroCarousel?.[0]?.subtitle ?? "");
-      });
+      })
+      // Without this, a dropped/failed request was an unhandled rejection -
+      // `theme` stayed null forever and this page was stuck on "Loading…"
+      // permanently with no error and no way to retry.
+      .catch(() => setLoadError(true));
+  }
+
+  useEffect(() => {
+    if (store) load(store.id);
   }, [store]);
 
   async function handleSave() {
@@ -49,6 +58,20 @@ export default function ThemeStudioPage() {
     }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  }
+
+  if (loadError) {
+    return (
+      <main style={{ maxWidth: 1440, margin: "0 auto", padding: 40, textAlign: "center" }}>
+        <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load Theme Studio.</p>
+        <button
+          onClick={() => store && load(store.id)}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+        >
+          Retry
+        </button>
+      </main>
+    );
   }
 
   if (storeLoading || !store || !theme) {

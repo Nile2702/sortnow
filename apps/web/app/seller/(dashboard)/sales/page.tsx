@@ -83,31 +83,40 @@ export default function SellerSalesPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState("");
 
+  const [loadError, setLoadError] = useState(false);
+
   function loadProducts() {
     if (!store) return;
     fetch(`/api/v1/seller/stores/${store.id}/products`)
       .then((r) => r.json())
-      .then(setProducts);
+      .then(setProducts)
+      .catch(() => {});
   }
 
   function loadSettings() {
     if (!store) return;
+    setLoadError(false);
     fetch(`/api/v1/seller/stores/${store.id}/bill-settings`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((s: BillingSettings) => {
         setSettings(s);
         setSettingsMode(s.mode);
         setGstin(s.gstin ?? "");
         setTaxRatePercent(s.taxRatePercent);
         setInvoiceNote(s.invoiceNote ?? "");
-      });
+      })
+      // Without this, a dropped/failed request was an unhandled rejection -
+      // `settings` stayed null forever and this page was stuck on
+      // "Loading…" permanently with no error and no way to retry.
+      .catch(() => setLoadError(true));
   }
 
   function loadBills() {
     if (!store) return;
     fetch(`/api/v1/seller/stores/${store.id}/bills`)
       .then((r) => r.json())
-      .then(setBills);
+      .then(setBills)
+      .catch(() => {});
   }
 
   useEffect(loadProducts, [store]);
@@ -212,6 +221,20 @@ export default function SellerSalesPage() {
     loadProducts();
     loadBills();
     showToast("Bill voided — stock restored", "success");
+  }
+
+  if (loadError) {
+    return (
+      <main style={{ maxWidth: 1000, margin: "0 auto", padding: 40, textAlign: "center" }}>
+        <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load billing settings.</p>
+        <button
+          onClick={loadSettings}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+        >
+          Retry
+        </button>
+      </main>
+    );
   }
 
   if (storeLoading || !store || !settings) {

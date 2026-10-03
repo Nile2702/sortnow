@@ -21,22 +21,36 @@ export function useSellerStore() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     fetch("/api/v1/seller/auth/me")
-      .then((r) => {
-        if (!r.ok) {
-          router.push("/seller/login");
-          setLoading(false);
-          return null;
-        }
-        return r.json();
-      })
+      .then((r) => (r.ok ? r.json() : null))
       .then((me) => {
-        if (!me) return;
-        fetch(`/api/v1/stores/${me.slug}`)
+        if (!active) return undefined;
+        if (!me) {
+          router.push("/seller/login");
+          return undefined;
+        }
+        return fetch(`/api/v1/stores/${me.slug}`)
           .then((r) => r.json())
-          .then(setStore)
-          .finally(() => setLoading(false));
+          .then((s) => {
+            if (active) setStore(s);
+          });
+      })
+      // A dropped/failed request here (network hiccup, a flaky tunnel) used
+      // to be an unhandled rejection - with nothing after it to run
+      // setLoading(false), every page gated on this hook's `loading` was
+      // stuck showing "Loading…" forever, with no error and no way out.
+      // Treated the same as "not signed in" - send them to login rather
+      // than leave them stranded.
+      .catch(() => {
+        if (active) router.push("/seller/login");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   return { store, loading };

@@ -52,6 +52,7 @@ export function StoreReviews({ storeId }: { storeId: string }) {
         setReviews(data.reviews);
         setSummary(data.summary);
       })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [storeId]);
 

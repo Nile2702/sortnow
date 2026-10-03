@@ -98,6 +98,8 @@ export default function ProductDetailPage() {
   const { productId } = useParams<{ productId: string }>();
   const router = useRouter();
   const [product, setProduct] = useState<ProductDetail | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [hoverZoom, setHoverZoom] = useState<{ x: number; y: number } | null>(null);
@@ -166,27 +168,75 @@ export default function ProductDetailPage() {
   const [reviewError, setReviewError] = useState("");
 
   useEffect(() => {
+    setLoadFailed(false);
+    setNotFound(false);
     fetch(`/api/v1/products/${productId}`)
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (r.status === 404) {
+          setNotFound(true);
+          return null;
+        }
+        return r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`));
+      })
       .then((p) => {
+        if (!p) return;
         setProduct(p);
         setActiveImage(0);
         if (p?.sizes?.length) setSize(p.sizes[0]);
-        if (p) setWishlisted(isWishlisted(p.id));
-      });
+        setWishlisted(isWishlisted(p.id));
+      })
+      // A dropped/failed request (network hiccup, a flaky connection) used to
+      // be an unhandled rejection here, leaving `product` null forever - the
+      // skeleton placeholder below has no way to tell "still loading" apart
+      // from "never going to load", so the page was stuck on it permanently
+      // with no error and no way to retry.
+      .catch(() => setLoadFailed(true));
     fetch(`/api/v1/products/${productId}/reviews`)
       .then((r) => r.json())
       .then((d) => {
         setReviews(d.reviews);
         setSummary(d.summary);
-      });
+      })
+      .catch(() => {});
     fetch(`/api/v1/products/${productId}/similar`)
       .then((r) => r.json())
-      .then(setSimilar);
+      .then(setSimilar)
+      .catch(() => {});
     fetch(`/api/v1/products/${productId}/complementary`)
       .then((r) => r.json())
-      .then(setComplementary);
+      .then(setComplementary)
+      .catch(() => {});
   }, [productId]);
+
+  if (notFound) {
+    return (
+      <main style={{ maxWidth: 600, margin: "80px auto", padding: 24, textAlign: "center" }}>
+        <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>This product isn't available anymore.</p>
+        <Link href="/" style={{ color: "var(--sio-ink)", fontWeight: 600 }}>
+          Back to Home
+        </Link>
+      </main>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <main style={{ maxWidth: 600, margin: "80px auto", padding: 24, textAlign: "center" }}>
+        <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Couldn't load this product.</p>
+        <p style={{ color: "var(--sio-muted)", marginBottom: 20 }}>Check your connection and try again.</p>
+        <button
+          onClick={() => {
+            setLoadFailed(false);
+            router.refresh();
+          }}
+          className="sio-btn-primary"
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+        >
+          Retry
+        </button>
+      </main>
+    );
+  }
 
   if (!product) {
     return (
