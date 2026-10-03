@@ -417,7 +417,43 @@ function DiscoverPageInner() {
           ))}
         </div>
       ) : stores.length === 0 ? (
-        <p style={{ color: "#64748b" }}>No stores found matching these filters. Try widening the radius or clearing a filter.</p>
+        <div
+          style={{
+            background: "#f8fafc",
+            border: "1px dashed #e2e8f0",
+            borderRadius: 14,
+            padding: "20px 18px",
+            marginBottom: 44,
+          }}
+        >
+          <p style={{ color: "#475569", marginBottom: 12 }}>
+            No stores found matching these filters here yet. Try widening the radius, clearing a filter, or jump to one of these
+            markets instead:
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {QUICK_MARKETS.filter((m) => m.pincode !== pincode).map((m) => (
+              <button
+                key={m.pincode}
+                onClick={() => {
+                  setGeo(null);
+                  setPincode(m.pincode);
+                }}
+                style={{
+                  padding: "7px 14px",
+                  borderRadius: 999,
+                  border: "1px solid #e2e8f0",
+                  background: "#fff",
+                  color: "#1e3a8a",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                📍 {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 44 }}>
           {stores.map((s, i) => (

@@ -4,6 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toggleWishlist, isWishlisted } from "../lib/wishlist";
 
+// A rough walk-time estimate from distance alone (average walking speed
+// ~5 km/h, i.e. 12 min/km) - not routed, just enough to make "near you"
+// concrete ("Try on in 10 mins" lands harder than "0.8 km away" on its
+// own), which is the whole point of an O2O platform's product card.
+// Rounded to the nearest 5 minutes so it reads like an estimate, not a
+// precise figure the math can't actually back up.
+function walkingMinutes(distanceKm: number): number {
+  return Math.max(5, Math.round((distanceKm * 12) / 5) * 5);
+}
+
 export interface ProductCardData {
   id: string;
   title: string;
@@ -123,23 +133,6 @@ export function ProductCard({
             </svg>
           </button>
 
-          {product.distanceKm != null && (
-            <span
-              style={{
-                position: "absolute",
-                bottom: 8,
-                left: 8,
-                background: "rgba(255,255,255,0.92)",
-                color: "#1e3a8a",
-                fontSize: 10.5,
-                fontWeight: 700,
-                padding: "3px 8px",
-                borderRadius: 999,
-              }}
-            >
-              📍 {product.distanceKm} km
-            </span>
-          )}
         </div>
 
         <div style={{ padding: "10px 12px 12px" }}>
@@ -182,6 +175,11 @@ export function ProductCard({
             )}
             {discountPct > 0 && <span style={{ fontSize: 11.5, fontWeight: 700, color: "#16a34a" }}>{discountPct}% off</span>}
           </div>
+          {product.distanceKm != null && (
+            <div style={{ fontSize: 10.5, fontWeight: 600, color: "#2563eb", marginTop: 4 }}>
+              📍 {product.distanceKm} km away • Try on in {walkingMinutes(product.distanceKm)} mins
+            </div>
+          )}
           {lowStock && <div style={{ fontSize: 10.5, color: "#dc2626", fontWeight: 600, marginTop: 3 }}>Only {product.stockRemaining} left</div>}
         </div>
       </Link>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import QRCode from "qrcode";
 
 interface ReservationItem {
   productId: string;
@@ -46,6 +47,7 @@ export default function ReservationDetailPage() {
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [, forceTick] = useState(0);
+  const [qrDataUrl, setQrDataUrl] = useState("");
 
   useEffect(() => {
     function load() {
@@ -63,6 +65,19 @@ export default function ReservationDetailPage() {
     const id = setInterval(() => forceTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Encodes this very page's own URL - scanning it (with the seller's own
+  // phone at the counter, or anyone else's) opens the same reservation
+  // detail view, a quick visual "this is real" check at pickup without
+  // needing the shopper to read out an ID or the seller to look anything up
+  // by hand. Same `qrcode` package the seller's own QR standee page already
+  // uses, same pattern.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    QRCode.toDataURL(window.location.href, { width: 220, margin: 1, color: { dark: "#0f172a", light: "#ffffff" } })
+      .then(setQrDataUrl)
+      .catch(() => {});
+  }, [reservationId]);
 
   if (notFound) {
     return (
@@ -108,12 +123,33 @@ export default function ReservationDetailPage() {
       </div>
 
       {reservation.status === "pending" && (
-        <div
-          className="sio-breathe"
-          style={{ background: "#fef9c3", color: "#854d0e", borderRadius: 14, padding: 16, textAlign: "center", marginBottom: 16, fontWeight: 700 }}
-        >
-          {formatCountdown(msLeft)} · walk in before {new Date(reservation.reservedUntil).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-        </div>
+        <>
+          <div
+            className="sio-breathe"
+            style={{ background: "#fef9c3", color: "#854d0e", borderRadius: 14, padding: 16, textAlign: "center", marginBottom: 16, fontWeight: 700 }}
+          >
+            {formatCountdown(msLeft)} · walk in before {new Date(reservation.reservedUntil).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+          </div>
+
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 14,
+              border: "1px solid #f1f5f9",
+              padding: 20,
+              marginBottom: 16,
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", color: "#64748b", marginBottom: 12 }}>
+              SHOW THIS AT THE STORE
+            </div>
+            {qrDataUrl && (
+              <img src={qrDataUrl} alt="Reservation QR pass" width={180} height={180} style={{ margin: "0 auto", display: "block" }} />
+            )}
+            <div style={{ fontSize: 13, color: "#64748b", marginTop: 10 }}>{reservation.id}</div>
+          </div>
+        </>
       )}
 
       <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}>
