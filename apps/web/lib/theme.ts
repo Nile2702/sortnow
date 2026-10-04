@@ -1,5 +1,18 @@
 import { cache } from "react";
 
+// INTERNAL_API_URL is only ever set for local dev (apps/web/.env.local
+// points it at http://localhost:3000/api). On Vercel, VERCEL_URL is set
+// automatically to the deployment's own hostname, so that's used instead -
+// without this, these calls would literally try to fetch "undefined/v1/..."
+// on any deploy that hasn't manually configured INTERNAL_API_URL, which
+// throws (invalid URL) and 500s every page that calls getStoreBySlug/
+// getLiveTheme.
+function internalApiBase(): string {
+  if (process.env.INTERNAL_API_URL) return process.env.INTERNAL_API_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}/api`;
+  return "http://localhost:3000/api";
+}
+
 export interface ThemeConfig {
   version: number;
   brand: {
@@ -44,19 +57,27 @@ export interface StoreRecord {
  * layer of caching for anonymous traffic.
  */
 export const getStoreBySlug = cache(async (slug: string): Promise<StoreRecord | null> => {
-  const res = await fetch(`${process.env.INTERNAL_API_URL}/v1/stores/${slug}`, {
-    next: { revalidate: 60, tags: [`store:${slug}`] },
-  });
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await fetch(`${internalApiBase()}/v1/stores/${slug}`, {
+      next: { revalidate: 60, tags: [`store:${slug}`] },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 });
 
 export const getLiveTheme = cache(async (storeId: string): Promise<ThemeConfig> => {
-  const res = await fetch(`${process.env.INTERNAL_API_URL}/v1/stores/${storeId}/theme?status=live`, {
-    next: { revalidate: 600, tags: [`theme:${storeId}`] },
-  });
-  if (!res.ok) return DEFAULT_THEME;
-  return res.json();
+  try {
+    const res = await fetch(`${internalApiBase()}/v1/stores/${storeId}/theme?status=live`, {
+      next: { revalidate: 600, tags: [`theme:${storeId}`] },
+    });
+    if (!res.ok) return DEFAULT_THEME;
+    return res.json();
+  } catch {
+    return DEFAULT_THEME;
+  }
 });
 
 /**

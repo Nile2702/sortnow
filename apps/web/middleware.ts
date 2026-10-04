@@ -23,6 +23,14 @@ const LAN_IP_HOST = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)[\d.]+(:\d+)?$
 // firewall or network policy blocks direct LAN access to this machine.
 const DEV_TUNNEL_HOST = /\.(loca\.lt|ngrok-free\.app|ngrok\.io|ngrok\.app|trycloudflare\.com|lhr\.life)$/;
 
+// Vercel's own preview/production URLs (*.vercel.app) - always treated as
+// the platform root, the same way localhost is. Unlike DEV_TUNNEL_HOST this
+// isn't gated behind ALLOW_LOCAL_TUNNEL_HOST: a real deploy on Vercel has no
+// other way to reach the site before a custom domain is attached, so this
+// must work unconditionally in production, not just as an opt-in local/dev
+// preview convenience.
+const VERCEL_HOST = /\.vercel\.app$/;
+
 // Explicit opt-in rather than an `process.env.NODE_ENV !== "production"`
 // check: `next start` (used to test a real production build, e.g. for
 // performance) forces NODE_ENV to "production" regardless of intent, so
@@ -46,6 +54,7 @@ export async function middleware(req: NextRequest) {
     host.startsWith("localhost:") ||
     host === "localhost" ||
     host.startsWith("127.0.0.1") ||
+    VERCEL_HOST.test(host) ||
     (ALLOW_LOCAL_TUNNEL_HOST && (LAN_IP_HOST.test(host) || DEV_TUNNEL_HOST.test(host)))
   ) {
     return NextResponse.next();
@@ -72,13 +81,21 @@ export async function middleware(req: NextRequest) {
 
 async function resolveCustomDomainToSlug(host: string): Promise<string | null> {
   // Backed by an edge KV (e.g. Vercel Edge Config / Cloudflare KV) populated
-  // whenever a merchant verifies a custom domain (see Tenant Service).
-  const res = await fetch(`${process.env.EDGE_CONFIG_URL}/domain-map/${host}`, {
-    next: { revalidate: 300 },
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.slug ?? null;
+  // whenever a merchant verifies a custom domain (see Tenant Service). Not
+  // configured in every environment (e.g. EDGE_CONFIG_URL is unset in a
+  // deploy that hasn't wired up custom domains yet) - a bad/missing URL or a
+  // network hiccup here must never 500 the entire site, just fall through to
+  // "domain not configured" like a genuine lookup miss would.
+  try {
+    const res = await fetch(`${process.env.EDGE_CONFIG_URL}/domain-map/${host}`, {
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.slug ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export const config = {
