@@ -1,9 +1,12 @@
+import { categories, stores } from "../lib/seed-data";
+
+// Reads straight from the in-process category map instead of making an HTTP
+// round-trip to this app's own API route - see lib/theme.ts for why a
+// server component self-fetching its own deployment is a trap on Vercel.
 async function fetchCategories(storeId: string) {
-  const res = await fetch(`${process.env.INTERNAL_API_URL}/v1/stores/${storeId}/categories`, {
-    next: { revalidate: 300 },
-  });
-  if (!res.ok) return [];
-  return res.json();
+  const store = stores.find((s) => s.id === storeId || s.slug === storeId);
+  if (!store) return [];
+  return categories[store.id] ?? [];
 }
 
 // Pill style matches the homepage's subcategory chips - only the hover/active
