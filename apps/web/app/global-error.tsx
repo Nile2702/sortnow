@@ -10,7 +10,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
       <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", background: "#fafafa", color: "#16140f" }}>
         <main style={{ maxWidth: 500, margin: "80px auto", padding: "0 16px", textAlign: "center" }}>
           <div style={{ fontSize: 64, marginBottom: 8 }}>⚠️</div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>SORT IT OUT hit a snag</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>SORT NOW hit a snag</h1>
           <p style={{ color: "#7a7468", marginBottom: 28 }}>Something broke at the site level. Reloading usually fixes it.</p>
           <button
             onClick={reset}

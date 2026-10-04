@@ -18,11 +18,11 @@ const heading = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "
 const body = Inter({ subsets: ["latin"], variable: "--site-font-body" });
 
 export const metadata = {
-  title: "SORT IT OUT — Find fashion near you",
+  title: "SORT NOW — Find fashion near you",
   description: "Discover apparel from stores near you, sort by what matters, and walk into the store to try it on or buy.",
   metadataBase: new URL("https://sortitout.in"),
   openGraph: {
-    title: "SORT IT OUT — Find fashion near you",
+    title: "SORT NOW — Find fashion near you",
     description: "Discover apparel from stores near you, sort by what matters, and walk into the store to try it on or buy.",
     type: "website",
   },

@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=14`,
-        { headers: { "User-Agent": "SortItOut-Demo/1.0 (hyperlocal fashion marketplace demo)" } }
+        { headers: { "User-Agent": "SortNow-Demo/1.0 (hyperlocal fashion marketplace demo)" } }
       );
       if (!res.ok) return NextResponse.json({ label: null });
       const data = await res.json();

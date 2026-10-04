@@ -10,16 +10,18 @@ interface Slide {
   subtitle: string;
   cta: string;
   bg: string;
+  image?: string;
 }
 
 const SLIDES: Slide[] = [
   {
     href: "/shops",
-    eyebrow: "SORT IT OUT",
+    eyebrow: "SORT NOW",
     title: "Curated Styles, Just For You",
     subtitle: "Our fashion experts hand-pick every item to ensure quality and style.",
     cta: "Explore All Shops",
     bg: "linear-gradient(140deg, #1c1917 0%, #3f2d1f 55%, #1c1917 100%)",
+    image: "/hero/boutique-rack.jpg",
   },
   {
     href: "/shops",
@@ -28,6 +30,7 @@ const SLIDES: Slide[] = [
     subtitle: "Find the best boutiques in your city. We bring them to your fingertips.",
     cta: "Explore All Shops",
     bg: "linear-gradient(140deg, #1e1b2e 0%, #3b2645 55%, #1e1b2e 100%)",
+    image: "/hero/store-interior.jpg",
   },
   {
     href: "/store/urban-vogue",
@@ -36,6 +39,7 @@ const SLIDES: Slide[] = [
     subtitle: "Handpicked festive wear from Bandra's favourite ethnic boutique.",
     cta: "Shop Urban Vogue",
     bg: "linear-gradient(140deg, #2a1409 0%, #7c2d12 55%, #2a1409 100%)",
+    image: "/hero/urban-vogue.avif",
   },
   {
     href: "/store/sole-street",
@@ -44,6 +48,7 @@ const SLIDES: Slide[] = [
     subtitle: "Fresh drops for campus life, now shoppable near FC Road.",
     cta: "Shop Sole Street",
     bg: "linear-gradient(140deg, #0f172a 0%, #1e293b 55%, #0f172a 100%)",
+    image: "/hero/sneakers.webp",
   },
 ];
 
@@ -98,6 +103,24 @@ export function HeroSlider() {
           textDecoration: "none",
         }}
       >
+        {slide.image && (
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: `url(${slide.image})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+        )}
+        {/* Darkens a real photo enough for white text to stay readable, same
+            job the plain radial gradient below does for a flat color slide -
+            stacked together when both are present. */}
+        {slide.image && (
+          <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.5)" }} />
+        )}
         {/* Subtle vignette + spotlight to read as a photographic backdrop rather than a flat gradient */}
         <div
           aria-hidden

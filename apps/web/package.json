@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "india-post-pincode": "^1.0.0",
+    "mapbox-gl": "^3.32.0",
     "next": "14.2.35",
     "qrcode": "^1.5.4",
     "react": "18.3.1",

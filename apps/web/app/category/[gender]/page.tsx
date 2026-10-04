@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { CATEGORY_TREE } from "../../../lib/catalog-constants";
 import { ProductCard } from "../../../components/ProductCard";
+import { ExploreOnMapButton } from "../../../components/ExploreOnMapButton";
 
 const SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
 
@@ -97,11 +98,14 @@ function CategoryPageInner() {
             </button>
           ))}
         </div>
-        <select value={sort} onChange={(e) => setQuery("sort", e.target.value)} style={{ marginLeft: "auto", padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}>
-          <option value="newest">Newest first</option>
-          <option value="price_asc">Price: Low to High</option>
-          <option value="price_desc">Price: High to Low</option>
-        </select>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
+          {!loading && <ExploreOnMapButton products={products} />}
+          <select value={sort} onChange={(e) => setQuery("sort", e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}>
+            <option value="newest">Newest first</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+          </select>
+        </div>
       </section>
 
       {loading ? (

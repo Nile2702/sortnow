@@ -47,6 +47,15 @@ function PersonIcon() {
   );
 }
 
+function MapIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+      <path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z" />
+      <path d="M9 4v13M15 6.5v13" />
+    </svg>
+  );
+}
+
 function ReceiptIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -232,7 +241,7 @@ export function SiteHeader() {
           }}
         >
           <LogoBadge size={40} />
-          <span className="sio-logo-text">SORT IT OUT</span>
+          <span className="sio-logo-text">SORT NOW</span>
         </Link>
 
         <nav className="sio-header-nav">
@@ -363,15 +372,18 @@ export function SiteHeader() {
         </form>
 
         <nav className="sio-header-icons" style={{ display: "flex", gap: 4, alignItems: "center", whiteSpace: "nowrap" }}>
-          <Link href="/wishlist" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="Wishlist">
+          <Link href="/shops?view=map" data-tooltip="Stores near me" className="sio-tooltip" style={{ color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="Stores near me">
+            <MapIcon />
+          </Link>
+          <Link href="/wishlist" data-tooltip="Wishlist" className="sio-tooltip" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="Wishlist">
             <HeartIcon />
             {wishN > 0 && <CountBadge n={wishN} />}
           </Link>
-          <Link href="/cart" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="Your Sort">
+          <Link href="/cart" data-tooltip="Your Sort" className="sio-tooltip" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="Your Sort">
             <SortIcon />
             {cartN > 0 && <CountBadge n={cartN} />}
           </Link>
-          <Link href="/reservations" className="sio-header-reservations" style={{ color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="My Reservations">
+          <Link href="/reservations" data-tooltip="My Reservations" className="sio-header-reservations sio-tooltip" style={{ color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="My Reservations">
             <ReceiptIcon />
           </Link>
           {shopper ? (

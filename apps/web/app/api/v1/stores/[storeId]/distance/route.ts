@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stores, resolvePincode, haversineKm } from "../../../../../../lib/seed-data";
 
-// SORT IT OUT is reserve-and-pickup, not shipped delivery - there's no
+// SORT NOW is reserve-and-pickup, not shipped delivery - there's no
 // "estimated delivery time" to give a shopper, so instead of faking one this
 // tells them how far the store actually is from their PIN code, using the
 // same resolvePincode/haversineKm distance math the homepage's "stores near

@@ -616,7 +616,7 @@ export default function AccountPage() {
             </div>
             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "var(--sio-muted)", cursor: "pointer" }}>
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>I agree to SORT IT OUT's Terms of Service and Privacy Policy.</span>
+              <span>I agree to SORT NOW's Terms of Service and Privacy Policy.</span>
             </label>
             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "var(--sio-muted)", cursor: "pointer" }}>
               <input

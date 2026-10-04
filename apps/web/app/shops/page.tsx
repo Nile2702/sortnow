@@ -2,7 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { StoreRatingBadge } from "../../components/StoreRatingBadge";
+import { getLocationPref } from "../../lib/location";
+
+// mapbox-gl alone is ~500KB - split out of the initial /shops bundle so
+// shoppers who never touch "Map" view (the default is List) don't pay for
+// it, same reasoning as any other heavy, optional-view dependency.
+const StoreMap = dynamic(() => import("../../components/StoreMap").then((m) => m.StoreMap), {
+  ssr: false,
+  loading: () => <div className="sio-skeleton" style={{ height: 420, borderRadius: 16 }} />,
+});
 
 interface Shop {
   id: string;
@@ -13,6 +24,8 @@ interface Shop {
   pincode: string;
   localMarket: string;
   productCount: number;
+  latitude: number;
+  longitude: number;
   rating: { average: number; count: number };
   liveSale?: { headline: string; discountLabel: string; endsAt: string } | null;
   boostedUntil?: string | null;
@@ -31,10 +44,14 @@ function SkeletonCard() {
 }
 
 export default function ShopsPage() {
+  const router = useRouter();
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
+  const [view, setView] = useState<"list" | "map">("list");
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [storeFilter, setStoreFilter] = useState<string[] | null>(null);
 
   useEffect(() => {
     fetch("/api/v1/shops")
@@ -44,21 +61,73 @@ export default function ShopsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Lets a persistent "Stores near me" map icon elsewhere in the app (the
+  // mobile app header, the desktop header) deep-link straight into Map view
+  // via /shops?view=map, instead of landing on List and needing a second tap.
+  // A search/category page's own "Explore on Map" button adds `stores=` (a
+  // comma-separated list of store slugs from whatever products matched that
+  // search) so the map opens scoped to just those stores instead of every
+  // store on the platform.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("view") === "map") setView("map");
+    const stores = params.get("stores");
+    if (stores) setStoreFilter(stores.split(",").filter(Boolean));
+  }, []);
+
+  // Only usable for centering the map (lat/lng) - a plain PIN code has no
+  // coordinates on the client, and re-resolving it would need a server
+  // round-trip this page doesn't otherwise need.
+  useEffect(() => {
+    const pref = getLocationPref();
+    if ("lat" in pref && "lng" in pref) setUserLocation({ lat: pref.lat, lng: pref.lng });
+  }, []);
+
   const cities = useMemo(() => Array.from(new Set(shops.map((s) => s.city))).sort(), [shops]);
   const categories = useMemo(() => Array.from(new Set(shops.map((s) => s.category))).sort(), [shops]);
 
   const filtered = shops.filter((s) => {
     const matchesQuery = !query.trim() || s.name.toLowerCase().includes(query.trim().toLowerCase()) || s.city.toLowerCase().includes(query.trim().toLowerCase());
     const matchesCategory = category === "all" || s.category === category;
-    return matchesQuery && matchesCategory;
+    const matchesStoreFilter = !storeFilter || storeFilter.includes(s.slug);
+    return matchesQuery && matchesCategory && matchesStoreFilter;
   });
 
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "24px 16px 48px" }}>
       <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 6 }}>Explore All Shops</h1>
-      <p style={{ color: "#64748b", marginBottom: 24 }}>
-        Every boutique and store listed on SORT IT OUT — {shops.length > 0 ? `${shops.length} and counting` : "browse and pick one to shop"}.
+      <p style={{ color: "#64748b", marginBottom: storeFilter ? 12 : 24 }}>
+        Every boutique and store listed on SORT NOW — {shops.length > 0 ? `${shops.length} and counting` : "browse and pick one to shop"}.
       </p>
+
+      {storeFilter && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            color: "#1e40af",
+            borderRadius: 10,
+            padding: "10px 14px",
+            fontSize: 13,
+            marginBottom: 24,
+          }}
+        >
+          <span>Showing only stores that had a match in your search.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setStoreFilter(null);
+              router.replace("/shops?view=map");
+            }}
+            style={{ marginLeft: "auto", background: "none", border: "none", color: "#1e40af", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 13 }}
+          >
+            Show all stores
+          </button>
+        </div>
+      )}
 
       <section
         className="sio-card"
@@ -91,7 +160,26 @@ export default function ShopsPage() {
             </button>
           ))}
         </div>
+        <div style={{ display: "flex", gap: 4, marginLeft: "auto", background: "#f1f5f9", borderRadius: 999, padding: 3 }}>
+          <button onClick={() => setView("list")} style={toggleStyle(view === "list")}>
+            ☰ List
+          </button>
+          <button onClick={() => setView("map")} style={toggleStyle(view === "map")}>
+            🗺 Map
+          </button>
+        </div>
       </section>
+
+      {view === "map" && !loading && (
+        <div style={{ marginBottom: 28 }}>
+          <StoreMap
+            shops={filtered}
+            userLocation={userLocation}
+            onSelect={(shop) => router.push(`/store/${shop.slug}`)}
+          />
+          <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>Tap a pin to open that store.</p>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
@@ -101,7 +189,7 @@ export default function ShopsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <p style={{ color: "#64748b" }}>No shops match your search.</p>
-      ) : (
+      ) : view === "map" ? null : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
           {filtered.map((s, i) => (
             <Link
@@ -177,6 +265,20 @@ export default function ShopsPage() {
       )}
     </main>
   );
+}
+
+function toggleStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: "7px 14px",
+    borderRadius: 999,
+    border: "none",
+    background: active ? "#fff" : "transparent",
+    color: active ? "#0f172a" : "#64748b",
+    boxShadow: active ? "0 1px 2px rgba(15,23,42,0.1)" : "none",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 600,
+  };
 }
 
 function pillStyle(active: boolean): React.CSSProperties {

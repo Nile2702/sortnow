@@ -183,7 +183,7 @@ export default function SellerLoginPage() {
                   marginBottom: 8,
                 }}
               >
-                SORT IT <span style={{ color: "var(--sio-glow)" }}>OUT</span>
+                SORT <span style={{ color: "var(--sio-glow)" }}>NOW</span>
               </div>
             </Link>
             <div style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8a8478", marginBottom: 40 }}>
@@ -505,7 +505,7 @@ export default function SellerLoginPage() {
                 textDecoration: "none",
               }}
             >
-              ← Back to SORT IT OUT
+              ← Back to SORT NOW
             </Link>
           </div>
         </div>

@@ -64,6 +64,15 @@ function QrIcon() {
   );
 }
 
+function MapIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+      <path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z" />
+      <path d="M9 4v13M15 6.5v13" />
+    </svg>
+  );
+}
+
 // A browser's SpeechRecognition constructor isn't in TypeScript's built-in
 // DOM lib, and only exists behind a vendor prefix in some browsers.
 function getSpeechRecognition(): (new () => any) | undefined {
@@ -285,7 +294,7 @@ export function MobileAppHeader() {
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
               <LogoBadge size={22} />
-              <span style={{ color: "#fff", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>SORT IT OUT</span>
+              <span style={{ color: "#fff", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>SORT NOW</span>
             </div>
 
             <div ref={pickerRef} style={{ position: "relative", flexShrink: 0 }}>
@@ -377,9 +386,33 @@ export function MobileAppHeader() {
 
           <button
             type="button"
+            onClick={() => router.push("/shops?view=map")}
+            aria-label="Stores near me"
+            data-tooltip="Stores near me"
+            style={{
+              flexShrink: 0,
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              border: isHome ? undefined : "1px solid var(--sio-line)",
+              background: isHome ? undefined : "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: isHome ? "var(--sio-glow)" : "var(--sio-ink)",
+              cursor: "pointer",
+            }}
+            className={`sio-tooltip${isHome ? " sio-glass" : ""}`}
+          >
+            <MapIcon />
+          </button>
+
+          <button
+            type="button"
             onClick={() => setQrOpen(true)}
             aria-label="Scan QR code"
-            className={isHome ? "sio-glass sio-glow-ring" : undefined}
+            data-tooltip="Scan QR code"
+            className={`sio-tooltip${isHome ? " sio-glass sio-glow-ring" : ""}`}
             style={{
               flexShrink: 0,
               width: 38,
@@ -446,25 +479,48 @@ export function MobileAppHeader() {
         </form>
 
         {isHome && (
-          <button
-            type="button"
-            onClick={() => setQrOpen(true)}
-            aria-label="Scan QR code"
-            className="sio-glass sio-glow-ring"
-            style={{
-              flexShrink: 0,
-              width: 44,
-              height: 44,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--sio-glow)",
-              cursor: "pointer",
-            }}
-          >
-            <QrIcon />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => router.push("/shops?view=map")}
+              aria-label="Stores near me"
+              data-tooltip="Stores near me"
+              className="sio-tooltip sio-glass"
+              style={{
+                flexShrink: 0,
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--sio-glow)",
+                cursor: "pointer",
+              }}
+            >
+              <MapIcon />
+            </button>
+            <button
+              type="button"
+              onClick={() => setQrOpen(true)}
+              aria-label="Scan QR code"
+              data-tooltip="Scan QR code"
+              className="sio-tooltip sio-glass sio-glow-ring"
+              style={{
+                flexShrink: 0,
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--sio-glow)",
+                cursor: "pointer",
+              }}
+            >
+              <QrIcon />
+            </button>
+          </>
         )}
         </div>
       </div>

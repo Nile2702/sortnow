@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: { productId: string
   if (!product) return {};
   const store = stores.find((s) => s.id === product.storeId);
 
-  const title = `${product.title} — ${store?.name ?? "SORT IT OUT"}`;
+  const title = `${product.title} — ${store?.name ?? "SORT NOW"}`;
   const description =
     product.description ?? `${product.title} from ${store?.name ?? "a nearby store"}. ₹${product.basePrice} — reserve it to try on in person.`;
 

@@ -132,7 +132,7 @@ export function LocationGate() {
         <div style={{ fontSize: 30, marginBottom: 8 }}>📍</div>
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Find shops and products near you</h2>
         <p style={{ fontSize: 13.5, color: "#64748b", marginBottom: 18, lineHeight: 1.5 }}>
-          SORT IT OUT shows you real boutiques and listings from sellers close to you. Allow location access, or enter your PIN code
+          SORT NOW shows you real boutiques and listings from sellers close to you. Allow location access, or enter your PIN code
           instead.
         </p>
 

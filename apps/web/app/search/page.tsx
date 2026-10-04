@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ALL_SIZES, CATEGORY_TREE } from "../../lib/catalog-constants";
 import { ProductCard } from "../../components/ProductCard";
+import { ExploreOnMapButton } from "../../components/ExploreOnMapButton";
 
 interface Product {
   id: string;
@@ -95,10 +96,13 @@ function SearchPageInner() {
         / Search results
       </div>
 
-      <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
-        {loading ? "Searching…" : `Showing ${products.length} result${products.length === 1 ? "" : "s"} for `}
-        {!loading && <span style={{ fontWeight: 800 }}>&ldquo;{q}&rdquo;</span>}
-      </h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
+          {loading ? "Searching…" : `Showing ${products.length} result${products.length === 1 ? "" : "s"} for `}
+          {!loading && <span style={{ fontWeight: 800 }}>&ldquo;{q}&rdquo;</span>}
+        </h1>
+        {!loading && <ExploreOnMapButton products={products} />}
+      </div>
 
       <div
         style={{

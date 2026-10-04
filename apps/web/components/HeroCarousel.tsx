@@ -6,6 +6,7 @@ interface Slide {
   eyebrow?: string;
   title: string;
   subtitle?: string;
+  image?: string;
 }
 
 // Same structure and visual language as the homepage HeroSlider - a store's
@@ -29,6 +30,13 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
           background: "linear-gradient(140deg, #14110f 0%, var(--store-primary, #1f2937) 55%, #14110f 100%)",
         }}
       />
+      {slide.image && (
+        <div
+          aria-hidden
+          style={{ position: "absolute", inset: 0, backgroundImage: `url(${slide.image})`, backgroundSize: "cover", backgroundPosition: "center" }}
+        />
+      )}
+      {slide.image && <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.5)" }} />}
       <div
         aria-hidden
         style={{

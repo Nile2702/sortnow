@@ -68,7 +68,7 @@ export function requestOtp(phone: string): RequestOtpResult {
 
   const code = String(Math.floor(100000 + Math.random() * 900000));
   otps.set(key, { code, expiresAt: Date.now() + OTP_TTL_MS, attempts: 0 });
-  sendSms(key, `Your SORT IT OUT verification code is ${code}. It expires in 5 minutes. Do not share this code.`);
+  sendSms(key, `Your SORT NOW verification code is ${code}. It expires in 5 minutes. Do not share this code.`);
 
   // TODO: once a real SMS gateway is wired into sendSms(), stop returning
   // devOtp - it exists only because there is currently no other channel

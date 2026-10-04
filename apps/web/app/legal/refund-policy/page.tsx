@@ -2,8 +2,8 @@ import { Metadata } from "next";
 import { LegalPage, LegalSection } from "../../../components/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Refund & Cancellation Policy — SORT IT OUT",
-  description: "Refund and cancellation policy for shopper reservations and merchant subscriptions on SORT IT OUT.",
+  title: "Refund & Cancellation Policy — SORT NOW",
+  description: "Refund and cancellation policy for shopper reservations and merchant subscriptions on SORT NOW.",
 };
 
 export default function RefundPolicyPage() {
@@ -11,7 +11,7 @@ export default function RefundPolicyPage() {
     <LegalPage title="Refund & Cancellation Policy" updated="10 September 2026">
       <LegalSection title="Shopper reservations">
         <p>
-          Reserving an item on SORT IT OUT does not involve any payment through this site, so there's nothing to
+          Reserving an item on SORT NOW does not involve any payment through this site, so there's nothing to
           refund — you pay the store directly, in person, only if and when you decide to buy. You can cancel a
           reservation any time before its pickup window ends from the "My Reservations" page, at no cost.
         </p>
@@ -19,7 +19,7 @@ export default function RefundPolicyPage() {
 
       <LegalSection title="In-store purchases">
         <p>
-          Once you buy an item at the store, that store's own return and exchange policy applies — SORT IT OUT is not
+          Once you buy an item at the store, that store's own return and exchange policy applies — SORT NOW is not
           part of that transaction and can't process a return or refund on the store's behalf. Ask the store staff
           about their return window when you complete a purchase.
         </p>

@@ -2,8 +2,8 @@ import { Metadata } from "next";
 import { LegalPage, LegalSection } from "../../../components/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — SORT IT OUT",
-  description: "How SORT IT OUT collects, uses, and protects your data.",
+  title: "Privacy Policy — SORT NOW",
+  description: "How SORT NOW collects, uses, and protects your data.",
 };
 
 export default function PrivacyPage() {

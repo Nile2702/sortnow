@@ -317,6 +317,7 @@ const INITIAL_THEMES: Record<string, any> = {
           eyebrow: "Urban Vogue · Bandra",
           title: "Festive Ethnic, Curated For You",
           subtitle: "Handpicked sarees, kurtis and lehengas from Bandra's favourite ethnic boutique.",
+          image: "/hero/urban-vogue.avif",
         },
       ],
       featuredCollection: { title: "This Week's Picks", maxItems: 8 },
@@ -457,6 +458,7 @@ const INITIAL_THEMES: Record<string, any> = {
           eyebrow: "Sole Street · FC Road, Pune",
           title: "Sneakers & Streetwear For Campus Life",
           subtitle: "Sneakers, joggers, and hoodies picked for Pune's college crowd.",
+          image: "/hero/sneakers.webp",
         },
       ],
       featuredCollection: { title: "Fresh Drops", maxItems: 8 },
@@ -1596,7 +1598,7 @@ export function upsertShopper(input: UpsertShopperInput): { shopper: Shopper; is
       referrer.phone,
       "shopper",
       "referral_joined",
-      `${shopper.name} just joined SORT IT OUT using your invite link! You've now referred ${getReferralCount(referrer.id)} friend${getReferralCount(referrer.id) === 1 ? "" : "s"}.`
+      `${shopper.name} just joined SORT NOW using your invite link! You've now referred ${getReferralCount(referrer.id)} friend${getReferralCount(referrer.id) === 1 ? "" : "s"}.`
     );
   }
   return { shopper, isNewCustomer: true };

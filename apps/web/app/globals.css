@@ -748,3 +748,70 @@ body {
     display: none !important;
   }
 }
+
+/* Custom-styled hover tooltip for icon-only header buttons (wishlist, cart,
+   reservations, map, QR...) - a plain `title` attribute's browser tooltip is
+   slow to appear, unstyled, and inconsistent across browsers/OSes. This is
+   pure CSS (no JS state) driven by `data-tooltip` + `:hover`/`:focus-visible`,
+   so it works the same for mouse hover and keyboard focus with zero extra
+   markup beyond the attribute itself. Tooltip text comes from the
+   `data-tooltip` attribute rather than `title`, since a `title` attribute on
+   a hovered element would otherwise still pop up its own native tooltip on
+   top of this one.
+*/
+.sio-tooltip {
+  position: relative;
+}
+.sio-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  white-space: nowrap;
+  background: var(--sio-ink);
+  color: #fff;
+  font-family: var(--site-font-body, system-ui, sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 7px 12px;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(15, 43, 39, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 40;
+}
+.sio-tooltip::before {
+  content: "";
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: var(--sio-ink);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 40;
+}
+.sio-tooltip:hover::after,
+.sio-tooltip:hover::before,
+.sio-tooltip:focus-visible::after,
+.sio-tooltip:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+/* A touch device has no hover state to dismiss this with, so it would stay
+   stuck open after a tap - simplest fix is to not offer it there at all,
+   same call most mobile design systems make for hover-only tooltips. */
+@media (hover: none) {
+  .sio-tooltip::after,
+  .sio-tooltip::before {
+    display: none;
+  }
+}

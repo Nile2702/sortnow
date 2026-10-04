@@ -209,7 +209,7 @@ export default function SellerSignupPage() {
         </form>
 
         <Link href="/" style={{ display: "block", textAlign: "center", marginTop: 20, fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
-          ← Back to SORT IT OUT
+          ← Back to SORT NOW
         </Link>
       </div>
     </main>
