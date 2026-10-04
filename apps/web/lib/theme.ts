@@ -1,17 +1,5 @@
 import { cache } from "react";
-
-// INTERNAL_API_URL is only ever set for local dev (apps/web/.env.local
-// points it at http://localhost:3000/api). On Vercel, VERCEL_URL is set
-// automatically to the deployment's own hostname, so that's used instead -
-// without this, these calls would literally try to fetch "undefined/v1/..."
-// on any deploy that hasn't manually configured INTERNAL_API_URL, which
-// throws (invalid URL) and 500s every page that calls getStoreBySlug/
-// getLiveTheme.
-function internalApiBase(): string {
-  if (process.env.INTERNAL_API_URL) return process.env.INTERNAL_API_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}/api`;
-  return "http://localhost:3000/api";
-}
+import { stores, themes } from "./seed-data";
 
 export interface ThemeConfig {
   version: number;
@@ -51,33 +39,22 @@ export interface StoreRecord {
 }
 
 /**
- * Server-side fetch, deduped per-request via React `cache()`.
- * The Tenant Service itself reads-through Redis (theme:{store_id}, 10 min TTL)
- * so this call is cheap even under load; ISR at the page level adds a second
- * layer of caching for anonymous traffic.
+ * Reads straight from the in-process store list (see lib/seed-data.ts)
+ * rather than making an HTTP round-trip to this app's own API route.
+ * Self-fetching your own deployment from a server component is a known
+ * trap on serverless hosts (Vercel) - the request can come back as an HTML
+ * auth/redirect page instead of JSON (failing `res.json()` with a cryptic
+ * "Unexpected token '<'" instead of the real 404/null), and even when it
+ * works it's a needless network hop for data that's already in the same
+ * process. Wrapped in React `cache()` so multiple calls within one render
+ * still dedupe to a single lookup.
  */
 export const getStoreBySlug = cache(async (slug: string): Promise<StoreRecord | null> => {
-  try {
-    const res = await fetch(`${internalApiBase()}/v1/stores/${slug}`, {
-      next: { revalidate: 60, tags: [`store:${slug}`] },
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
+  return stores.find((s) => s.slug === slug || s.id === slug) ?? null;
 });
 
 export const getLiveTheme = cache(async (storeId: string): Promise<ThemeConfig> => {
-  try {
-    const res = await fetch(`${internalApiBase()}/v1/stores/${storeId}/theme?status=live`, {
-      next: { revalidate: 600, tags: [`theme:${storeId}`] },
-    });
-    if (!res.ok) return DEFAULT_THEME;
-    return res.json();
-  } catch {
-    return DEFAULT_THEME;
-  }
+  return themes[storeId] ?? DEFAULT_THEME;
 });
 
 /**
