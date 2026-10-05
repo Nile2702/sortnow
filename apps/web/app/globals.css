@@ -3,13 +3,14 @@
 }
 
 :root {
-  /* "Modern Mint" theme - deeper emerald/teal + amber accent on a
-     mint-tinted paper base, replacing the earlier flatter teal-on-gray-cream
-     look. Variable names kept as -bronze- / -glow- to avoid touching every
-     call site; only the values changed. */
+  /* Deeper emerald/teal + amber accent, now on a pure off-white base
+     instead of the earlier mint-tinted one (--sio-cream was #f7fbf9, a
+     visible light-green cast across every page background). Variable names
+     kept as -cream-/-bronze-/-glow- to avoid touching every call site; only
+     the values changed. */
   --sio-ink: #0f2b27;
   --sio-ink-soft: #234139;
-  --sio-cream: #f7fbf9;
+  --sio-cream: #fafafa;
   --sio-paper: #ffffff;
   --sio-line: #e2e8e6;
   --sio-bronze: #10a37f;
