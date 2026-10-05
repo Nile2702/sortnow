@@ -39,35 +39,41 @@ export default function CartPage() {
               <div
                 key={`${item.productId}-${item.size}`}
                 className="sio-card"
-                style={{ display: "flex", gap: 16, background: "#fff", padding: 16, borderRadius: 14, alignItems: "center", border: "1px solid #f1f5f9" }}
+                style={{ display: "flex", flexWrap: "wrap", gap: 16, background: "#fff", padding: 16, borderRadius: 14, alignItems: "center", border: "1px solid #f1f5f9" }}
               >
-                <img src={item.imageUrl} alt={item.title} style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10 }} />
-                <div style={{ flex: 1 }}>
+                <img src={item.imageUrl} alt={item.title} style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10, flexShrink: 0 }} />
+                {/* minWidth: 0 lets this shrink/wrap normally within the flex
+                    row - without it, the title had no minimum-size override
+                    so the row squeezed it down to its narrowest word instead
+                    of using the space actually available. */}
+                <div style={{ flex: "1 1 160px", minWidth: 0 }}>
                   <div style={{ fontWeight: 600 }}>{item.title}</div>
                   <div style={{ color: "#64748b", fontSize: 13 }}>
                     {item.storeName} · Size {item.size}
                   </div>
                   <div style={{ marginTop: 6, fontWeight: 700 }}>₹{item.price}</div>
                 </div>
-                <input
-                  type="number"
-                  min={1}
-                  value={item.quantity}
-                  onChange={(e) => {
-                    updateQuantity(item.productId, item.size, Number(e.target.value));
-                    refresh();
-                  }}
-                  style={{ width: 56, padding: 6, borderRadius: 6, border: "1px solid #cbd5e1" }}
-                />
-                <button
-                  onClick={() => {
-                    removeFromCart(item.productId, item.size);
-                    refresh();
-                  }}
-                  style={{ border: "none", background: "none", color: "#e11d48", cursor: "pointer" }}
-                >
-                  Remove
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginLeft: "auto" }}>
+                  <input
+                    type="number"
+                    min={1}
+                    value={item.quantity}
+                    onChange={(e) => {
+                      updateQuantity(item.productId, item.size, Number(e.target.value));
+                      refresh();
+                    }}
+                    style={{ width: 56, padding: 6, borderRadius: 6, border: "1px solid #cbd5e1" }}
+                  />
+                  <button
+                    onClick={() => {
+                      removeFromCart(item.productId, item.size);
+                      refresh();
+                    }}
+                    style={{ border: "none", background: "none", color: "#e11d48", cursor: "pointer", whiteSpace: "nowrap" }}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             ))}
           </div>

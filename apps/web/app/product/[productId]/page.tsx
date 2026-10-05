@@ -265,8 +265,10 @@ export default function ProductDetailPage() {
       imageUrl: product.images[0]?.url ?? "",
       quantity,
     });
+    // Stays true (no revert timeout) - the item really is in the cart now,
+    // so the button settles into "Go to Sort" rather than snapping back to
+    // an "Add to Sort" that would just add a duplicate line if tapped again.
     setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
     showToast(`Added to Sort — ${product.title}`, "success", { label: "Go to Sort", href: "/cart" });
   }
 
@@ -626,7 +628,10 @@ export default function ProductDetailPage() {
                 {product.sizes.map((s) => (
                   <button
                     key={s}
-                    onClick={() => setSize(s)}
+                    onClick={() => {
+                      setSize(s);
+                      setAdded(false);
+                    }}
                     style={{
                       padding: "9px 18px",
                       borderRadius: 999,
@@ -685,7 +690,7 @@ export default function ProductDetailPage() {
               </button>
             ) : (
               <button
-                onClick={handleAddToCart}
+                onClick={added ? () => router.push("/cart") : handleAddToCart}
                 className="sio-btn-primary sio-shine-btn"
                 style={{
                   flex: 1,
@@ -699,7 +704,7 @@ export default function ProductDetailPage() {
                   cursor: "pointer",
                 }}
               >
-                {added ? "Added to Sort" : "Add to Sort"}
+                {added ? "Go to Sort →" : "Add to Sort"}
               </button>
             )}
             <button
@@ -1082,7 +1087,13 @@ export default function ProductDetailPage() {
         </button>
         <button
           type="button"
-          onClick={product.stockRemaining === 0 ? () => setWaitlistOpen(true) : handleAddToCart}
+          onClick={
+            product.stockRemaining === 0
+              ? () => setWaitlistOpen(true)
+              : added
+              ? () => router.push("/cart")
+              : handleAddToCart
+          }
           className="sio-product-action-cta"
         >
           {product.stockRemaining === 0
@@ -1090,7 +1101,7 @@ export default function ProductDetailPage() {
               ? "✓ We'll notify you"
               : "🔔 Notify me when back in stock"
             : added
-            ? "Added ✓"
+            ? "Go to Sort →"
             : `Add to Sort — ₹${product.basePrice}`}
         </button>
       </div>
