@@ -31,60 +31,80 @@ export function SellerNav() {
 
   return (
     <div className="sio-print-hide" style={{ background: "#0f172a", color: "#fff" }}>
-      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "14px 20px", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "14px 20px 0", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap" }}>
           🏪 Seller Portal
         </div>
 
         {store && (
-          <div style={{ fontSize: 13, color: "#cbd5e1", whiteSpace: "nowrap" }}>{store.name}</div>
+          <div style={{ fontSize: 13, color: "#cbd5e1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{store.name}</div>
         )}
 
-        <nav style={{ display: "flex", gap: 4, marginLeft: "auto", flexWrap: "wrap" }}>
-          {TABS.map((tab) => {
-            const active = pathname === tab.href;
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: 999,
-                  fontSize: 13,
-                  fontWeight: active ? 700 : 400,
-                  color: active ? "#0f172a" : "#cbd5e1",
-                  background: active ? "#fff" : "transparent",
-                  textDecoration: "none",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {tab.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 999,
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#cbd5e1",
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.2)",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Sign out
+          </button>
 
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 999,
-            fontSize: 13,
-            fontWeight: 600,
-            color: "#cbd5e1",
-            background: "transparent",
-            border: "1px solid rgba(255,255,255,0.2)",
-            cursor: "pointer",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Sign out
-        </button>
-
-        <Link href="/" style={{ fontSize: 13, color: "#94a3b8", textDecoration: "none", whiteSpace: "nowrap" }}>
-          ← Back to site
-        </Link>
+          <Link href="/" style={{ fontSize: 13, color: "#94a3b8", textDecoration: "none", whiteSpace: "nowrap" }}>
+            ← Back to site
+          </Link>
+        </div>
       </div>
+
+      {/* A dedicated, horizontally-scrollable row rather than letting these
+          11 tabs wrap inline with the brand/store/actions above - with this
+          many tabs, wrapping broke the `marginLeft: auto` alignment the
+          moment the tabs spilled onto their own line (nothing left on that
+          line to push away from), leaving Sign out/Back to site stranded at
+          the left edge instead of the right. A fixed scrollable strip avoids
+          that regardless of viewport width or how many tabs are added later. */}
+      <nav
+        className="sio-scroll-row"
+        style={{
+          maxWidth: 1440,
+          margin: "0 auto",
+          padding: "10px 20px 14px",
+          display: "flex",
+          gap: 4,
+          overflowX: "auto",
+        }}
+      >
+        {TABS.map((tab) => {
+          const active = pathname === tab.href;
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 999,
+                fontSize: 13,
+                fontWeight: active ? 700 : 400,
+                color: active ? "#0f172a" : "#cbd5e1",
+                background: active ? "#fff" : "transparent",
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
