@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isMobileAppShellPage } from "../lib/mobile-shell";
+import { getCart, cartCount } from "../lib/cart";
 
 const BAR_HEIGHT = 60;
 
@@ -35,6 +37,16 @@ function DiscoverIcon({ active }: { active: boolean }) {
   );
 }
 
+function SortIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 6h16" />
+      <path d="M7 12h10" />
+      <path d="M10 18h4" />
+    </svg>
+  );
+}
+
 function ReservationIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
@@ -57,6 +69,7 @@ const TABS = [
   { href: "/", label: "Home", Icon: HomeIcon, match: (p: string) => p === "/" },
   { href: "/search", label: "Category", Icon: CategoryIcon, match: (p: string) => p === "/search" || p.startsWith("/category/") },
   { href: "/discover", label: "Discover", Icon: DiscoverIcon, match: (p: string) => p.startsWith("/discover") },
+  { href: "/cart", label: "Sort", Icon: SortIcon, match: (p: string) => p === "/cart" },
   { href: "/reservations", label: "Reservations", Icon: ReservationIcon, match: (p: string) => p.startsWith("/reservations") },
   { href: "/account", label: "Account", Icon: AccountIcon, match: (p: string) => p.startsWith("/account") },
 ];
@@ -68,6 +81,22 @@ const TABS = [
 // to spare above the fold; the seller portal has its own nav entirely).
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const [cartN, setCartN] = useState(0);
+
+  // Hooks must run on every render regardless of route (the app-shell check
+  // below returns null conditionally), so this lives above that early
+  // return rather than skipped when it wouldn't be rendered anyway.
+  useEffect(() => {
+    const refresh = () => setCartN(cartCount(getCart()));
+    refresh();
+    window.addEventListener("sio:cart-updated", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("sio:cart-updated", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
   if (!isMobileAppShellPage(pathname)) return null;
 
   return (
@@ -91,7 +120,32 @@ export function MobileBottomNav() {
                 color: active ? "var(--sio-bronze-dark)" : "var(--sio-muted)",
               }}
             >
-              <tab.Icon active={active} />
+              <span style={{ position: "relative", display: "flex" }}>
+                <tab.Icon active={active} />
+                {tab.href === "/cart" && cartN > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -4,
+                      right: -8,
+                      minWidth: 15,
+                      height: 15,
+                      padding: "0 3px",
+                      borderRadius: "50%",
+                      background: "var(--sio-bronze-dark)",
+                      color: "#fff",
+                      fontSize: 9.5,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {cartN > 99 ? "99+" : cartN}
+                  </span>
+                )}
+              </span>
               <span style={{ fontSize: 10.5, fontWeight: active ? 700 : 500 }}>{tab.label}</span>
             </Link>
           );

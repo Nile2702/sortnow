@@ -1,5 +1,5 @@
 // Recreated from the brand mark supplied by the user: a black circular
-// badge, a mint ring, "SORT-IT-OUT" curved around the inside in a layered
+// badge, a mint ring, "SORT-NOW" curved around the inside in a layered
 // sticker style, and a teal funnel with scattered dots at the center
 // (the funnel doubles as a nod to "sort" - filtering results down).
 export function LogoBadge({ size = 40 }: { size?: number }) {
@@ -23,7 +23,7 @@ export function LogoBadge({ size = 40 }: { size?: number }) {
         letterSpacing="1.5"
       >
         <textPath href="#sio-badge-ring" startOffset="2%">
-          SORT · IT · OUT · SORT · IT · OUT ·
+          SORT · NOW · SORT · NOW · SORT · NOW ·
         </textPath>
       </text>
 

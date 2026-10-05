@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { onToast, ToastOptions } from "../lib/toast";
 
 interface Toast extends ToastOptions {
@@ -22,7 +23,10 @@ export function ToastHost() {
     return onToast((opts) => {
       const id = nextId++;
       setToasts((t) => [...t, { id, ...opts }]);
-      setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3000);
+      // A toast with an action link (e.g. "Go to Sort") gets longer on
+      // screen - 3s is barely enough time to read the message, let alone
+      // also decide to tap through.
+      setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), opts.action ? 5000 : 3000);
     });
   }, []);
 
@@ -52,18 +56,36 @@ export function ToastHost() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 8,
-              padding: "10px 18px",
+              gap: 10,
+              padding: "10px 10px 10px 18px",
               borderRadius: 999,
               border: `1px solid ${tone.border}`,
               color: "var(--sio-ink)",
               fontSize: 13,
               fontWeight: 600,
               boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+              pointerEvents: "auto",
             }}
           >
             <span style={{ fontSize: 13 }}>{tone.icon}</span>
             {t.message}
+            {t.action && (
+              <Link
+                href={t.action.href}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 999,
+                  background: "var(--sio-ink)",
+                  color: "#fff",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t.action.label} →
+              </Link>
+            )}
           </div>
         );
       })}

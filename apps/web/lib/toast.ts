@@ -7,12 +7,13 @@
 export interface ToastOptions {
   message: string;
   tone?: "default" | "success" | "error";
+  action?: { label: string; href: string };
 }
 
 const EVENT = "sio:toast";
 
-export function showToast(message: string, tone: ToastOptions["tone"] = "default") {
-  window.dispatchEvent(new CustomEvent<ToastOptions>(EVENT, { detail: { message, tone } }));
+export function showToast(message: string, tone: ToastOptions["tone"] = "default", action?: ToastOptions["action"]) {
+  window.dispatchEvent(new CustomEvent<ToastOptions>(EVENT, { detail: { message, tone, action } }));
 }
 
 export function onToast(cb: (opts: ToastOptions) => void) {

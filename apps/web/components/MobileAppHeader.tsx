@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
-import { QUICK_MARKETS, getLocationPref, setLocationPref, LOCATION_CHANGED_EVENT, type QuickMarket, type LocationPref } from "../lib/location";
+import { QUICK_MARKETS, getLocationPref, setLocationPref, resolveAreaLabel, LOCATION_CHANGED_EVENT, type QuickMarket, type LocationPref } from "../lib/location";
 import { isMobileAppShellPage } from "../lib/mobile-shell";
 import { showToast } from "../lib/toast";
 import { QrScannerModal } from "./QrScannerModal";
@@ -94,13 +94,20 @@ function LocationDropdown({
   align,
   location,
   onPick,
+  onUseGps,
+  onPincode,
+  locating,
 }: {
   anchorRef: React.RefObject<HTMLElement>;
   align: "left" | "right";
   location: LocationPref;
   onPick: (m: QuickMarket) => void;
+  onUseGps: () => void;
+  onPincode: (pincode: string) => void;
+  locating: boolean;
 }) {
   const [rect, setRect] = useState<{ top: number; left?: number; right?: number } | null>(null);
+  const [pincodeInput, setPincodeInput] = useState("");
 
   useEffect(() => {
     if (!anchorRef.current) return;
@@ -130,6 +137,30 @@ function LocationDropdown({
         boxShadow: "0 12px 32px rgba(0,0,0,0.14)",
       }}
     >
+      <button
+        type="button"
+        onClick={onUseGps}
+        disabled={locating}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          width: "100%",
+          textAlign: "left",
+          padding: "8px 10px",
+          borderRadius: 8,
+          border: "none",
+          background: "transparent",
+          color: "var(--sio-bronze-dark)",
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: locating ? "default" : "pointer",
+          opacity: locating ? 0.6 : 1,
+        }}
+      >
+        📍 {locating ? "Getting your location…" : "Use my current location"}
+      </button>
+      <div style={{ height: 1, background: "var(--sio-line)", margin: "4px 0" }} />
       {QUICK_MARKETS.map((m) => (
         <button
           key={m.pincode}
@@ -151,6 +182,38 @@ function LocationDropdown({
           {m.label}
         </button>
       ))}
+      <div style={{ height: 1, background: "var(--sio-line)", margin: "4px 0" }} />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (/^\d{6}$/.test(pincodeInput)) onPincode(pincodeInput);
+        }}
+        style={{ display: "flex", gap: 6, padding: "4px 4px 2px" }}
+      >
+        <input
+          value={pincodeInput}
+          onChange={(e) => setPincodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          placeholder="Enter PIN code"
+          inputMode="numeric"
+          style={{ flex: 1, minWidth: 0, padding: "7px 9px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
+        />
+        <button
+          type="submit"
+          disabled={!/^\d{6}$/.test(pincodeInput)}
+          style={{
+            padding: "7px 12px",
+            borderRadius: 8,
+            border: "none",
+            background: /^\d{6}$/.test(pincodeInput) ? "var(--sio-ink)" : "var(--sio-line)",
+            color: "#fff",
+            fontSize: 12.5,
+            fontWeight: 600,
+            cursor: /^\d{6}$/.test(pincodeInput) ? "pointer" : "default",
+          }}
+        >
+          Go
+        </button>
+      </form>
     </div>,
     document.body
   );
@@ -181,6 +244,7 @@ export function MobileAppHeader() {
   const [listening, setListening] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [locating, setLocating] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -226,6 +290,51 @@ export function MobileAppHeader() {
     setLocationPref(market);
     setPickerOpen(false);
     router.push(`/?pincode=${market.pincode}`);
+  }
+
+  function pickPincode(pincode: string) {
+    const known = QUICK_MARKETS.find((m) => m.pincode === pincode);
+    setLocationPref({ label: known?.label ?? `PIN ${pincode}`, pincode });
+    setPickerOpen(false);
+    router.push(`/?pincode=${pincode}`);
+    if (!known) {
+      resolveAreaLabel({ pincode }, `PIN ${pincode}`).then((label) => setLocationPref({ label, pincode }));
+    }
+  }
+
+  // Same robust GPS config as the first-visit LocationGate modal -
+  // enableHighAccuracy + a longer timeout, since this header's picker is the
+  // ONLY way to change location after that first prompt has already been
+  // dismissed once (see hasSeenLocationPrompt) - without this here, a
+  // shopper who skipped/denied it initially had no way to ever turn GPS
+  // location on later short of clearing site data.
+  function useGps() {
+    if (!navigator.geolocation) {
+      showToast("Your browser doesn't support location access.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const label = await resolveAreaLabel({ lat, lng }, "Your Location");
+        setLocating(false);
+        setLocationPref({ label, lat, lng });
+        setPickerOpen(false);
+        router.push(`/?lat=${lat}&lng=${lng}`);
+      },
+      (err) => {
+        setLocating(false);
+        if (err.code === 1) {
+          showToast("Location access was blocked - check your browser's site settings, or enter a PIN code instead.");
+        } else if (err.code === 3) {
+          showToast("Getting your location took too long. Try again or enter a PIN code.");
+        } else {
+          showToast("Couldn't determine your location. Try a PIN code instead.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 300000 }
+    );
   }
 
   function handleSearchSubmit(e: React.FormEvent) {
@@ -320,7 +429,7 @@ export function MobileAppHeader() {
                 <ChevronDown />
               </button>
 
-              {pickerOpen && <LocationDropdown anchorRef={pickerRef} align="right" location={location} onPick={pickMarket} />}
+              {pickerOpen && <LocationDropdown anchorRef={pickerRef} align="right" location={location} onPick={pickMarket} onUseGps={useGps} onPincode={pickPincode} locating={locating} />}
             </div>
           </div>
         )}
@@ -381,7 +490,7 @@ export function MobileAppHeader() {
               <ChevronDown />
             </button>
 
-            {pickerOpen && <LocationDropdown anchorRef={pickerRef} align="left" location={location} onPick={pickMarket} />}
+            {pickerOpen && <LocationDropdown anchorRef={pickerRef} align="left" location={location} onPick={pickMarket} onUseGps={useGps} onPincode={pickPincode} locating={locating} />}
           </div>
 
           <button

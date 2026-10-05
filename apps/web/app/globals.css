@@ -21,10 +21,15 @@
      so existing dual-use buttons stay legible). Retuned to the same
      emerald/amber duo as the palette above instead of the old teal/violet
      pairing, so the decorative sweep reads as part of one theme. */
-  --sio-glow: #34d399;
+  /* Was a bright neon mint (#34d399) - hard to read against the dark hero
+     gradient at small sizes (location label, header icons) and read as
+     "neon"/cheap rather than premium. A solid warm gold reads clearly at
+     any size and pairs with the existing amber accent instead of clashing
+     with it. */
+  --sio-glow: #fbbf24;
   --sio-glow-2: #f6c453;
   --sio-glass-bg: rgba(255, 255, 255, 0.62);
-  --sio-glass-border: rgba(52, 211, 153, 0.28);
+  --sio-glass-border: rgba(251, 191, 36, 0.28);
 }
 
 html,
@@ -665,10 +670,10 @@ body {
     position: sticky;
     top: 0;
     z-index: 20;
-    padding: 10px 6px;
+    padding: 10px 10px;
     margin: 0 -16px 14px;
-    background: var(--sio-cream);
-    border-bottom: 1px solid var(--sio-line);
+    background: var(--sio-paper);
+    box-shadow: 0 2px 12px rgba(15, 43, 39, 0.08);
   }
 
   .sio-product-mobile-header-btn {
@@ -676,12 +681,18 @@ body {
     height: 38px;
     border-radius: 50%;
     border: none;
-    background: none;
+    background: var(--sio-cream);
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--sio-ink);
     cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .sio-product-mobile-header-btn:active {
+    background: var(--sio-line);
+    transform: scale(0.93);
   }
 
   .sio-product-action-spacer {
