@@ -634,6 +634,13 @@ body {
     position: sticky;
     top: 0;
     z-index: 20;
+    /* The homepage variant sets its own inline gradient background (and
+       wins over this via inline specificity) - every other app-shell page
+       (search, store, cart, wishlist, reservations...) had no background
+       at all here, so this sticky bar was effectively transparent and
+       whatever scrolled underneath it (most visibly the dark Footer) bled
+       through visibly once scrolled far enough. */
+    background: var(--sio-paper);
     border-bottom: 1px solid var(--sio-line);
   }
 
