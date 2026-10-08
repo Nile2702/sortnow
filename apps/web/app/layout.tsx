@@ -1,4 +1,4 @@
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { Figtree } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "../components/SiteHeader";
 import { MobileAppHeader } from "../components/MobileAppHeader";
@@ -10,12 +10,10 @@ import { ScrollToTop } from "../components/ScrollToTop";
 import { ToastHost } from "../components/ToastHost";
 import { LocationGate } from "../components/LocationGate";
 
-// A rounded, friendly sans-serif for headings instead of the earlier
-// Cormorant Garamond serif - the serif read as a formal fashion-magazine
-// "classic boutique" look; this keeps things approachable while staying
-// distinct from the Inter body text.
-const heading = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--site-font-heading" });
-const body = Inter({ subsets: ["latin"], variable: "--site-font-body" });
+// Figtree - the same typeface Myntra's own site uses, for both headings and
+// body text (a single-family system rather than a heading/body pairing).
+const heading = Figtree({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--site-font-heading" });
+const body = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--site-font-body" });
 
 export const metadata = {
   title: "SORT NOW — Find fashion near you",

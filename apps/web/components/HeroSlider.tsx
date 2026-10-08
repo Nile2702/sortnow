@@ -172,15 +172,17 @@ export function HeroSlider() {
         </h1>
         <p style={{ position: "relative", fontSize: 15, opacity: 0.8, marginBottom: 30, maxWidth: 440, fontWeight: 300 }}>{slide.subtitle}</p>
         <span
-          className="sio-hero-cta sio-shine-btn sio-glow-ring"
           style={{
             position: "relative",
             padding: "14px 34px",
-            border: "1px solid rgba(255,255,255,0.55)",
+            border: "none",
+            background: "var(--sio-bronze)",
+            color: "#fff",
             fontSize: 13.5,
-            fontWeight: 600,
-            letterSpacing: "0.01em",
-            borderRadius: 999,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.02em",
+            borderRadius: 4,
           }}
         >
           {slide.cta} →

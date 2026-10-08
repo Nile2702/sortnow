@@ -241,14 +241,28 @@ export function SiteHeader() {
           }}
         >
           <LogoBadge size={40} />
-          <span className="sio-logo-text">SORT NOW</span>
+          <span className="sio-logo-text">
+            SORT <span style={{ color: "var(--sio-bronze)" }}>NOW</span>
+          </span>
         </Link>
 
         <nav className="sio-header-nav">
           {CATEGORY_TREE.map((c) => (
             <CategoryMenu key={c.value} gender={c.value} label={c.label} subCategories={c.subCategories} />
           ))}
-          <Link href="/shops" style={{ color: "var(--sio-ink-soft)", textDecoration: "none", whiteSpace: "nowrap", padding: "8px 10px", fontSize: 13 }}>
+          <Link
+            href="/shops"
+            style={{
+              color: "var(--sio-ink)",
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              padding: "8px 10px",
+              fontSize: 13,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.02em",
+            }}
+          >
             Shops
           </Link>
         </nav>
@@ -282,7 +296,7 @@ export function SiteHeader() {
               background: "var(--sio-cream)",
               fontSize: 14,
               outline: "none",
-              borderRadius: 999,
+              borderRadius: 2,
             }}
           />
 
@@ -422,24 +436,21 @@ export function SiteHeader() {
           ) : (
             <Link
               href="/account"
-              className="sio-btn-primary sio-shine-btn"
               style={{
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                gap: 6,
-                padding: "10px 20px",
-                background: "var(--sio-ink)",
-                color: "#fff",
+                gap: 2,
+                padding: "10px",
+                color: "var(--sio-ink)",
                 textDecoration: "none",
-                fontSize: 13,
+                fontSize: 11,
                 fontWeight: 600,
-                borderRadius: 999,
+                textTransform: "uppercase",
               }}
             >
-              <span className="sio-login-label">Login / Sign up</span>
-              <span className="sio-login-icon" aria-hidden>
-                <PersonIcon />
-              </span>
+              <PersonIcon />
+              <span className="sio-login-label">Profile</span>
             </Link>
           )}
         </nav>
@@ -573,12 +584,15 @@ function CategoryMenu({ gender, label, subCategories }: { gender: string; label:
           display: "flex",
           alignItems: "center",
           gap: 4,
-          color: open ? "var(--sio-ink)" : "var(--sio-ink-soft)",
+          color: "var(--sio-ink)",
           whiteSpace: "nowrap",
           padding: "8px 10px",
-          fontWeight: open ? 600 : 400,
+          fontWeight: 600,
           fontSize: 13,
+          textTransform: "uppercase",
+          letterSpacing: "0.02em",
           textDecoration: "none",
+          borderBottom: open ? "2px solid var(--sio-bronze)" : "2px solid transparent",
         }}
       >
         {label}

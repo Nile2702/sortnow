@@ -3,34 +3,27 @@
 }
 
 :root {
-  /* Deeper emerald/teal + amber accent, now on a pure off-white base
-     instead of the earlier mint-tinted one (--sio-cream was #f7fbf9, a
-     visible light-green cast across every page background). Variable names
-     kept as -cream-/-bronze-/-glow- to avoid touching every call site; only
-     the values changed. */
-  --sio-ink: #0f2b27;
-  --sio-ink-soft: #234139;
-  --sio-cream: #fafafa;
+  /* Myntra-style palette: clean white surfaces, dark navy text, pink/magenta
+     as the one primary accent (CTAs, active states, sale/wishlist), orange
+     reserved specifically for discount percentages the way Myntra uses it.
+     Variable names kept as -ink-/-cream-/-bronze-/-glow- to avoid touching
+     every call site; only the values changed. */
+  --sio-ink: #282c3f;
+  --sio-ink-soft: #4b4f5f;
+  --sio-cream: #f5f5f6;
   --sio-paper: #ffffff;
-  --sio-line: #e2e8e6;
-  --sio-bronze: #10a37f;
-  --sio-bronze-dark: #065f56;
-  --sio-muted: #4a615c;
+  --sio-line: #d4d5d9;
+  --sio-bronze: #ff3e6c;
+  --sio-bronze-dark: #e22e5c;
+  --sio-muted: #7e818c;
 
-  /* Futuristic layer: neon glow + glass tokens, additive on top of the
-     premium palette above (nothing here overrides -ink/-cream semantics,
-     so existing dual-use buttons stay legible). Retuned to the same
-     emerald/amber duo as the palette above instead of the old teal/violet
-     pairing, so the decorative sweep reads as part of one theme. */
-  /* Was a bright neon mint (#34d399) - hard to read against the dark hero
-     gradient at small sizes (location label, header icons) and read as
-     "neon"/cheap rather than premium. A solid warm gold reads clearly at
-     any size and pairs with the existing amber accent instead of clashing
-     with it. */
-  --sio-glow: #fbbf24;
-  --sio-glow-2: #f6c453;
-  --sio-glass-bg: rgba(255, 255, 255, 0.62);
-  --sio-glass-border: rgba(251, 191, 36, 0.28);
+  /* Reused specifically for discount-percentage text (e.g. "33% OFF"),
+     matching Myntra's orange rather than treating it as a generic second
+     brand color. */
+  --sio-glow: #ff905a;
+  --sio-glow-2: #ff7f50;
+  --sio-glass-bg: rgba(255, 255, 255, 0.85);
+  --sio-glass-border: var(--sio-line);
 }
 
 html,
@@ -312,8 +305,8 @@ body {
 
 .sio-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 16px 32px rgba(22, 20, 15, 0.08);
-  border-color: var(--sio-bronze) !important;
+  box-shadow: 0 8px 20px rgba(40, 44, 63, 0.1);
+  border-color: var(--sio-line) !important;
 }
 
 .sio-heart-btn {
@@ -382,13 +375,17 @@ body {
   animation: sio-breathe 2.4s ease-in-out infinite;
 }
 
+/* Myntra's buttons are sharp rectangles (small radius), not full pills -
+   overridden here with !important (which does beat an inline style) rather
+   than touching every inline borderRadius: 999 across the codebase. */
 .sio-btn-primary {
+  border-radius: 4px !important;
   transition: background 0.25s ease, transform 0.15s ease, box-shadow 0.25s ease;
 }
 
 .sio-btn-primary:hover {
-  background: var(--sio-ink-soft) !important;
-  box-shadow: 0 8px 20px rgba(22, 20, 15, 0.18);
+  background: var(--sio-bronze-dark) !important;
+  box-shadow: 0 4px 12px rgba(255, 62, 108, 0.3);
 }
 
 .sio-btn-primary:active {
@@ -483,51 +480,31 @@ body {
   }
 }
 
-/* Glassmorphic surface - frosted, translucent, neon-rimmed. */
+/* Plain solid surface - the "glassmorphic/neon" look (blur + tinted glow
+   border) read as a sci-fi dashboard, not Myntra's flat, opaque white
+   chrome. Kept as a near-opaque white so existing markup that relies on
+   this class for a sticky/overlay background still reads correctly. */
 .sio-glass {
-  background: var(--sio-glass-bg);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border: 1px solid var(--sio-glass-border);
+  background: var(--sio-paper);
+  border: 1px solid var(--sio-line);
 }
 
-/* Animated glowing border/ring, breathes on its own - use on hero CTAs,
-   featured cards, "live" indicators. */
+/* Decorative glow-pulse/neon-gradient/shine-sweep effects removed site-wide
+   to match Myntra's flat design language - these classes stay on existing
+   markup (so nothing needs to change at every call site) but no longer
+   animate or alter color. */
 .sio-glow-ring {
-  animation: sio-glow-pulse 3s ease-in-out infinite;
+  animation: none;
 }
 
-/* Gradient text that slowly drifts through the brand's teal/violet duotone. */
 .sio-neon-text {
-  background: linear-gradient(90deg, var(--sio-glow), var(--sio-glow-2), var(--sio-glow));
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: sio-gradient-x 6s linear infinite;
-}
-
-/* Button shine sweep - a soft diagonal highlight that sweeps across on
-   hover, layered on top of existing button colors/backgrounds. */
-.sio-shine-btn {
-  position: relative;
-  overflow: hidden;
+  color: inherit;
+  background: none;
+  animation: none;
 }
 
 .sio-shine-btn::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 40%;
-  height: 100%;
-  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.35), transparent);
-  transform: translateX(-120%) skewX(-20deg);
-  pointer-events: none;
-}
-
-.sio-shine-btn:hover::after {
-  animation: sio-shine-sweep 0.9s ease;
+  display: none;
 }
 
 /* Scroll-reveal: elements start hidden/offset, and get `.sio-revealed`
@@ -541,44 +518,13 @@ body {
   animation: sio-reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Floating ambient particle dots - purely decorative, absolutely
-   positioned by the component that renders them. */
-.sio-particle {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--sio-glow), transparent 70%);
-  opacity: 0.5;
-  animation: sio-float 7s ease-in-out infinite;
-  pointer-events: none;
-}
-
-/* Faint animated grid overlay, for hero/dark surfaces. */
-.sio-grid-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: linear-gradient(rgba(52, 211, 153, 0.14) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(52, 211, 153, 0.14) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 75%);
-}
-
-/* Diagonal scanline sweep, for hero surfaces wanting a sci-fi glint. */
+/* Particle dots / grid overlay / scanline sweep - Myntra's surfaces are
+   flat and opaque, no sci-fi ambient decoration. Hidden outright rather
+   than removed from every component that renders them. */
+.sio-particle,
+.sio-grid-overlay,
 .sio-scanline {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.sio-scanline::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 40%;
-  background: linear-gradient(180deg, transparent, rgba(52, 211, 153, 0.09), transparent);
-  animation: sio-scan 5s linear infinite;
+  display: none;
 }
 
 /* 3D tilt card wrapper - JS sets --rx/--ry via mousemove; falls back to
@@ -589,14 +535,9 @@ body {
   will-change: transform;
 }
 
-/* Cursor-following ambient glow, fixed full-viewport, mounted once. */
+/* Cursor-following ambient glow - removed to match Myntra's flat surfaces. */
 .sio-cursor-glow {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(600px circle at var(--cx, 50%) var(--cy, 50%), rgba(52, 211, 153, 0.06), transparent 70%);
-  transition: background 0.1s ease-out;
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -739,12 +680,14 @@ body {
   .sio-product-action-cta {
     flex: 1;
     height: 46px;
-    border-radius: 999px;
+    border-radius: 4px;
     border: none;
-    background: var(--sio-ink);
+    background: var(--sio-bronze);
     color: #fff;
-    font-weight: 600;
-    font-size: 14.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-size: 14px;
     cursor: pointer;
   }
 

@@ -369,23 +369,7 @@ export function MobileAppHeader() {
   }
 
   return (
-    <div
-      className="sio-app-header"
-      style={
-        isHome
-          ? { position: "relative", overflow: "hidden", background: "linear-gradient(135deg, var(--sio-ink) 0%, #0f2b26 100%)" }
-          : undefined
-      }
-    >
-      {isHome && (
-        <>
-          <div className="sio-grid-overlay" aria-hidden />
-          <div className="sio-scanline" aria-hidden />
-          <span className="sio-particle" aria-hidden style={{ width: 5, height: 5, left: "12%", top: "20%", animationDelay: "0s", animationDuration: "6s" }} />
-          <span className="sio-particle" aria-hidden style={{ width: 4, height: 4, left: "82%", top: "60%", animationDelay: "1.4s", animationDuration: "7s" }} />
-          <span className="sio-particle" aria-hidden style={{ width: 3, height: 3, left: "60%", top: "10%", animationDelay: "2.6s", animationDuration: "5s" }} />
-        </>
-      )}
+    <div className="sio-app-header" style={{ background: "var(--sio-paper)" }}>
       <div style={{ position: "relative", maxWidth: 720, margin: "0 auto", padding: "12px 16px 14px" }}>
         {isHome && (
           <div
@@ -403,7 +387,9 @@ export function MobileAppHeader() {
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
               <LogoBadge size={22} />
-              <span style={{ color: "#fff", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>SORT NOW</span>
+              <span style={{ color: "var(--sio-ink)", fontWeight: 800, fontSize: 14, whiteSpace: "nowrap" }}>
+                SORT <span style={{ color: "var(--sio-bronze)" }}>NOW</span>
+              </span>
             </div>
 
             <div ref={pickerRef} style={{ position: "relative", flexShrink: 0 }}>
@@ -418,7 +404,7 @@ export function MobileAppHeader() {
                   border: "none",
                   padding: 0,
                   cursor: "pointer",
-                  color: "var(--sio-glow)",
+                  color: "var(--sio-ink)",
                   maxWidth: "100%",
                 }}
               >
@@ -554,12 +540,11 @@ export function MobileAppHeader() {
             style={{
               width: "100%",
               padding: "11px 44px",
-              border: isHome ? "1px solid rgba(45,212,191,0.35)" : "1px solid var(--sio-line)",
-              background: isHome ? "#fff" : "var(--sio-cream)",
+              border: "1px solid var(--sio-line)",
+              background: "var(--sio-cream)",
               fontSize: 16,
               outline: "none",
-              borderRadius: 999,
-              boxShadow: isHome ? "0 6px 20px rgba(0,0,0,0.25)" : undefined,
+              borderRadius: 2,
             }}
           />
           <button
@@ -594,16 +579,18 @@ export function MobileAppHeader() {
               onClick={() => router.push("/shops?view=map")}
               aria-label="Stores near me"
               data-tooltip="Stores near me"
-              className="sio-tooltip sio-glass"
+              className="sio-tooltip"
               style={{
                 flexShrink: 0,
                 width: 44,
                 height: 44,
                 borderRadius: "50%",
+                border: "1px solid var(--sio-line)",
+                background: "#fff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "var(--sio-glow)",
+                color: "var(--sio-ink)",
                 cursor: "pointer",
               }}
             >
@@ -614,16 +601,18 @@ export function MobileAppHeader() {
               onClick={() => setQrOpen(true)}
               aria-label="Scan QR code"
               data-tooltip="Scan QR code"
-              className="sio-tooltip sio-glass sio-glow-ring"
+              className="sio-tooltip"
               style={{
                 flexShrink: 0,
                 width: 44,
                 height: 44,
                 borderRadius: "50%",
+                border: "1px solid var(--sio-line)",
+                background: "#fff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "var(--sio-glow)",
+                color: "var(--sio-ink)",
                 cursor: "pointer",
               }}
             >

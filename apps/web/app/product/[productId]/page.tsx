@@ -697,10 +697,12 @@ export default function ProductDetailPage() {
                   padding: "16px 24px",
                   borderRadius: 999,
                   border: "none",
-                  background: added ? "var(--sio-bronze-dark)" : "var(--sio-ink)",
+                  background: added ? "var(--sio-ink)" : "var(--sio-bronze)",
                   color: "#fff",
                   fontSize: 14.5,
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.02em",
                   cursor: "pointer",
                 }}
               >
