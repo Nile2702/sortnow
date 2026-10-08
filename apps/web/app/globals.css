@@ -3,18 +3,19 @@
 }
 
 :root {
-  /* Myntra-style palette: clean white surfaces, dark navy text, pink/magenta
-     as the one primary accent (CTAs, active states, sale/wishlist), orange
-     reserved specifically for discount percentages the way Myntra uses it.
-     Variable names kept as -ink-/-cream-/-bronze-/-glow- to avoid touching
-     every call site; only the values changed. */
+  /* Brand kit sampled directly from the supplied logo mark: coral-red
+     (#D6554B) as the one primary accent (CTAs, active states, wishlist),
+     black wordmark text, clean white surfaces. Orange stays reserved
+     specifically for discount percentages (Myntra-style), independent of
+     the brand's own red. Variable names kept as -ink-/-cream-/-bronze-/
+     -glow- to avoid touching every call site; only the values changed. */
   --sio-ink: #282c3f;
   --sio-ink-soft: #4b4f5f;
   --sio-cream: #f5f5f6;
   --sio-paper: #ffffff;
   --sio-line: #d4d5d9;
-  --sio-bronze: #ff3e6c;
-  --sio-bronze-dark: #e22e5c;
+  --sio-bronze: #d6554b;
+  --sio-bronze-dark: #b8453c;
   --sio-muted: #7e818c;
 
   /* Reused specifically for discount-percentage text (e.g. "33% OFF"),

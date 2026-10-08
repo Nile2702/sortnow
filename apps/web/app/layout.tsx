@@ -1,4 +1,4 @@
-import { Figtree } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "../components/SiteHeader";
 import { MobileAppHeader } from "../components/MobileAppHeader";
@@ -10,10 +10,10 @@ import { ScrollToTop } from "../components/ScrollToTop";
 import { ToastHost } from "../components/ToastHost";
 import { LocationGate } from "../components/LocationGate";
 
-// Figtree - the same typeface Myntra's own site uses, for both headings and
-// body text (a single-family system rather than a heading/body pairing).
-const heading = Figtree({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--site-font-heading" });
-const body = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--site-font-body" });
+// Poppins - a bold, geometric sans matching the weight/feel of the brand
+// logo's wordmark, used for both headings and body text.
+const heading = Poppins({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--site-font-heading" });
+const body = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--site-font-body" });
 
 export const metadata = {
   title: "SORT NOW — Find fashion near you",

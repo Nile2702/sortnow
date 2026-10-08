@@ -387,9 +387,7 @@ export function MobileAppHeader() {
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
               <LogoBadge size={22} />
-              <span style={{ color: "var(--sio-ink)", fontWeight: 800, fontSize: 14, whiteSpace: "nowrap" }}>
-                SORT <span style={{ color: "var(--sio-bronze)" }}>NOW</span>
-              </span>
+              <span style={{ color: "var(--sio-ink)", fontWeight: 800, fontSize: 14, whiteSpace: "nowrap" }}>SORT NOW</span>
             </div>
 
             <div ref={pickerRef} style={{ position: "relative", flexShrink: 0 }}>

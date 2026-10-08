@@ -232,18 +232,16 @@ export function SiteHeader() {
             alignItems: "center",
             gap: 8,
             fontFamily: "var(--site-font-heading)",
-            fontSize: 22,
-            fontWeight: 600,
-            letterSpacing: "0.03em",
+            fontSize: 21,
+            fontWeight: 800,
+            letterSpacing: "0.01em",
             textDecoration: "none",
             color: "var(--sio-ink)",
             whiteSpace: "nowrap",
           }}
         >
           <LogoBadge size={40} />
-          <span className="sio-logo-text">
-            SORT <span style={{ color: "var(--sio-bronze)" }}>NOW</span>
-          </span>
+          <span className="sio-logo-text">SORT NOW</span>
         </Link>
 
         <nav className="sio-header-nav">

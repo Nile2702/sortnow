@@ -55,7 +55,7 @@ export function Footer() {
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "48px 16px 28px", display: "flex", flexWrap: "wrap", gap: 40 }}>
         <div style={{ flex: "1 1 220px" }}>
           <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 22, letterSpacing: "0.03em", color: "#fff", marginBottom: 10 }}>
-            SORT <span style={{ color: "var(--sio-bronze)" }}>NOW</span>
+            SORT NOW
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.7, color: "#a39d8f", maxWidth: 260 }}>
             Find apparel near you, sort it online and walk into the store.
