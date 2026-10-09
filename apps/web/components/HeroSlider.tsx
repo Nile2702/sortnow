@@ -182,7 +182,7 @@ export function HeroSlider() {
             fontWeight: 700,
             textTransform: "uppercase",
             letterSpacing: "0.02em",
-            borderRadius: 4,
+            borderRadius: 10,
           }}
         >
           {slide.cta} →

@@ -380,7 +380,7 @@ body {
    overridden here with !important (which does beat an inline style) rather
    than touching every inline borderRadius: 999 across the codebase. */
 .sio-btn-primary {
-  border-radius: 4px !important;
+  border-radius: 10px !important;
   transition: background 0.25s ease, transform 0.15s ease, box-shadow 0.25s ease;
 }
 
@@ -681,7 +681,7 @@ body {
   .sio-product-action-cta {
     flex: 1;
     height: 46px;
-    border-radius: 4px;
+    border-radius: 10px;
     border: none;
     background: var(--sio-bronze);
     color: #fff;

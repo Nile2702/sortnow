@@ -63,7 +63,7 @@ export function ProductCard({
           height: "100%",
           textDecoration: "none",
           color: "inherit",
-          borderRadius: 2,
+          borderRadius: 14,
           overflow: "hidden",
           background: "#fff",
         }}
@@ -87,7 +87,7 @@ export function ProductCard({
                 fontSize: 9.5,
                 fontWeight: 700,
                 padding: "3px 8px",
-                borderRadius: 4,
+                borderRadius: 6,
                 textTransform: "uppercase",
                 letterSpacing: "0.03em",
               }}

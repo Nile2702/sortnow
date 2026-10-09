@@ -301,7 +301,7 @@ export function SiteHeader() {
               background: "var(--sio-cream)",
               fontSize: 14,
               outline: "none",
-              borderRadius: 2,
+              borderRadius: 10,
             }}
           />
 

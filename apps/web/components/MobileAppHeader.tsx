@@ -614,7 +614,7 @@ export function MobileAppHeader() {
               background: "var(--sio-cream)",
               fontSize: 16,
               outline: "none",
-              borderRadius: 2,
+              borderRadius: 10,
             }}
           />
           <button

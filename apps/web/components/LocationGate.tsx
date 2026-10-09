@@ -159,7 +159,7 @@ export function LocationGate() {
               onClick={() => setMode("manual")}
               style={{
                 padding: "13px",
-                borderRadius: 4,
+                borderRadius: 10,
                 border: "1px solid var(--sio-line)",
                 background: "#fff",
                 color: "var(--sio-ink)",
@@ -186,7 +186,7 @@ export function LocationGate() {
               placeholder="6-digit PIN code"
               maxLength={6}
               autoFocus
-              style={{ padding: "12px 14px", borderRadius: 4, border: "1px solid var(--sio-line)", fontSize: 16 }}
+              style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 16 }}
             />
             {error && <p style={{ color: "#b91c1c", fontSize: 12.5, margin: 0 }}>{error}</p>}
             <button
