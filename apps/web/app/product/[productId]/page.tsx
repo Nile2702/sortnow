@@ -182,7 +182,10 @@ export default function ProductDetailPage() {
         if (!p) return;
         setProduct(p);
         setActiveImage(0);
-        if (p?.sizes?.length) setSize(p.sizes[0]);
+        // No size pre-selected - a shopper who taps Add to Sort without
+        // ever looking at the size row would otherwise silently get
+        // whatever size happened to be first in the list.
+        setSize("");
         setWishlisted(isWishlisted(p.id));
       })
       // A dropped/failed request (network hiccup, a flaky connection) used to
@@ -255,6 +258,10 @@ export default function ProductDetailPage() {
 
   function handleAddToCart() {
     if (!product) return;
+    if (product.sizes?.length > 0 && !size) {
+      showToast("Please select a size first");
+      return;
+    }
     addToCart({
       productId: product.id,
       title: product.title,

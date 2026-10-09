@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const COLUMNS = [
   {
@@ -50,6 +53,14 @@ const COLUMNS = [
 ];
 
 export function Footer() {
+  const pathname = usePathname();
+  // The seller portal has its own dedicated nav and isn't part of the
+  // shopper storefront - the shopper footer's "Popular markets"/category
+  // links underneath a merchant's dashboard was just confusing clutter,
+  // the same reason mobile-shell.ts already excludes it from the mobile
+  // app shell entirely.
+  if (pathname.startsWith("/seller")) return null;
+
   return (
     <footer style={{ background: "var(--sio-ink)", color: "#c9c4b8", marginTop: 48 }}>
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "48px 16px 28px", display: "flex", flexWrap: "wrap", gap: 40 }}>

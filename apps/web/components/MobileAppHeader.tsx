@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { QUICK_MARKETS, getLocationPref, setLocationPref, resolveAreaLabel, LOCATION_CHANGED_EVENT, type QuickMarket, type LocationPref } from "../lib/location";
 import { isMobileAppShellPage } from "../lib/mobile-shell";
 import { showToast } from "../lib/toast";
+import { getWishlist } from "../lib/wishlist";
 import { QrScannerModal } from "./QrScannerModal";
 import { LogoBadge } from "./LogoBadge";
 
@@ -70,6 +71,40 @@ function MapIcon() {
       <path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z" />
       <path d="M9 4v13M15 6.5v13" />
     </svg>
+  );
+}
+
+function HeartIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2 4.5 5.6 4c2-.3 3.8.7 4.9 2.4C11.6 4.7 13.4 3.7 15.4 4c3.6.5 5.3 4.1 3.6 7.7C19.5 16.4 12 21 12 21z" />
+    </svg>
+  );
+}
+
+function WishCountBadge({ n }: { n: number }) {
+  return (
+    <span
+      style={{
+        position: "absolute",
+        top: -2,
+        right: -2,
+        minWidth: 16,
+        height: 16,
+        padding: "0 3px",
+        borderRadius: "50%",
+        background: "var(--sio-bronze-dark)",
+        color: "#fff",
+        fontSize: 10,
+        fontWeight: 700,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        lineHeight: 1,
+      }}
+    >
+      {n > 99 ? "99+" : n}
+    </span>
   );
 }
 
@@ -245,6 +280,7 @@ export function MobileAppHeader() {
   const [qrOpen, setQrOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [wishN, setWishN] = useState(0);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -254,6 +290,17 @@ export function MobileAppHeader() {
     }
     window.addEventListener(LOCATION_CHANGED_EVENT, onChange);
     return () => window.removeEventListener(LOCATION_CHANGED_EVENT, onChange);
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => setWishN(getWishlist().length);
+    refresh();
+    window.addEventListener("sio:wishlist-updated", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("sio:wishlist-updated", refresh);
+      window.removeEventListener("storage", refresh);
+    };
   }, []);
 
   // Home's logo/location row collapses away once the page scrolls, so the
@@ -502,6 +549,31 @@ export function MobileAppHeader() {
 
           <button
             type="button"
+            onClick={() => router.push("/wishlist")}
+            aria-label="Wishlist"
+            data-tooltip="Wishlist"
+            style={{
+              position: "relative",
+              flexShrink: 0,
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              border: isHome ? undefined : "1px solid var(--sio-line)",
+              background: isHome ? undefined : "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: isHome ? "var(--sio-glow)" : "var(--sio-ink)",
+              cursor: "pointer",
+            }}
+            className={`sio-tooltip${isHome ? " sio-glass" : ""}`}
+          >
+            <HeartIcon />
+            {wishN > 0 && <WishCountBadge n={wishN} />}
+          </button>
+
+          <button
+            type="button"
             onClick={() => setQrOpen(true)}
             aria-label="Scan QR code"
             data-tooltip="Scan QR code"
@@ -593,6 +665,30 @@ export function MobileAppHeader() {
               }}
             >
               <MapIcon />
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/wishlist")}
+              aria-label="Wishlist"
+              data-tooltip="Wishlist"
+              className="sio-tooltip"
+              style={{
+                position: "relative",
+                flexShrink: 0,
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                border: "1px solid var(--sio-line)",
+                background: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--sio-ink)",
+                cursor: "pointer",
+              }}
+            >
+              <HeartIcon />
+              {wishN > 0 && <WishCountBadge n={wishN} />}
             </button>
             <button
               type="button"

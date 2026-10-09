@@ -130,8 +130,8 @@ export function LocationGate() {
         }}
       >
         <div style={{ fontSize: 30, marginBottom: 8 }}>📍</div>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Find shops and products near you</h2>
-        <p style={{ fontSize: 13.5, color: "#64748b", marginBottom: 18, lineHeight: 1.5 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6, color: "var(--sio-ink)" }}>Find shops and products near you</h2>
+        <p style={{ fontSize: 13.5, color: "var(--sio-muted)", marginBottom: 18, lineHeight: 1.5 }}>
           SORT NOW shows you real boutiques and listings from sellers close to you. Allow location access, or enter your PIN code
           instead.
         </p>
@@ -139,13 +139,13 @@ export function LocationGate() {
         {mode === "choice" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button
+              className="sio-btn-primary"
               onClick={handleAllowLocation}
               disabled={locating}
               style={{
                 padding: "13px",
-                borderRadius: 999,
                 border: "none",
-                background: "#0f172a",
+                background: "var(--sio-bronze)",
                 color: "#fff",
                 fontWeight: 600,
                 fontSize: 14,
@@ -159,10 +159,10 @@ export function LocationGate() {
               onClick={() => setMode("manual")}
               style={{
                 padding: "13px",
-                borderRadius: 999,
-                border: "1px solid #e2e8f0",
+                borderRadius: 4,
+                border: "1px solid var(--sio-line)",
                 background: "#fff",
-                color: "#0f172a",
+                color: "var(--sio-ink)",
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: "pointer",
@@ -173,7 +173,7 @@ export function LocationGate() {
             {error && <p style={{ color: "#b91c1c", fontSize: 12.5, margin: 0 }}>{error}</p>}
             <button
               onClick={finish}
-              style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, cursor: "pointer", padding: 6 }}
+              style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 13, cursor: "pointer", padding: 6 }}
             >
               Skip for now
             </button>
@@ -186,12 +186,13 @@ export function LocationGate() {
               placeholder="6-digit PIN code"
               maxLength={6}
               autoFocus
-              style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 16 }}
+              style={{ padding: "12px 14px", borderRadius: 4, border: "1px solid var(--sio-line)", fontSize: 16 }}
             />
             {error && <p style={{ color: "#b91c1c", fontSize: 12.5, margin: 0 }}>{error}</p>}
             <button
               type="submit"
-              style={{ padding: "13px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
+              className="sio-btn-primary"
+              style={{ padding: "13px", border: "none", background: "var(--sio-bronze)", color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
             >
               Continue
             </button>
@@ -201,7 +202,7 @@ export function LocationGate() {
                 setMode("choice");
                 setError("");
               }}
-              style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, cursor: "pointer", padding: 6 }}
+              style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 13, cursor: "pointer", padding: 6 }}
             >
               ← Back
             </button>

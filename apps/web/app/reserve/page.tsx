@@ -75,7 +75,7 @@ export default function ReservePage() {
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "8px 16px 40px" }}>
       <h1 style={{ fontSize: 24, marginBottom: 20, fontWeight: 700 }}>Reserve for Pickup</h1>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 28 }}>
+      <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 28 }}>
         <form onSubmit={handleReserve} className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Your Details</h2>
           <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>The seller uses this to know who's coming and confirm the hold.</p>

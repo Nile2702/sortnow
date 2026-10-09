@@ -191,6 +191,13 @@ export function SiteHeader() {
     }
   }
 
+  // The seller portal (including its own login/signup) has its own
+  // dedicated "Seller Portal" nav bar built for a merchant managing their
+  // store - the shopper header's category menus, wishlist and cart icons
+  // on top of it was just confusing double-navigation, the same reason
+  // mobile-shell.ts already excludes it from the mobile app shell.
+  if (pathname.startsWith("/seller")) return null;
+
   return (
     <div
       className={`sio-glass${hideOnMobile ? " sio-header-app-hidden" : ""}`}
