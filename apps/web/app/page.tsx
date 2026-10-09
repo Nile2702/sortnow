@@ -360,6 +360,26 @@ function DiscoverPageInner() {
           ))}
         </div>
 
+        <Link
+          href="/shops?view=map"
+          style={{
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 14px",
+            borderRadius: 999,
+            border: "1px solid #e2e8f0",
+            color: "#1e3a8a",
+            fontWeight: 600,
+            fontSize: 13,
+            textDecoration: "none",
+            whiteSpace: "nowrap",
+          }}
+        >
+          🗺️ View stores on map
+        </Link>
+
         {activeSubCategories.length > 0 && (
           <div className="sio-fade-in" style={{ display: "flex", gap: 6, flexWrap: "wrap", width: "100%", marginTop: 4 }}>
             {activeSubCategories.map((sc) => (
@@ -411,7 +431,7 @@ function DiscoverPageInner() {
 
       <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>Stores near you</h2>
       {loading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 44 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 44 }}>
           {[1, 2, 3].map((i) => (
             <SkeletonCard key={i} height={110} />
           ))}
@@ -455,7 +475,7 @@ function DiscoverPageInner() {
           </div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 44 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 44 }}>
           {stores.map((s, i) => (
             <Link
               key={s.id}

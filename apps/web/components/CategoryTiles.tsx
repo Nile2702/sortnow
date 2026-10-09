@@ -43,14 +43,19 @@ export function CategoryTiles() {
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 20, borderBottom: "1px solid var(--sio-line)", paddingBottom: 12 }}>
         <h2 style={{ fontSize: 20, fontWeight: 600 }}>Shop by Category</h2>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))", gap: 14 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
         {subTiles.map((tile, i) => {
           const { bg, fg } = tileColor(tile.label);
           const href = tile.subCategory
             ? `/category/${tile.gender}?subCategory=${encodeURIComponent(tile.subCategory)}`
             : `/category/${tile.gender}`;
           return (
-            <div key={`${tile.gender}-${tile.subCategory}`} className="sio-fade-in" style={{ animationDelay: `${i * 40}ms` }}>
+            // Fixed width rather than a grid column - a small number of
+            // tiles (this demo has 4) shouldn't stretch to fill the whole
+            // row width, or leave behind a wide band of empty grid tracks
+            // the way an auto-fill grid did; a wrapping flex row just sits
+            // left-aligned at its natural size either way.
+            <div key={`${tile.gender}-${tile.subCategory}`} className="sio-fade-in" style={{ flex: "0 0 84px", width: 84, animationDelay: `${i * 40}ms` }}>
               <TiltCard>
                 <Link
                   href={href}

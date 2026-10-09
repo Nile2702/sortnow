@@ -182,7 +182,7 @@ export default function ShopsPage() {
       )}
 
       {loading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <SkeletonCard key={i} />
           ))}
@@ -190,7 +190,7 @@ export default function ShopsPage() {
       ) : filtered.length === 0 ? (
         <p style={{ color: "#64748b" }}>No shops match your search.</p>
       ) : view === "map" ? null : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
           {filtered.map((s, i) => (
             <Link
               key={s.id}
