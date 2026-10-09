@@ -49,7 +49,7 @@ export default function WishlistPage() {
                         imageUrl: item.imageUrl,
                         quantity: 1,
                       });
-                      showToast(`Added to Sort — ${item.title}`, "success", { label: "Go to Sort", href: "/cart" });
+                      showToast("Added to Sort", "success", { label: "Go to Sort", href: "/cart" });
                     }}
                     className="sio-shine-btn"
                     style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontSize: 13 }}

@@ -276,7 +276,7 @@ export default function ProductDetailPage() {
     // so the button settles into "Go to Sort" rather than snapping back to
     // an "Add to Sort" that would just add a duplicate line if tapped again.
     setAdded(true);
-    showToast(`Added to Sort — ${product.title}`, "success", { label: "Go to Sort", href: "/cart" });
+    showToast("Added to Sort", "success", { label: "Go to Sort", href: "/cart" });
   }
 
   function handleToggleWishlist() {

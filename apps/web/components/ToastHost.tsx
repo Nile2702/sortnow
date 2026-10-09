@@ -56,28 +56,28 @@ export function ToastHost() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
-              padding: "10px 10px 10px 18px",
+              gap: 8,
+              padding: "7px 7px 7px 14px",
               borderRadius: 999,
               border: `1px solid ${tone.border}`,
               color: "var(--sio-ink)",
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: 600,
               boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
               pointerEvents: "auto",
             }}
           >
-            <span style={{ fontSize: 13 }}>{tone.icon}</span>
+            <span style={{ fontSize: 12.5 }}>{tone.icon}</span>
             {t.message}
             {t.action && (
               <Link
                 href={t.action.href}
                 style={{
-                  padding: "6px 14px",
+                  padding: "5px 12px",
                   borderRadius: 999,
                   background: "var(--sio-ink)",
                   color: "#fff",
-                  fontSize: 12.5,
+                  fontSize: 11.5,
                   fontWeight: 700,
                   textDecoration: "none",
                   whiteSpace: "nowrap",
