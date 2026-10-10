@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSellerStore } from "../lib/use-seller-store";
+import { LogoBadge } from "./LogoBadge";
 
 const TABS = [
   { label: "Dashboard", href: "/seller" },
@@ -30,11 +31,26 @@ export function SellerNav() {
   }
 
   return (
-    <div className="sio-print-hide" style={{ background: "#0f172a", color: "#fff" }}>
+    <div className="sio-print-hide" style={{ background: "var(--sio-ink)", color: "#fff" }}>
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "14px 20px 0", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap" }}>
-          🏪 Seller Portal
-        </div>
+        <Link href="/seller" aria-label="SORT NOW Seller Portal home" style={{ display: "flex", alignItems: "center", gap: 10, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
+          <LogoBadge size={30} />
+          <span style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 18, letterSpacing: "0.03em" }}>SORT NOW</span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "#c9c4b8",
+              border: "1px solid rgba(255,255,255,0.2)",
+              borderRadius: 999,
+              padding: "3px 9px",
+            }}
+          >
+            Seller Portal
+          </span>
+        </Link>
 
         {store && (
           <div style={{ fontSize: 13, color: "#cbd5e1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{store.name}</div>
@@ -93,7 +109,7 @@ export function SellerNav() {
                 borderRadius: 999,
                 fontSize: 13,
                 fontWeight: active ? 700 : 400,
-                color: active ? "#0f172a" : "#cbd5e1",
+                color: active ? "var(--sio-ink)" : "#cbd5e1",
                 background: active ? "#fff" : "transparent",
                 textDecoration: "none",
                 whiteSpace: "nowrap",

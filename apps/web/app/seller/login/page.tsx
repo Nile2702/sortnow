@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { showToast } from "../../../lib/toast";
+import { LogoBadge } from "../../../components/LogoBadge";
 
 interface StoreOption {
   id: string;
@@ -172,7 +173,8 @@ export default function SellerLoginPage() {
           />
 
           <div style={{ position: "relative" }}>
-            <Link href="/" style={{ textDecoration: "none" }}>
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", marginBottom: 8 }}>
+              <LogoBadge size={30} />
               <div
                 style={{
                   fontFamily: "var(--site-font-heading)",
@@ -180,7 +182,6 @@ export default function SellerLoginPage() {
                   fontSize: 26,
                   letterSpacing: "0.03em",
                   color: "#fff",
-                  marginBottom: 8,
                 }}
               >
                 SORT NOW

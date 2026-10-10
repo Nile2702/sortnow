@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { showToast } from "../../../lib/toast";
 import { validatePassword } from "../../../lib/validate-password";
+import { LogoBadge } from "../../../components/LogoBadge";
 
 const CATEGORIES = [
   { value: "apparel", label: "All Types of Apparel" },
@@ -68,6 +69,11 @@ export default function SellerSignupPage() {
   return (
     <main className="sio-fade-in" style={{ minHeight: "calc(100vh - 60px)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sio-cream)", padding: "40px 20px" }}>
       <div style={{ width: "100%", maxWidth: 440 }}>
+        <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "var(--sio-ink)", marginBottom: 20 }}>
+          <LogoBadge size={32} />
+          <span style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, fontSize: 20, letterSpacing: "0.03em" }}>SORT NOW</span>
+          <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--sio-muted)" }}>Seller Portal</span>
+        </Link>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 6, color: "var(--sio-ink)" }}>List your store</h1>
           <p style={{ color: "var(--sio-muted)", fontSize: 13.5 }}>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoBadge } from "./LogoBadge";
 
 const COLUMNS = [
   {
@@ -52,28 +53,62 @@ const COLUMNS = [
   },
 ];
 
+// The seller portal gets the same branded footer, but with merchant-facing
+// columns - the shopper footer's "Popular markets"/category links under a
+// merchant's dashboard were just confusing clutter.
+const SELLER_COLUMNS = [
+  {
+    title: "Your Store",
+    links: [
+      { label: "Dashboard", href: "/seller" },
+      { label: "Products", href: "/seller/products" },
+      { label: "Reservations", href: "/seller/reservations" },
+      { label: "Sales", href: "/seller/sales" },
+    ],
+  },
+  {
+    title: "Grow",
+    links: [
+      { label: "Theme Studio", href: "/seller/theme" },
+      { label: "QR Marketing", href: "/seller/qr" },
+      { label: "Analytics & Reports", href: "/seller/analytics" },
+      { label: "AI Photo Credits", href: "/seller/photo-credits" },
+    ],
+  },
+  {
+    title: "Account",
+    links: [
+      { label: "Billing", href: "/seller/billing" },
+      { label: "Onboarding", href: "/seller/onboarding" },
+      { label: "Visit SORT NOW", href: "/" },
+    ],
+  },
+  COLUMNS[COLUMNS.length - 1],
+];
+
 export function Footer() {
   const pathname = usePathname();
-  // The seller portal has its own dedicated nav and isn't part of the
-  // shopper storefront - the shopper footer's "Popular markets"/category
-  // links underneath a merchant's dashboard was just confusing clutter,
-  // the same reason mobile-shell.ts already excludes it from the mobile
-  // app shell entirely.
-  if (pathname.startsWith("/seller")) return null;
+  const isSeller = pathname.startsWith("/seller");
+  const columns = isSeller ? SELLER_COLUMNS : COLUMNS;
 
   return (
-    <footer style={{ background: "var(--sio-ink)", color: "#c9c4b8", marginTop: 48 }}>
+    <footer className="sio-print-hide" style={{ background: "var(--sio-ink)", color: "#c9c4b8", marginTop: isSeller ? 0 : 48 }}>
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "48px 16px 28px", display: "flex", flexWrap: "wrap", gap: 40 }}>
         <div style={{ flex: "1 1 220px" }}>
-          <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 22, letterSpacing: "0.03em", color: "#fff", marginBottom: 10 }}>
-            SORT NOW
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <LogoBadge size={30} />
+            <span style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 22, letterSpacing: "0.03em", color: "#fff" }}>
+              SORT NOW
+            </span>
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.7, color: "#a39d8f", maxWidth: 260 }}>
-            Find apparel near you, sort it online and walk into the store.
+            {isSeller
+              ? "Seller Portal — list your catalog, take reservations and bring nearby shoppers into your store."
+              : "Find apparel near you, sort it online and walk into the store."}
           </p>
         </div>
 
-        {COLUMNS.map((col) => (
+        {columns.map((col) => (
           <div key={col.title} style={{ minWidth: 140 }}>
             <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 13, letterSpacing: "0.04em", textTransform: "uppercase", color: "#fff", marginBottom: 14 }}>
               {col.title}
