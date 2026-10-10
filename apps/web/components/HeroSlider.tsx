@@ -20,7 +20,7 @@ const SLIDES: Slide[] = [
     title: "Curated Styles, Just For You",
     subtitle: "Our fashion experts hand-pick every item to ensure quality and style.",
     cta: "Explore All Shops",
-    bg: "linear-gradient(140deg, #1c1917 0%, #3f2d1f 55%, #1c1917 100%)",
+    bg: "linear-gradient(140deg, #16161a 0%, #5c1a14 55%, #16161a 100%)",
     image: "/hero/boutique-rack.jpg",
   },
   {
@@ -38,7 +38,7 @@ const SLIDES: Slide[] = [
     title: "Flat 40% Off — Festive Ethnic",
     subtitle: "Handpicked festive wear from Bandra's favourite ethnic boutique.",
     cta: "Shop Urban Vogue",
-    bg: "linear-gradient(140deg, #2a1409 0%, #7c2d12 55%, #2a1409 100%)",
+    bg: "linear-gradient(140deg, #180e0e 0%, #841f17 55%, #180e0e 100%)",
     image: "/hero/urban-vogue.avif",
   },
   {
@@ -119,7 +119,7 @@ export function HeroSlider() {
             job the plain radial gradient below does for a flat color slide -
             stacked together when both are present. */}
         {slide.image && (
-          <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.5)" }} />
+          <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(8,10,16,0.55)" }} />
         )}
         {/* Subtle vignette + spotlight to read as a photographic backdrop rather than a flat gradient */}
         <div

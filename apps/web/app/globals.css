@@ -3,19 +3,20 @@
 }
 
 :root {
-  /* Brand kit sampled directly from the supplied logo mark: coral-red
-     (#D6554B) as the one primary accent (CTAs, active states, wishlist),
-     black wordmark text, clean white surfaces. Orange stays reserved
-     specifically for discount percentages (Myntra-style), independent of
-     the brand's own red. Variable names kept as -ink-/-cream-/-bronze-/
-     -glow- to avoid touching every call site; only the values changed. */
+  /* Brand kit sampled from the logo mark, then deepened to a darker red
+     (#A32A20) per request - away from the lighter coral-red the logo itself
+     samples to, and more clearly "red" than orange-leaning. Black wordmark
+     text, clean white surfaces. Orange stays reserved specifically for
+     discount percentages (Myntra-style), independent of the brand's own
+     red. Variable names kept as -ink-/-cream-/-bronze-/-glow- to avoid
+     touching every call site; only the values changed. */
   --sio-ink: #282c3f;
   --sio-ink-soft: #4b4f5f;
   --sio-cream: #f5f5f6;
   --sio-paper: #ffffff;
   --sio-line: #d4d5d9;
-  --sio-bronze: #d6554b;
-  --sio-bronze-dark: #b8453c;
+  --sio-bronze: #a32a20;
+  --sio-bronze-dark: #841f17;
   --sio-muted: #7e818c;
 
   /* Reused specifically for discount-percentage text (e.g. "33% OFF"),
@@ -386,7 +387,7 @@ body {
 
 .sio-btn-primary:hover {
   background: var(--sio-bronze-dark) !important;
-  box-shadow: 0 4px 12px rgba(255, 62, 108, 0.3);
+  box-shadow: 0 4px 12px rgba(163, 42, 32, 0.35);
 }
 
 .sio-btn-primary:active {

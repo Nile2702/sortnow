@@ -187,14 +187,14 @@ export default function SellerLoginPage() {
                 SORT NOW
               </div>
             </Link>
-            <div style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8a8478", marginBottom: 40 }}>
+            <div style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 40 }}>
               Seller Portal
             </div>
 
             <h1 style={{ fontSize: 30, fontWeight: 600, lineHeight: 1.25, marginBottom: 14, maxWidth: 380 }}>
               Everything your store needs, in one dashboard.
             </h1>
-            <p style={{ fontSize: 14, color: "#b8b2a4", lineHeight: 1.6, marginBottom: 40, maxWidth: 380 }}>
+            <p style={{ fontSize: 14, color: "#cbd5e1", lineHeight: 1.6, marginBottom: 40, maxWidth: 380 }}>
               Sign in to list products, manage reservations, and put your store in front of shoppers nearby.
             </p>
 
@@ -218,7 +218,7 @@ export default function SellerLoginPage() {
                   </div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{f.title}</div>
-                    <div style={{ fontSize: 13, color: "#8a8478", lineHeight: 1.5 }}>{f.desc}</div>
+                    <div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.5 }}>{f.desc}</div>
                   </div>
                 </div>
               ))}

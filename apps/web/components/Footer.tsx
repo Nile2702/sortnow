@@ -92,7 +92,7 @@ export function Footer() {
   const columns = isSeller ? SELLER_COLUMNS : COLUMNS;
 
   return (
-    <footer className="sio-print-hide" style={{ background: "var(--sio-ink)", color: "#c9c4b8", marginTop: isSeller ? 0 : 48 }}>
+    <footer className="sio-print-hide" style={{ background: "var(--sio-ink)", color: "#cbd5e1", marginTop: isSeller ? 0 : 48 }}>
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "48px 16px 28px", display: "flex", flexWrap: "wrap", gap: 40 }}>
         <div style={{ flex: "1 1 220px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
@@ -101,7 +101,7 @@ export function Footer() {
               SORT NOW
             </span>
           </div>
-          <p style={{ fontSize: 13, lineHeight: 1.7, color: "#a39d8f", maxWidth: 260 }}>
+          <p style={{ fontSize: 13, lineHeight: 1.7, color: "#94a3b8", maxWidth: 260 }}>
             {isSeller
               ? "Seller Portal — list your catalog, take reservations and bring nearby shoppers into your store."
               : "Find apparel near you, sort it online and walk into the store."}
@@ -115,7 +115,7 @@ export function Footer() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {col.links.map((l) => (
-                <Link key={l.href} href={l.href} style={{ fontSize: 13, color: "#a39d8f", textDecoration: "none" }}>
+                <Link key={l.href} href={l.href} style={{ fontSize: 13, color: "#94a3b8", textDecoration: "none" }}>
                   {l.label}
                 </Link>
               ))}
@@ -129,7 +129,7 @@ export function Footer() {
           padding: "18px",
           textAlign: "center",
           fontSize: 12,
-          color: "#7a7468",
+          color: "#64748b",
         }}
       >
         © {new Date().getFullYear()} SORT NOW — a demo platform for Indian O2O fashion discovery.

@@ -42,7 +42,7 @@ export function SellerNav() {
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "#c9c4b8",
+              color: "#cbd5e1",
               border: "1px solid rgba(255,255,255,0.2)",
               borderRadius: 999,
               padding: "3px 9px",
