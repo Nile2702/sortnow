@@ -106,9 +106,9 @@ export default function ShopsPage() {
             display: "flex",
             alignItems: "center",
             gap: 10,
-            background: "#eff6ff",
-            border: "1px solid #bfdbfe",
-            color: "#1e40af",
+            background: "#1e3a8a",
+            border: "1px solid #1e3a8a",
+            color: "#fff",
             borderRadius: 10,
             padding: "10px 14px",
             fontSize: 13,
@@ -122,7 +122,7 @@ export default function ShopsPage() {
               setStoreFilter(null);
               router.replace("/shops?view=map");
             }}
-            style={{ marginLeft: "auto", background: "none", border: "none", color: "#1e40af", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 13 }}
+            style={{ marginLeft: "auto", background: "none", border: "none", color: "#fff", fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 13 }}
           >
             Show all stores
           </button>

@@ -2,11 +2,12 @@
 // directly from the supplied reference via pixel-edge scanning: a smaller
 // triangle on the left, plus two larger triangles on the right that share
 // a left edge but sit at different heights, overlapping each other and
-// the left triangle. All three are the same semi-transparent coral-red,
-// so every overlap compounds into a visibly more saturated region -
-// that's what gives the mark its layered look. Transparent canvas (just
-// the icon, not the dark/white square backdrops it's been supplied on).
-const BRAND_RED = "#D6554B";
+// the left triangle. All three are the same semi-transparent red, so
+// every overlap compounds into a visibly more saturated region - that's
+// what gives the mark its layered look. Transparent canvas (just the
+// icon, not the dark/white square backdrops it's been supplied on).
+// Kept in sync with --sio-bronze in globals.css.
+const BRAND_RED = "#A32A20";
 
 export function LogoBadge({ size = 40 }: { size?: number }) {
   return (

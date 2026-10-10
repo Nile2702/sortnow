@@ -27,7 +27,7 @@ export default function CartPage() {
       {items.length === 0 ? (
         <p>
           Your sort is empty.{" "}
-          <Link href="/" style={{ color: "#2563eb" }}>
+          <Link href="/" style={{ color: "#1e3a8a" }}>
             Go find something nearby
           </Link>
           .

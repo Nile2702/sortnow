@@ -117,7 +117,7 @@ function CategoryPageInner() {
       ) : products.length === 0 ? (
         <p style={{ color: "#64748b" }}>
           No products in {subCategory || genderLabel} yet.{" "}
-          <Link href="/shops" style={{ color: "#2563eb" }}>
+          <Link href="/shops" style={{ color: "#1e3a8a" }}>
             Browse all shops
           </Link>{" "}
           instead.

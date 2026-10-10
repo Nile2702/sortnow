@@ -93,9 +93,9 @@ export function StoreMap({
       el.style.width = "16px";
       el.style.height = "16px";
       el.style.borderRadius = "50%";
-      el.style.background = "#2563eb";
+      el.style.background = "#1e3a8a";
       el.style.border = "3px solid #fff";
-      el.style.boxShadow = "0 0 0 2px #2563eb";
+      el.style.boxShadow = "0 0 0 2px #1e3a8a";
       new mapboxgl.Marker({ element: el }).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
       bounds.extend([userLocation.lng, userLocation.lat]);
     }

@@ -52,7 +52,7 @@ export default function ReservationsPage() {
       ) : reservations.length === 0 ? (
         <p style={{ color: "#64748b" }}>
           No reservations yet.{" "}
-          <Link href="/" style={{ color: "#2563eb" }}>
+          <Link href="/" style={{ color: "#1e3a8a" }}>
             Start sorting
           </Link>
           .

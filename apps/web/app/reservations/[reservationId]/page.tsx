@@ -83,7 +83,7 @@ export default function ReservationDetailPage() {
     return (
       <main style={{ maxWidth: 600, margin: "60px auto", padding: 16, textAlign: "center" }}>
         <p>Reservation not found. It may have been created before the server last restarted (reservations are in-memory in this demo).</p>
-        <Link href="/reservations" style={{ color: "#2563eb" }}>
+        <Link href="/reservations" style={{ color: "#1e3a8a" }}>
           View my reservations
         </Link>
       </main>

@@ -20,7 +20,7 @@ export default function WishlistPage() {
       {items.length === 0 ? (
         <p>
           Nothing saved yet. Tap the heart on any product to add it here.{" "}
-          <Link href="/" style={{ color: "#2563eb" }}>
+          <Link href="/" style={{ color: "#1e3a8a" }}>
             Go find something nearby
           </Link>
           .

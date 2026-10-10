@@ -236,7 +236,7 @@ function SearchPageInner() {
           ) : products.length === 0 ? (
             <p style={{ color: "#64748b" }}>
               No products found for &ldquo;{q}&rdquo;. Try a different search or{" "}
-              <Link href="/shops" style={{ color: "#2563eb" }}>
+              <Link href="/shops" style={{ color: "#1e3a8a" }}>
                 browse all shops
               </Link>{" "}
               instead.

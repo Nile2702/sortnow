@@ -299,7 +299,7 @@ function DiscoverPageInner() {
         }}
       >
         {geo && (
-          <div style={{ width: "100%", fontSize: 12.5, color: "#2563eb", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: "100%", fontSize: 12.5, color: "#1e3a8a", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
             📍 Using your current location
             <button
               type="button"
@@ -534,7 +534,7 @@ function DiscoverPageInner() {
                 <div style={{ color: "#64748b", fontSize: 13, marginTop: 2 }}>
                   {s.localMarket}, {s.city}
                 </div>
-                {s.distanceKm != null && <div style={{ fontSize: 12, marginTop: 4, color: "#2563eb", fontWeight: 600 }}>{s.distanceKm} km away</div>}
+                {s.distanceKm != null && <div style={{ fontSize: 12, marginTop: 4, color: "#1e3a8a", fontWeight: 600 }}>{s.distanceKm} km away</div>}
                 <div style={{ marginTop: 6 }}>
                   <StoreRatingBadge average={s.rating.average} count={s.rating.count} />
                 </div>

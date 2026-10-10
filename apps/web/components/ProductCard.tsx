@@ -183,7 +183,7 @@ export function ProductCard({
               a given product happened to need. */}
           <div style={{ marginTop: "auto", paddingTop: 4 }}>
             {product.distanceKm != null && (
-              <div style={{ fontSize: 10.5, fontWeight: 600, color: "#2563eb" }}>
+              <div style={{ fontSize: 10.5, fontWeight: 600, color: "#1e3a8a" }}>
                 📍 {product.distanceKm} km away • Try on in {walkingMinutes(product.distanceKm)} mins
               </div>
             )}

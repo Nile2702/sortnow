@@ -77,7 +77,7 @@ export default function BulkImportPage() {
           <button
             type="button"
             onClick={() => handlePasteChange(SAMPLE_CSV)}
-            style={{ fontSize: 12, color: "#2563eb", background: "none", border: "none", cursor: "pointer" }}
+            style={{ fontSize: 12, color: "#1e3a8a", background: "none", border: "none", cursor: "pointer" }}
           >
             Load sample data
           </button>
@@ -166,7 +166,7 @@ export default function BulkImportPage() {
             </ul>
           )}
           {result.successCount > 0 && (
-            <Link href="/seller/products" style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: "#2563eb" }}>
+            <Link href="/seller/products" style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: "#1e3a8a" }}>
               View products →
             </Link>
           )}
