@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSellerStore } from "../lib/use-seller-store";
-import { LogoBadge } from "./LogoBadge";
+import { LogoBadge, BrandWordmark } from "./LogoBadge";
 
 const TABS = [
   { label: "Dashboard", href: "/seller" },
@@ -35,7 +35,7 @@ export function SellerNav() {
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "14px 20px 0", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <Link href="/seller" aria-label="SORT NOW Seller Portal home" style={{ display: "flex", alignItems: "center", gap: 10, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
           <LogoBadge size={30} />
-          <span style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 18, letterSpacing: "0.03em" }}>SORT NOW</span>
+          <BrandWordmark style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 18, letterSpacing: "0.03em" }} />
           <span
             style={{
               fontSize: 11,

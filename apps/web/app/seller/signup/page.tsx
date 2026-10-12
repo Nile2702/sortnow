@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { showToast } from "../../../lib/toast";
 import { validatePassword } from "../../../lib/validate-password";
-import { LogoBadge } from "../../../components/LogoBadge";
+import { LogoBadge, BrandWordmark } from "../../../components/LogoBadge";
 
 const CATEGORIES = [
   { value: "apparel", label: "All Types of Apparel" },
@@ -71,7 +71,7 @@ export default function SellerSignupPage() {
       <div style={{ width: "100%", maxWidth: 440 }}>
         <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "var(--sio-ink)", marginBottom: 20 }}>
           <LogoBadge size={32} />
-          <span style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, fontSize: 20, letterSpacing: "0.03em" }}>SORT NOW</span>
+          <BrandWordmark style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, fontSize: 20, letterSpacing: "0.03em" }} />
           <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--sio-muted)" }}>Seller Portal</span>
         </Link>
         <div style={{ marginBottom: 24 }}>

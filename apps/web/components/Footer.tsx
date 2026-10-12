@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogoBadge } from "./LogoBadge";
+import { LogoBadge, BrandWordmark } from "./LogoBadge";
 
 const COLUMNS = [
   {
@@ -97,9 +97,7 @@ export function Footer() {
         <div style={{ flex: "1 1 220px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
             <LogoBadge size={30} />
-            <span style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 22, letterSpacing: "0.03em", color: "#fff" }}>
-              SORT NOW
-            </span>
+            <BrandWordmark style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 22, letterSpacing: "0.03em", color: "#fff" }} />
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.7, color: "#94a3b8", maxWidth: 260 }}>
             {isSeller

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { getCart, cartCount } from "../lib/cart";
 import { getWishlist } from "../lib/wishlist";
 import { CATEGORY_TREE } from "../lib/catalog-constants";
-import { LogoBadge } from "./LogoBadge";
+import { LogoBadge, BrandWordmark } from "./LogoBadge";
 import { getShopperSession, onShopperSessionChange, ShopperSession } from "../lib/shopper-session";
 import { isMobileAppShellPage, isProductDetailPage } from "../lib/mobile-shell";
 import { LocationPicker } from "./LocationPicker";
@@ -248,7 +248,7 @@ export function SiteHeader() {
           }}
         >
           <LogoBadge size={40} />
-          <span className="sio-logo-text">SORT NOW</span>
+          <BrandWordmark className="sio-logo-text" />
         </Link>
 
         <nav className="sio-header-nav">
