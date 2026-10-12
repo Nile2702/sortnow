@@ -8,7 +8,7 @@ import { isMobileAppShellPage } from "../lib/mobile-shell";
 import { showToast } from "../lib/toast";
 import { getWishlist } from "../lib/wishlist";
 import { QrScannerModal } from "./QrScannerModal";
-import { LogoBadge, BrandWordmark } from "./LogoBadge";
+import { FullLogo } from "./LogoBadge";
 
 function BackIcon() {
   return (
@@ -432,9 +432,8 @@ export function MobileAppHeader() {
               transition: "max-height 0.25s ease, opacity 0.2s ease, margin-bottom 0.25s ease",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <LogoBadge size={22} />
-              <BrandWordmark style={{ color: "var(--sio-ink)", fontWeight: 800, fontSize: 14, whiteSpace: "nowrap" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, color: "var(--sio-ink)" }}>
+              <FullLogo height={26} />
             </div>
 
             <div ref={pickerRef} style={{ position: "relative", flexShrink: 0 }}>

@@ -8,7 +8,7 @@ import { toggleWishlist, isWishlisted } from "../../../lib/wishlist";
 import { showToast } from "../../../lib/toast";
 import { getShopperSession } from "../../../lib/shopper-session";
 import { COLOR_CATALOG } from "../../../lib/catalog-constants";
-import { LogoBadge, BrandWordmark } from "../../../components/LogoBadge";
+import { FullLogo } from "../../../components/LogoBadge";
 import { ProductCard } from "../../../components/ProductCard";
 
 interface ColorVariant {
@@ -374,9 +374,8 @@ export default function ProductDetailPage() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <Link href="/" aria-label="SORT NOW — Home" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
-          <LogoBadge size={26} />
-          <BrandWordmark style={{ color: "var(--sio-ink)", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em", whiteSpace: "nowrap" }} />
+        <Link href="/" aria-label="SORT NOW — Home" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "var(--sio-ink)" }}>
+          <FullLogo height={24} />
         </Link>
         <div style={{ display: "flex", gap: 4 }}>
           <button type="button" onClick={handleToggleWishlist} aria-label="Wishlist" className="sio-product-mobile-header-btn">

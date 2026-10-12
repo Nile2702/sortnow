@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { getCart, cartCount } from "../lib/cart";
 import { getWishlist } from "../lib/wishlist";
 import { CATEGORY_TREE } from "../lib/catalog-constants";
-import { LogoBadge, BrandWordmark } from "./LogoBadge";
+import { FullLogo } from "./LogoBadge";
 import { getShopperSession, onShopperSessionChange, ShopperSession } from "../lib/shopper-session";
 import { isMobileAppShellPage, isProductDetailPage } from "../lib/mobile-shell";
 import { LocationPicker } from "./LocationPicker";
@@ -237,18 +237,12 @@ export function SiteHeader() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            fontFamily: "var(--site-font-heading)",
-            fontSize: 21,
-            fontWeight: 800,
-            letterSpacing: "0.01em",
             textDecoration: "none",
             color: "var(--sio-ink)",
             whiteSpace: "nowrap",
           }}
         >
-          <LogoBadge size={40} />
-          <BrandWordmark className="sio-logo-text" />
+          <FullLogo height={42} className="sio-logo-text" />
         </Link>
 
         <nav className="sio-header-nav">

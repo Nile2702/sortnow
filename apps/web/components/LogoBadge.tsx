@@ -1,44 +1,66 @@
-import type { CSSProperties } from "react";
+// Brand mark, redrawn to match the hand-sketched logo exactly: a coat
+// hanger whose hook and splayed wire double as the "S" that starts
+// "SORT" - the hook sits where the S's top would be, the hanger's two
+// wire arms fan out below it, and "now" is nested inside that V the way
+// a garment would hang from it. "ORT" continues at the hook's own
+// height to its right, so the whole thing reads "[hanger]ORT / now" -
+// one combined graphic, not an icon next to separate text. Every stroke
+// and letter uses currentColor so it adapts to whatever color context
+// it's placed in (ink on light pages, white on the seller portal's dark
+// panels), matching how the rest of the site's brand mark already works.
+const VIEW_W = 400;
+const VIEW_H = 215;
+// Apex where the hook's stem meets the two wire arms.
+const APEX_X = 145;
+const APEX_Y = 115;
 
-// Brand mark: a directional compass needle, pointing shoppers to what's
-// near them - the whole point of an O2O "find it nearby" platform. Two
-// triangles sharing a base (brand red on top, ink navy on bottom) read as
-// a classic map-compass needle at a glance; the white/ink-ringed center
-// pin is the "you are here" point it swings around. Kept in sync with
-// --sio-bronze / --sio-ink in globals.css.
-const BRAND_RED = "#A32A20";
-const INK = "#282C3F";
+function HangerGlyph({ strokeWidth = 14 }: { strokeWidth?: number }) {
+  return (
+    <>
+      {/* Hook: stem down to the apex, then the squared-off hook itself */}
+      <path
+        d={`M ${APEX_X},${APEX_Y} L ${APEX_X},54 L 205,54 L 205,82 L 172,82`}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+      {/* The two wire arms fanning out from the apex */}
+      <path d={`M ${APEX_X},${APEX_Y} L 25,205`} fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="square" />
+      <path d={`M ${APEX_X},${APEX_Y} L 265,205`} fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="square" />
+    </>
+  );
+}
 
+// Standalone icon - just the hanger, no text - for spots that only have
+// room for a square mark (e.g. a favicon-style use) rather than the full
+// lockup below.
 export function LogoBadge({ size = 40 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M 50,10 L 58,50 L 42,50 Z" fill={BRAND_RED} />
-      <path d="M 50,90 L 58,50 L 42,50 Z" fill={INK} />
-      <circle cx="50" cy="50" r="7" fill="#fff" stroke={INK} strokeWidth="3" />
+    <svg width={size} height={size} viewBox={`0 0 ${VIEW_W} ${VIEW_H + 15}`} xmlns="http://www.w3.org/2000/svg">
+      <HangerGlyph />
     </svg>
   );
 }
 
-// The wordmark with the compass needle built into the "O" of "NOW" - the
-// same two-tone needle as LogoBadge, just ringed by a circle standing in
-// for the letter itself, instead of a separate icon sitting beside plain
-// text. The ring and the needle's lower half use currentColor so they
-// always match whatever color the surrounding text already is (ink on
-// light pages, white on the seller portal's dark panels) - only the top
-// wedge stays the fixed brand red, so the needle still pops on both.
-// Every call site previously rendered its own <span style={...}>SORT
-// NOW</span> with its own font size/weight/color - this takes that same
-// style object so swapping it in doesn't change any of that sizing.
-export function BrandWordmark({ style, className }: { style?: CSSProperties; className?: string }) {
+// The full "[hanger]ORT / now" lockup - replaces every previous
+// `<LogoBadge/><BrandWordmark/>` pairing with one combined graphic, since
+// this design doesn't split cleanly into a separate icon and text (the
+// hanger IS the S, and "now" sits inside the hanger's own wire rather
+// than following "ORT" on the same line). `height` sets the rendered
+// height in px; width follows automatically from the fixed aspect ratio.
+export function FullLogo({ height = 40, className }: { height?: number; className?: string }) {
+  const width = (height * VIEW_W) / VIEW_H;
   return (
-    <span className={className} style={{ display: "inline-flex", alignItems: "center", ...style }}>
-      SORT N
-      <svg width="0.72em" height="0.72em" viewBox="0 0 100 100" style={{ flexShrink: 0 }} aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="16" />
-        <path d="M 50,24 L 59,50 L 41,50 Z" fill={BRAND_RED} />
-        <path d="M 50,76 L 59,50 L 41,50 Z" fill="currentColor" />
-      </svg>
-      W
-    </span>
+    <svg width={width} height={height} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className={className} xmlns="http://www.w3.org/2000/svg" aria-label="SORT NOW">
+      <HangerGlyph />
+      <text x={APEX_X} y="172" textAnchor="middle" fontFamily="var(--site-font-heading), Poppins, sans-serif" fontWeight="800" fontSize="36" fill="currentColor">
+        now
+      </text>
+      <text x="216" y="97" textAnchor="start" fontFamily="var(--site-font-heading), Poppins, sans-serif" fontWeight="800" fontSize="74" fill="currentColor">
+        ORT
+      </text>
+    </svg>
   );
 }

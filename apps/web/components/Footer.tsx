@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogoBadge, BrandWordmark } from "./LogoBadge";
+import { FullLogo } from "./LogoBadge";
 
 const COLUMNS = [
   {
@@ -95,9 +95,8 @@ export function Footer() {
     <footer className="sio-print-hide" style={{ background: "var(--sio-ink)", color: "#cbd5e1", marginTop: isSeller ? 0 : 48 }}>
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "48px 16px 28px", display: "flex", flexWrap: "wrap", gap: 40 }}>
         <div style={{ flex: "1 1 220px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-            <LogoBadge size={30} />
-            <BrandWordmark style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 22, letterSpacing: "0.03em", color: "#fff" }} />
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 10, color: "#fff" }}>
+            <FullLogo height={46} />
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.7, color: "#94a3b8", maxWidth: 260 }}>
             {isSeller

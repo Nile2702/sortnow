@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { showToast } from "../../../lib/toast";
-import { LogoBadge, BrandWordmark } from "../../../components/LogoBadge";
+import { FullLogo } from "../../../components/LogoBadge";
 
 interface StoreOption {
   id: string;
@@ -173,17 +173,8 @@ export default function SellerLoginPage() {
           />
 
           <div style={{ position: "relative" }}>
-            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", marginBottom: 8 }}>
-              <LogoBadge size={30} />
-              <BrandWordmark
-                style={{
-                  fontFamily: "var(--site-font-heading)",
-                  fontWeight: 700,
-                  fontSize: 26,
-                  letterSpacing: "0.03em",
-                  color: "#fff",
-                }}
-              />
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none", color: "#fff", marginBottom: 8 }}>
+              <FullLogo height={44} />
             </Link>
             <div style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 40 }}>
               Seller Portal

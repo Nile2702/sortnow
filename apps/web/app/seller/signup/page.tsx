@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { showToast } from "../../../lib/toast";
 import { validatePassword } from "../../../lib/validate-password";
-import { LogoBadge, BrandWordmark } from "../../../components/LogoBadge";
+import { FullLogo } from "../../../components/LogoBadge";
 
 const CATEGORIES = [
   { value: "apparel", label: "All Types of Apparel" },
@@ -70,8 +70,7 @@ export default function SellerSignupPage() {
     <main className="sio-fade-in" style={{ minHeight: "calc(100vh - 60px)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sio-cream)", padding: "40px 20px" }}>
       <div style={{ width: "100%", maxWidth: 440 }}>
         <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "var(--sio-ink)", marginBottom: 20 }}>
-          <LogoBadge size={32} />
-          <BrandWordmark style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, fontSize: 20, letterSpacing: "0.03em" }} />
+          <FullLogo height={36} />
           <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--sio-muted)" }}>Seller Portal</span>
         </Link>
         <div style={{ marginBottom: 24 }}>
