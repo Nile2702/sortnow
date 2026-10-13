@@ -87,7 +87,8 @@ export default function ShopsPage() {
   const categories = useMemo(() => Array.from(new Set(shops.map((s) => s.category))).sort(), [shops]);
 
   const filtered = shops.filter((s) => {
-    const matchesQuery = !query.trim() || s.name.toLowerCase().includes(query.trim().toLowerCase()) || s.city.toLowerCase().includes(query.trim().toLowerCase());
+    const q = query.trim().toLowerCase();
+    const matchesQuery = !q || s.name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q) || s.pincode.includes(q);
     const matchesCategory = category === "all" || s.category === category;
     const matchesStoreFilter = !storeFilter || storeFilter.includes(s.slug);
     return matchesQuery && matchesCategory && matchesStoreFilter;
@@ -147,7 +148,7 @@ export default function ShopsPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search shops or cities…"
+          placeholder="Search shops, cities, or pincodes…"
           style={{ flex: "1 1 220px", padding: "10px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14 }}
         />
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
