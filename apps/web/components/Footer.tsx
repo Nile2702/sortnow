@@ -129,7 +129,7 @@ export function Footer() {
           color: "#64748b",
         }}
       >
-        © {new Date().getFullYear()} SORT NOW — a demo platform for Indian O2O fashion discovery.
+        © {new Date().getFullYear()} SORT NOW — find apparel near you, sort it online and walk into the store.
       </div>
     </footer>
   );

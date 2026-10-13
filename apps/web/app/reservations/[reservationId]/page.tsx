@@ -27,6 +27,27 @@ interface Reservation {
   createdAt: string;
 }
 
+// Just the fields this page needs for the "walk into the store" step -
+// address, a tap-to-call number, and coordinates for a directions link.
+// Fetched separately from the public store route (same one /store/[slug]
+// and the map view already use) since Reservation itself only carries
+// storeName/storeSlug, not the store's visit details.
+interface StoreVisitInfo {
+  name: string;
+  city: string;
+  pincode: string;
+  localMarket: string;
+  latitude: number;
+  longitude: number;
+  phone?: string;
+}
+
+// A hold window under 15 minutes is treated as urgent - same red/alarm
+// palette the "expired" status already uses elsewhere on this page, so a
+// shopper who's about to lose their hold gets a visual nudge instead of the
+// same calm yellow the whole window shows.
+const URGENT_THRESHOLD_MS = 15 * 60 * 1000;
+
 const STATUS_COPY: Record<string, { title: string; icon: string; iconBg: string; iconFg: string }> = {
   pending: { title: "Reservation confirmed", icon: "⏱", iconBg: "#fef9c3", iconFg: "#854d0e" },
   fulfilled: { title: "Picked up", icon: "✓", iconBg: "#dcfce7", iconFg: "#16a34a" },
@@ -48,6 +69,7 @@ export default function ReservationDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [, forceTick] = useState(0);
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const [store, setStore] = useState<StoreVisitInfo | null>(null);
 
   useEffect(() => {
     function load() {
@@ -60,6 +82,17 @@ export default function ReservationDetailPage() {
     const id = setInterval(load, 20000);
     return () => clearInterval(id);
   }, [reservationId]);
+
+  // Store visit details (address/phone/coordinates) don't change on the
+  // reservation's own polling cadence, so this is fetched once per store
+  // rather than refetched alongside every 20s reservation poll.
+  useEffect(() => {
+    if (!reservation?.storeSlug) return;
+    fetch(`/api/v1/stores/${reservation.storeSlug}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(setStore)
+      .catch(() => {});
+  }, [reservation?.storeSlug]);
 
   useEffect(() => {
     const id = setInterval(() => forceTick((t) => t + 1), 1000);
@@ -82,7 +115,7 @@ export default function ReservationDetailPage() {
   if (notFound) {
     return (
       <main style={{ maxWidth: 600, margin: "60px auto", padding: 16, textAlign: "center" }}>
-        <p>Reservation not found. It may have been created before the server last restarted (reservations are in-memory in this demo).</p>
+        <p>Reservation not found. Double-check the link, or it may have expired or been cancelled.</p>
         <Link href="/reservations" style={{ color: "#1e3a8a" }}>
           View my reservations
         </Link>
@@ -96,6 +129,9 @@ export default function ReservationDetailPage() {
 
   const copy = STATUS_COPY[reservation.status] ?? STATUS_COPY.pending;
   const msLeft = new Date(reservation.reservedUntil).getTime() - Date.now();
+  const isUrgent = msLeft > 0 && msLeft <= URGENT_THRESHOLD_MS;
+  const directionsUrl = store ? `https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}` : undefined;
+  const storeAddress = store ? [store.localMarket, store.city].filter(Boolean).join(", ") + (store.pincode ? ` - ${store.pincode}` : "") : undefined;
 
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: "40px 16px" }}>
@@ -126,8 +162,17 @@ export default function ReservationDetailPage() {
         <>
           <div
             className="sio-breathe"
-            style={{ background: "#fef9c3", color: "#854d0e", borderRadius: 14, padding: 16, textAlign: "center", marginBottom: 16, fontWeight: 700 }}
+            style={{
+              background: isUrgent ? "#fee2e2" : "#fef9c3",
+              color: isUrgent ? "#991b1b" : "#854d0e",
+              borderRadius: 14,
+              padding: 16,
+              textAlign: "center",
+              marginBottom: 16,
+              fontWeight: 700,
+            }}
           >
+            {isUrgent ? "⚠ " : ""}
             {formatCountdown(msLeft)} · walk in before {new Date(reservation.reservedUntil).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
           </div>
 
@@ -170,6 +215,55 @@ export default function ReservationDetailPage() {
           <span>₹{reservation.total}</span>
         </div>
       </div>
+
+      {store && (
+        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16, marginTop: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#64748b" }}>VISIT THE STORE</div>
+          <div style={{ fontSize: 14, color: "#475569", marginBottom: store.phone || directionsUrl ? 12 : 0 }}>{storeAddress}</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {store.phone && (
+              <a
+                href={`tel:+91${store.phone}`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 14px",
+                  borderRadius: 999,
+                  border: "1px solid #e2e8f0",
+                  color: "#0f172a",
+                  textDecoration: "none",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                📞 Call store
+              </a>
+            )}
+            {directionsUrl && (
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 14px",
+                  borderRadius: 999,
+                  border: "1px solid #e2e8f0",
+                  color: "#0f172a",
+                  textDecoration: "none",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                🧭 Get directions
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16, marginTop: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#64748b" }}>RESERVED UNDER</div>
