@@ -497,17 +497,43 @@ export function ProductForm({
     setSaveError("");
 
     const mainImage = uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor);
-    const [storedMainImage, storedAdditionalImages] = await Promise.all([
+    const [resizedMainImage, resizedAdditionalImages] = await Promise.all([
       resizeForStorage(mainImage).catch(() => mainImage),
       Promise.all(additionalImages.map((url) => resizeForStorage(url).catch(() => url))),
     ]);
-    const storedColorImages: Record<string, string> = {};
+    const resizedColorImages: Record<string, string> = {};
     await Promise.all(
       selectedColors.map(async (color) => {
         const raw = colorImages[color];
-        if (raw) storedColorImages[color] = await resizeForStorage(raw).catch(() => raw);
+        if (raw) resizedColorImages[color] = await resizeForStorage(raw).catch(() => raw);
       })
     );
+
+    // Final step before save: upload the finished photo(s) - after all the
+    // client-side processing above (background removal, auto-align/
+    // enhance, optional Gemini mannequin placement) - to Cloudinary via the
+    // server (see app/api/v1/seller/upload/route.ts) instead of embedding
+    // the base64 data URL directly in the product, which is what
+    // resizeForStorage's own comment describes bloating every list/search
+    // response. A failed upload stops the save outright rather than
+    // silently falling back to the giant inline data URL this replaces.
+    let storedMainImage: string;
+    let storedAdditionalImages: string[];
+    let storedColorImages: Record<string, string> = {};
+    try {
+      [storedMainImage, storedAdditionalImages] = await Promise.all([
+        uploadProductImage(resizedMainImage),
+        Promise.all(resizedAdditionalImages.map(uploadProductImage)),
+      ]);
+      const colorEntries = await Promise.all(
+        Object.entries(resizedColorImages).map(async ([color, url]) => [color, await uploadProductImage(url)] as const)
+      );
+      storedColorImages = Object.fromEntries(colorEntries);
+    } catch (err) {
+      setSaving(false);
+      setSaveError(err instanceof Error ? err.message : "Couldn't upload photo. Try again.");
+      return;
+    }
 
     // On edit, a blank optional field means "clear this" - sending
     // `undefined` for it would just drop the key from the JSON body
@@ -1141,8 +1167,8 @@ export function ProductForm({
           </div>
         </div>
         <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>
-          Uploaded photos are kept in-memory for this demo (resets on server restart). Real deployments run uploads through the Media
-          Pipeline / CDN (docs/02-system-architecture.md).
+          Photos are uploaded to Cloudinary when you publish or save, after any background removal, enhancement, or AI mannequin step
+          above has run.
         </p>
       </div>
 
@@ -1287,6 +1313,24 @@ function resizeForStorage(dataUrl: string, maxDimension = 1000, quality = 0.85):
     img.onerror = () => reject(new Error("Couldn't load image for resizing"));
     img.src = dataUrl;
   });
+}
+
+// Uploads a finished data URL (after every client-side step above has
+// already run) to Cloudinary via the server - see
+// app/api/v1/seller/upload/route.ts. Throws on failure so handleSubmit can
+// stop the save rather than falling back to embedding the raw base64 data
+// URL this endpoint replaces.
+async function uploadProductImage(dataUrl: string): Promise<string> {
+  const res = await fetch("/api/v1/seller/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageDataUrl: dataUrl }),
+  });
+  const result = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(result?.message ?? "Couldn't upload photo. Try again.");
+  }
+  return result.url;
 }
 
 function resizeImage(dataUrl: string, maxDimension: number, quality: number): Promise<string> {

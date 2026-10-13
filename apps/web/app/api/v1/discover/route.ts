@@ -10,6 +10,6 @@ export async function GET(req: NextRequest) {
   const gender = searchParams.get("gender") ?? undefined;
   const subCategory = searchParams.get("subCategory") ?? undefined;
 
-  const results = discoverStores({ pincode, lat, lng, radiusKm, gender, subCategory });
+  const results = await discoverStores({ pincode, lat, lng, radiusKm, gender, subCategory });
   return NextResponse.json(results);
 }

@@ -1,9 +1,11 @@
 import { MetadataRoute } from "next";
-import { stores, products } from "../lib/seed-data";
+import { getAllStores, getAllProducts } from "../lib/seed-data";
 
 const BASE_URL = "https://sortitout.in";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const stores = await getAllStores();
+  const products = await getAllProducts();
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/`, changeFrequency: "daily", priority: 1 },
     { url: `${BASE_URL}/shops`, changeFrequency: "daily", priority: 0.8 },

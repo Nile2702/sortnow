@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { trackPageView, stores } from "../../../../../lib/seed-data";
+import { trackPageView, getAllStores } from "../../../../../lib/seed-data";
 import { rateLimit, clientIp } from "../../../../../lib/rate-limit";
 
 // Public and unauthenticated by necessity (fires on every storefront page
 // view), which also makes it the cheapest endpoint on the site to spam -
-// analyticsEvents has no cap, and every call triggers a full rewrite of the
-// persisted db.json. Rate limit by IP so that's a nuisance, not a way to
-// grow the event log or hammer disk I/O without bound.
+// every call is a real database write. Rate limit by IP so that's a
+// nuisance, not a way to grow the event log or hammer the database without
+// bound (trackPageView also hard-caps the table itself - see
+// MAX_ANALYTICS_EVENTS in lib/seed-data.ts).
 export async function POST(req: NextRequest) {
   const { ok } = rateLimit(`analytics:${clientIp(req)}`, 60, 60_000);
   if (!ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
@@ -20,9 +21,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   }
 
+  const stores = await getAllStores();
   const store = stores.find((s) => s.slug === storeSlug);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  trackPageView(store.id, qrPosition);
+  await trackPageView(store.id, qrPosition);
   return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { stores, products, createReservation, ReservationItem } from "../../../../lib/seed-data";
+import { getAllStores, getAllProducts, createReservation, ReservationItem } from "../../../../lib/seed-data";
 
 interface CartLikeItem extends ReservationItem {
   storeSlug: string;
@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
   // literally any price for literally any product. Re-derived here from the
   // actual Product record instead, and any item whose productId doesn't
   // belong to the storeSlug it claims is dropped rather than trusted.
+  const stores = await getAllStores();
+  const products = await getAllProducts();
   const byStoreSlug = new Map<string, ReservationItem[]>();
   for (const item of items) {
     const store = stores.find((s) => s.slug === item.storeSlug);
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
   for (const [storeSlug, storeItems] of byStoreSlug) {
     const store = stores.find((s) => s.slug === storeSlug);
     if (!store) continue;
-    const reservation = createReservation({ storeId: store.id, items: storeItems, shopperName, shopperPhone, durationMinutes: duration });
+    const reservation = await createReservation({ storeId: store.id, items: storeItems, shopperName, shopperPhone, durationMinutes: duration });
     if (reservation) {
       revalidateTag(`reservations:${store.id}`);
       created.push(reservation);

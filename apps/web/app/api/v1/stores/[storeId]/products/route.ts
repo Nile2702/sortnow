@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { products, stores } from "../../../../../../lib/seed-data";
+import { getAllProducts, getAllStores } from "../../../../../../lib/seed-data";
 
 export async function GET(req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json([], { status: 404 });
 
@@ -12,6 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: { storeId: str
   const minPrice = searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : undefined;
   const maxPrice = searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : undefined;
 
+  const products = await getAllProducts();
   let list = products.filter((p) => p.storeId === store.id);
   if (category) list = list.filter((p) => p.categoryId === category);
   if (minPrice != null) list = list.filter((p) => p.basePrice >= minPrice);

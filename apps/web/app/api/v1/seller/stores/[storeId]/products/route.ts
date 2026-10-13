@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getStoreProducts, createProduct, stores } from "../../../../../../../lib/seed-data";
+import { getStoreProducts, createProduct, getAllStores } from "../../../../../../../lib/seed-data";
 import { requireSellerForStore } from "../../../../../../../lib/auth/require-seller";
 import { validateProductInput } from "../../../../../../../lib/validate-product";
 
@@ -8,14 +8,16 @@ import { validateProductInput } from "../../../../../../../lib/validate-product"
 // route (capped, filtered for shoppers), this returns the full unfiltered
 // catalog for the merchant managing it, and accepts writes.
 export async function GET(_req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json([], { status: 404 });
   const denied = requireSellerForStore(store.id, store.slug);
   if (denied) return denied;
-  return NextResponse.json(getStoreProducts(store.id));
+  return NextResponse.json(await getStoreProducts(store.id));
 }
 
 export async function POST(req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const denied = requireSellerForStore(store.id, store.slug);
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
     return NextResponse.json({ error: "invalid_input", errors }, { status: 400 });
   }
 
-  const product = createProduct(store.id, data);
+  const product = await createProduct(store.id, data);
 
   revalidateTag(`products:${store.id}`);
   revalidatePath(`/store/${store.slug}`);

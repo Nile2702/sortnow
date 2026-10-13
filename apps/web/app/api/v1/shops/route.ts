@@ -10,5 +10,5 @@ import { getAllShops } from "../../../../lib/seed-data";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return NextResponse.json(getAllShops());
+  return NextResponse.json(await getAllShops());
 }

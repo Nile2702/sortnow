@@ -1,12 +1,19 @@
-// In-memory seed data standing in for the Tenant/Catalog/Search microservices
-// during local development. Every /api/v1/* route reads from this module.
-// Swap this file for real service calls once the backend exists — the shape
-// mirrors database/schema.sql exactly so the swap is mechanical.
+// Postgres-backed data layer for every /api/v1/* route. This used to be an
+// in-memory array/object store (mirrored to .data/db.json via
+// lib/persist.ts) standing in for the Tenant/Catalog/Search microservices -
+// see database/schema-live.sql for the real schema this module now talks
+// to via lib/db.ts's pooled `pg` connection, and git history for the prior
+// in-memory version this file replaced.
 //
-// State is mirrored to .data/db.json via lib/persist.ts so a server restart
-// doesn't wipe every store edit, reservation, and review - see that file for
-// what this does and doesn't guarantee.
-import { loadPersisted, persist } from "./persist";
+// Every exported function below keeps its original name, parameter shape,
+// and return shape from the in-memory version - the only change callers
+// need to make is `await`ing what's now a real database round trip, plus
+// swapping a handful of direct `stores`/`products`/`themes`/`categories`
+// array imports for the `getAllStores()`/`getAllProducts()`/
+// `getAllThemes()`/`getAllCategories()` functions below (see call sites
+// under app/api/**, components/CategoryNav.tsx, components/ProductGrid.tsx,
+// lib/theme.ts, app/sitemap.ts and app/product/[productId]/layout.tsx).
+import { query, queryOne, execute, withTransaction } from "./db";
 import { Gender, ALL_SIZES, CATEGORY_TREE } from "./catalog-constants";
 import { hashPassword, verifyPassword } from "./auth/password";
 import { validatePassword } from "./validate-password";
@@ -39,7 +46,7 @@ export interface Store {
   id: string;
   slug: string;
   name: string;
-  status: "draft" | "active" | "suspended" | "closed";
+  status: "draft" | "pending_review" | "active" | "suspended" | "closed";
   category: string;
   city: string;
   pincode: string;
@@ -51,154 +58,91 @@ export interface Store {
   // password (see /api/v1/seller/auth/otp/*). Not required at signup so
   // this doesn't break an existing password-only account.
   phone?: string;
+  // Optional - the delivery address for seller OTP login (see lib/email.ts
+  // and /api/v1/seller/auth/otp/request). Not collected at signup; the OTP
+  // login UI asks for it the first time a store with a phone on file but no
+  // email tries to request an OTP, then persists it via updateStoreEmail()
+  // so it's never asked again.
+  email?: string;
   // Paid featured placement (see BOOST_PACKAGES) - ranks this store first in
-  // "Stores near you" and /shops while active, same "flip an in-memory flag,
-  // no real payment processor" convention as changePlan()/photo credits.
+  // "Stores near you" and /shops while active, same "flip a flag, no real
+  // payment processor" convention as changePlan()/photo credits.
   boostedUntil?: string | null;
+  // Submitted (not verified - see onboarding page) during KYC onboarding.
+  // Populated once the seller reaches submitStoreForReview() below, which
+  // moves status to "pending_review" pending the site owner's manual
+  // review via /admin/sellers.
+  gstin?: string | null;
+  pan?: string | null;
+  upiVpa?: string | null;
+  submittedForReviewAt?: string | null;
+  createdAt?: string;
 }
 
-// Next.js dev-mode compiles route handlers on demand, which can give
-// separately-compiled routes their own instance of this module until the
-// module graph converges - so a plain `export const products = [...]`
-// mutated by one route handler can appear unchanged to another. Anchoring
-// the mutable state on `globalThis` (a true process-wide singleton,
-// unaffected by per-route module duplication) is the standard fix, same
-// pattern as the usual "globalThis.prisma" trick for dev-mode singletons.
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioStores: Store[] | undefined;
-  var __sioThemes: Record<string, any> | undefined;
-  var __sioProducts: Product[] | undefined;
+function rowToStore(r: any): Store {
+  return {
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    status: r.status,
+    category: r.category,
+    city: r.city,
+    pincode: r.pincode,
+    localMarket: r.local_market,
+    latitude: Number(r.latitude),
+    longitude: Number(r.longitude),
+    liveSale: r.live_sale ?? null,
+    phone: r.phone ?? undefined,
+    email: r.email ?? undefined,
+    boostedUntil: r.boosted_until ? new Date(r.boosted_until).toISOString() : null,
+    gstin: r.gstin ?? null,
+    pan: r.pan ?? null,
+    upiVpa: r.upi_vpa ?? null,
+    submittedForReviewAt: r.submitted_for_review_at ? new Date(r.submitted_for_review_at).toISOString() : null,
+    createdAt: r.created_at ? new Date(r.created_at).toISOString() : undefined,
+  };
 }
 
-const INITIAL_STORES: Store[] = [
-  {
-    id: "store-urban-vogue",
-    slug: "urban-vogue",
-    name: "Urban Vogue",
-    status: "active",
-    category: "ethnic",
-    city: "Mumbai",
-    pincode: "400050",
-    localMarket: "Bandra",
-    latitude: 19.0596,
-    longitude: 72.8295,
-    phone: "9876543210",
-  },
-  {
-    id: "store-south-silk-house",
-    slug: "south-silk-house",
-    name: "South Silk House",
-    status: "active",
-    category: "ethnic",
-    city: "Chennai",
-    pincode: "600017",
-    localMarket: "T. Nagar",
-    latitude: 13.0418,
-    longitude: 80.2341,
-  },
-  {
-    id: "store-denim-district",
-    slug: "denim-district",
-    name: "Denim District",
-    status: "active",
-    category: "western",
-    city: "Bengaluru",
-    pincode: "560001",
-    localMarket: "Commercial Street",
-    latitude: 12.9822,
-    longitude: 77.6086,
-  },
-  {
-    id: "store-chandni-chowk-sarees",
-    slug: "chandni-chowk-sarees",
-    name: "Chandni Chowk Sarees Emporium",
-    status: "active",
-    category: "ethnic",
-    city: "Delhi",
-    pincode: "110006",
-    localMarket: "Chandni Chowk",
-    latitude: 28.6506,
-    longitude: 77.2303,
-  },
-  {
-    id: "store-charminar-zardozi",
-    slug: "charminar-zardozi",
-    name: "Charminar Zardozi House",
-    status: "active",
-    category: "ethnic",
-    city: "Hyderabad",
-    pincode: "500002",
-    localMarket: "Charminar",
-    latitude: 17.3616,
-    longitude: 78.4747,
-  },
-  {
-    id: "store-sole-street",
-    slug: "sole-street",
-    name: "Sole Street",
-    status: "active",
-    category: "western",
-    city: "Pune",
-    pincode: "411005",
-    localMarket: "FC Road",
-    latitude: 18.5236,
-    longitude: 73.8478,
-  },
-  {
-    id: "store-bengal-handloom",
-    slug: "bengal-handloom-co",
-    name: "Bengal Handloom Co.",
-    status: "active",
-    category: "ethnic",
-    city: "Kolkata",
-    pincode: "700019",
-    localMarket: "Gariahat",
-    latitude: 22.5186,
-    longitude: 88.3654,
-  },
-];
-export const stores: Store[] = globalThis.__sioStores ?? (globalThis.__sioStores = loadPersisted("stores", INITIAL_STORES));
-
-// ---------------------------------------------------------------------
-// Seller credentials: real per-store password hashes (scrypt, see
-// lib/auth/password.ts), replacing the old "pick any store from a
-// dropdown, no password" seller session. Every seed store shares the same
-// demo password so the Seller Portal is still one-click to try - see the
-// login page for the actual value. A real deployment would let each
-// merchant set their own during onboarding instead of seeding one.
-// ---------------------------------------------------------------------
-export const DEMO_SELLER_PASSWORD = "sortitout123";
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioSellerCredentials: Record<string, string> | undefined;
+// Every store, newest first (new signups via createStore() used to
+// `unshift` onto the front of the in-memory array - ordering by created_at
+// descending reproduces that). Replaces the old bare `export const stores`
+// array - see call sites for the one-line `const stores = await
+// getAllStores();` this requires at the top of whichever handler used it.
+export async function getAllStores(): Promise<Store[]> {
+  const rows = await query<any>(`SELECT * FROM stores ORDER BY created_at DESC`);
+  return rows.map(rowToStore);
 }
 
-function buildInitialSellerCredentials(): Record<string, string> {
-  const creds: Record<string, string> = {};
-  for (const store of INITIAL_STORES) creds[store.id] = hashPassword(DEMO_SELLER_PASSWORD);
-  return creds;
+async function slugExists(slug: string): Promise<boolean> {
+  const row = await queryOne<any>(`SELECT 1 FROM stores WHERE slug = $1`, [slug]);
+  return !!row;
 }
 
-const sellerCredentials: Record<string, string> =
-  globalThis.__sioSellerCredentials ?? (globalThis.__sioSellerCredentials = loadPersisted("sellerCredentials", buildInitialSellerCredentials()));
-
-export function verifySellerLogin(storeSlug: string, password: string): Store | null {
-  const store = stores.find((s) => s.slug === storeSlug);
-  if (!store) return null;
-  const hash = sellerCredentials[store.id];
-  if (!hash || !verifyPassword(password, hash)) return null;
-  return store;
+export async function verifySellerLogin(storeSlug: string, password: string): Promise<Store | null> {
+  const row = await queryOne<any>(`SELECT * FROM stores WHERE slug = $1`, [storeSlug]);
+  if (!row) return null;
+  if (!verifyPassword(password, row.seller_password_hash)) return null;
+  return rowToStore(row);
 }
 
 // OTP login only ever proves the caller owns this phone number - it must
 // already be registered against exactly one store (set at signup or later
 // via account settings), unlike shopper OTP login which has no
 // pre-registration requirement at all.
-export function findStoreByPhone(phone: string): Store | null {
+export async function findStoreByPhone(phone: string): Promise<Store | null> {
   const normalized = phone.replace(/\D/g, "").slice(-10);
-  return stores.find((s) => s.phone && s.phone.replace(/\D/g, "").slice(-10) === normalized) ?? null;
+  const rows = await query<any>(`SELECT * FROM stores WHERE phone IS NOT NULL`);
+  const match = rows.find((r) => r.phone.replace(/\D/g, "").slice(-10) === normalized);
+  return match ? rowToStore(match) : null;
+}
+
+// Persists a store's email once collected - the OTP login flow is currently
+// the only place a seller provides one (there's no settings page for it
+// yet), the first time they request an OTP for a store that has a phone on
+// file but no email. Never called to clear an existing email, only to fill
+// one in for the first time.
+export async function updateStoreEmail(storeId: string, email: string): Promise<void> {
+  await execute(`UPDATE stores SET email = $2 WHERE id = $1`, [storeId, email]);
 }
 
 function slugify(name: string): string {
@@ -217,9 +161,11 @@ export interface CreateStoreInput {
 // Real "sign up as a new merchant" path - as opposed to verifySellerLogin
 // above, which only ever authenticates one of the pre-seeded demo stores.
 // The new store starts life as "draft" (not yet visible to shoppers) until
-// the seller completes the onboarding/KYC flow, matching how a real
-// marketplace wouldn't list an unverified merchant either.
-export function createStore(input: CreateStoreInput): { store: Store } | { error: string } {
+// the seller submits their onboarding/KYC details (-> "pending_review") and
+// the site owner manually approves it (-> "active" via activateStore),
+// matching how a real marketplace wouldn't list an unverified merchant
+// either.
+export async function createStore(input: CreateStoreInput): Promise<{ store: Store } | { error: string }> {
   const name = input.name.trim();
   if (!name) return { error: "Store name is required." };
   if (name.length > 120) return { error: "Store name is too long." };
@@ -233,7 +179,7 @@ export function createStore(input: CreateStoreInput): { store: Store } | { error
   const baseSlug = slugify(name);
   let slug = baseSlug;
   let suffix = 2;
-  while (stores.some((s) => s.slug === slug)) {
+  while (await slugExists(slug)) {
     slug = `${baseSlug}-${suffix++}`;
   }
 
@@ -250,17 +196,21 @@ export function createStore(input: CreateStoreInput): { store: Store } | { error
     latitude: geo.lat,
     longitude: geo.lng,
   };
-  stores.unshift(store);
-  persist("stores", stores);
 
-  sellerCredentials[store.id] = hashPassword(input.password);
-  persist("sellerCredentials", sellerCredentials);
+  await query(
+    `INSERT INTO stores (id, slug, name, status, category, city, pincode, local_market, latitude, longitude, phone, seller_password_hash)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+    [
+      store.id, store.slug, store.name, store.status, store.category, store.city, store.pincode,
+      store.localMarket, store.latitude, store.longitude, store.phone ?? null, hashPassword(input.password),
+    ]
+  );
 
   // A brand-new store still needs a theme record to render its storefront
   // page and Theme Studio at all - every seed store has one, so this one
   // gets a sensible neutral default (the app's own teal/ink brand colors)
-  // rather than leaving themes[store.id] undefined.
-  themes[store.id] = {
+  // rather than leaving the theme undefined.
+  const theme = {
     version: 1,
     brand: {
       logoUrl: "",
@@ -288,250 +238,32 @@ export function createStore(input: CreateStoreInput): { store: Store } | { error
       featuredCollection: { title: "Featured", maxItems: 8 },
     },
   };
-  persist("themes", themes);
+  await query(`INSERT INTO themes (store_id, theme) VALUES ($1, $2)`, [store.id, JSON.stringify(theme)]);
 
   return { store };
 }
 
-const INITIAL_THEMES: Record<string, any> = {
-  "store-urban-vogue": {
-    version: 3,
-    brand: {
-      logoUrl: "",
-      colors: {
-        primary: "#7c2d12",
-        secondary: "#f5deb3",
-        accent: "#d97706",
-        background: "#fffaf0",
-        text: "#1c1917",
-        saleBadge: "#e11d48",
-      },
-      typography: { headingFont: "Playfair Display", bodyFont: "Georgia", baseSizePx: 16 },
-      borderRadiusScale: "soft",
-    },
-    layout: {
-      gridStyle: "3-col",
-      sectionOrder: ["hero", "categoryNav", "featuredCollection", "newArrivals"],
-      heroCarousel: [
-        {
-          eyebrow: "Urban Vogue · Bandra",
-          title: "Festive Ethnic, Curated For You",
-          subtitle: "Handpicked sarees, kurtis and lehengas from Bandra's favourite ethnic boutique.",
-          image: "/hero/urban-vogue.avif",
-        },
-      ],
-      featuredCollection: { title: "This Week's Picks", maxItems: 8 },
-    },
-  },
-  "store-south-silk-house": {
-    version: 1,
-    brand: {
-      logoUrl: "",
-      colors: {
-        primary: "#7a1f3d",
-        secondary: "#ffe9d6",
-        accent: "#c98a2c",
-        background: "#fffdf8",
-        text: "#26140f",
-        saleBadge: "#b8171f",
-      },
-      typography: { headingFont: "Marcellus", bodyFont: "Noto Sans", baseSizePx: 16 },
-      borderRadiusScale: "sharp",
-    },
-    layout: {
-      gridStyle: "4-col",
-      sectionOrder: ["hero", "categoryNav", "featuredCollection", "newArrivals"],
-      heroCarousel: [
-        {
-          eyebrow: "South Silk House · T. Nagar",
-          title: "Signature Kanjivaram Silks",
-          subtitle: "Pure zari-bordered silk sarees, woven by Kanchipuram's master weavers.",
-        },
-      ],
-      featuredCollection: { title: "Signature Kanjivaram", maxItems: 8 },
-    },
-  },
-  "store-denim-district": {
-    version: 2,
-    brand: {
-      logoUrl: "",
-      colors: {
-        primary: "#1e3a8a",
-        secondary: "#e5e7eb",
-        accent: "#2563eb",
-        background: "#f8fafc",
-        text: "#0f172a",
-        saleBadge: "#dc2626",
-      },
-      typography: { headingFont: "Poppins", bodyFont: "Inter", baseSizePx: 16 },
-      borderRadiusScale: "pill",
-    },
-    layout: {
-      gridStyle: "3-col",
-      sectionOrder: ["hero", "featuredCollection", "categoryNav", "newArrivals"],
-      heroCarousel: [
-        {
-          eyebrow: "Denim District · Commercial Street",
-          title: "New Denim, Just Dropped",
-          subtitle: "Slim fits, oversized jackets, and everyday essentials for men.",
-        },
-      ],
-      featuredCollection: { title: "Fresh Fits", maxItems: 8 },
-    },
-  },
-  "store-chandni-chowk-sarees": {
-    version: 1,
-    brand: {
-      logoUrl: "",
-      colors: {
-        primary: "#a11d33",
-        secondary: "#ffe3c2",
-        accent: "#d4a017",
-        background: "#fffaf2",
-        text: "#2a0f0f",
-        saleBadge: "#c2410c",
-      },
-      typography: { headingFont: "Marcellus", bodyFont: "Noto Sans", baseSizePx: 16 },
-      borderRadiusScale: "sharp",
-    },
-    layout: {
-      gridStyle: "4-col",
-      sectionOrder: ["hero", "categoryNav", "featuredCollection", "newArrivals"],
-      heroCarousel: [
-        {
-          eyebrow: "Chandni Chowk Sarees Emporium · Old Delhi",
-          title: "Old Delhi's Bridal Saree Bazaar, Online",
-          subtitle: "Six decades of wholesale saree trade, now a click away.",
-        },
-      ],
-      featuredCollection: { title: "Bazaar Bestsellers", maxItems: 8 },
-    },
-  },
-  "store-charminar-zardozi": {
-    version: 1,
-    brand: {
-      logoUrl: "",
-      colors: {
-        primary: "#166534",
-        secondary: "#fef3c7",
-        accent: "#b45309",
-        background: "#fefdf8",
-        text: "#1c1917",
-        saleBadge: "#be123c",
-      },
-      typography: { headingFont: "Playfair Display", bodyFont: "Georgia", baseSizePx: 16 },
-      borderRadiusScale: "soft",
-    },
-    layout: {
-      gridStyle: "3-col",
-      sectionOrder: ["hero", "categoryNav", "featuredCollection", "newArrivals"],
-      heroCarousel: [
-        {
-          eyebrow: "Charminar Zardozi House · Hyderabad",
-          title: "Hand-Embroidered Zardozi, From The Old City",
-          subtitle: "Heirloom-quality zardozi and pearl work on every piece.",
-        },
-      ],
-      featuredCollection: { title: "Old City Heirlooms", maxItems: 8 },
-    },
-  },
-  "store-sole-street": {
-    version: 1,
-    brand: {
-      logoUrl: "",
-      colors: {
-        primary: "#0f172a",
-        secondary: "#fde047",
-        accent: "#f97316",
-        background: "#f8fafc",
-        text: "#0f172a",
-        saleBadge: "#dc2626",
-      },
-      typography: { headingFont: "Poppins", bodyFont: "Inter", baseSizePx: 16 },
-      borderRadiusScale: "pill",
-    },
-    layout: {
-      gridStyle: "3-col",
-      sectionOrder: ["hero", "featuredCollection", "categoryNav", "newArrivals"],
-      heroCarousel: [
-        {
-          eyebrow: "Sole Street · FC Road, Pune",
-          title: "Sneakers & Streetwear For Campus Life",
-          subtitle: "Sneakers, joggers, and hoodies picked for Pune's college crowd.",
-          image: "/hero/sneakers.webp",
-        },
-      ],
-      featuredCollection: { title: "Fresh Drops", maxItems: 8 },
-    },
-  },
-  "store-bengal-handloom": {
-    version: 1,
-    brand: {
-      logoUrl: "",
-      colors: {
-        primary: "#7c2d12",
-        secondary: "#fef9c3",
-        accent: "#15803d",
-        background: "#fffdf7",
-        text: "#1c1917",
-        saleBadge: "#b91c1c",
-      },
-      typography: { headingFont: "Marcellus", bodyFont: "Noto Sans", baseSizePx: 16 },
-      borderRadiusScale: "soft",
-    },
-    layout: {
-      gridStyle: "4-col",
-      sectionOrder: ["hero", "categoryNav", "featuredCollection", "newArrivals"],
-      heroCarousel: [
-        {
-          eyebrow: "Bengal Handloom Co. · Gariahat, Kolkata",
-          title: "Tant & Jamdani, Woven In West Bengal",
-          subtitle: "Authentic handloom cotton and jamdani sarees sourced directly from weaver co-ops.",
-        },
-      ],
-      featuredCollection: { title: "Weaver Co-op Picks", maxItems: 8 },
-    },
-  },
-};
-export const themes: Record<string, any> = globalThis.__sioThemes ?? (globalThis.__sioThemes = loadPersisted("themes", INITIAL_THEMES));
+// Theme Studio config per store. Replaces the old bare `export const
+// themes` object - see call sites for the `const themes = await
+// getAllThemes();` this requires.
+export async function getAllThemes(): Promise<Record<string, any>> {
+  const rows = await query<any>(`SELECT store_id, theme FROM themes`);
+  const map: Record<string, any> = {};
+  for (const r of rows) map[r.store_id] = r.theme;
+  return map;
+}
 
-export const categories: Record<string, { id: string; name: string }[]> = {
-  "store-urban-vogue": [
-    { id: "cat-sarees", name: "Sarees" },
-    { id: "cat-kurtis", name: "Kurtis" },
-    { id: "cat-lehengas", name: "Lehengas" },
-    { id: "cat-kids-ethnic", name: "Kids Ethnic" },
-  ],
-  "store-south-silk-house": [
-    { id: "cat-silk-sarees", name: "Silk Sarees" },
-    { id: "cat-cotton-sarees", name: "Cotton Sarees" },
-  ],
-  "store-denim-district": [
-    { id: "cat-jeans", name: "Jeans" },
-    { id: "cat-jackets", name: "Jackets" },
-    { id: "cat-tshirts", name: "T-Shirts" },
-    { id: "cat-kids-denim", name: "Kids Denim" },
-  ],
-  "store-chandni-chowk-sarees": [
-    { id: "cat-ccs-bridal-sarees", name: "Bridal Sarees" },
-    { id: "cat-ccs-daily-sarees", name: "Daily Wear Sarees" },
-  ],
-  "store-charminar-zardozi": [
-    { id: "cat-cz-lehengas", name: "Zardozi Lehengas" },
-    { id: "cat-cz-kurtis", name: "Embroidered Kurtis" },
-  ],
-  "store-sole-street": [
-    { id: "cat-ss-sneakers", name: "Sneakers" },
-    { id: "cat-ss-joggers", name: "Joggers" },
-    { id: "cat-ss-hoodies", name: "Hoodies" },
-  ],
-  "store-bengal-handloom": [
-    { id: "cat-bh-jamdani", name: "Jamdani Sarees" },
-    { id: "cat-bh-tant", name: "Tant Sarees" },
-    { id: "cat-bh-kids", name: "Kids Ethnic" },
-  ],
-};
-
+// Per-store category list. Replaces the old bare `export const categories`
+// object - see call sites for the `const categories = await
+// getAllCategories();` this requires.
+export async function getAllCategories(): Promise<Record<string, { id: string; name: string }[]>> {
+  const rows = await query<any>(`SELECT * FROM categories ORDER BY store_id, sort_order`);
+  const map: Record<string, { id: string; name: string }[]> = {};
+  for (const r of rows) {
+    (map[r.store_id] ??= []).push({ id: r.id, name: r.name });
+  }
+  return map;
+}
 
 export interface Product {
   id: string;
@@ -575,394 +307,37 @@ export interface Product {
   createdAt: string;
 }
 
-const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: "p-uv-1",
-    storeId: "store-urban-vogue",
-    storeSlug: "urban-vogue",
-    categoryId: "cat-sarees",
-    gender: "women",
-    subCategory: "Sarees",
-    title: "Banarasi Silk Saree — Maroon",
-    description: "Handwoven Banarasi silk saree with a zari border, unstitched blouse piece included.",
-    fabric: "Silk",
-    color: "Maroon",
-    basePrice: 2499,
-    compareAtPrice: 3999,
-    images: [{ url: placeholderImage("Banarasi Silk Saree", "#7c2d12", "#f5deb3") }],
-    sizes: ["Free Size"],
-    stockRemaining: 3,
-    createdAt: "2026-08-30",
-  },
-  {
-    id: "p-uv-2",
-    storeId: "store-urban-vogue",
-    storeSlug: "urban-vogue",
-    categoryId: "cat-kurtis",
-    gender: "women",
-    subCategory: "Kurtis",
-    title: "Cotton Anarkali Kurti — Mustard",
-    description: "Breathable cotton Anarkali kurti, machine embroidery on the yoke.",
-    fabric: "Cotton",
-    color: "Mustard",
-    basePrice: 899,
-    images: [{ url: placeholderImage("Anarkali Kurti", "#d97706", "#fffaf0") }],
-    sizes: ["S", "M", "L", "XL"],
-    stockRemaining: 12,
-    createdAt: "2026-08-28",
-  },
-  {
-    id: "p-uv-3",
-    storeId: "store-urban-vogue",
-    storeSlug: "urban-vogue",
-    categoryId: "cat-lehengas",
-    gender: "women",
-    subCategory: "Lehengas",
-    title: "Bridal Lehenga — Wine Red",
-    description: "Heavy zardozi bridal lehenga with dupatta, fully lined.",
-    fabric: "Velvet",
-    color: "Red",
-    basePrice: 8999,
-    compareAtPrice: 12999,
-    images: [{ url: placeholderImage("Bridal Lehenga", "#9f1239", "#fce7f3") }],
-    sizes: ["S", "M", "L"],
-    stockRemaining: 2,
-    createdAt: "2026-08-20",
-  },
-  {
-    id: "p-uv-4",
-    storeId: "store-urban-vogue",
-    storeSlug: "urban-vogue",
-    categoryId: "cat-kurtis",
-    gender: "women",
-    subCategory: "Kurtis",
-    title: "Chikankari Straight Kurti — White",
-    description: "Lucknowi chikankari hand-embroidered straight kurti.",
-    fabric: "Cotton",
-    color: "White",
-    basePrice: 1299,
-    images: [{ url: placeholderImage("Chikankari Kurti", "#f5deb3", "#7c2d12") }],
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    stockRemaining: 8,
-    createdAt: "2026-09-01",
-  },
-  {
-    id: "p-ssh-1",
-    storeId: "store-south-silk-house",
-    storeSlug: "south-silk-house",
-    categoryId: "cat-silk-sarees",
-    gender: "women",
-    subCategory: "Sarees",
-    title: "Kanjivaram Silk Saree — Emerald & Gold",
-    description: "Pure Kanjivaram silk with a temple-design gold zari border.",
-    fabric: "Silk",
-    color: "Emerald Green",
-    basePrice: 5999,
-    compareAtPrice: 7999,
-    images: [{ url: placeholderImage("Kanjivaram Silk Saree", "#7a1f3d", "#ffe9d6") }],
-    sizes: ["Free Size"],
-    stockRemaining: 4,
-    createdAt: "2026-08-25",
-  },
-  {
-    id: "p-ssh-2",
-    storeId: "store-south-silk-house",
-    storeSlug: "south-silk-house",
-    categoryId: "cat-cotton-sarees",
-    gender: "women",
-    subCategory: "Sarees",
-    title: "Handloom Cotton Saree — Indigo",
-    description: "Everyday handloom cotton saree, pre-washed, easy drape.",
-    fabric: "Cotton",
-    color: "Navy Blue",
-    basePrice: 1499,
-    images: [{ url: placeholderImage("Handloom Cotton Saree", "#c98a2c", "#fffdf8") }],
-    sizes: ["Free Size"],
-    stockRemaining: 15,
-    createdAt: "2026-08-29",
-  },
-  {
-    id: "p-dd-1",
-    storeId: "store-denim-district",
-    storeSlug: "denim-district",
-    categoryId: "cat-jeans",
-    gender: "men",
-    subCategory: "Jeans",
-    title: "Slim Fit Stretch Jeans — Indigo",
-    description: "4-way stretch slim fit denim, mid-rise.",
-    fabric: "Denim",
-    color: "Navy Blue",
-    basePrice: 1799,
-    compareAtPrice: 2399,
-    images: [{ url: placeholderImage("Slim Fit Jeans", "#1e3a8a", "#e5e7eb") }],
-    sizes: ["30", "32", "34", "36"],
-    stockRemaining: 20,
-    createdAt: "2026-08-27",
-  },
-  {
-    id: "p-dd-2",
-    storeId: "store-denim-district",
-    storeSlug: "denim-district",
-    categoryId: "cat-jackets",
-    gender: "men",
-    subCategory: "Jackets",
-    title: "Oversized Denim Jacket",
-    description: "Washed oversized denim jacket with contrast stitching.",
-    fabric: "Denim",
-    basePrice: 2299,
-    images: [{ url: placeholderImage("Denim Jacket", "#2563eb", "#f8fafc") }],
-    sizes: ["S", "M", "L", "XL"],
-    stockRemaining: 6,
-    createdAt: "2026-09-01",
-  },
-  {
-    id: "p-uv-5",
-    storeId: "store-urban-vogue",
-    storeSlug: "urban-vogue",
-    categoryId: "cat-kids-ethnic",
-    gender: "kids",
-    subCategory: "Girls",
-    title: "Kids Ethnic Kurta Set — Pink",
-    description: "Festive kurta and sharara set for girls, soft cotton blend.",
-    fabric: "Cotton Blend",
-    color: "Pink",
-    basePrice: 799,
-    compareAtPrice: 1099,
-    images: [{ url: placeholderImage("Kids Kurta Set", "#db2777", "#fdf2f8") }],
-    sizes: ["2-3Y", "4-5Y", "6-7Y", "8-9Y"],
-    stockRemaining: 10,
-    createdAt: "2026-08-31",
-  },
-  {
-    id: "p-dd-3",
-    storeId: "store-denim-district",
-    storeSlug: "denim-district",
-    categoryId: "cat-kids-denim",
-    gender: "kids",
-    subCategory: "Boys",
-    title: "Kids Denim Dungaree — Blue",
-    description: "Adjustable-strap denim dungaree with a printed tee.",
-    fabric: "Denim",
-    color: "Royal Blue",
-    basePrice: 999,
-    images: [{ url: placeholderImage("Kids Dungaree", "#1e40af", "#dbeafe") }],
-    sizes: ["2-3Y", "4-5Y", "6-7Y"],
-    stockRemaining: 14,
-    createdAt: "2026-09-02",
-  },
-  {
-    id: "p-ccs-1",
-    storeId: "store-chandni-chowk-sarees",
-    storeSlug: "chandni-chowk-sarees",
-    categoryId: "cat-ccs-bridal-sarees",
-    gender: "women",
-    subCategory: "Sarees",
-    title: "Zari Bridal Saree — Deep Red",
-    description: "Heavy zari-work bridal saree with matching unstitched blouse, straight from the Chandni Chowk wholesale market.",
-    fabric: "Silk Blend",
-    color: "Red",
-    basePrice: 4499,
-    compareAtPrice: 6999,
-    images: [{ url: placeholderImage("Zari Bridal Saree", "#a11d33", "#ffe3c2") }],
-    sizes: ["Free Size"],
-    stockRemaining: 5,
-    createdAt: "2026-08-22",
-  },
-  {
-    id: "p-ccs-2",
-    storeId: "store-chandni-chowk-sarees",
-    storeSlug: "chandni-chowk-sarees",
-    categoryId: "cat-ccs-daily-sarees",
-    gender: "women",
-    subCategory: "Sarees",
-    title: "Printed Chiffon Saree — Peach",
-    description: "Lightweight printed chiffon saree for everyday office wear.",
-    fabric: "Chiffon",
-    color: "Peach",
-    basePrice: 899,
-    images: [{ url: placeholderImage("Printed Chiffon Saree", "#d4a017", "#fffaf2") }],
-    sizes: ["Free Size"],
-    stockRemaining: 18,
-    createdAt: "2026-08-30",
-  },
-  {
-    id: "p-ccs-3",
-    storeId: "store-chandni-chowk-sarees",
-    storeSlug: "chandni-chowk-sarees",
-    categoryId: "cat-ccs-bridal-sarees",
-    gender: "women",
-    subCategory: "Sarees",
-    title: "Banarasi Organza Saree — Gold",
-    description: "Organza saree with woven Banarasi motifs, ideal for receptions.",
-    fabric: "Organza",
-    color: "Gold",
-    basePrice: 3299,
-    compareAtPrice: 4499,
-    images: [{ url: placeholderImage("Banarasi Organza Saree", "#c2410c", "#fff7ed") }],
-    sizes: ["Free Size"],
-    stockRemaining: 7,
-    createdAt: "2026-09-03",
-  },
-  {
-    id: "p-cz-1",
-    storeId: "store-charminar-zardozi",
-    storeSlug: "charminar-zardozi",
-    categoryId: "cat-cz-lehengas",
-    gender: "women",
-    subCategory: "Lehengas",
-    title: "Zardozi Bridal Lehenga — Emerald",
-    description: "Hand-embroidered zardozi and pearl work lehenga with dupatta.",
-    fabric: "Velvet",
-    color: "Emerald Green",
-    basePrice: 12999,
-    compareAtPrice: 17999,
-    images: [{ url: placeholderImage("Zardozi Lehenga", "#166534", "#fef3c7") }],
-    sizes: ["S", "M", "L"],
-    stockRemaining: 3,
-    createdAt: "2026-08-24",
-  },
-  {
-    id: "p-cz-2",
-    storeId: "store-charminar-zardozi",
-    storeSlug: "charminar-zardozi",
-    categoryId: "cat-cz-kurtis",
-    gender: "women",
-    subCategory: "Kurtis",
-    title: "Zardozi Embroidered Kurti — Maroon",
-    description: "Straight-cut kurti with hand zardozi embroidery on the neckline.",
-    fabric: "Georgette",
-    color: "Maroon",
-    basePrice: 1899,
-    images: [{ url: placeholderImage("Zardozi Kurti", "#b45309", "#fefdf8") }],
-    sizes: ["S", "M", "L", "XL"],
-    stockRemaining: 9,
-    createdAt: "2026-08-31",
-  },
-  {
-    id: "p-cz-3",
-    storeId: "store-charminar-zardozi",
-    storeSlug: "charminar-zardozi",
-    categoryId: "cat-cz-lehengas",
-    gender: "kids",
-    subCategory: "Girls",
-    title: "Kids Zardozi Lehenga Set — Pink",
-    description: "Mini zardozi lehenga set for festive occasions.",
-    fabric: "Net",
-    color: "Pink",
-    basePrice: 1599,
-    compareAtPrice: 2199,
-    images: [{ url: placeholderImage("Kids Zardozi Lehenga", "#be123c", "#fdf2f8") }],
-    sizes: ["2-3Y", "4-5Y", "6-7Y"],
-    stockRemaining: 6,
-    createdAt: "2026-09-02",
-  },
-  {
-    id: "p-ss-1",
-    storeId: "store-sole-street",
-    storeSlug: "sole-street",
-    categoryId: "cat-ss-sneakers",
-    gender: "men",
-    subCategory: "Footwear",
-    title: "Chunky Retro Sneakers — White/Grey",
-    description: "Everyday chunky sneakers with cushioned sole and mesh upper.",
-    fabric: "Mesh & EVA",
-    color: "White",
-    basePrice: 2799,
-    compareAtPrice: 3499,
-    images: [{ url: placeholderImage("Retro Sneakers", "#0f172a", "#fde047") }],
-    sizes: ["7", "8", "9", "10"],
-    stockRemaining: 11,
-    createdAt: "2026-08-26",
-  },
-  {
-    id: "p-ss-2",
-    storeId: "store-sole-street",
-    storeSlug: "sole-street",
-    categoryId: "cat-ss-hoodies",
-    gender: "men",
-    subCategory: "Jackets",
-    title: "Oversized Fleece Hoodie — Charcoal",
-    description: "Heavyweight fleece hoodie, oversized fit, kangaroo pocket.",
-    fabric: "Cotton Fleece",
-    color: "Charcoal",
-    basePrice: 1499,
-    images: [{ url: placeholderImage("Fleece Hoodie", "#f97316", "#0f172a") }],
-    sizes: ["S", "M", "L", "XL"],
-    stockRemaining: 16,
-    createdAt: "2026-09-01",
-  },
-  {
-    id: "p-ss-3",
-    storeId: "store-sole-street",
-    storeSlug: "sole-street",
-    categoryId: "cat-ss-joggers",
-    gender: "women",
-    subCategory: "Western Wear",
-    title: "Track Joggers — Sage Green",
-    description: "Tapered fit joggers with side stripe detailing, perfect for campus wear.",
-    fabric: "Cotton Terry",
-    color: "Olive",
-    basePrice: 1099,
-    images: [{ url: placeholderImage("Track Joggers", "#166534", "#f0fdf4") }],
-    sizes: ["S", "M", "L", "XL"],
-    stockRemaining: 13,
-    createdAt: "2026-09-03",
-  },
-  {
-    id: "p-bh-1",
-    storeId: "store-bengal-handloom",
-    storeSlug: "bengal-handloom-co",
-    categoryId: "cat-bh-jamdani",
-    gender: "women",
-    subCategory: "Sarees",
-    title: "Jamdani Saree — Ivory & Red",
-    description: "Handwoven jamdani cotton saree with traditional motifs, sourced from a Shantipur weaver co-op.",
-    fabric: "Jamdani Cotton",
-    color: "White",
-    basePrice: 3799,
-    compareAtPrice: 4999,
-    images: [{ url: placeholderImage("Jamdani Saree", "#7c2d12", "#fef9c3") }],
-    sizes: ["Free Size"],
-    stockRemaining: 6,
-    createdAt: "2026-08-23",
-  },
-  {
-    id: "p-bh-2",
-    storeId: "store-bengal-handloom",
-    storeSlug: "bengal-handloom-co",
-    categoryId: "cat-bh-tant",
-    gender: "women",
-    subCategory: "Sarees",
-    title: "Tant Cotton Saree — White & Green",
-    description: "Classic Bengal tant cotton saree with a woven border, breathable for daily wear.",
-    fabric: "Tant Cotton",
-    color: "White",
-    basePrice: 1299,
-    images: [{ url: placeholderImage("Tant Cotton Saree", "#15803d", "#fffdf7") }],
-    sizes: ["Free Size"],
-    stockRemaining: 20,
-    createdAt: "2026-08-29",
-  },
-  {
-    id: "p-bh-3",
-    storeId: "store-bengal-handloom",
-    storeSlug: "bengal-handloom-co",
-    categoryId: "cat-bh-kids",
-    gender: "kids",
-    subCategory: "Girls",
-    title: "Kids Tant Cotton Frock — Yellow",
-    description: "Lightweight handloom cotton frock for girls, breathable for daily summer wear.",
-    fabric: "Tant Cotton",
-    color: "Yellow",
-    basePrice: 599,
-    compareAtPrice: 799,
-    images: [{ url: placeholderImage("Kids Tant Frock", "#b91c1c", "#fef9c3") }],
-    sizes: ["2-3Y", "4-5Y", "6-7Y", "8-9Y"],
-    stockRemaining: 12,
-    createdAt: "2026-09-01",
-  },
-];
-export const products: Product[] = globalThis.__sioProducts ?? (globalThis.__sioProducts = loadPersisted("products", INITIAL_PRODUCTS));
+function rowToProduct(r: any): Product {
+  return {
+    id: r.id,
+    storeId: r.store_id,
+    storeSlug: r.store_slug,
+    categoryId: r.category_id,
+    gender: r.gender,
+    subCategory: r.sub_category,
+    title: r.title,
+    description: r.description ?? undefined,
+    fabric: r.fabric ?? undefined,
+    color: r.color ?? undefined,
+    brand: r.brand ?? undefined,
+    colorGroupId: r.color_group_id ?? undefined,
+    productCode: r.product_code ?? undefined,
+    basePrice: Number(r.base_price),
+    compareAtPrice: r.compare_at_price != null ? Number(r.compare_at_price) : undefined,
+    costPrice: r.cost_price != null ? Number(r.cost_price) : undefined,
+    images: r.images ?? [],
+    sizes: r.sizes ?? [],
+    stockRemaining: r.stock_remaining ?? undefined,
+    createdAt: new Date(r.created_at).toISOString(),
+  };
+}
+
+// Every product, newest first (same unshift-order reasoning as
+// getAllStores()). Replaces the old bare `export const products` array.
+export async function getAllProducts(): Promise<Product[]> {
+  const rows = await query<any>(`SELECT * FROM products ORDER BY created_at DESC`);
+  return rows.map(rowToProduct);
+}
 
 const EARTH_RADIUS_KM = 6371;
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -988,7 +363,7 @@ export function resolvePincode(pincode: string): { lat: number; lng: number; cit
 // sort": a shopper filters once (category, price, size, radius) and shops
 // directly from the matching products across every nearby store, rather
 // than picking one store first. See docs/01-product-and-personas.md §3.
-export function searchProducts(opts: {
+export async function searchProducts(opts: {
   pincode?: string;
   lat?: number;
   lng?: number;
@@ -1002,10 +377,12 @@ export function searchProducts(opts: {
   q?: string;
 }) {
   const { pincode, lat, lng, radiusKm = 10, gender, subCategory, minPrice, maxPrice, size, sort, q } = opts;
-  // See discoverStores() above for why raw coordinates take priority.
+  // See discoverStores() below for why raw coordinates take priority.
   const origin = lat != null && lng != null ? { lat, lng } : pincode ? resolvePincode(pincode) : undefined;
-  const query = q?.trim().toLowerCase();
+  const searchQuery = q?.trim().toLowerCase();
 
+  const stores = await getAllStores();
+  const products = await getAllProducts();
   const storesById = new Map(stores.map((s) => [s.id, s]));
 
   let results = products
@@ -1017,8 +394,8 @@ export function searchProducts(opts: {
       // Fuzzy-matched against title/fabric/category/color so typos
       // ("kurthi"), missing spaces ("bluejeans") and partial words still
       // find the right products, the way a real search engine would.
-      const searchScore = query
-        ? fuzzyBestScore(query, [p.title, p.fabric, p.subCategory, p.color, p.gender])
+      const searchScore = searchQuery
+        ? fuzzyBestScore(searchQuery, [p.title, p.fabric, p.subCategory, p.color, p.gender])
         : 0;
       return {
         ...p,
@@ -1036,12 +413,12 @@ export function searchProducts(opts: {
     .filter((p) => minPrice == null || p.basePrice >= minPrice)
     .filter((p) => maxPrice == null || p.basePrice <= maxPrice)
     .filter((p) => !size || p.sizes.includes(size))
-    .filter((p) => !query || p.searchScore > 0);
+    .filter((p) => !searchQuery || p.searchScore > 0);
 
   if (sort === "price_asc") results = [...results].sort((a, b) => a.basePrice - b.basePrice);
   else if (sort === "price_desc") results = [...results].sort((a, b) => b.basePrice - a.basePrice);
   else if (sort === "newest") results = [...results].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  else if (query) results = [...results].sort((a, b) => b.searchScore - a.searchScore || (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
+  else if (searchQuery) results = [...results].sort((a, b) => b.searchScore - a.searchScore || (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
   else results = [...results].sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
 
   // costPrice (seller's own purchase cost) must never reach this
@@ -1049,9 +426,8 @@ export function searchProducts(opts: {
   return results.map(({ searchScore, costPrice: _costPrice, ...p }) => p);
 }
 
-
 // Featured category tiles for the homepage "Browse by Category" strip.
-// Counts are computed live from the seed catalog rather than hardcoded.
+// Counts are computed live from the catalog rather than hardcoded.
 export const CATEGORY_TILES: { label: string; gender: Gender; subCategory: string }[] = [
   { label: "Sarees", gender: "women", subCategory: "Sarees" },
   { label: "Kurtis", gender: "women", subCategory: "Kurtis" },
@@ -1059,14 +435,15 @@ export const CATEGORY_TILES: { label: string; gender: Gender; subCategory: strin
   { label: "Kids Wear", gender: "kids", subCategory: "" },
 ];
 
-export function getCategoryTileCounts() {
+export async function getCategoryTileCounts() {
+  const products = await getAllProducts();
   return CATEGORY_TILES.map((tile) => ({
     ...tile,
     count: products.filter((p) => p.gender === tile.gender && (!tile.subCategory || p.subCategory === tile.subCategory)).length,
   }));
 }
 
-export function discoverStores(opts: { pincode?: string; lat?: number; lng?: number; radiusKm?: number; gender?: string; subCategory?: string }) {
+export async function discoverStores(opts: { pincode?: string; lat?: number; lng?: number; radiusKm?: number; gender?: string; subCategory?: string }) {
   const { pincode, lat, lng, radiusKm = 10, gender, subCategory } = opts;
   // Real GPS coordinates (from the browser's Geolocation API) take priority
   // over a typed PIN code when both are somehow present - there's no
@@ -1074,6 +451,9 @@ export function discoverStores(opts: { pincode?: string; lat?: number; lng?: num
   // code, so distance is computed directly from them instead, the same way
   // haversineKm already works from a resolved PIN code's lat/lng.
   const origin = lat != null && lng != null ? { lat, lng } : pincode ? resolvePincode(pincode) : undefined;
+
+  const stores = await getAllStores();
+  const products = await getAllProducts();
 
   const matchingStoreIds =
     gender && gender !== "all"
@@ -1085,14 +465,19 @@ export function discoverStores(opts: { pincode?: string; lat?: number; lng?: num
         )
       : null;
 
-  return stores
+  const candidates = stores
     .filter((s) => s.status === "active")
     .filter((s) => !matchingStoreIds || matchingStoreIds.has(s.id))
     .map((s) => ({
       ...s,
       distanceKm: origin ? Math.round(haversineKm(origin.lat, origin.lng, s.latitude, s.longitude) * 10) / 10 : null,
-      rating: getStoreRatingSummary(s.id),
-    }))
+    }));
+
+  const withRating = await Promise.all(
+    candidates.map(async (s) => ({ ...s, rating: await getStoreRatingSummary(s.id) }))
+  );
+
+  return withRating
     .filter((s) => !origin || s.distanceKm === null || s.distanceKm <= radiusKm)
     .sort((a, b) => {
       const boosted = Number(isBoostActive(b.boostedUntil)) - Number(isBoostActive(a.boostedUntil));
@@ -1104,29 +489,29 @@ export function discoverStores(opts: { pincode?: string; lat?: number; lng?: num
 // Full store directory for the standalone /shops page - unfiltered by
 // geography, unlike discoverStores() which is scoped to a shopper's PIN
 // code + radius.
-export function getAllShops() {
-  return stores
-    .filter((s) => s.status === "active")
-    .map((s) => ({
+export async function getAllShops() {
+  const stores = await getAllStores();
+  const products = await getAllProducts();
+  const active = stores.filter((s) => s.status === "active");
+  const withExtras = await Promise.all(
+    active.map(async (s) => ({
       ...s,
       productCount: products.filter((p) => p.storeId === s.id).length,
-      rating: getStoreRatingSummary(s.id),
+      rating: await getStoreRatingSummary(s.id),
     }))
-    .sort((a, b) => Number(isBoostActive(b.boostedUntil)) - Number(isBoostActive(a.boostedUntil)));
+  );
+  return withExtras.sort((a, b) => Number(isBoostActive(b.boostedUntil)) - Number(isBoostActive(a.boostedUntil)));
 }
 
 // ---------------------------------------------------------------------
 // Seller Portal: catalog + theme mutations.
-// In-memory only (resets on server restart) - stands in for the Catalog
-// Service's writes in database/schema.sql (`products`, `theme_configurations`)
-// until a real backend exists. Good enough to demo add/edit/delete end to end.
 // ---------------------------------------------------------------------
-export function createProduct(storeId: string, input: Partial<Product>): Product {
-  const store = stores.find((s) => s.id === storeId);
+export async function createProduct(storeId: string, input: Partial<Product>): Promise<Product> {
+  const storeRow = await queryOne<any>(`SELECT slug FROM stores WHERE id = $1`, [storeId]);
   const product: Product = {
     id: `p-custom-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     storeId,
-    storeSlug: store?.slug ?? "",
+    storeSlug: storeRow?.slug ?? "",
     categoryId: input.categoryId ?? "cat-custom",
     gender: (input.gender as Gender) ?? "women",
     subCategory: input.subCategory ?? "Other",
@@ -1145,89 +530,149 @@ export function createProduct(storeId: string, input: Partial<Product>): Product
     stockRemaining: input.stockRemaining ?? 10,
     createdAt: new Date().toISOString(),
   };
-  products.unshift(product);
-  persist("products", products);
+  await query(
+    `INSERT INTO products (id, store_id, store_slug, category_id, gender, sub_category, title, description, fabric, color, brand, color_group_id, product_code, base_price, compare_at_price, cost_price, images, sizes, stock_remaining, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+    [
+      product.id, product.storeId, product.storeSlug, product.categoryId, product.gender, product.subCategory,
+      product.title, product.description ?? null, product.fabric ?? null, product.color ?? null, product.brand ?? null,
+      product.colorGroupId ?? null, product.productCode ?? null, product.basePrice, product.compareAtPrice ?? null,
+      product.costPrice ?? null, JSON.stringify(product.images), product.sizes, product.stockRemaining ?? null, product.createdAt,
+    ]
+  );
   return product;
 }
 
-export function updateProduct(id: string, patch: Partial<Product>): Product | null {
-  const product = products.find((p) => p.id === id);
-  if (!product) return null;
-  const previousStock = product.stockRemaining;
-  Object.assign(product, patch);
-  persist("products", products);
-  if ("stockRemaining" in patch) notifyWaitlistIfRestocked(product, previousStock);
-  return product;
+export async function updateProduct(id: string, patch: Partial<Product>): Promise<Product | null> {
+  const existingRow = await queryOne<any>(`SELECT * FROM products WHERE id = $1`, [id]);
+  if (!existingRow) return null;
+  const existing = rowToProduct(existingRow);
+  const previousStock = existing.stockRemaining;
+  const merged: Product = { ...existing, ...patch };
+  await query(
+    `UPDATE products SET category_id=$2, gender=$3, sub_category=$4, title=$5, description=$6, fabric=$7, color=$8, brand=$9,
+       color_group_id=$10, product_code=$11, base_price=$12, compare_at_price=$13, cost_price=$14, images=$15, sizes=$16, stock_remaining=$17
+     WHERE id = $1`,
+    [
+      id, merged.categoryId, merged.gender, merged.subCategory, merged.title, merged.description ?? null,
+      merged.fabric ?? null, merged.color ?? null, merged.brand ?? null, merged.colorGroupId ?? null,
+      merged.productCode ?? null, merged.basePrice, merged.compareAtPrice ?? null, merged.costPrice ?? null,
+      JSON.stringify(merged.images), merged.sizes, merged.stockRemaining ?? null,
+    ]
+  );
+  if ("stockRemaining" in patch) await notifyWaitlistIfRestocked(merged, previousStock);
+  return merged;
 }
 
-export function deleteProduct(id: string): boolean {
-  const idx = products.findIndex((p) => p.id === id);
-  if (idx === -1) return false;
-  products.splice(idx, 1);
-  persist("products", products);
-  return true;
+export async function deleteProduct(id: string): Promise<boolean> {
+  const affected = await execute(`DELETE FROM products WHERE id = $1`, [id]);
+  return affected > 0;
 }
 
-export function getStoreProducts(storeId: string): Product[] {
-  return products.filter((p) => p.storeId === storeId);
+export async function getStoreProducts(storeId: string): Promise<Product[]> {
+  const rows = await query<any>(`SELECT * FROM products WHERE store_id = $1 ORDER BY created_at DESC`, [storeId]);
+  return rows.map(rowToProduct);
 }
 
 // The other colorways of the same listing (e.g. the "select colors" step
 // creating one product per color) - same colorGroupId, same store, not
 // itself - so the product page can offer them as swatches.
-export function getColorSiblings(product: Product): Product[] {
+export async function getColorSiblings(product: Product): Promise<Product[]> {
   if (!product.colorGroupId) return [];
-  return products.filter((p) => p.id !== product.id && p.storeId === product.storeId && p.colorGroupId === product.colorGroupId);
+  const rows = await query<any>(
+    `SELECT * FROM products WHERE id != $1 AND store_id = $2 AND color_group_id = $3`,
+    [product.id, product.storeId, product.colorGroupId]
+  );
+  return rows.map(rowToProduct);
 }
 
-// Flips a newly-signed-up store from "draft" to "active" once its seller
-// finishes the onboarding/KYC flow - draft stores are excluded from every
-// shopper-facing search/browse query (see the "active" filters above), so
-// this is the one step that actually makes a new merchant visible.
-export function activateStore(storeId: string): Store | null {
-  const store = stores.find((s) => s.id === storeId);
-  if (!store) return null;
-  store.status = "active";
-  persist("stores", stores);
-  return store;
+// Flips a store to "active", making it visible to shoppers (draft/
+// pending_review stores are excluded from every shopper-facing search/
+// browse query - see the "active" filters above). This is now ONLY called
+// from the site owner's manual review tool (app/admin/sellers,
+// app/api/v1/admin/sellers/[storeId]/approve) - the seller's own
+// onboarding flow can no longer activate its own store (see
+// submitStoreForReview below), since the pilot deliberately has a human
+// review each new seller instead of any automated KYC check.
+export async function activateStore(storeId: string): Promise<Store | null> {
+  const row = await queryOne<any>(`UPDATE stores SET status = 'active' WHERE id = $1 RETURNING *`, [storeId]);
+  return row ? rowToStore(row) : null;
 }
 
-export function updateStoreTheme(storeId: string, patch: { primary?: string; accent?: string; heroTitle?: string; heroSubtitle?: string }) {
-  const theme = themes[storeId];
-  if (!theme) return null;
+// Sets a "pending_review" store back to "draft" - the site owner declined
+// to activate it (e.g. the submitted GSTIN/PAN look wrong). The seller can
+// resubmit via onboarding, which re-runs submitStoreForReview below.
+export async function rejectStore(storeId: string): Promise<Store | null> {
+  const row = await queryOne<any>(`UPDATE stores SET status = 'draft' WHERE id = $1 RETURNING *`, [storeId]);
+  return row ? rowToStore(row) : null;
+}
+
+export interface SubmitStoreForReviewInput {
+  gstin?: string;
+  pan?: string;
+  upiVpa?: string;
+}
+
+// Called once by the onboarding flow's final step. No real KYC provider is
+// ever called (see app/seller/(dashboard)/onboarding/page.tsx) - this just
+// records whatever the seller typed in and moves the store from "draft" to
+// "pending_review" so it shows up on the site owner's manual review queue
+// (getStoresPendingReview below). Only draft stores move - resubmitting
+// while already pending_review/active is a no-op so a seller can't use
+// this to undo an admin's decision.
+export async function submitStoreForReview(storeId: string, input: SubmitStoreForReviewInput): Promise<Store | null> {
+  const row = await queryOne<any>(
+    `UPDATE stores
+     SET status = 'pending_review', gstin = $2, pan = $3, upi_vpa = $4, submitted_for_review_at = now()
+     WHERE id = $1 AND status = 'draft'
+     RETURNING *`,
+    [storeId, input.gstin?.trim() || null, input.pan?.trim() || null, input.upiVpa?.trim() || null]
+  );
+  return row ? rowToStore(row) : null;
+}
+
+// The site owner's review queue (app/admin/sellers) - every store waiting
+// on a manual approve/reject decision, oldest submission first so nobody
+// waits behind a store that was just submitted.
+export async function getStoresPendingReview(): Promise<Store[]> {
+  const rows = await query<any>(`SELECT * FROM stores WHERE status = 'pending_review' ORDER BY submitted_for_review_at ASC NULLS LAST`);
+  return rows.map(rowToStore);
+}
+
+export async function updateStoreTheme(storeId: string, patch: { primary?: string; accent?: string; heroTitle?: string; heroSubtitle?: string }) {
+  const row = await queryOne<any>(`SELECT theme FROM themes WHERE store_id = $1`, [storeId]);
+  if (!row) return null;
+  const theme = row.theme;
   if (patch.primary) theme.brand.colors.primary = patch.primary;
   if (patch.accent) theme.brand.colors.accent = patch.accent;
   if (theme.layout.heroCarousel?.[0]) {
     if (patch.heroTitle) theme.layout.heroCarousel[0].title = patch.heroTitle;
     if (patch.heroSubtitle) theme.layout.heroCarousel[0].subtitle = patch.heroSubtitle;
   }
-  persist("themes", themes);
+  await query(`UPDATE themes SET theme = $2 WHERE store_id = $1`, [storeId, JSON.stringify(theme)]);
   return theme;
 }
 
 // Live Sale: lets a merchant flag their store as running a flash sale right
 // now, with an end time - shown as a badge on /shops, /store/[slug], and the
 // homepage "Stores near you" list so nearby shoppers can catch it in time.
-export function setStoreLiveSale(storeId: string, input: { headline: string; discountLabel: string; durationHours: number }) {
-  const store = stores.find((s) => s.id === storeId);
-  if (!store) return null;
+export async function setStoreLiveSale(storeId: string, input: { headline: string; discountLabel: string; durationHours: number }) {
+  const existing = await queryOne<any>(`SELECT id FROM stores WHERE id = $1`, [storeId]);
+  if (!existing) return null;
   const now = new Date();
-  store.liveSale = {
+  const liveSale: LiveSale = {
     headline: input.headline,
     discountLabel: input.discountLabel,
     startedAt: now.toISOString(),
     endsAt: new Date(now.getTime() + input.durationHours * 60 * 60 * 1000).toISOString(),
   };
-  persist("stores", stores);
-  return store.liveSale;
+  await query(`UPDATE stores SET live_sale = $2 WHERE id = $1`, [storeId, JSON.stringify(liveSale)]);
+  return liveSale;
 }
 
-export function clearStoreLiveSale(storeId: string) {
-  const store = stores.find((s) => s.id === storeId);
-  if (!store) return null;
-  store.liveSale = null;
-  persist("stores", stores);
-  return true;
+export async function clearStoreLiveSale(storeId: string) {
+  const affected = await execute(`UPDATE stores SET live_sale = NULL WHERE id = $1`, [storeId]);
+  return affected > 0 ? true : null;
 }
 
 export function isLiveSaleActive(liveSale?: LiveSale | null): liveSale is LiveSale {
@@ -1237,10 +682,9 @@ export function isLiveSaleActive(liveSale?: LiveSale | null): liveSale is LiveSa
 // ---------------------------------------------------------------------
 // Reservations - this platform doesn't sell online; a shopper "sorts"
 // (picks out) items near them, then reserves them at one store for a fixed
-// window so the seller can hold them for an in-person pickup. Stands in for
-// the (not-yet-modeled) reservations table. In-memory only; a shopper's own
-// reservation ids are kept client-side in localStorage (lib/reservations.ts)
-// since there's no auth to scope a query by.
+// window so the seller can hold them for an in-person pickup. A shopper's
+// own reservation ids are kept client-side in localStorage
+// (lib/reservations.ts) since there's no auth to scope a query by.
 // ---------------------------------------------------------------------
 export interface ReservationItem {
   productId: string;
@@ -1267,21 +711,32 @@ export interface Reservation {
   createdAt: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioReservations: Reservation[] | undefined;
+function rowToReservation(r: any): Reservation {
+  return {
+    id: r.id,
+    storeId: r.store_id,
+    storeName: r.store_name,
+    storeSlug: r.store_slug,
+    items: r.items ?? [],
+    total: Number(r.total),
+    shopperName: r.shopper_name,
+    shopperPhone: r.shopper_phone,
+    status: r.status,
+    reservedUntil: new Date(r.reserved_until).toISOString(),
+    createdAt: new Date(r.created_at).toISOString(),
+  };
 }
-export const reservations: Reservation[] = globalThis.__sioReservations ?? (globalThis.__sioReservations = loadPersisted("reservations", [] as Reservation[]));
 
-export function createReservation(input: {
+export async function createReservation(input: {
   storeId: string;
   items: ReservationItem[];
   shopperName: string;
   shopperPhone: string;
   durationMinutes: number;
-}): Reservation | null {
-  const store = stores.find((s) => s.id === input.storeId);
-  if (!store) return null;
+}): Promise<Reservation | null> {
+  const storeRow = await queryOne<any>(`SELECT * FROM stores WHERE id = $1`, [input.storeId]);
+  if (!storeRow) return null;
+  const store = rowToStore(storeRow);
   const now = new Date();
   const reservation: Reservation = {
     id: `RSV-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
@@ -1296,12 +751,18 @@ export function createReservation(input: {
     reservedUntil: new Date(now.getTime() + input.durationMinutes * 60_000).toISOString(),
     createdAt: now.toISOString(),
   };
-  reservations.unshift(reservation);
-  persist("reservations", reservations);
+  await query(
+    `INSERT INTO reservations (id, store_id, store_name, store_slug, items, total, shopper_name, shopper_phone, status, reserved_until, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+    [
+      reservation.id, reservation.storeId, reservation.storeName, reservation.storeSlug, JSON.stringify(reservation.items),
+      reservation.total, reservation.shopperName, reservation.shopperPhone, reservation.status, reservation.reservedUntil, reservation.createdAt,
+    ]
+  );
 
   if (store.phone) {
     const itemCount = reservation.items.reduce((sum, i) => sum + i.quantity, 0);
-    notify(store.id, store.phone, "seller", "reservation_created",
+    await notify(store.id, store.phone, "seller", "reservation_created",
       `New reservation from ${reservation.shopperName} (${reservation.shopperPhone}): ${itemCount} item${itemCount === 1 ? "" : "s"}, ₹${reservation.total}. Reserved until ${new Date(reservation.reservedUntil).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}.`
     );
   }
@@ -1309,25 +770,26 @@ export function createReservation(input: {
   return reservation;
 }
 
-export function getReservation(id: string): Reservation | undefined {
-  return reservations.find((r) => r.id === id);
+export async function getReservation(id: string): Promise<Reservation | undefined> {
+  const row = await queryOne<any>(`SELECT * FROM reservations WHERE id = $1`, [id]);
+  return row ? rowToReservation(row) : undefined;
 }
 
-export function getStoreReservations(storeId: string): Reservation[] {
-  return reservations.filter((r) => r.storeId === storeId);
+export async function getStoreReservations(storeId: string): Promise<Reservation[]> {
+  const rows = await query<any>(`SELECT * FROM reservations WHERE store_id = $1 ORDER BY created_at DESC`, [storeId]);
+  return rows.map(rowToReservation);
 }
 
-export function updateReservationStatus(id: string, status: "fulfilled" | "cancelled"): Reservation | null {
-  const reservation = reservations.find((r) => r.id === id);
-  if (!reservation) return null;
-  reservation.status = status;
-  persist("reservations", reservations);
+export async function updateReservationStatus(id: string, status: "fulfilled" | "cancelled"): Promise<Reservation | null> {
+  const row = await queryOne<any>(`UPDATE reservations SET status = $2 WHERE id = $1 RETURNING *`, [id, status]);
+  if (!row) return null;
+  const reservation = rowToReservation(row);
 
   const message =
     status === "fulfilled"
       ? `Thanks for shopping with ${reservation.storeName}! Your order (₹${reservation.total}) has been picked up.`
       : `Your reservation at ${reservation.storeName} (₹${reservation.total}) was cancelled.`;
-  notify(reservation.storeId, reservation.shopperPhone, "shopper", `reservation_${status}`, message);
+  await notify(reservation.storeId, reservation.shopperPhone, "shopper", `reservation_${status}`, message);
 
   return reservation;
 }
@@ -1363,30 +825,30 @@ export interface Notification {
   createdAt: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioNotifications: Notification[] | undefined;
-}
-
-export const notifications: Notification[] = globalThis.__sioNotifications ?? (globalThis.__sioNotifications = loadPersisted("notifications", [] as Notification[]));
-
-function notify(storeId: string, phone: string, recipient: "seller" | "shopper", trigger: Notification["trigger"], message: string) {
-  console.log(`[SMS -> +91${phone}] ${message}`);
-  const record: Notification = {
-    id: `notif-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-    storeId,
-    recipient,
-    phone,
-    trigger,
-    message,
-    createdAt: new Date().toISOString(),
+function rowToNotification(r: any): Notification {
+  return {
+    id: r.id,
+    storeId: r.store_id,
+    recipient: r.recipient,
+    phone: r.phone,
+    trigger: r.trigger,
+    message: r.message,
+    createdAt: new Date(r.created_at).toISOString(),
   };
-  notifications.unshift(record);
-  persist("notifications", notifications);
 }
 
-export function getStoreNotifications(storeId: string): Notification[] {
-  return notifications.filter((n) => n.storeId === storeId);
+async function notify(storeId: string, phone: string, recipient: "seller" | "shopper", trigger: Notification["trigger"], message: string): Promise<void> {
+  console.log(`[SMS -> +91${phone}] ${message}`);
+  const id = `notif-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  await query(
+    `INSERT INTO notifications (id, store_id, recipient, phone, trigger, message) VALUES ($1,$2,$3,$4,$5,$6)`,
+    [id, storeId, recipient, phone, trigger, message]
+  );
+}
+
+export async function getStoreNotifications(storeId: string): Promise<Notification[]> {
+  const rows = await query<any>(`SELECT * FROM notifications WHERE store_id = $1 ORDER BY created_at DESC`, [storeId]);
+  return rows.map(rowToNotification);
 }
 
 // ---------------------------------------------------------------------
@@ -1404,55 +866,49 @@ export interface WaitlistEntry {
   createdAt: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioWaitlist: WaitlistEntry[] | undefined;
-}
-
-export const waitlist: WaitlistEntry[] = globalThis.__sioWaitlist ?? (globalThis.__sioWaitlist = loadPersisted("waitlist", [] as WaitlistEntry[]));
-
 // Rejects a duplicate join (same phone, same product still waiting) rather
 // than silently piling up repeat entries every time an impatient shopper
 // re-submits the form.
-export function joinWaitlist(productId: string, shopperName: string, shopperPhone: string): { ok: true; entry: WaitlistEntry } | { ok: false; error: string } {
-  const product = products.find((p) => p.id === productId);
-  if (!product) return { ok: false, error: "Product not found." };
+export async function joinWaitlist(productId: string, shopperName: string, shopperPhone: string): Promise<{ ok: true; entry: WaitlistEntry } | { ok: false; error: string }> {
+  const productRow = await queryOne<any>(`SELECT id, store_id FROM products WHERE id = $1`, [productId]);
+  if (!productRow) return { ok: false, error: "Product not found." };
   const normalized = shopperPhone.replace(/\D/g, "").slice(-10);
-  const already = waitlist.some((w) => w.productId === productId && w.shopperPhone.replace(/\D/g, "").slice(-10) === normalized);
+  const existingRows = await query<any>(`SELECT shopper_phone FROM waitlist_entries WHERE product_id = $1`, [productId]);
+  const already = existingRows.some((r) => r.shopper_phone.replace(/\D/g, "").slice(-10) === normalized);
   if (already) return { ok: false, error: "You're already on the waitlist for this product." };
 
   const entry: WaitlistEntry = {
     id: `wait-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     productId,
-    storeId: product.storeId,
+    storeId: productRow.store_id,
     shopperName: shopperName.trim(),
     shopperPhone: normalized,
     createdAt: new Date().toISOString(),
   };
-  waitlist.push(entry);
-  persist("waitlist", waitlist);
+  await query(
+    `INSERT INTO waitlist_entries (id, product_id, store_id, shopper_name, shopper_phone, created_at) VALUES ($1,$2,$3,$4,$5,$6)`,
+    [entry.id, entry.productId, entry.storeId, entry.shopperName, entry.shopperPhone, entry.createdAt]
+  );
   return { ok: true, entry };
 }
 
-export function getProductWaitlistCount(productId: string): number {
-  return waitlist.filter((w) => w.productId === productId).length;
+export async function getProductWaitlistCount(productId: string): Promise<number> {
+  const row = await queryOne<any>(`SELECT COUNT(*)::int AS count FROM waitlist_entries WHERE product_id = $1`, [productId]);
+  return row?.count ?? 0;
 }
 
 // Notifies and clears everyone waiting on a product the moment it goes from
-// sold-out to back in stock - called from updateProduct() below, not fired
+// sold-out to back in stock - called from updateProduct() above, not fired
 // on every stock edit (e.g. a seller correcting 8 to 9 shouldn't spam
 // anyone who was never actually told "sold out").
-function notifyWaitlistIfRestocked(product: Product, previousStock: number | undefined) {
+async function notifyWaitlistIfRestocked(product: Product, previousStock: number | undefined): Promise<void> {
   if ((previousStock ?? 0) > 0 || (product.stockRemaining ?? 0) <= 0) return;
-  const waiting = waitlist.filter((w) => w.productId === product.id);
+  const waiting = await query<any>(`SELECT * FROM waitlist_entries WHERE product_id = $1`, [product.id]);
   if (waiting.length === 0) return;
   for (const entry of waiting) {
-    notify(product.storeId, entry.shopperPhone, "shopper", "back_in_stock", `Good news - "${product.title}" is back in stock! Reserve it before it sells out again.`);
+    await notify(product.storeId, entry.shopper_phone, "shopper", "back_in_stock", `Good news - "${product.title}" is back in stock! Reserve it before it sells out again.`);
   }
-  const remaining = waitlist.filter((w) => w.productId !== product.id);
-  waitlist.length = 0;
-  waitlist.push(...remaining);
-  persist("waitlist", waitlist);
+  await query(`DELETE FROM waitlist_entries WHERE product_id = $1`, [product.id]);
 }
 
 // ---------------------------------------------------------------------
@@ -1498,43 +954,69 @@ export interface Shopper {
   referredBy?: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioShoppers: Shopper[] | undefined;
+function rowToShopper(r: any): Shopper {
+  return {
+    id: r.id,
+    name: r.name,
+    phone: r.phone,
+    email: r.email ?? undefined,
+    preferredCategory: r.preferred_category ?? undefined,
+    pincode: r.pincode ?? undefined,
+    city: r.city ?? undefined,
+    dateOfBirth: r.date_of_birth ? new Date(r.date_of_birth).toISOString().slice(0, 10) : undefined,
+    marketingOptIn: r.marketing_opt_in ?? false,
+    passwordHash: r.password_hash ?? undefined,
+    createdAt: new Date(r.created_at).toISOString(),
+    referralCode: r.referral_code ?? "",
+    referredBy: r.referred_by ?? undefined,
+  };
 }
 
-export const shoppers: Shopper[] = globalThis.__sioShoppers ?? (globalThis.__sioShoppers = loadPersisted("shoppers", [] as Shopper[]));
-
-export function findShopperByPhone(phone: string): Shopper | null {
+export async function findShopperByPhone(phone: string): Promise<Shopper | null> {
   const normalized = phone.replace(/\D/g, "").slice(-10);
-  const shopper = shoppers.find((s) => s.phone.replace(/\D/g, "").slice(-10) === normalized) ?? null;
+  const rows = await query<any>(`SELECT * FROM shoppers`);
+  const row = rows.find((r) => r.phone.replace(/\D/g, "").slice(-10) === normalized);
+  if (!row) return null;
+  const shopper = rowToShopper(row);
   // Self-healing backfill for a shopper who signed up before the referral
   // program existed, on whichever code path reads them first (OTP verify,
   // profile update, or the referrals endpoint) - not just the update path
   // in upsertShopper, since a returning login never calls that.
-  if (shopper && !shopper.referralCode) {
-    shopper.referralCode = generateReferralCode(shopper.name);
-    persist("shoppers", shoppers);
+  if (!shopper.referralCode) {
+    shopper.referralCode = await generateReferralCode(shopper.name);
+    await query(`UPDATE shoppers SET referral_code = $2 WHERE id = $1`, [shopper.id, shopper.referralCode]);
   }
   return shopper;
 }
 
-export function findShopperByReferralCode(code: string): Shopper | null {
+// Persists an email for a returning shopper who didn't have one on file yet
+// (signed up before email existed, or skipped the optional field) - used by
+// the OTP login flow (see /api/v1/auth/otp/request), which now needs an
+// email to actually deliver the code to. A brand-new shopper's email is
+// instead saved the normal way, via upsertShopper() in the profile step
+// right after verifying for the first time.
+export async function updateShopperEmail(shopperId: string, email: string): Promise<void> {
+  await execute(`UPDATE shoppers SET email = $2 WHERE id = $1`, [shopperId, email]);
+}
+
+export async function findShopperByReferralCode(code: string): Promise<Shopper | null> {
   // Guards against shopper records persisted before referralCode existed
   // (this field is new) - those have no code to match against, not a bug.
-  return shoppers.find((s) => s.referralCode && s.referralCode.toLowerCase() === code.toLowerCase()) ?? null;
+  const row = await queryOne<any>(`SELECT * FROM shoppers WHERE referral_code IS NOT NULL AND lower(referral_code) = lower($1)`, [code]);
+  return row ? rowToShopper(row) : null;
 }
 
-export function getReferralCount(shopperId: string): number {
-  return shoppers.filter((s) => s.referredBy === shopperId).length;
+export async function getReferralCount(shopperId: string): Promise<number> {
+  const row = await queryOne<any>(`SELECT COUNT(*)::int AS count FROM shoppers WHERE referred_by = $1`, [shopperId]);
+  return row?.count ?? 0;
 }
 
-function generateReferralCode(name: string): string {
+async function generateReferralCode(name: string): Promise<string> {
   const base = (name.replace(/[^A-Za-z]/g, "").slice(0, 5) || "SORT").toUpperCase();
   let code = "";
   do {
     code = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
-  } while (findShopperByReferralCode(code));
+  } while (await findShopperByReferralCode(code));
   return code;
 }
 
@@ -1560,21 +1042,25 @@ export interface UpsertShopperInput {
 // caller gets back the current record plus whether this was a brand-new
 // signup, which is what the sign-in page uses to decide whether to show
 // the "tell us about you" step.
-export function upsertShopper(input: UpsertShopperInput): { shopper: Shopper; isNewCustomer: boolean } {
-  const existing = findShopperByPhone(input.phone);
+export async function upsertShopper(input: UpsertShopperInput): Promise<{ shopper: Shopper; isNewCustomer: boolean }> {
+  const existing = await findShopperByPhone(input.phone);
   if (existing) {
-    existing.name = input.name.trim() || existing.name;
-    if (input.email !== undefined) existing.email = input.email.trim() || undefined;
-    if (input.preferredCategory !== undefined) existing.preferredCategory = input.preferredCategory;
-    if (input.pincode !== undefined) existing.pincode = input.pincode.trim() || undefined;
-    if (input.city !== undefined) existing.city = input.city.trim() || undefined;
-    if (input.dateOfBirth !== undefined) existing.dateOfBirth = input.dateOfBirth || undefined;
-    if (input.marketingOptIn !== undefined) existing.marketingOptIn = input.marketingOptIn;
-    if (input.password) existing.passwordHash = hashPassword(input.password);
-    persist("shoppers", shoppers);
-    return { shopper: existing, isNewCustomer: false };
+    const name = input.name.trim() || existing.name;
+    const email = input.email !== undefined ? input.email.trim() || undefined : existing.email;
+    const preferredCategory = input.preferredCategory !== undefined ? input.preferredCategory : existing.preferredCategory;
+    const pincode = input.pincode !== undefined ? input.pincode.trim() || undefined : existing.pincode;
+    const city = input.city !== undefined ? input.city.trim() || undefined : existing.city;
+    const dateOfBirth = input.dateOfBirth !== undefined ? input.dateOfBirth || undefined : existing.dateOfBirth;
+    const marketingOptIn = input.marketingOptIn !== undefined ? input.marketingOptIn : existing.marketingOptIn;
+    const passwordHash = input.password ? hashPassword(input.password) : existing.passwordHash;
+    await query(
+      `UPDATE shoppers SET name=$2, email=$3, preferred_category=$4, pincode=$5, city=$6, date_of_birth=$7, marketing_opt_in=$8, password_hash=$9 WHERE id = $1`,
+      [existing.id, name, email ?? null, preferredCategory ?? null, pincode ?? null, city ?? null, dateOfBirth ?? null, marketingOptIn ?? false, passwordHash ?? null]
+    );
+    const updated: Shopper = { ...existing, name, email, preferredCategory, pincode, city, dateOfBirth, marketingOptIn, passwordHash };
+    return { shopper: updated, isNewCustomer: false };
   }
-  const referrer = input.referredByCode ? findShopperByReferralCode(input.referredByCode) : null;
+  const referrer = input.referredByCode ? await findShopperByReferralCode(input.referredByCode) : null;
   const shopper: Shopper = {
     id: `shopper-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     name: input.name.trim(),
@@ -1587,18 +1073,26 @@ export function upsertShopper(input: UpsertShopperInput): { shopper: Shopper; is
     marketingOptIn: input.marketingOptIn ?? false,
     passwordHash: input.password ? hashPassword(input.password) : undefined,
     createdAt: new Date().toISOString(),
-    referralCode: generateReferralCode(input.name),
+    referralCode: await generateReferralCode(input.name),
     referredBy: referrer?.id,
   };
-  shoppers.push(shopper);
-  persist("shoppers", shoppers);
+  await query(
+    `INSERT INTO shoppers (id, name, phone, email, preferred_category, pincode, city, date_of_birth, marketing_opt_in, password_hash, created_at, referral_code, referred_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+    [
+      shopper.id, shopper.name, shopper.phone, shopper.email ?? null, shopper.preferredCategory ?? null,
+      shopper.pincode ?? null, shopper.city ?? null, shopper.dateOfBirth ?? null, shopper.marketingOptIn,
+      shopper.passwordHash ?? null, shopper.createdAt, shopper.referralCode, shopper.referredBy ?? null,
+    ]
+  );
   if (referrer) {
-    notify(
+    const count = await getReferralCount(referrer.id);
+    await notify(
       "platform",
       referrer.phone,
       "shopper",
       "referral_joined",
-      `${shopper.name} just joined SORT NOW using your invite link! You've now referred ${getReferralCount(referrer.id)} friend${getReferralCount(referrer.id) === 1 ? "" : "s"}.`
+      `${shopper.name} just joined SORT NOW using your invite link! You've now referred ${count} friend${count === 1 ? "" : "s"}.`
     );
   }
   return { shopper, isNewCustomer: true };
@@ -1610,8 +1104,8 @@ export function upsertShopper(input: UpsertShopperInput): { shopper: Shopper; is
 // Returns null for "wrong phone", "wrong password", and "never set a
 // password" alike, same as a seller login's invalid_credentials - nothing
 // here should let a caller distinguish those cases.
-export function verifyShopperPassword(phone: string, password: string): Shopper | null {
-  const shopper = findShopperByPhone(phone);
+export async function verifyShopperPassword(phone: string, password: string): Promise<Shopper | null> {
+  const shopper = await findShopperByPhone(phone);
   if (!shopper?.passwordHash) return null;
   if (!verifyPassword(password, shopper.passwordHash)) return null;
   return shopper;
@@ -1695,27 +1189,57 @@ export interface Bill {
   createdAt: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioBillingSettings: Record<string, BillingSettings> | undefined;
-  // eslint-disable-next-line no-var
-  var __sioBills: Bill[] | undefined;
+function rowToBillingSettings(r: any): BillingSettings {
+  return {
+    mode: r.mode,
+    gstin: r.gstin ?? undefined,
+    taxRatePercent: Number(r.tax_rate_percent),
+    nextInvoiceNumber: r.next_invoice_number,
+    invoiceNote: r.invoice_note ?? undefined,
+  };
+}
+
+function rowToBill(r: any): Bill {
+  return {
+    id: r.id,
+    invoiceNumber: r.invoice_number,
+    storeId: r.store_id,
+    storeName: r.store_name,
+    storeAddress: r.store_address ?? undefined,
+    invoiceNote: r.invoice_note ?? undefined,
+    mode: r.mode,
+    gstin: r.gstin ?? undefined,
+    taxRatePercent: Number(r.tax_rate_percent),
+    items: r.items ?? [],
+    subtotal: Number(r.subtotal),
+    discountPercent: r.discount_percent != null ? Number(r.discount_percent) : undefined,
+    discountAmount: r.discount_amount != null ? Number(r.discount_amount) : undefined,
+    cgst: Number(r.cgst),
+    sgst: Number(r.sgst),
+    grandTotal: Number(r.grand_total),
+    totalQuantity: r.total_quantity,
+    paymentMode: r.payment_mode,
+    customerName: r.customer_name ?? undefined,
+    customerPhone: r.customer_phone ?? undefined,
+    status: r.status,
+    voidReason: r.void_reason ?? undefined,
+    createdAt: new Date(r.created_at).toISOString(),
+  };
 }
 
 const DEFAULT_BILLING_SETTINGS: Omit<BillingSettings, "nextInvoiceNumber"> = { mode: "normal", taxRatePercent: 5 };
 
-export const billingSettingsStore: Record<string, BillingSettings> =
-  globalThis.__sioBillingSettings ?? (globalThis.__sioBillingSettings = loadPersisted("billingSettings", {} as Record<string, BillingSettings>));
-
-export function getBillingSettings(storeId: string): BillingSettings {
-  return billingSettingsStore[storeId] ?? { ...DEFAULT_BILLING_SETTINGS, nextInvoiceNumber: 1 };
+export async function getBillingSettings(storeId: string): Promise<BillingSettings> {
+  const row = await queryOne<any>(`SELECT * FROM billing_settings WHERE store_id = $1`, [storeId]);
+  if (!row) return { ...DEFAULT_BILLING_SETTINGS, nextInvoiceNumber: 1 };
+  return rowToBillingSettings(row);
 }
 
-export function updateBillingSettings(
+export async function updateBillingSettings(
   storeId: string,
   patch: { mode?: "gst" | "normal"; gstin?: string; taxRatePercent?: number; invoiceNote?: string }
-): BillingSettings {
-  const current = getBillingSettings(storeId);
+): Promise<BillingSettings> {
+  const current = await getBillingSettings(storeId);
   const next: BillingSettings = {
     ...current,
     ...(patch.mode !== undefined ? { mode: patch.mode } : {}),
@@ -1723,25 +1247,28 @@ export function updateBillingSettings(
     ...(patch.taxRatePercent !== undefined ? { taxRatePercent: patch.taxRatePercent } : {}),
     ...(patch.invoiceNote !== undefined ? { invoiceNote: patch.invoiceNote } : {}),
   };
-  billingSettingsStore[storeId] = next;
-  persist("billingSettings", billingSettingsStore);
+  await query(
+    `INSERT INTO billing_settings (store_id, mode, gstin, tax_rate_percent, next_invoice_number, invoice_note)
+     VALUES ($1,$2,$3,$4,$5,$6)
+     ON CONFLICT (store_id) DO UPDATE SET mode=$2, gstin=$3, tax_rate_percent=$4, next_invoice_number=$5, invoice_note=$6`,
+    [storeId, next.mode, next.gstin ?? null, next.taxRatePercent, next.nextInvoiceNumber, next.invoiceNote ?? null]
+  );
   return next;
 }
 
-export const bills: Bill[] = globalThis.__sioBills ?? (globalThis.__sioBills = loadPersisted("bills", [] as Bill[]));
-
 export type CreateBillResult = { bill: Bill } | { error: string };
 
-export function createBill(input: {
+export async function createBill(input: {
   storeId: string;
   items: { productId: string; quantity: number; size?: string }[];
   paymentMode: "cash" | "upi" | "card" | "other";
   customerName?: string;
   customerPhone?: string;
   discountPercent?: number;
-}): CreateBillResult {
-  const store = stores.find((s) => s.id === input.storeId);
-  if (!store) return { error: "Store not found." };
+}): Promise<CreateBillResult> {
+  const storeRow = await queryOne<any>(`SELECT * FROM stores WHERE id = $1`, [input.storeId]);
+  if (!storeRow) return { error: "Store not found." };
+  const store = rowToStore(storeRow);
   if (input.items.length === 0) return { error: "Add at least one product to the bill." };
   if (input.discountPercent !== undefined && (input.discountPercent < 0 || input.discountPercent > 100)) {
     return { error: "Discount must be between 0 and 100%." };
@@ -1755,10 +1282,11 @@ export function createBill(input: {
   // would let two lines of 3 each both pass against a stock of 4, since
   // neither line's check sees the other's claim until stock is actually
   // decremented afterward.
+  const storeProducts = await getStoreProducts(input.storeId);
   const claimedByProduct = new Map<string, number>();
   const resolved: { product: Product; quantity: number; size?: string }[] = [];
   for (const line of input.items) {
-    const product = products.find((p) => p.id === line.productId && p.storeId === input.storeId);
+    const product = storeProducts.find((p) => p.id === line.productId);
     if (!product) return { error: `Product ${line.productId} not found in this store.` };
     if (!Number.isInteger(line.quantity) || line.quantity <= 0) {
       return { error: `Invalid quantity for "${product.title}".` };
@@ -1775,11 +1303,6 @@ export function createBill(input: {
     resolved.push({ product, quantity: line.quantity, size: line.size });
   }
 
-  for (const { product, quantity } of resolved) {
-    product.stockRemaining = (product.stockRemaining ?? 0) - quantity;
-  }
-  persist("products", products);
-
   const items: BillItem[] = resolved.map(({ product, quantity, size }) => ({
     productId: product.id,
     title: product.title,
@@ -1794,7 +1317,7 @@ export function createBill(input: {
   const discountAmount = discountPercent ? Math.round(subtotal * discountPercent) / 100 : 0;
   const taxableAmount = subtotal - discountAmount;
 
-  const settings = getBillingSettings(input.storeId);
+  const settings = await getBillingSettings(input.storeId);
   const isGst = settings.mode === "gst";
   const taxRatePercent = isGst ? settings.taxRatePercent : 0;
   const totalTax = isGst ? Math.round(taxableAmount * taxRatePercent) / 100 : 0;
@@ -1803,8 +1326,6 @@ export function createBill(input: {
   const grandTotal = Math.round((taxableAmount + totalTax) * 100) / 100;
 
   const invoiceNumber = `${isGst ? "GST" : "RCPT"}-${String(settings.nextInvoiceNumber).padStart(5, "0")}`;
-  billingSettingsStore[input.storeId] = { ...settings, nextInvoiceNumber: settings.nextInvoiceNumber + 1 };
-  persist("billingSettings", billingSettingsStore);
 
   const bill: Bill = {
     id: `bill-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
@@ -1830,46 +1351,80 @@ export function createBill(input: {
     status: "issued",
     createdAt: new Date().toISOString(),
   };
-  bills.unshift(bill);
-  persist("bills", bills);
+
+  // Stock deduction, invoice-counter bump, and the bill row itself all
+  // commit together - a crash partway through must never leave stock
+  // decremented with no bill to show for it (or vice versa).
+  await withTransaction(async (client) => {
+    for (const { product, quantity } of resolved) {
+      await client.query(`UPDATE products SET stock_remaining = COALESCE(stock_remaining, 0) - $2 WHERE id = $1`, [product.id, quantity]);
+    }
+    await client.query(
+      `INSERT INTO billing_settings (store_id, mode, gstin, tax_rate_percent, next_invoice_number, invoice_note)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (store_id) DO UPDATE SET next_invoice_number = $5`,
+      [input.storeId, settings.mode, settings.gstin ?? null, settings.taxRatePercent, settings.nextInvoiceNumber + 1, settings.invoiceNote ?? null]
+    );
+    await client.query(
+      `INSERT INTO bills (id, invoice_number, store_id, store_name, store_address, invoice_note, mode, gstin, tax_rate_percent, items, subtotal, discount_percent, discount_amount, cgst, sgst, grand_total, total_quantity, payment_mode, customer_name, customer_phone, status, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
+      [
+        bill.id, bill.invoiceNumber, bill.storeId, bill.storeName, bill.storeAddress ?? null, bill.invoiceNote ?? null,
+        bill.mode, bill.gstin ?? null, bill.taxRatePercent, JSON.stringify(bill.items), bill.subtotal, bill.discountPercent ?? null,
+        bill.discountAmount ?? null, bill.cgst, bill.sgst, bill.grandTotal, bill.totalQuantity, bill.paymentMode,
+        bill.customerName ?? null, bill.customerPhone ?? null, bill.status, bill.createdAt,
+      ]
+    );
+  });
+
+  // notifyWaitlistIfRestocked is never relevant here (a sale only ever
+  // decreases stock), matching the original in-memory createBill, which
+  // deducted stockRemaining directly rather than going through
+  // updateProduct().
+
   return { bill };
 }
 
-export function getBill(id: string): Bill | undefined {
-  return bills.find((b) => b.id === id);
+export async function getBill(id: string): Promise<Bill | undefined> {
+  const row = await queryOne<any>(`SELECT * FROM bills WHERE id = $1`, [id]);
+  return row ? rowToBill(row) : undefined;
 }
 
-export function getStoreBills(storeId: string): Bill[] {
-  return bills.filter((b) => b.storeId === storeId);
+export async function getStoreBills(storeId: string): Promise<Bill[]> {
+  const rows = await query<any>(`SELECT * FROM bills WHERE store_id = $1 ORDER BY created_at DESC`, [storeId]);
+  return rows.map(rowToBill);
 }
 
 // Restocks every line item - a void means the sale didn't actually happen
 // (rung up by mistake, or a full return), so the stock deducted at billing
 // time needs to come back for online listings to stay accurate. An
 // already-void bill can't be voided again.
-export function voidBill(id: string, reason: string): Bill | null {
-  const bill = bills.find((b) => b.id === id);
-  if (!bill || bill.status === "void") return null;
+export async function voidBill(id: string, reason: string): Promise<Bill | null> {
+  const row = await queryOne<any>(`SELECT * FROM bills WHERE id = $1`, [id]);
+  if (!row) return null;
+  const bill = rowToBill(row);
+  if (bill.status === "void") return null;
   // Goes through updateProduct (same as any other stock change) rather than
-  // mutating stockRemaining directly, so a void that brings a sold-out
+  // mutating stock_remaining directly, so a void that brings a sold-out
   // product back into stock also runs notifyWaitlistIfRestocked - shoppers
   // who joined the waitlist while this bill held the last unit otherwise
   // never heard it came back.
   for (const item of bill.items) {
-    const product = products.find((p) => p.id === item.productId);
-    if (product) updateProduct(product.id, { stockRemaining: (product.stockRemaining ?? 0) + item.quantity });
+    const productRow = await queryOne<any>(`SELECT stock_remaining FROM products WHERE id = $1`, [item.productId]);
+    if (productRow) {
+      await updateProduct(item.productId, { stockRemaining: (productRow.stock_remaining ?? 0) + item.quantity });
+    }
   }
+  await query(`UPDATE bills SET status = 'void', void_reason = $2 WHERE id = $1`, [id, reason]);
   bill.status = "void";
   bill.voidReason = reason;
-  persist("bills", bills);
   return bill;
 }
 
 // ---------------------------------------------------------------------
 // Billing: plans, subscriptions, GST invoices - matches
-// docs/04-monetization-and-billing.md and the `plans`/`subscriptions`/
-// `gst_invoices` tables in database/schema.sql. No real PSP (Razorpay/
-// Cashfree) is called - "subscribing" just flips the in-memory plan.
+// docs/04-monetization-and-billing.md. No real PSP (Razorpay/Cashfree) is
+// called - "subscribing" just flips the stored plan.
 // ---------------------------------------------------------------------
 export interface Plan {
   code: "lite" | "pro" | "max";
@@ -1904,43 +1459,40 @@ interface Subscription {
   currentPeriodEnd: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioSubscriptions: Record<string, Subscription> | undefined;
-}
-
-const INITIAL_SUBSCRIPTIONS: Record<string, Subscription> = {
-  "store-urban-vogue": { storeId: "store-urban-vogue", planCode: "pro", status: "active", currentPeriodEnd: futureDate(18) },
-  "store-south-silk-house": { storeId: "store-south-silk-house", planCode: "lite", status: "active", currentPeriodEnd: futureDate(9) },
-  "store-denim-district": { storeId: "store-denim-district", planCode: "max", status: "active", currentPeriodEnd: futureDate(25) },
-};
-export const subscriptions: Record<string, Subscription> = globalThis.__sioSubscriptions ?? (globalThis.__sioSubscriptions = loadPersisted("subscriptions", INITIAL_SUBSCRIPTIONS));
-
 function futureDate(days: number): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
-export function getSubscription(storeId: string): Subscription {
-  return subscriptions[storeId] ?? { storeId, planCode: "lite", status: "active", currentPeriodEnd: futureDate(30) };
+export async function getSubscription(storeId: string): Promise<Subscription> {
+  const row = await queryOne<any>(`SELECT * FROM subscriptions WHERE store_id = $1`, [storeId]);
+  if (!row) return { storeId, planCode: "lite", status: "active", currentPeriodEnd: futureDate(30) };
+  return {
+    storeId: row.store_id,
+    planCode: row.plan_code,
+    status: row.status,
+    currentPeriodEnd: new Date(row.current_period_end).toISOString(),
+  };
 }
 
-export function changePlan(storeId: string, planCode: Plan["code"]): Subscription | null {
+export async function changePlan(storeId: string, planCode: Plan["code"]): Promise<Subscription | null> {
   if (!PLANS.some((p) => p.code === planCode)) return null;
-  const sub = getSubscription(storeId);
-  sub.planCode = planCode;
-  sub.status = "active";
-  subscriptions[storeId] = sub;
-  persist("subscriptions", subscriptions);
-  return sub;
+  const current = await getSubscription(storeId);
+  const next: Subscription = { ...current, planCode, status: "active" };
+  await query(
+    `INSERT INTO subscriptions (store_id, plan_code, status, current_period_end) VALUES ($1,$2,$3,$4)
+     ON CONFLICT (store_id) DO UPDATE SET plan_code = $2, status = $3`,
+    [storeId, next.planCode, next.status, next.currentPeriodEnd]
+  );
+  return next;
 }
 
 // ---------------------------------------------------------------------
 // Store Boost: a direct answer to "how do I make money from traffic" - a
 // seller can pay to rank first in "Stores near you" and /shops for a fixed
 // window, turning the platform's one non-subscription revenue lever. Same
-// "flip an in-memory flag, no real payment processor" convention as
-// changePlan()/photo credits - a real deployment would redirect to a
-// payment gateway's checkout here instead.
+// "flip a flag, no real payment processor" convention as changePlan()/
+// photo credits - a real deployment would redirect to a payment gateway's
+// checkout here instead.
 // ---------------------------------------------------------------------
 export interface BoostPackage {
   days: number;
@@ -1958,16 +1510,17 @@ export function isBoostActive(boostedUntil?: string | null): boolean {
   return !!boostedUntil && new Date(boostedUntil).getTime() > Date.now();
 }
 
-export function boostStore(storeId: string, days: number): Store | null {
-  const store = stores.find((s) => s.id === storeId);
-  if (!store) return null;
+export async function boostStore(storeId: string, days: number): Promise<Store | null> {
+  const row = await queryOne<any>(`SELECT boosted_until FROM stores WHERE id = $1`, [storeId]);
+  if (!row) return null;
+  const currentBoostedUntil = row.boosted_until ? new Date(row.boosted_until).toISOString() : null;
   // Stacks onto any remaining boosted time rather than overwriting it, so
   // buying another package before the current one expires extends it
   // instead of wasting the days already paid for.
-  const base = isBoostActive(store.boostedUntil) ? new Date(store.boostedUntil!).getTime() : Date.now();
-  store.boostedUntil = new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
-  persist("stores", stores);
-  return store;
+  const base = isBoostActive(currentBoostedUntil) ? new Date(currentBoostedUntil!).getTime() : Date.now();
+  const boostedUntil = new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
+  const updatedRow = await queryOne<any>(`UPDATE stores SET boosted_until = $2 WHERE id = $1 RETURNING *`, [storeId, boostedUntil]);
+  return updatedRow ? rowToStore(updatedRow) : null;
 }
 
 // ---------------------------------------------------------------------
@@ -1976,7 +1529,7 @@ export function boostStore(storeId: string, days: number): Store | null {
 // paying the Google Cloud bill, so it's metered separately from SKU-based
 // subscription plans. A store spends 1 credit per successful enhancement;
 // "purchasing" a pack here is the same kind of demo stand-in as
-// changePlan()/billing subscribe - it flips the in-memory balance with no
+// changePlan()/billing subscribe - it flips the stored balance with no
 // real payment processor call. A real deployment would redirect to
 // Razorpay/Cashfree checkout here, same as billing/subscribe.
 // ---------------------------------------------------------------------
@@ -1992,37 +1545,35 @@ export const PHOTO_CREDIT_PACKAGES: PhotoCreditPackage[] = [
   { id: "pack-200", credits: 200, priceInr: 649 },
 ];
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioPhotoCredits: Record<string, number> | undefined;
-}
-
 // New stores start with a few free credits so sellers can try the paid
 // mannequin step once before deciding whether to buy more.
 const STARTER_PHOTO_CREDITS = 3;
 
-export const photoCredits: Record<string, number> =
-  globalThis.__sioPhotoCredits ?? (globalThis.__sioPhotoCredits = loadPersisted("photoCredits", {} as Record<string, number>));
-
-export function getPhotoCredits(storeId: string): number {
-  return photoCredits[storeId] ?? STARTER_PHOTO_CREDITS;
+export async function getPhotoCredits(storeId: string): Promise<number> {
+  const row = await queryOne<any>(`SELECT credits FROM photo_credits WHERE store_id = $1`, [storeId]);
+  return row?.credits ?? STARTER_PHOTO_CREDITS;
 }
 
-export function spendPhotoCredit(storeId: string): boolean {
-  const balance = getPhotoCredits(storeId);
+export async function spendPhotoCredit(storeId: string): Promise<boolean> {
+  const balance = await getPhotoCredits(storeId);
   if (balance <= 0) return false;
-  photoCredits[storeId] = balance - 1;
-  persist("photoCredits", photoCredits);
+  await query(
+    `INSERT INTO photo_credits (store_id, credits) VALUES ($1,$2) ON CONFLICT (store_id) DO UPDATE SET credits = $2`,
+    [storeId, balance - 1]
+  );
   return true;
 }
 
-export function buyPhotoCredits(storeId: string, packageId: string): number | null {
+export async function buyPhotoCredits(storeId: string, packageId: string): Promise<number | null> {
   const pack = PHOTO_CREDIT_PACKAGES.find((p) => p.id === packageId);
   if (!pack) return null;
-  const balance = getPhotoCredits(storeId);
-  photoCredits[storeId] = balance + pack.credits;
-  persist("photoCredits", photoCredits);
-  return photoCredits[storeId];
+  const balance = await getPhotoCredits(storeId);
+  const next = balance + pack.credits;
+  await query(
+    `INSERT INTO photo_credits (store_id, credits) VALUES ($1,$2) ON CONFLICT (store_id) DO UPDATE SET credits = $2`,
+    [storeId, next]
+  );
+  return next;
 }
 
 // Platform is registered in Maharashtra (state code 27) for this demo -
@@ -2043,15 +1594,16 @@ export interface GstInvoice {
   issuedAt: string;
 }
 
-function computeGstInvoice(storeId: string, taxableValue: number, placeOfSupplyStateCode: string, issuedAt: string): GstInvoice {
+async function computeGstInvoice(storeId: string, taxableValue: number, placeOfSupplyStateCode: string, issuedAt: string): Promise<GstInvoice> {
   const sameState = placeOfSupplyStateCode === PLATFORM_STATE_CODE;
   const cgst = sameState ? Math.round((taxableValue * GST_RATE) / 200) : 0;
   const sgst = sameState ? Math.round((taxableValue * GST_RATE) / 200) : 0;
   const igst = sameState ? 0 : Math.round((taxableValue * GST_RATE) / 100);
+  const sub = await getSubscription(storeId);
   return {
     id: `INV-${new Date(issuedAt).getFullYear()}-${Math.abs(hashCode(storeId + issuedAt)) % 100000}`,
     storeId,
-    planCode: subscriptions[storeId]?.planCode ?? "lite",
+    planCode: sub.planCode,
     taxableValue,
     placeOfSupplyStateCode,
     cgst,
@@ -2075,17 +1627,19 @@ const STORE_STATE_CODES: Record<string, string> = {
   "store-denim-district": "29",
 };
 
-export function getInvoicesForStore(storeId: string): GstInvoice[] {
-  const plan = PLANS.find((p) => p.code === getSubscription(storeId).planCode) ?? PLANS[0];
+export async function getInvoicesForStore(storeId: string): Promise<GstInvoice[]> {
+  const sub = await getSubscription(storeId);
+  const plan = PLANS.find((p) => p.code === sub.planCode) ?? PLANS[0];
   const stateCode = STORE_STATE_CODES[storeId] ?? PLATFORM_STATE_CODE;
-  return [1, 2, 3].map((monthsAgo) =>
-    computeGstInvoice(storeId, plan.monthlyPrice, stateCode, new Date(Date.now() - monthsAgo * 30 * 24 * 60 * 60 * 1000).toISOString())
+  return Promise.all(
+    [1, 2, 3].map((monthsAgo) =>
+      computeGstInvoice(storeId, plan.monthlyPrice, stateCode, new Date(Date.now() - monthsAgo * 30 * 24 * 60 * 60 * 1000).toISOString())
+    )
   );
 }
 
 // ---------------------------------------------------------------------
-// Analytics: mirrors `store_analytics_events` in database/schema.sql.
-// Tracks page views (with src/pos query params, for QR-vs-online
+// Analytics: tracks page views (with src/pos query params, for QR-vs-online
 // attribution per docs/03-multi-tenant-storefront.md §4) so the Seller
 // Portal's Analytics tab has real numbers instead of placeholders.
 // ---------------------------------------------------------------------
@@ -2096,30 +1650,39 @@ export interface AnalyticsEvent {
   occurredAt: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioAnalyticsEvents: AnalyticsEvent[] | undefined;
+function rowToAnalyticsEvent(r: any): AnalyticsEvent {
+  return {
+    storeId: r.store_id,
+    eventType: r.event_type,
+    qrPosition: r.qr_position ?? undefined,
+    occurredAt: new Date(r.occurred_at).toISOString(),
+  };
 }
 
-export const analyticsEvents: AnalyticsEvent[] = globalThis.__sioAnalyticsEvents ?? (globalThis.__sioAnalyticsEvents = loadPersisted("analyticsEvents", [] as AnalyticsEvent[]));
-
-// Hard cap independent of the API route's rate limiting - keeps memory and
-// the persisted db.json bounded even if that limit is bypassed (e.g. spread
-// across many IPs), by dropping the oldest events once the log gets large.
+// Hard cap independent of the API route's rate limiting - keeps the table
+// bounded even if that limit is bypassed (e.g. spread across many IPs), by
+// dropping the oldest events once the log gets large.
 const MAX_ANALYTICS_EVENTS = 20_000;
 
-export function trackPageView(storeId: string, qrPosition?: string) {
+export async function trackPageView(storeId: string, qrPosition?: string): Promise<void> {
   const now = new Date().toISOString();
-  analyticsEvents.push({ storeId, eventType: "page_view", occurredAt: now });
-  if (qrPosition) analyticsEvents.push({ storeId, eventType: "qr_scan", qrPosition, occurredAt: now });
-  if (analyticsEvents.length > MAX_ANALYTICS_EVENTS) {
-    analyticsEvents.splice(0, analyticsEvents.length - MAX_ANALYTICS_EVENTS);
+  await query(`INSERT INTO analytics_events (store_id, event_type, occurred_at) VALUES ($1, 'page_view', $2)`, [storeId, now]);
+  if (qrPosition) {
+    await query(`INSERT INTO analytics_events (store_id, event_type, qr_position, occurred_at) VALUES ($1, 'qr_scan', $2, $3)`, [storeId, qrPosition, now]);
   }
-  persist("analyticsEvents", analyticsEvents);
+  const countRow = await queryOne<any>(`SELECT COUNT(*)::int AS count FROM analytics_events`);
+  const overflow = (countRow?.count ?? 0) - MAX_ANALYTICS_EVENTS;
+  if (overflow > 0) {
+    await query(
+      `DELETE FROM analytics_events WHERE id IN (SELECT id FROM analytics_events ORDER BY occurred_at ASC, id ASC LIMIT $1)`,
+      [overflow]
+    );
+  }
 }
 
-export function getStoreAnalytics(storeId: string) {
-  const events = analyticsEvents.filter((e) => e.storeId === storeId);
+export async function getStoreAnalytics(storeId: string) {
+  const rows = await query<any>(`SELECT * FROM analytics_events WHERE store_id = $1`, [storeId]);
+  const events = rows.map(rowToAnalyticsEvent);
   const pageViews = events.filter((e) => e.eventType === "page_view");
   const qrScans = events.filter((e) => e.eventType === "qr_scan");
 
@@ -2154,10 +1717,10 @@ export function getStoreAnalytics(storeId: string) {
 // function/route since the two answer different questions ("who's looking"
 // vs. "who's actually buying") and existed independently before this was
 // added.
-export function getSalesAnalytics(storeId: string) {
+export async function getSalesAnalytics(storeId: string) {
   // Void bills didn't result in an actual sale - excluded from every
   // figure here, same as they'd be excluded from a real books/ledger view.
-  const storeBills = getStoreBills(storeId).filter((b) => b.status === "issued");
+  const storeBills = (await getStoreBills(storeId)).filter((b) => b.status === "issued");
 
   const totalRevenue = storeBills.reduce((sum, b) => sum + b.grandTotal, 0);
   const totalBills = storeBills.length;
@@ -2301,166 +1864,26 @@ export interface Review {
   createdAt: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioReviews: Review[] | undefined;
+function rowToReview(r: any): Review {
+  return {
+    id: r.id,
+    productId: r.product_id,
+    authorName: r.author_name,
+    rating: r.rating,
+    title: r.title ?? undefined,
+    comment: r.comment,
+    verifiedPurchase: r.verified_purchase,
+    createdAt: new Date(r.created_at).toISOString(),
+  };
 }
 
-const SEED_REVIEWS: Review[] = [
-  {
-    id: "rev-1",
-    productId: "p-uv-1",
-    authorName: "Priya S.",
-    rating: 5,
-    title: "Gorgeous saree, exactly as pictured",
-    comment: "The zari work is stunning and the fabric drapes beautifully. Got so many compliments at a wedding. Delivery from the store was quick too.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-15T10:00:00.000Z",
-  },
-  {
-    id: "rev-2",
-    productId: "p-uv-1",
-    authorName: "Ananya R.",
-    rating: 4,
-    title: "Beautiful but runs slightly heavy",
-    comment: "Color and border are exactly as shown. Only reason for 4 stars is the saree is a bit heavier than I expected, but great for winter functions.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-22T14:30:00.000Z",
-  },
-  {
-    id: "rev-3",
-    productId: "p-uv-2",
-    authorName: "Meera K.",
-    rating: 5,
-    title: "Perfect everyday kurti",
-    comment: "Very comfortable cotton fabric, true to size, and the mustard color is vibrant without being loud. Ordering another one in a different color.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-10T09:15:00.000Z",
-  },
-  {
-    id: "rev-4",
-    productId: "p-uv-2",
-    authorName: "Kavya J.",
-    rating: 4,
-    comment: "Good quality for the price. Embroidery on the yoke is neat. Runs true to size.",
-    verifiedPurchase: false,
-    createdAt: "2026-08-29T18:45:00.000Z",
-  },
-  {
-    id: "rev-5",
-    productId: "p-dd-1",
-    authorName: "Rohan M.",
-    rating: 5,
-    title: "Best fit I've found",
-    comment: "Finally a slim fit that doesn't feel restrictive. The stretch fabric moves with you. Ordered a second pair in a different wash.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-18T11:20:00.000Z",
-  },
-  {
-    id: "rev-6",
-    productId: "p-dd-1",
-    authorName: "Arjun P.",
-    rating: 3,
-    comment: "Decent jeans but the color faded slightly after the second wash. Fit is great though.",
-    verifiedPurchase: true,
-    createdAt: "2026-09-01T08:00:00.000Z",
-  },
-  {
-    id: "rev-7",
-    productId: "p-ssh-1",
-    authorName: "Lakshmi V.",
-    rating: 5,
-    title: "Authentic Kanjivaram quality",
-    comment: "You can tell this is genuine pure silk - the weight, the sheen, the zari. Worth every rupee. Packaging was also very secure.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-12T16:00:00.000Z",
-  },
-  {
-    id: "rev-8",
-    productId: "p-ccs-1",
-    authorName: "Simran K.",
-    rating: 5,
-    title: "Wholesale-market quality, retail convenience",
-    comment: "Reserved it online and picked it up the same evening - the zari work is even better in person. Great for my sister's reception.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-27T12:10:00.000Z",
-  },
-  {
-    id: "rev-9",
-    productId: "p-ccs-2",
-    authorName: "Neha A.",
-    rating: 4,
-    comment: "Lightweight and easy to drape for daily office wear. Color is slightly brighter in person than the photo, in a good way.",
-    verifiedPurchase: false,
-    createdAt: "2026-09-02T09:40:00.000Z",
-  },
-  {
-    id: "rev-10",
-    productId: "p-cz-1",
-    authorName: "Fatima S.",
-    rating: 5,
-    title: "Heirloom-quality zardozi",
-    comment: "The pearl and zardozi work is hand-done and it shows. Tried it on at the store before deciding - fit exactly as expected.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-19T15:20:00.000Z",
-  },
-  {
-    id: "rev-11",
-    productId: "p-cz-2",
-    authorName: "Ayesha M.",
-    rating: 4,
-    comment: "Beautiful embroidery on the neckline. Runs slightly large, so size down if you're between sizes.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-30T17:05:00.000Z",
-  },
-  {
-    id: "rev-12",
-    productId: "p-ss-1",
-    authorName: "Karthik R.",
-    rating: 5,
-    title: "Comfortable all day on campus",
-    comment: "Cushioning is great for walking between classes all day. Sizing runs true - ordered my usual size and it fit perfectly.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-24T13:30:00.000Z",
-  },
-  {
-    id: "rev-13",
-    productId: "p-ss-2",
-    authorName: "Vivek T.",
-    rating: 4,
-    comment: "Really warm and the oversized fit is exactly what I wanted. Fabric feels slightly thinner than expected for the price.",
-    verifiedPurchase: false,
-    createdAt: "2026-09-03T10:15:00.000Z",
-  },
-  {
-    id: "rev-14",
-    productId: "p-bh-1",
-    authorName: "Ritika D.",
-    rating: 5,
-    title: "Genuine handloom, worth the trip",
-    comment: "You can feel the difference from machine-made jamdani immediately. Reserved it and the shopkeeper had it ready with the blouse piece matched.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-21T11:45:00.000Z",
-  },
-  {
-    id: "rev-15",
-    productId: "p-bh-2",
-    authorName: "Sohini B.",
-    rating: 5,
-    comment: "My go-to for everyday tant sarees now. Breathable even in Kolkata's humidity, and the border doesn't fray after multiple washes.",
-    verifiedPurchase: true,
-    createdAt: "2026-08-31T08:50:00.000Z",
-  },
-];
-
-export const reviews: Review[] = globalThis.__sioReviews ?? (globalThis.__sioReviews = loadPersisted("reviews", SEED_REVIEWS));
-
-export function getProductReviews(productId: string): Review[] {
-  return reviews.filter((r) => r.productId === productId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+export async function getProductReviews(productId: string): Promise<Review[]> {
+  const rows = await query<any>(`SELECT * FROM reviews WHERE product_id = $1 ORDER BY created_at DESC`, [productId]);
+  return rows.map(rowToReview);
 }
 
-export function getRatingSummary(productId: string) {
-  const productReviews = getProductReviews(productId);
+export async function getRatingSummary(productId: string) {
+  const productReviews = await getProductReviews(productId);
   const count = productReviews.length;
   const average = count === 0 ? 0 : Math.round((productReviews.reduce((sum, r) => sum + r.rating, 0) / count) * 10) / 10;
   const breakdown = [5, 4, 3, 2, 1].map((star) => ({
@@ -2470,10 +1893,28 @@ export function getRatingSummary(productId: string) {
   return { average, count, breakdown };
 }
 
+export async function addReview(productId: string, input: { authorName: string; rating: number; title?: string; comment: string }): Promise<Review> {
+  const review: Review = {
+    id: `rev-custom-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    productId,
+    authorName: input.authorName || "Anonymous",
+    rating: Math.min(5, Math.max(1, input.rating)),
+    title: input.title,
+    comment: input.comment,
+    verifiedPurchase: false,
+    createdAt: new Date().toISOString(),
+  };
+  await query(
+    `INSERT INTO reviews (id, product_id, author_name, rating, title, comment, verified_purchase, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [review.id, review.productId, review.authorName, review.rating, review.title ?? null, review.comment, review.verifiedPurchase, review.createdAt]
+  );
+  return review;
+}
+
 // ---------------------------------------------------------------------
 // Store reviews - a shopper rating the shop itself (service, authenticity,
 // how the pickup/reservation experience went), not any one product. Kept
-// as its own list rather than folded into `reviews` above since a shop
+// as its own table rather than folded into `reviews` above since a shop
 // review has no productId to hang off of.
 // ---------------------------------------------------------------------
 export interface StoreReview {
@@ -2485,47 +1926,35 @@ export interface StoreReview {
   createdAt: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioStoreReviews: StoreReview[] | undefined;
+function rowToStoreReview(r: any): StoreReview {
+  return {
+    id: r.id,
+    storeId: r.store_id,
+    authorName: r.author_name,
+    rating: r.rating,
+    comment: r.comment,
+    createdAt: new Date(r.created_at).toISOString(),
+  };
 }
 
-const SEED_STORE_REVIEWS: StoreReview[] = [
-  {
-    id: "storerev-1",
-    storeId: "store-urban-vogue",
-    authorName: "Priya S.",
-    rating: 5,
-    comment: "Reserved online and the staff had everything ready when I walked in. Easy, no-pressure experience.",
-    createdAt: "2026-08-16T12:00:00.000Z",
-  },
-  {
-    id: "storerev-2",
-    storeId: "store-urban-vogue",
-    authorName: "Rohan M.",
-    rating: 4,
-    comment: "Good selection and friendly staff. Store gets crowded on weekends so go on a weekday if you can.",
-    createdAt: "2026-08-25T16:30:00.000Z",
-  },
-];
-
-export const storeReviews: StoreReview[] = globalThis.__sioStoreReviews ?? (globalThis.__sioStoreReviews = loadPersisted("storeReviews", SEED_STORE_REVIEWS));
-
-export function getStoreReviews(storeId: string): StoreReview[] {
-  return storeReviews.filter((r) => r.storeId === storeId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+export async function getStoreReviews(storeId: string): Promise<StoreReview[]> {
+  const rows = await query<any>(`SELECT * FROM store_reviews WHERE store_id = $1 ORDER BY created_at DESC`, [storeId]);
+  return rows.map(rowToStoreReview);
 }
 
-export function addStoreReview(storeId: string, input: { authorName: string; rating: number; comment: string }): StoreReview {
+export async function addStoreReview(storeId: string, input: { authorName: string; rating: number; comment: string }): Promise<StoreReview> {
   const review: StoreReview = {
-    id: `storerev-custom-${Date.now().toString(36)}`,
+    id: `storerev-custom-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     storeId,
     authorName: input.authorName || "Anonymous",
     rating: Math.min(5, Math.max(1, input.rating)),
     comment: input.comment,
     createdAt: new Date().toISOString(),
   };
-  storeReviews.unshift(review);
-  persist("storeReviews", storeReviews);
+  await query(
+    `INSERT INTO store_reviews (id, store_id, author_name, rating, comment, created_at) VALUES ($1,$2,$3,$4,$5,$6)`,
+    [review.id, review.storeId, review.authorName, review.rating, review.comment, review.createdAt]
+  );
   return review;
 }
 
@@ -2537,46 +1966,39 @@ export function addStoreReview(storeId: string, input: { authorName: string; rat
 // rather than any one item) into a single number, since a shopper reading
 // "4.6 stars" on a store page doesn't think in terms of two separate
 // rating systems.
-export function getStoreRatingSummary(storeId: string): { average: number; count: number; breakdown: { star: number; count: number }[] } {
-  const storeProductIds = new Set(getStoreProducts(storeId).map((p) => p.id));
-  const ratings = [...reviews.filter((r) => storeProductIds.has(r.productId)), ...getStoreReviews(storeId)].map((r) => r.rating);
+export async function getStoreRatingSummary(storeId: string): Promise<{ average: number; count: number; breakdown: { star: number; count: number }[] }> {
+  const storeProducts = await getStoreProducts(storeId);
+  const productIds = storeProducts.map((p) => p.id);
+  const productRatingRows = productIds.length
+    ? await query<any>(`SELECT rating FROM reviews WHERE product_id = ANY($1)`, [productIds])
+    : [];
+  const storeReviewList = await getStoreReviews(storeId);
+  const ratings = [...productRatingRows.map((r) => r.rating as number), ...storeReviewList.map((r) => r.rating)];
   const count = ratings.length;
   const average = count === 0 ? 0 : Math.round((ratings.reduce((sum, r) => sum + r, 0) / count) * 10) / 10;
   const breakdown = [5, 4, 3, 2, 1].map((star) => ({ star, count: ratings.filter((r) => r === star).length }));
   return { average, count, breakdown };
 }
 
-export function addReview(productId: string, input: { authorName: string; rating: number; title?: string; comment: string }): Review {
-  const review: Review = {
-    id: `rev-custom-${Date.now().toString(36)}`,
-    productId,
-    authorName: input.authorName || "Anonymous",
-    rating: Math.min(5, Math.max(1, input.rating)),
-    title: input.title,
-    comment: input.comment,
-    verifiedPurchase: false,
-    createdAt: new Date().toISOString(),
-  };
-  reviews.unshift(review);
-  persist("reviews", reviews);
-  return review;
-}
-
 // Similar products - same gender + subCategory, excluding the product itself,
 // nearest-priced first so recommendations feel relevant rather than random.
-export function getSimilarProducts(productId: string, limit = 4) {
-  const product = products.find((p) => p.id === productId);
-  if (!product) return [];
+export async function getSimilarProducts(productId: string, limit = 4) {
+  const productRow = await queryOne<any>(`SELECT * FROM products WHERE id = $1`, [productId]);
+  if (!productRow) return [];
+  const product = rowToProduct(productRow);
 
-  const storesById = new Map(stores.map((s) => [s.id, s]));
+  const rows = await query<any>(
+    `SELECT p.*, s.name AS _store_name FROM products p
+     JOIN stores s ON s.id = p.store_id
+     WHERE p.id != $1 AND p.gender = $2 AND p.sub_category = $3 AND s.status = 'active'`,
+    [productId, product.gender, product.subCategory]
+  );
 
-  return products
-    .filter((p) => p.id !== productId)
-    .filter((p) => p.gender === product.gender && p.subCategory === product.subCategory)
-    .filter((p) => storesById.get(p.storeId)?.status === "active")
+  return rows
+    .map((r) => ({ ...rowToProduct(r), storeName: r._store_name as string }))
     .sort((a, b) => Math.abs(a.basePrice - product.basePrice) - Math.abs(b.basePrice - product.basePrice))
     .slice(0, limit)
-    .map(({ costPrice: _costPrice, ...p }) => ({ ...p, storeName: storesById.get(p.storeId)?.name ?? "" }));
+    .map(({ costPrice: _costPrice, ...p }) => p);
 }
 
 // A subcategory is either "the outfit" or "the accessory" for its gender -
@@ -2597,28 +2019,38 @@ const ACCESSORY_SUBCATEGORIES: Record<Gender, string[]> = {
 // rarely need to fall back past the first tier; this one seed store per
 // market/city does, every time, so the fallback is what actually makes the
 // section appear at all in this demo.
-export function getComplementaryProducts(productId: string, limit = 4) {
-  const product = products.find((p) => p.id === productId);
-  if (!product) return [];
-  const store = stores.find((s) => s.id === product.storeId);
-  if (!store) return [];
+export async function getComplementaryProducts(productId: string, limit = 4) {
+  const productRow = await queryOne<any>(`SELECT * FROM products WHERE id = $1`, [productId]);
+  if (!productRow) return [];
+  const product = rowToProduct(productRow);
+  const storeRow = await queryOne<any>(`SELECT * FROM stores WHERE id = $1`, [product.storeId]);
+  if (!storeRow) return [];
+  const store = rowToStore(storeRow);
 
   const targetSubcats = ACCESSORY_SUBCATEGORIES[product.gender].includes(product.subCategory)
     ? CATEGORY_TREE.find((c) => c.value === product.gender)!.subCategories.filter((sc) => !ACCESSORY_SUBCATEGORIES[product.gender].includes(sc))
     : ACCESSORY_SUBCATEGORIES[product.gender];
 
-  const storesById = new Map(stores.map((s) => [s.id, s]));
-  const candidates = products
-    .filter((p) => p.storeId !== product.storeId)
-    .filter((p) => p.gender === product.gender && targetSubcats.includes(p.subCategory))
-    .filter((p) => storesById.get(p.storeId)?.status === "active")
-    .map((p) => ({ ...p, storeName: storesById.get(p.storeId)?.name ?? "", _otherStore: storesById.get(p.storeId) }));
+  if (targetSubcats.length === 0) return [];
+
+  const rows = await query<any>(
+    `SELECT p.*, s.name AS _store_name, s.local_market AS _local_market, s.city AS _city
+     FROM products p JOIN stores s ON s.id = p.store_id
+     WHERE p.store_id != $1 AND p.gender = $2 AND p.sub_category = ANY($3) AND s.status = 'active'`,
+    [product.storeId, product.gender, targetSubcats]
+  );
+  const candidates = rows.map((r) => ({
+    ...rowToProduct(r),
+    storeName: r._store_name as string,
+    _localMarket: r._local_market as string,
+    _city: r._city as string,
+  }));
 
   const tiers = [
-    candidates.filter((p) => p._otherStore?.localMarket === store.localMarket),
-    candidates.filter((p) => p._otherStore?.city === store.city),
+    candidates.filter((p) => p._localMarket === store.localMarket),
+    candidates.filter((p) => p._city === store.city),
     candidates,
   ];
   const pool = tiers.find((t) => t.length > 0) ?? [];
-  return pool.slice(0, limit).map(({ _otherStore, costPrice: _costPrice, ...p }) => p);
+  return pool.slice(0, limit).map(({ _localMarket, _city, costPrice: _costPrice, ...p }) => p);
 }

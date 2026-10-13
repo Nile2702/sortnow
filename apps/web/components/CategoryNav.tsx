@@ -1,11 +1,13 @@
-import { categories, stores } from "../lib/seed-data";
+import { getAllCategories, getAllStores } from "../lib/seed-data";
 
-// Reads straight from the in-process category map instead of making an HTTP
-// round-trip to this app's own API route - see lib/theme.ts for why a
-// server component self-fetching its own deployment is a trap on Vercel.
+// Reads straight from the database instead of making an HTTP round-trip to
+// this app's own API route - see lib/theme.ts for why a server component
+// self-fetching its own deployment is a trap on Vercel.
 async function fetchCategories(storeId: string) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === storeId || s.slug === storeId);
   if (!store) return [];
+  const categories = await getAllCategories();
   return categories[store.id] ?? [];
 }
 

@@ -8,8 +8,8 @@ export async function GET(req: NextRequest) {
   const phone = new URL(req.url).searchParams.get("phone");
   if (!phone) return NextResponse.json({ error: "invalid_request", message: "phone is required." }, { status: 400 });
 
-  const shopper = findShopperByPhone(phone);
+  const shopper = await findShopperByPhone(phone);
   if (!shopper) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  return NextResponse.json({ referralCode: shopper.referralCode, count: getReferralCount(shopper.id) });
+  return NextResponse.json({ referralCode: shopper.referralCode, count: await getReferralCount(shopper.id) });
 }

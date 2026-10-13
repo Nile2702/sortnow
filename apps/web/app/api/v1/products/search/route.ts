@@ -15,6 +15,6 @@ export async function GET(req: NextRequest) {
   const sort = searchParams.get("sort") ?? undefined;
   const q = searchParams.get("q") ?? undefined;
 
-  const results = searchProducts({ pincode, lat, lng, radiusKm, gender, subCategory, minPrice, maxPrice, size, sort, q });
+  const results = await searchProducts({ pincode, lat, lng, radiusKm, gender, subCategory, minPrice, maxPrice, size, sort, q });
   return NextResponse.json(results);
 }

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const store = verifySellerLogin(storeSlug, password);
+  const store = await verifySellerLogin(storeSlug, password);
   if (!store) {
     return NextResponse.json({ error: "invalid_credentials" }, { status: 401 });
   }

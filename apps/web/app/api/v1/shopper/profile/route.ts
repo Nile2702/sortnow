@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { shopper, isNewCustomer } = upsertShopper({
+  const { shopper, isNewCustomer } = await upsertShopper({
     name: body.name,
     phone: body.phone,
     email: body.email || undefined,

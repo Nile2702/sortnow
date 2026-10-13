@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { updateProduct, deleteProduct, products, stores } from "../../../../../../lib/seed-data";
+import { updateProduct, deleteProduct, getAllProducts, getAllStores } from "../../../../../../lib/seed-data";
 import { requireSellerForStore } from "../../../../../../lib/auth/require-seller";
 import { validateProductInput } from "../../../../../../lib/validate-product";
 
@@ -9,8 +9,10 @@ import { validateProductInput } from "../../../../../../lib/validate-product";
 // never meant to reach a shopper), which left the seller's own Edit page
 // with no way to see or re-save a cost price it had fetched from there.
 export async function GET(_req: NextRequest, { params }: { params: { productId: string } }) {
+  const products = await getAllProducts();
   const existing = products.find((p) => p.id === params.productId);
   if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const stores = await getAllStores();
   const existingStore = stores.find((s) => s.id === existing.storeId);
   const denied = requireSellerForStore(existing.storeId, existingStore?.slug);
   if (denied) return denied;
@@ -18,8 +20,10 @@ export async function GET(_req: NextRequest, { params }: { params: { productId: 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { productId: string } }) {
+  const products = await getAllProducts();
   const existing = products.find((p) => p.id === params.productId);
   if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const stores = await getAllStores();
   const existingStore = stores.find((s) => s.id === existing.storeId);
   const denied = requireSellerForStore(existing.storeId, existingStore?.slug);
   if (denied) return denied;
@@ -31,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { productId:
     return NextResponse.json({ error: "invalid_input", errors }, { status: 400 });
   }
 
-  const updated = updateProduct(params.productId, data);
+  const updated = await updateProduct(params.productId, data);
   if (!updated) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   revalidateTag(`products:${updated.storeId}`);
@@ -42,13 +46,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { productId:
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { productId: string } }) {
+  const products = await getAllProducts();
   const existing = products.find((p) => p.id === params.productId);
   if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const stores = await getAllStores();
   const existingStore = stores.find((s) => s.id === existing.storeId);
   const denied = requireSellerForStore(existing.storeId, existingStore?.slug);
   if (denied) return denied;
 
-  const ok = deleteProduct(params.productId);
+  const ok = await deleteProduct(params.productId);
   if (!ok || !existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   revalidateTag(`products:${existing.storeId}`);

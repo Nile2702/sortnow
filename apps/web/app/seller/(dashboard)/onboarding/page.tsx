@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 
-const STEPS = ["Business Details", "GSTIN Verification", "PAN Verification", "Bank/UPI Payout", "Done"];
+const STEPS = ["Business Details", "GSTIN", "PAN", "Bank/UPI Payout", "Done"];
 
 export default function OnboardingPage() {
   const { store } = useSellerStore();
@@ -11,43 +11,52 @@ export default function OnboardingPage() {
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("proprietorship");
   const [gstin, setGstin] = useState("");
-  const [gstinStatus, setGstinStatus] = useState<"idle" | "checking" | "verified" | "skipped">("idle");
   const [pan, setPan] = useState("");
-  const [panStatus, setPanStatus] = useState<"idle" | "checking" | "verified">("idle");
   const [upi, setUpi] = useState("");
-  const [upiStatus, setUpiStatus] = useState<"idle" | "checking" | "verified">("idle");
-  const [activating, setActivating] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Only a "draft" store (just signed up, not yet visible to shoppers)
-  // needs activating - the pre-seeded demo stores are already "active" and
-  // are just replaying this flow for its own sake, so skip the call there.
+  // Only a "draft" store (just signed up, not yet submitted) needs
+  // submitting - the pre-seeded demo stores are already "active" and are
+  // just replaying this flow for its own sake, so skip the call there.
+  //
+  // This does NOT verify anything and does NOT activate the store - there
+  // is no real GSTIN/PAN/UPI/KYC provider wired up. It just records what
+  // the seller typed in and moves the store to "pending_review", where it
+  // sits until the site owner manually looks it over and approves it (see
+  // app/admin/sellers). See docs/05-onboarding-and-compliance.md.
   async function completeOnboarding() {
-    if (store?.status === "draft") {
-      setActivating(true);
-      await fetch(`/api/v1/seller/stores/${store.id}/activate`, { method: "POST" }).catch(() => {});
-      setActivating(false);
+    if (store?.status !== "draft") {
+      setStep(4);
+      return;
     }
-    setStep(4);
-  }
-
-  function verifyGstin() {
-    setGstinStatus("checking");
-    setTimeout(() => setGstinStatus("verified"), 1200);
-  }
-  function verifyPan() {
-    setPanStatus("checking");
-    setTimeout(() => setPanStatus("verified"), 1000);
-  }
-  function verifyUpi() {
-    setUpiStatus("checking");
-    setTimeout(() => setUpiStatus("verified"), 900);
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch(`/api/v1/seller/stores/${store.id}/submit-for-review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gstin, pan, upiVpa: upi }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setSubmitError(body?.message || "Couldn't submit your details. Please try again.");
+        return;
+      }
+      setStep(4);
+    } catch {
+      setSubmitError("Couldn't reach the server. Please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Merchant Onboarding</h1>
       <p style={{ color: "#64748b", marginBottom: 24 }}>
-        Mocked GSTIN/PAN/UPI verification per docs/05-onboarding-and-compliance.md — no real KYC provider is called in this demo.
+        We don't verify GSTIN/PAN/UPI automatically for the pilot - the site owner reviews every new seller's details by hand before the
+        store goes live. See docs/05-onboarding-and-compliance.md.
       </p>
 
       {/* Step indicator */}
@@ -83,72 +92,62 @@ export default function OnboardingPage() {
         {step === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <p style={{ fontSize: 13, color: "#64748b" }}>
-              Optional if you're under the GST registration threshold (₹40L turnover for goods) — you can still sell without a GSTIN, but
-              won't be able to issue tax invoices.
+              Optional if you're under the GST registration threshold (₹40L turnover for goods) - you can still sell without a GSTIN, but
+              won't be able to issue tax invoices. We don't verify this automatically; the site owner checks it by hand before approving
+              your store.
             </p>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>GSTIN</label>
-              <div style={{ display: "flex", gap: 10 }}>
-                <input
-                  value={gstin}
-                  onChange={(e) => setGstin(e.target.value.toUpperCase())}
-                  maxLength={15}
-                  style={{ ...fieldStyle(), flex: 1, minWidth: 0 }}
-                  placeholder="27ABCDE1234F1Z5"
-                />
-                <button onClick={verifyGstin} disabled={gstin.length !== 15 || gstinStatus === "checking"} style={verifyBtnStyle()}>
-                  {gstinStatus === "checking" ? "Checking…" : "Verify"}
-                </button>
-              </div>
-              {gstinStatus === "verified" && <StatusBadge ok text="GSTIN verified — Maharashtra, Active" />}
+              <input
+                value={gstin}
+                onChange={(e) => setGstin(e.target.value.toUpperCase())}
+                maxLength={15}
+                style={fieldStyle()}
+                placeholder="27ABCDE1234F1Z5"
+              />
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setStep(2)} style={{ ...verifyBtnStyle(), background: "#fff", color: "#64748b", border: "1px solid #e2e8f0" }}>
                 Skip for now
               </button>
-              <NextButton disabled={gstinStatus !== "verified"} onClick={() => setStep(2)} />
+              <NextButton disabled={gstin.length > 0 && gstin.length !== 15} onClick={() => setStep(2)} />
             </div>
           </div>
         )}
 
         {step === 2 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <p style={{ fontSize: 13, color: "#64748b" }}>
+              We don't verify this automatically either - just type it in and the site owner will check it against your business records
+              before approving your store.
+            </p>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>PAN</label>
-              <div style={{ display: "flex", gap: 10 }}>
-                <input value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} maxLength={10} style={{ ...fieldStyle(), flex: 1, minWidth: 0 }} placeholder="ABCDE1234F" />
-                <button onClick={verifyPan} disabled={pan.length !== 10 || panStatus === "checking"} style={verifyBtnStyle()}>
-                  {panStatus === "checking" ? "Checking…" : "Verify"}
-                </button>
-              </div>
-              {panStatus === "verified" && <StatusBadge ok text="PAN verified — name matches business records" />}
+              <input value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} maxLength={10} style={fieldStyle()} placeholder="ABCDE1234F" />
             </div>
-            <NextButton disabled={panStatus !== "verified"} onClick={() => setStep(3)} />
+            <NextButton disabled={pan.length !== 10} onClick={() => setStep(3)} />
           </div>
         )}
 
         {step === 3 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <p style={{ fontSize: 13, color: "#64748b" }}>Where your payouts will be sent, once your store is approved and you start making sales.</p>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>UPI VPA for payouts</label>
-              <div style={{ display: "flex", gap: 10 }}>
-                <input value={upi} onChange={(e) => setUpi(e.target.value)} style={{ ...fieldStyle(), flex: 1, minWidth: 0 }} placeholder="yourbusiness@okhdfcbank" />
-                <button onClick={verifyUpi} disabled={!upi.includes("@") || upiStatus === "checking"} style={verifyBtnStyle()}>
-                  {upiStatus === "checking" ? "Verifying…" : "Verify"}
-                </button>
-              </div>
-              {upiStatus === "verified" && <StatusBadge ok text="Penny-drop successful — account active" />}
+              <input value={upi} onChange={(e) => setUpi(e.target.value)} style={fieldStyle()} placeholder="yourbusiness@okhdfcbank" />
             </div>
-            <NextButton disabled={upiStatus !== "verified" || activating} onClick={completeOnboarding} label={activating ? "Activating your store…" : "Complete Onboarding"} />
+            {submitError && <p style={{ color: "#e11d48", fontSize: 13, margin: 0 }}>{submitError}</p>}
+            <NextButton disabled={!upi.includes("@") || submitting} onClick={completeOnboarding} label={submitting ? "Submitting…" : "Submit for review"} />
           </div>
         )}
 
         {step === 4 && (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>You're all set!</h2>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Your details are submitted</h2>
             <p style={{ color: "#64748b", fontSize: 14, marginBottom: 20 }}>
-              Next: pick a plan, customize your storefront in Theme Studio, and add your first products.
+              We'll review your GSTIN/PAN/UPI details and activate your store shortly - you'll be notified once it's live. In the meantime
+              you can set up your storefront and add your first products.
             </p>
             <a
               href="/seller"
@@ -190,13 +189,5 @@ function NextButton({ onClick, disabled, label = "Continue" }: { onClick: () => 
     >
       {label}
     </button>
-  );
-}
-
-function StatusBadge({ ok, text }: { ok: boolean; text: string }) {
-  return (
-    <div style={{ marginTop: 8, fontSize: 13, color: ok ? "#16a34a" : "#e11d48", display: "flex", alignItems: "center", gap: 6 }}>
-      <span>{ok ? "✓" : "✕"}</span> {text}
-    </div>
   );
 }

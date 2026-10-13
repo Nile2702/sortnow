@@ -4,6 +4,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "cdn.sortitout.in" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
     ],
   },
   async headers() {

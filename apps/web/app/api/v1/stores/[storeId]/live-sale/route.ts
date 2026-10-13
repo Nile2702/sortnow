@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { stores, setStoreLiveSale, clearStoreLiveSale } from "../../../../../../lib/seed-data";
+import { getAllStores, setStoreLiveSale, clearStoreLiveSale } from "../../../../../../lib/seed-data";
 import { requireSellerForStore } from "../../../../../../lib/auth/require-seller";
 
 export async function PATCH(req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const denied = requireSellerForStore(store.id, store.slug);
@@ -23,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { storeId: s
     return NextResponse.json({ error: "invalid_input", message: "durationHours must be a number between 0 and 720 (30 days)" }, { status: 400 });
   }
 
-  const liveSale = setStoreLiveSale(store.id, { headline: headline.trim(), discountLabel: discountLabel.trim(), durationHours: hours });
+  const liveSale = await setStoreLiveSale(store.id, { headline: headline.trim(), discountLabel: discountLabel.trim(), durationHours: hours });
 
   revalidateTag(`store:${store.slug}`);
   revalidatePath(`/store/${store.slug}`);
@@ -34,12 +35,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { storeId: s
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const denied = requireSellerForStore(store.id, store.slug);
   if (denied) return denied;
 
-  clearStoreLiveSale(store.id);
+  await clearStoreLiveSale(store.id);
 
   revalidateTag(`store:${store.slug}`);
   revalidatePath(`/store/${store.slug}`);

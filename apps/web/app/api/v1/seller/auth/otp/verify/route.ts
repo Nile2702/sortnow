@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const store = findStoreByPhone(body.phone);
+  const store = await findStoreByPhone(body.phone);
   if (!store || !verifyOtp(body.phone, body.code)) {
     return NextResponse.json({ error: "invalid_otp", message: "Incorrect or expired OTP." }, { status: 401 });
   }

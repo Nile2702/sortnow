@@ -7,5 +7,5 @@ import { getCategoryTileCounts } from "../../../../lib/seed-data";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return NextResponse.json(getCategoryTileCounts());
+  return NextResponse.json(await getCategoryTileCounts());
 }

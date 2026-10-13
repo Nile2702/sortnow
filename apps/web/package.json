@@ -7,12 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test --experimental-strip-types \"lib/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types \"lib/**/*.test.ts\"",
+    "db:apply-schema": "node scripts/apply-schema.js",
+    "db:seed": "node --experimental-strip-types scripts/seed-db.ts"
   },
   "dependencies": {
+    "@types/pg": "^8.23.1",
+    "cloudinary": "^2.11.0",
     "india-post-pincode": "^1.0.0",
     "mapbox-gl": "^3.32.0",
     "next": "14.2.35",
+    "pg": "^8.23.1",
     "qrcode": "^1.5.4",
     "react": "18.3.1",
     "react-dom": "18.3.1"

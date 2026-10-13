@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_otp", message: "Incorrect or expired OTP." }, { status: 401 });
   }
 
-  const existing = findShopperByPhone(body.phone);
+  const existing = await findShopperByPhone(body.phone);
   // passwordHash never leaves the server, same reasoning as the profile
   // endpoint - the client only ever needs to know a password exists, not
   // its hash.

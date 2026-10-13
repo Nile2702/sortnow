@@ -3,7 +3,7 @@ import { joinWaitlist, getProductWaitlistCount } from "../../../../../../lib/see
 import { rateLimit, clientIp } from "../../../../../../lib/rate-limit";
 
 export async function GET(_req: NextRequest, { params }: { params: { productId: string } }) {
-  return NextResponse.json({ count: getProductWaitlistCount(params.productId) });
+  return NextResponse.json({ count: await getProductWaitlistCount(params.productId) });
 }
 
 export async function POST(req: NextRequest, { params }: { params: { productId: string } }) {
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { productId: 
     return NextResponse.json({ error: "invalid_input", message: "A valid 10-digit phone is required." }, { status: 400 });
   }
 
-  const result = joinWaitlist(params.productId, body.shopperName, body.shopperPhone);
+  const result = await joinWaitlist(params.productId, body.shopperName, body.shopperPhone);
   if (!result.ok) return NextResponse.json({ error: "invalid_input", message: result.error }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

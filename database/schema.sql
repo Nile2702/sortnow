@@ -2,6 +2,15 @@
 -- SORT IT OUT — Multi-Tenant PostgreSQL Schema
 -- Region: ap-south-1 (Mumbai). Extensions: pgcrypto, postgis (optional
 -- fallback geo), citext (case-insensitive slugs/emails).
+--
+-- OUTDATED: this file is stale/aspirational documentation and does not
+-- match the live application (it's missing `reservations` — the core
+-- "reserve online, pick up in store" flow — entirely, and it models
+-- several features, like product variants/translations/bulk import jobs/
+-- live sales as a table/webhook events, that don't exist in the app).
+-- Kept only as historical reference for conventions (UUID ids, GST
+-- invoice shape). The schema actually deployed to the live database is
+-- database/schema-live.sql, generated from apps/web/lib/seed-data.ts.
 -- =====================================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

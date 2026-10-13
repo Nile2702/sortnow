@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isValidAdminKey } from "./lib/admin-auth";
 
 /**
  * Resolves all three storefront access patterns to one internal route:
@@ -42,8 +43,23 @@ const VERCEL_HOST = /\.vercel\.app$/;
 const ALLOW_LOCAL_TUNNEL_HOST = process.env.ALLOW_LOCAL_TUNNEL_HOST === "1";
 
 export async function middleware(req: NextRequest) {
-  const host = req.headers.get("host") ?? "";
   const url = req.nextUrl.clone();
+
+  // Pilot admin review tool (app/admin/sellers) - shared-secret gate, see
+  // lib/admin-auth.ts. Checked here (not just in the page itself) so an
+  // invalid/missing key gets a real 403 rather than whatever a Server
+  // Component can manage to render with a 200 status.
+  if (url.pathname.startsWith("/admin")) {
+    if (!isValidAdminKey(url.searchParams.get("key"))) {
+      return NextResponse.json(
+        { error: "forbidden", message: "Missing or invalid admin key. Append ?key=<ADMIN_SECRET> to the URL." },
+        { status: 403 }
+      );
+    }
+    return NextResponse.next();
+  }
+
+  const host = req.headers.get("host") ?? "";
 
   // 1. Root platform domain (consumer app, path-based stores) - no rewrite needed.
   //    localhost (and, in dev, a LAN IP) is treated as the root domain for

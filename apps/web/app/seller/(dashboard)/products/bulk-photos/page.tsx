@@ -80,6 +80,25 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+// Uploads a finished data URL (after whatever processing - background
+// removal, etc. - this draft already went through) to Cloudinary via the
+// server (see app/api/v1/seller/upload/route.ts), same helper the
+// single-product form (ProductForm.tsx) uses. Throws on failure so
+// handlePublishAll can mark that draft as errored instead of publishing a
+// product with a broken or missing photo.
+async function uploadProductImage(dataUrl: string): Promise<string> {
+  const res = await fetch("/api/v1/seller/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageDataUrl: dataUrl }),
+  });
+  const result = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(result?.message ?? "Couldn't upload photo. Try again.");
+  }
+  return result.url;
+}
+
 function inputStyle(): React.CSSProperties {
   return { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 };
 }
@@ -472,6 +491,15 @@ export default function BulkPhotoUploadPage() {
       toPublish.map(async (d) => {
         updateDraft(d.localId, { status: "publishing" });
         try {
+          // Last step before publish: send the finished photo(s) - whatever
+          // processing (background removal, etc.) this draft already went
+          // through above - to Cloudinary via the server, instead of
+          // embedding the base64 data URL directly in the product. See
+          // app/api/v1/seller/upload/route.ts.
+          const [mainUrl, additionalUrls] = await Promise.all([
+            uploadProductImage(d.image),
+            Promise.all(d.additionalImages.map(uploadProductImage)),
+          ]);
           const res = await fetch(`/api/v1/seller/stores/${store.id}/products`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -493,7 +521,7 @@ export default function BulkPhotoUploadPage() {
               brand: d.brand,
               colorGroupId: d.colorGroupId,
               sizes: d.sizes,
-              images: [{ url: d.image }, ...d.additionalImages.map((url) => ({ url }))],
+              images: [{ url: mainUrl }, ...additionalUrls.map((url) => ({ url }))],
             }),
           });
           if (!res.ok) {

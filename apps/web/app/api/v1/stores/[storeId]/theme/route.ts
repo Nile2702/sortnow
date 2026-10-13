@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { themes, stores, updateStoreTheme } from "../../../../../../lib/seed-data";
+import { getAllThemes, getAllStores, updateStoreTheme } from "../../../../../../lib/seed-data";
 import { requireSellerForStore } from "../../../../../../lib/auth/require-seller";
 
 export async function GET(req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
+  const themes = await getAllThemes();
   const theme = themes[store.id];
   if (!theme) return NextResponse.json({ error: "no_theme" }, { status: 404 });
   return NextResponse.json(theme);
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const denied = requireSellerForStore(store.id, store.slug);
@@ -35,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { storeId: s
     return NextResponse.json({ error: "invalid_input", message: "heroSubtitle must be a string up to 240 characters" }, { status: 400 });
   }
 
-  const updated = updateStoreTheme(store.id, { primary, accent, heroTitle, heroSubtitle });
+  const updated = await updateStoreTheme(store.id, { primary, accent, heroTitle, heroSubtitle });
   if (!updated) return NextResponse.json({ error: "no_theme" }, { status: 404 });
 
   // Bust both the theme fetch cache and the storefront page's ISR cache so

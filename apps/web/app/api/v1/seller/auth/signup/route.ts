@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     if (!/^\d{10}$/.test(phone)) {
       return NextResponse.json({ error: "invalid_input", message: "Mobile number must be exactly 10 digits." }, { status: 400 });
     }
-    if (findStoreByPhone(phone)) {
+    if (await findStoreByPhone(phone)) {
       return NextResponse.json({ error: "invalid_input", message: "This mobile number is already registered to another store." }, { status: 400 });
     }
   }
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = createStore({ name, category, pincode, localMarket, phone, password });
+  const result = await createStore({ name, category, pincode, localMarket, phone, password });
   if ("error" in result) {
     return NextResponse.json({ error: "invalid_input", message: result.error }, { status: 400 });
   }

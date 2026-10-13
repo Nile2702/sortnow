@@ -8,27 +8,32 @@ function freshPhone(): string {
   return String(6000000000 + Math.floor(Math.random() * 900000000));
 }
 
+// Delivery address required by requestOtp() now that it emails the code
+// instead of texting it - RESEND_API_KEY is never set in the test
+// environment, so every call here exercises the devOtp dev-fallback path.
+const TEST_EMAIL = "otp-test@example.com";
+
 test("normalizePhone strips non-digits and keeps the last 10", () => {
   assert.equal(normalizePhone("+91 98765-43210"), "9876543210");
   assert.equal(normalizePhone("9876543210"), "9876543210");
 });
 
 test("rejects a phone number that isn't 10 digits", () => {
-  const result = requestOtp("12345");
+  const result = requestOtp("12345", TEST_EMAIL);
   assert.equal(result.ok, false);
 });
 
 test("requestOtp then verifyOtp with the correct code succeeds", () => {
   const phone = freshPhone();
-  const result = requestOtp(phone);
+  const result = requestOtp(phone, TEST_EMAIL);
   assert.equal(result.ok, true);
   if (!result.ok) return;
-  assert.ok(verifyOtp(phone, result.devOtp));
+  assert.ok(verifyOtp(phone, result.devOtp!));
 });
 
 test("verifyOtp fails with the wrong code", () => {
   const phone = freshPhone();
-  requestOtp(phone);
+  requestOtp(phone, TEST_EMAIL);
   assert.equal(verifyOtp(phone, "000000"), false);
 });
 
@@ -39,27 +44,27 @@ test("verifyOtp fails when no OTP was ever requested", () => {
 
 test("an OTP is single-use - verifying twice fails the second time", () => {
   const phone = freshPhone();
-  const result = requestOtp(phone);
+  const result = requestOtp(phone, TEST_EMAIL);
   if (!result.ok) throw new Error("expected ok");
-  assert.ok(verifyOtp(phone, result.devOtp));
-  assert.equal(verifyOtp(phone, result.devOtp), false);
+  assert.ok(verifyOtp(phone, result.devOtp!));
+  assert.equal(verifyOtp(phone, result.devOtp!), false);
 });
 
 test("requesting a new OTP invalidates the previous one", () => {
   const phone = freshPhone();
-  const first = requestOtp(phone);
+  const first = requestOtp(phone, TEST_EMAIL);
   if (!first.ok) throw new Error("expected ok");
-  const second = requestOtp(phone);
+  const second = requestOtp(phone, TEST_EMAIL);
   if (!second.ok) throw new Error("expected ok");
-  assert.equal(verifyOtp(phone, first.devOtp), false);
-  assert.ok(verifyOtp(phone, second.devOtp));
+  assert.equal(verifyOtp(phone, first.devOtp!), false);
+  assert.ok(verifyOtp(phone, second.devOtp!));
 });
 
 test("rate-limits repeated OTP requests for the same phone", () => {
   const phone = freshPhone();
   let sawLimit = false;
   for (let i = 0; i < 10; i++) {
-    const result = requestOtp(phone);
+    const result = requestOtp(phone, TEST_EMAIL);
     if (!result.ok) {
       sawLimit = true;
       break;

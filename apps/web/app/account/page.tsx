@@ -31,10 +31,15 @@ export default function AccountPage() {
   const [passwordLoggingIn, setPasswordLoggingIn] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [justSignedUp, setJustSignedUp] = useState(false);
-  // Shown only because no real SMS gateway is connected yet (see
-  // lib/otp.ts) - the server has nowhere else to actually deliver the code
+  // Shown only because no real email provider is connected yet (see
+  // lib/email.ts) - the server has nowhere else to actually deliver the code
   // to in this environment, so it hands it back for the demo to display.
   const [devOtp, setDevOtp] = useState("");
+  // OTP delivery is by email now (no SMS/DLT gateway). A returning shopper
+  // with an email already on file never sees this - it only appears once
+  // the server says it needs one for this phone number (see handleSendOtp).
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpNeedsEmail, setOtpNeedsEmail] = useState(false);
 
   // Profile-step fields - only asked of a genuinely first-time customer
   // (see handleVerify: existingShopper comes back null).
@@ -71,19 +76,30 @@ export default function AccountPage() {
     e.preventDefault();
     setError("");
     if (!/^\d{10}$/.test(phone)) return setError("Enter a valid 10-digit mobile number.");
+    if (otpNeedsEmail && !/^\S+@\S+\.\S+$/.test(otpEmail.trim())) return setError("Enter a valid email address.");
     setSending(true);
     const res = await fetch("/api/v1/auth/otp/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ phone, email: otpNeedsEmail ? otpEmail.trim() : undefined }),
     });
     const result = await res.json().catch(() => null);
     setSending(false);
     if (!res.ok) {
+      if (result?.error === "email_required") {
+        // No email on file for this phone yet (new signup, or a pre-email
+        // account) - reveal the field and let them resend with one filled
+        // in, rather than erroring out.
+        setOtpNeedsEmail(true);
+      }
       setError(result?.message ?? "Couldn't send an OTP. Try again.");
       return;
     }
     setDevOtp(result.devOtp ?? "");
+    // Pre-fill the profile-step email field with whatever they just used to
+    // receive the OTP (see the step === "profile" form below) - a brand-new
+    // shopper already proved they own this address, no reason to ask twice.
+    if (otpEmail.trim()) setEmail(otpEmail.trim());
     setStep("otp");
   }
 
@@ -233,6 +249,8 @@ export default function AccountPage() {
     setMarketingOptIn(false);
     setUsePasswordLogin(false);
     setLoginPassword("");
+    setOtpEmail("");
+    setOtpNeedsEmail(false);
   }
 
   if (!ready) return <main style={{ maxWidth: 440, margin: "60px auto", padding: 16 }} />;
@@ -436,6 +454,21 @@ export default function AccountPage() {
                 </p>
               )}
             </div>
+            {otpNeedsEmail && (
+              <div>
+                <label style={labelStyle}>Email address</label>
+                <input
+                  value={otpEmail}
+                  onChange={(e) => setOtpEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  type="email"
+                  style={inputStyle}
+                />
+                <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>
+                  We don't have an email on file for this number yet - we'll send your OTP here and remember it for next time.
+                </p>
+              </div>
+            )}
             {error && <ErrorBanner text={error} />}
             <button type="submit" disabled={sending} className="sio-btn-primary sio-shine-btn" style={{ ...buttonStyle, opacity: sending ? 0.7 : 1 }}>
               {sending ? "Sending…" : "Send OTP"}
@@ -492,12 +525,12 @@ export default function AccountPage() {
         {step === "otp" && (
           <form onSubmit={handleVerify} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <p style={{ fontSize: 13.5, color: "var(--sio-muted)", textAlign: "center" }}>
-              OTP sent to +91 {phone}.
+              {otpEmail ? `OTP sent to ${otpEmail}.` : "OTP sent to the email on file for this number."}
               {devOtp && (
                 <>
                   {" "}
-                  <strong style={{ color: "var(--sio-ink)" }}>Dev mode — code: {devOtp}</strong> (no SMS gateway connected yet, so it's shown
-                  here instead)
+                  <strong style={{ color: "var(--sio-ink)" }}>Dev mode — code: {devOtp}</strong> (no email provider connected yet, so it's
+                  shown here instead)
                 </>
               )}
             </p>
@@ -519,6 +552,8 @@ export default function AccountPage() {
                 setOtp("");
                 setDevOtp("");
                 setError("");
+                setOtpNeedsEmail(false);
+                setOtpEmail("");
               }}
               style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 13, cursor: "pointer", padding: 4 }}
             >

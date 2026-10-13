@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stores, getBillingSettings, updateBillingSettings } from "../../../../../../../lib/seed-data";
+import { getAllStores, getBillingSettings, updateBillingSettings } from "../../../../../../../lib/seed-data";
 import { requireSellerForStore } from "../../../../../../../lib/auth/require-seller";
 
 const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z][Z][0-9A-Z]$/;
 
 export async function GET(_req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const denied = requireSellerForStore(store.id, store.slug);
   if (denied) return denied;
 
-  return NextResponse.json(getBillingSettings(store.id));
+  return NextResponse.json(await getBillingSettings(store.id));
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const denied = requireSellerForStore(store.id, store.slug);
@@ -56,7 +58,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { storeId: s
   // GSTIN is only meaningful (and only validated) when GST mode is active -
   // a seller who's about to switch to "normal" shouldn't be blocked by a
   // GSTIN field they're not even using anymore.
-  const effectiveMode = patch.mode ?? getBillingSettings(store.id).mode;
+  const currentSettings = await getBillingSettings(store.id);
+  const effectiveMode = patch.mode ?? currentSettings.mode;
   if (body.gstin !== undefined) {
     const gstin = typeof body.gstin === "string" ? body.gstin.trim().toUpperCase() : "";
     if (effectiveMode === "gst" && !GSTIN_PATTERN.test(gstin)) {
@@ -66,7 +69,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { storeId: s
     }
   }
 
-  if (effectiveMode === "gst" && !patch.gstin && !getBillingSettings(store.id).gstin) {
+  if (effectiveMode === "gst" && !patch.gstin && !currentSettings.gstin) {
     errors.push("gstin is required to enable GST invoicing");
   }
 
@@ -74,6 +77,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { storeId: s
     return NextResponse.json({ error: "invalid_input", errors }, { status: 400 });
   }
 
-  const settings = updateBillingSettings(store.id, patch);
+  const settings = await updateBillingSettings(store.id, patch);
   return NextResponse.json(settings);
 }

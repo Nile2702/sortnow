@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const shopper = verifyShopperPassword(body.phone, body.password);
+  const shopper = await verifyShopperPassword(body.phone, body.password);
   if (!shopper) {
     return NextResponse.json({ error: "invalid_credentials", message: "Incorrect phone or password." }, { status: 401 });
   }

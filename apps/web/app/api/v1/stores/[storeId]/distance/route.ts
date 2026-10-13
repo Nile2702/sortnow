@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stores, resolvePincode, haversineKm } from "../../../../../../lib/seed-data";
+import { getAllStores, resolvePincode, haversineKm } from "../../../../../../lib/seed-data";
 
 // SORT NOW is reserve-and-pickup, not shipped delivery - there's no
 // "estimated delivery time" to give a shopper, so instead of faking one this
@@ -8,6 +8,7 @@ import { stores, resolvePincode, haversineKm } from "../../../../../../lib/seed-
 // you" and cross-store search already use. resolvePincode covers every real
 // Indian PIN code (~19.5k), not just a handful of seed-store cities.
 export async function GET(req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
 

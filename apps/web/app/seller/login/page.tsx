@@ -41,6 +41,13 @@ export default function SellerLoginPage() {
   const [devOtp, setDevOtp] = useState("");
   const [otpSubmitting, setOtpSubmitting] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  // OTP delivery is by email (no SMS/DLT gateway - see lib/email.ts). Most
+  // stores have no email on file yet, so this starts hidden and only
+  // appears once the server says it actually needs one for this phone
+  // number (see handleSendOtp) - a store that already has an email on file
+  // never sees this field at all.
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpNeedsEmail, setOtpNeedsEmail] = useState(false);
 
   useEffect(() => {
     fetch("/api/v1/seller/stores")
@@ -90,15 +97,24 @@ export default function SellerLoginPage() {
       setOtpError("Enter a valid 10-digit mobile number.");
       return;
     }
+    if (otpNeedsEmail && !/^\S+@\S+\.\S+$/.test(otpEmail.trim())) {
+      setOtpError("Enter a valid email address.");
+      return;
+    }
     setOtpSubmitting(true);
     const res = await fetch("/api/v1/seller/auth/otp/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: otpPhone }),
+      body: JSON.stringify({ phone: otpPhone, email: otpNeedsEmail ? otpEmail.trim() : undefined }),
     });
     const result = await res.json().catch(() => null);
     setOtpSubmitting(false);
     if (!res.ok) {
+      if (result?.error === "email_required") {
+        // No email on file for this store yet - reveal the field and let
+        // them resend with one filled in, rather than erroring out.
+        setOtpNeedsEmail(true);
+      }
       setOtpError(result?.message ?? "Couldn't send an OTP. Try again.");
       return;
     }
@@ -284,6 +300,21 @@ export default function SellerLoginPage() {
                       Only works if a phone number is on file for your store (set at signup, or ask support to add one). Demo: Urban Vogue's
                       is 9876543210.
                     </p>
+                    {otpNeedsEmail && (
+                      <>
+                        <label style={{ ...labelStyle, marginTop: 10 }}>Email address</label>
+                        <input
+                          value={otpEmail}
+                          onChange={(e) => setOtpEmail(e.target.value)}
+                          placeholder="you@example.com"
+                          type="email"
+                          style={{ ...inputStyle, marginBottom: 6 }}
+                        />
+                        <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginBottom: 4 }}>
+                          No email on file for this store yet - we'll send your OTP here and remember it for next time.
+                        </p>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
@@ -297,7 +328,7 @@ export default function SellerLoginPage() {
                     />
                     {devOtp && (
                       <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginBottom: 4 }}>
-                        Dev mode — code: <strong style={{ color: "var(--sio-ink)" }}>{devOtp}</strong> (no SMS gateway connected yet)
+                        Dev mode — code: <strong style={{ color: "var(--sio-ink)" }}>{devOtp}</strong> (no email provider connected yet)
                       </p>
                     )}
                   </>
@@ -340,6 +371,8 @@ export default function SellerLoginPage() {
                       setOtpCode("");
                       setDevOtp("");
                       setOtpError(null);
+                      setOtpNeedsEmail(false);
+                      setOtpEmail("");
                     }}
                     style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 12.5, cursor: "pointer", padding: "10px 0 0", width: "100%" }}
                   >

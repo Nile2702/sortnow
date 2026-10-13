@@ -1,7 +1,7 @@
 // Pure, dependency-free catalog constants safe to import from client
 // components (header nav, homepage filters, the seller product form). Kept
-// separate from lib/seed-data.ts because that file now pulls in lib/persist.ts
-// (Node's fs/path) for server-side persistence - bundling that for the
+// separate from lib/seed-data.ts because that file pulls in `pg` (via
+// lib/db.ts) to query the live Postgres database - bundling that for the
 // browser fails outright, so anything a client component needs must live
 // here instead. seed-data.ts re-exports these so server code can keep
 // importing everything from one place.

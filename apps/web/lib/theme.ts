@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { stores, themes } from "./seed-data";
+import { getAllStores, getAllThemes } from "./seed-data";
 
 export interface ThemeConfig {
   version: number;
@@ -50,10 +50,12 @@ export interface StoreRecord {
  * still dedupe to a single lookup.
  */
 export const getStoreBySlug = cache(async (slug: string): Promise<StoreRecord | null> => {
+  const stores = await getAllStores();
   return stores.find((s) => s.slug === slug || s.id === slug) ?? null;
 });
 
 export const getLiveTheme = cache(async (storeId: string): Promise<ThemeConfig> => {
+  const themes = await getAllThemes();
   return themes[storeId] ?? DEFAULT_THEME;
 });
 

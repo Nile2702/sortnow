@@ -1,13 +1,14 @@
 // Real, working OTP generation/verification, shared by both seller login
-// and shopper login. The only thing not real here is actual SMS delivery -
-// that needs a paid gateway (Twilio/MSG91/etc.) this environment has no
-// credentials for, matching the existing convention elsewhere in this
-// codebase for unintegrated paid third-party services (see createStore's
-// payment-gateway comment, or the mocked billing/subscribe flow). The OTP
-// itself is genuinely random per phone number, single-use, time-limited,
-// and attempt-limited - swap sendSms() for a real provider call and
-// everything else here needs no changes.
+// and shopper login. Delivery is by email (via lib/email.ts's Resend call)
+// rather than SMS - this pilot deliberately avoids the SMS/DLT registration
+// required in India for transactional SMS, so email is the one channel
+// available without that paperwork. The OTP itself is genuinely random per
+// phone number (phone stays the account identifier; email is purely the
+// delivery address), single-use, time-limited, and attempt-limited - none
+// of that changed when delivery moved from the old sendSms() console.log
+// stub to sendOtpEmail() below.
 import { rateLimit } from "./rate-limit.ts";
+import { isEmailDeliveryConfigured, sendOtpEmail } from "./email.ts";
 
 interface OtpRecord {
   code: string;
@@ -53,12 +54,22 @@ export function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, "").slice(-10);
 }
 
-export type RequestOtpResult = { ok: true; devOtp: string } | { ok: false; error: string };
+export type RequestOtpResult = { ok: true; devOtp?: string } | { ok: false; error: string };
 
-export function requestOtp(phone: string): RequestOtpResult {
+// `email` is the delivery address for the code (see lib/email.ts) - callers
+// are responsible for resolving it (a store/shopper's email on file, or one
+// just collected from the login UI) and for requiring it before calling
+// this, since there is no other working delivery channel. Everything below
+// this point - rate limiting, code generation, TTL, attempts - is unchanged
+// from the phone-only/SMS version.
+export function requestOtp(phone: string, email: string): RequestOtpResult {
   const key = normalizePhone(phone);
   if (key.length !== 10) {
     return { ok: false, error: "Enter a valid 10-digit mobile number." };
+  }
+  const trimmedEmail = email?.trim() ?? "";
+  if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+    return { ok: false, error: "Enter a valid email address to receive your OTP." };
   }
 
   const { ok, retryAfterMs } = rateLimit(`otp-request:${key}`, 5, 10 * 60 * 1000);
@@ -68,11 +79,26 @@ export function requestOtp(phone: string): RequestOtpResult {
 
   const code = String(Math.floor(100000 + Math.random() * 900000));
   otps.set(key, { code, expiresAt: Date.now() + OTP_TTL_MS, attempts: 0 });
-  sendSms(key, `Your SORT NOW verification code is ${code}. It expires in 5 minutes. Do not share this code.`);
 
-  // TODO: once a real SMS gateway is wired into sendSms(), stop returning
-  // devOtp - it exists only because there is currently no other channel
-  // that actually delivers the code to the user in this environment.
+  // Fire-and-forget: this stays a synchronous, in-memory operation (like
+  // the rate limit/attempts/TTL bookkeeping above) rather than making the
+  // whole request wait on a network round trip to Resend. A delivery
+  // failure here surfaces as "my OTP never arrived" (same failure mode a
+  // real SMS gateway has) rather than as an error on this call - the one
+  // exception is the configured-vs-not check below, which is a pure env-var
+  // read and can be done synchronously.
+  void sendOtpEmail(trimmedEmail, code).then((result) => {
+    if (!result.delivered && result.reason !== "not_configured") {
+      console.error(`[otp] Failed to email OTP to ${trimmedEmail}: ${result.reason}`);
+    }
+  });
+
+  if (isEmailDeliveryConfigured()) {
+    return { ok: true };
+  }
+  // No RESEND_API_KEY yet - sendOtpEmail() above already logged the code to
+  // the console instead of emailing it, so hand it back the same way devOtp
+  // always has, until a real key is added (see apps/web/.env.example).
   return { ok: true, devOtp: code };
 }
 
@@ -93,8 +119,4 @@ export function verifyOtp(phone: string, code: string): boolean {
   otps.delete(key); // single-use - a verified code can't be replayed
   verifiedPhones.set(key, Date.now() + PHONE_VERIFICATION_TTL_MS);
   return true;
-}
-
-function sendSms(phone: string, message: string) {
-  console.log(`[OTP SMS -> +91${phone}] ${message}`);
 }

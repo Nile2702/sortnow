@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProductReviews, getRatingSummary, addReview, products } from "../../../../../../lib/seed-data";
+import { getProductReviews, getRatingSummary, addReview, getAllProducts } from "../../../../../../lib/seed-data";
 import { rateLimit, clientIp } from "../../../../../../lib/rate-limit";
 
 export async function GET(_req: NextRequest, { params }: { params: { productId: string } }) {
   return NextResponse.json({
-    reviews: getProductReviews(params.productId),
-    summary: getRatingSummary(params.productId),
+    reviews: await getProductReviews(params.productId),
+    summary: await getRatingSummary(params.productId),
   });
 }
 
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest, { params }: { params: { productId: 
   const { ok } = rateLimit(`review:${clientIp(req)}`, 10, 60_000);
   if (!ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
+  const products = await getAllProducts();
   if (!products.some((p) => p.id === params.productId)) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: { productId: 
     return NextResponse.json({ error: "invalid_input", message: "authorName must be a string up to 120 characters" }, { status: 400 });
   }
 
-  const review = addReview(params.productId, {
+  const review = await addReview(params.productId, {
     authorName: body.authorName,
     rating,
     title: body.title,

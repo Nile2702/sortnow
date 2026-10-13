@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_input", message: "Image is too large. Please use a photo under 3MB." }, { status: 400 });
   }
 
-  if (getPhotoCredits(session.storeId) <= 0) {
+  if ((await getPhotoCredits(session.storeId)) <= 0) {
     return NextResponse.json(
       { error: "insufficient_credits", message: "You're out of AI photo credits. Buy more to keep using this feature." },
       { status: 402 }
@@ -44,6 +44,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.code, message: result.error }, { status });
   }
 
-  spendPhotoCredit(session.storeId);
-  return NextResponse.json({ imageDataUrl: result.imageDataUrl, creditsRemaining: getPhotoCredits(session.storeId) });
+  await spendPhotoCredit(session.storeId);
+  return NextResponse.json({ imageDataUrl: result.imageDataUrl, creditsRemaining: await getPhotoCredits(session.storeId) });
 }

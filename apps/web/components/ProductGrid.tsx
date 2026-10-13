@@ -1,5 +1,5 @@
 import { ProductCard } from "./ProductCard";
-import { products as allProducts, stores } from "../lib/seed-data";
+import { getAllProducts, getAllStores } from "../lib/seed-data";
 
 interface Props {
   storeId: string;
@@ -28,9 +28,11 @@ const COLUMNS: Record<Props["gridStyle"], string> = {
 // (INTERNAL_API_URL is dev-only, and even a VERCEL_URL-based absolute URL
 // fetch can come back wrong depending on deployment protection).
 async function fetchProducts(storeId: string, opts: { categoryId?: string; sort?: string; limit?: number }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === storeId || s.slug === storeId);
   if (!store) return [];
 
+  const allProducts = await getAllProducts();
   let list = allProducts.filter((p) => p.storeId === store.id);
   if (opts.categoryId) list = list.filter((p) => p.categoryId === opts.categoryId);
   if (opts.sort === "newest") list = [...list].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));

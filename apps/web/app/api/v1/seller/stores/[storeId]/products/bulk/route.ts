@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { createProduct, stores } from "../../../../../../../../lib/seed-data";
+import { createProduct, getAllStores } from "../../../../../../../../lib/seed-data";
 import { requireSellerForStore } from "../../../../../../../../lib/auth/require-seller";
 import { validateProductInput } from "../../../../../../../../lib/validate-product";
 
-// Synchronous stand-in for the async `bulk_import_jobs` flow in
-// database/schema.sql - real bulk imports (thousands of rows) go through a
-// queued worker; this demo's rows are few enough to just create inline.
+// Stand-in for the async `bulk_import_jobs` flow in database/schema.sql -
+// real bulk imports (thousands of rows) go through a queued worker; this
+// demo's rows are few enough to just create inline, one row at a time
+// (sequentially, so a later row's failure never races an earlier row's
+// insert).
 export async function POST(req: NextRequest, { params }: { params: { storeId: string } }) {
+  const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
   if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const denied = requireSellerForStore(store.id, store.slug);
@@ -20,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
   const errors: { row: number; message: string }[] = [];
   let successCount = 0;
 
-  rows.forEach((row, i) => {
+  for (const [i, row] of rows.entries()) {
     try {
       const candidate = {
         title: row.title,
@@ -39,15 +42,15 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
       const { errors: rowErrors, data } = validateProductInput(candidate, true);
       if (rowErrors.length > 0) {
         errors.push({ row: i + 1, message: rowErrors.join("; ") });
-        return;
+        continue;
       }
 
-      createProduct(store.id, data);
+      await createProduct(store.id, data);
       successCount++;
     } catch (err) {
       errors.push({ row: i + 1, message: err instanceof Error ? err.message : "Unknown error" });
     }
-  });
+  }
 
   revalidateTag(`products:${store.id}`);
   revalidatePath(`/store/${store.slug}`);

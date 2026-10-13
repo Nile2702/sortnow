@@ -24,7 +24,7 @@ export default async function StorefrontPage({ params }: Props) {
   const theme = await getLiveTheme(store.id);
   const css = themeToCssVariables(theme);
   const saleActive = !!store.liveSale && new Date(store.liveSale.endsAt).getTime() > Date.now();
-  const rating = getStoreRatingSummary(store.id);
+  const rating = await getStoreRatingSummary(store.id);
 
   // Every section in sectionOrder maps to a shared component - the same
   // components and design system the homepage uses. Only the store's
