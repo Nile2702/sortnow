@@ -4,7 +4,11 @@ import { getAllProducts, getAllStores } from "../../../../../../lib/seed-data";
 export async function GET(req: NextRequest, { params }: { params: { storeId: string } }) {
   const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
-  if (!store) return NextResponse.json([], { status: 404 });
+  // Public, shopper-facing route - a store that isn't "active" (draft,
+  // pending_review, suspended, closed) must not leak its catalog here, the
+  // same as app/store/[slug]/page.tsx 404ing outright for a non-active
+  // store.
+  if (!store || store.status !== "active") return NextResponse.json([], { status: 404 });
 
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
@@ -14,7 +18,9 @@ export async function GET(req: NextRequest, { params }: { params: { storeId: str
   const maxPrice = searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : undefined;
 
   const products = await getAllProducts();
-  let list = products.filter((p) => p.storeId === store.id);
+  // A product on hold (see Product.status) must not appear here either,
+  // same reasoning as the store-level filter above.
+  let list = products.filter((p) => p.storeId === store.id && p.status !== "on_hold");
   if (category) list = list.filter((p) => p.categoryId === category);
   if (minPrice != null) list = list.filter((p) => p.basePrice >= minPrice);
   if (maxPrice != null) list = list.filter((p) => p.basePrice <= maxPrice);

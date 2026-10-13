@@ -14,7 +14,17 @@ export default async function AdminSellersPage({ searchParams }: { searchParams:
 
   return (
     <main style={{ maxWidth: 920, margin: "0 auto", padding: "28px 20px 60px" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Seller review queue</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 12, marginBottom: 4 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700 }}>Seller review queue</h1>
+        <nav style={{ display: "flex", gap: 16, fontSize: 13 }}>
+          <a href={`/admin/sellers/active?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a" }}>
+            Active sellers (hold/reinstate)
+          </a>
+          <a href={`/admin/products?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a" }}>
+            Product moderation
+          </a>
+        </nav>
+      </div>
       <p style={{ color: "#64748b", marginBottom: 24, fontSize: 14 }}>
         {stores.length === 0 ? "No stores waiting on review." : `${stores.length} store${stores.length === 1 ? "" : "s"} waiting on review.`}
       </p>

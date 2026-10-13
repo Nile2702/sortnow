@@ -33,7 +33,10 @@ async function fetchProducts(storeId: string, opts: { categoryId?: string; sort?
   if (!store) return [];
 
   const allProducts = await getAllProducts();
-  let list = allProducts.filter((p) => p.storeId === store.id);
+  // A held product (see Product.status) must not appear on the storefront
+  // grid, same as it's excluded from search/discovery - see the "on_hold"
+  // filters in lib/seed-data.ts.
+  let list = allProducts.filter((p) => p.storeId === store.id && p.status !== "on_hold");
   if (opts.categoryId) list = list.filter((p) => p.categoryId === opts.categoryId);
   if (opts.sort === "newest") list = [...list].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   if (opts.sort === "price_asc") list = [...list].sort((a, b) => a.basePrice - b.basePrice);

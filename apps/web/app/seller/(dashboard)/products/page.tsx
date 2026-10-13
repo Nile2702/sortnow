@@ -20,6 +20,12 @@ interface Product {
   subCategory: string;
   color?: string;
   productCode?: string;
+  // Set by the site owner's moderation tool (app/admin/products), never by
+  // the seller themselves - a "live" listing is a normal one; "on_hold" is
+  // hidden from shoppers everywhere (search, store page, reservations) but
+  // still shown here, with the badge below, so the seller knows it was
+  // pulled down rather than it just silently vanishing from their catalog.
+  status?: "live" | "on_hold";
 }
 
 function SellerProductsPageInner() {
@@ -146,6 +152,15 @@ function SellerProductsPageInner() {
         </div>
       </div>
 
+      {products.some((p) => p.status === "on_hold") && (
+        <div
+          style={{ background: "#fef3c7", border: "1px solid #fde68a", color: "#92400e", borderRadius: 12, padding: "10px 16px", fontSize: 13, marginBottom: 16 }}
+        >
+          One or more of your listings below are marked <strong>On hold</strong> - SORT NOW has temporarily hidden them from shoppers (search, your store page,
+          and reservations). Everything else in your catalog is unaffected. Contact support if you think this was a mistake.
+        </div>
+      )}
+
       {products.length > 0 && (
         <>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
@@ -209,6 +224,14 @@ function SellerProductsPageInner() {
               <div style={{ flex: "1 1 200px", minWidth: 180 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
                   {p.title}
+                  {p.status === "on_hold" && (
+                    <span
+                      title="Hidden from shoppers by SORT NOW - this listing was put on hold. Contact support if you think this is a mistake."
+                      style={{ fontFamily: "inherit", fontSize: 11, fontWeight: 700, color: "#b45309", background: "#fef3c7", padding: "2px 8px", borderRadius: 999, textTransform: "uppercase", letterSpacing: "0.03em" }}
+                    >
+                      On hold
+                    </span>
+                  )}
                   {p.productCode && (
                     <span
                       style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 600, color: "#0f172a", background: "#f1f5f9", padding: "2px 6px", borderRadius: 4 }}

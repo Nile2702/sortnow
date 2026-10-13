@@ -33,6 +33,13 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- app/admin/sellers/page.tsx). Excluded from shopper-facing listings the
 -- same as "draft" - see the "active"-only filters in lib/seed-data.ts.
 CREATE TYPE store_status AS ENUM ('draft', 'pending_review', 'active', 'suspended', 'closed');
+-- "on_hold" is the per-listing counterpart to a store's own "suspended"
+-- status (see store_status above) - set by the site owner's product
+-- moderation tool (app/admin/products, lib/seed-data.ts holdProduct/
+-- unholdProduct) to pull one listing out of shopper-facing search/browse/
+-- reservation without suspending the whole seller. Every product starts
+-- "live".
+CREATE TYPE product_status AS ENUM ('live', 'on_hold');
 CREATE TYPE gender AS ENUM ('men', 'women', 'kids');
 CREATE TYPE reservation_status AS ENUM ('pending', 'fulfilled', 'cancelled');
 -- Note: "expired" (ReservationStatus) is derived at read time from
@@ -83,7 +90,11 @@ CREATE TABLE stores (
     pan                     TEXT,
     upi_vpa                 TEXT,
     submitted_for_review_at TIMESTAMPTZ,
-    created_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- When this store most recently became "active" - set by
+    -- activateStore() (first approval) and reinstateStore() (after a
+    -- suspension). Shown as "Activated" on app/admin/sellers/active.
+    activated_at            TIMESTAMPTZ
 );
 CREATE INDEX idx_stores_status ON stores (status);
 CREATE INDEX idx_stores_phone ON stores (phone) WHERE phone IS NOT NULL;
@@ -134,12 +145,14 @@ CREATE TABLE products (
     images              JSONB NOT NULL DEFAULT '[]'::jsonb,   -- { url: string }[]
     sizes               TEXT[] NOT NULL DEFAULT '{}',
     stock_remaining     INT,
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    status              product_status NOT NULL DEFAULT 'live'
 );
 CREATE INDEX idx_products_store_id ON products (store_id);
 CREATE INDEX idx_products_gender_subcategory ON products (gender, sub_category);
 CREATE INDEX idx_products_color_group ON products (store_id, color_group_id) WHERE color_group_id IS NOT NULL;
 CREATE INDEX idx_products_created_at ON products (created_at DESC);
+CREATE INDEX idx_products_status ON products (status);
 
 -- ---------------------------------------------------------------------
 -- Reservations (lib/seed-data.ts `Reservation`) — the core "reserve

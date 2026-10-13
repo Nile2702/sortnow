@@ -11,6 +11,10 @@ export async function generateMetadata({ params }: { params: { productId: string
   if (!product) return {};
   const stores = await getAllStores();
   const store = stores.find((s) => s.id === product.storeId);
+  // Same visibility rule as the public product API/page - don't generate
+  // real SEO metadata (title/OG tags) for a held product or one belonging
+  // to a non-active store.
+  if (product.status === "on_hold" || !store || store.status !== "active") return {};
 
   const title = `${product.title} — ${store?.name ?? "SORT NOW"}`;
   const description =

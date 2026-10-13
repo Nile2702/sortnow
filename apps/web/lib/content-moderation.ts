@@ -35,11 +35,31 @@ const BANNED_CATEGORIES: BannedCategory[] = [
   },
   {
     label: "weapons or firearms",
-    terms: ["firearm", "handgun", "pistol", "assault rifle", "ak-47", "ak47", "live ammunition", "gun silencer", "hand grenade", "explosive device"],
+    // Firearms terms plus edged/other non-firearm weapons (machetes,
+    // switchblades, brass knuckles, stun guns, ...) - kept narrow and
+    // specific-phrase rather than banning bare "knife"/"blade"/"spray":
+    // this is a fashion marketplace, and generic words like that collide
+    // with completely ordinary listings (a "knife pleat skirt" is a real
+    // garment-construction term, "kitchen knife" and "scissors" are
+    // legitimate household/craft items a store might sell as accessories,
+    // and "hair spray"/"body spray" are everyday grooming products) - see
+    // the false-positive guard tests in content-moderation.test.ts.
+    terms: [
+      "firearm", "handgun", "pistol", "assault rifle", "ak-47", "ak47", "live ammunition", "gun silencer", "hand grenade", "explosive device",
+      "machete", "switchblade", "brass knuckles", "butterfly knife", "taser", "pepper spray", "stun gun", "throwing knife", "nunchaku",
+    ],
   },
   {
     label: "counterfeit or replica goods",
     terms: ["first copy", "master copy", "mirror quality replica", "aaa quality replica", "counterfeit", "fake branded", "replica branded"],
+  },
+  {
+    label: "sex toys or adult products",
+    // Explicit, specific product-name terms only (not bare "adult" or
+    // "toy", both of which are everyday fashion-marketplace words - "adult
+    // kurta set" sizing, a kids'-wear "toy print" romper) - see the
+    // false-positive guard test below.
+    terms: ["sex toy", "sex toys", "dildo", "vibrator", "adult toy", "adult toys", "fleshlight", "butt plug", "anal plug", "love doll", "inflatable doll"],
   },
 ];
 

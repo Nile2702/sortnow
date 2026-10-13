@@ -58,7 +58,12 @@ export async function POST(req: NextRequest) {
   for (const item of items) {
     const store = stores.find((s) => s.slug === item.storeSlug);
     const product = products.find((p) => p.id === item.productId && p.storeId === store?.id);
-    if (!store || !product) continue;
+    // A shopper's own cart (localStorage, see lib/reservations.ts) can go
+    // stale - it might still hold an item from a store that's since been
+    // suspended, or a listing that's since been put on hold. Neither should
+    // actually be reservable even if the client still thinks it is, same
+    // as both are already excluded from search/browse.
+    if (!store || store.status !== "active" || !product || product.status === "on_hold") continue;
     const list = byStoreSlug.get(item.storeSlug) ?? [];
     list.push({
       productId: product.id,

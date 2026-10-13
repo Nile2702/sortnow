@@ -77,6 +77,12 @@ export interface Store {
   upiVpa?: string | null;
   submittedForReviewAt?: string | null;
   createdAt?: string;
+  // Set whenever a store transitions to "active" (first approval via
+  // activateStore(), or a later reinstateStore() after a suspension) - see
+  // app/admin/sellers/active/page.tsx, which shows this as "Activated" for
+  // the site owner's active-sellers list. Undefined for a store that has
+  // never been active (draft/pending_review/rejected).
+  activatedAt?: string | null;
 }
 
 function rowToStore(r: any): Store {
@@ -100,6 +106,7 @@ function rowToStore(r: any): Store {
     upiVpa: r.upi_vpa ?? null,
     submittedForReviewAt: r.submitted_for_review_at ? new Date(r.submitted_for_review_at).toISOString() : null,
     createdAt: r.created_at ? new Date(r.created_at).toISOString() : undefined,
+    activatedAt: r.activated_at ? new Date(r.activated_at).toISOString() : null,
   };
 }
 
@@ -305,6 +312,16 @@ export interface Product {
   sizes: string[];
   stockRemaining?: number;
   createdAt: string;
+  // "on_hold" is set by the site owner's content moderation tool
+  // (app/admin/products, app/api/v1/admin/products/[productId]/hold) when a
+  // single listing needs to come down without suspending the whole seller's
+  // store (see suspendStore for the store-level equivalent). Excluded from
+  // every shopper-facing search/browse/reservation path the same way a
+  // non-"active" store is (see the status filters throughout this file),
+  // but still returned to the seller's own dashboard (getStoreProducts)
+  // with the status surfaced so they know it's hidden and why, rather than
+  // it silently vanishing from their own product list.
+  status: "live" | "on_hold";
 }
 
 function rowToProduct(r: any): Product {
@@ -329,6 +346,7 @@ function rowToProduct(r: any): Product {
     sizes: r.sizes ?? [],
     stockRemaining: r.stock_remaining ?? undefined,
     createdAt: new Date(r.created_at).toISOString(),
+    status: r.status ?? "live",
   };
 }
 
@@ -407,6 +425,7 @@ export async function searchProducts(opts: {
       };
     })
     .filter((p) => storesById.get(p.storeId)?.status === "active")
+    .filter((p) => p.status !== "on_hold")
     .filter((p) => !origin || p.distanceKm === null || p.distanceKm <= radiusKm)
     .filter((p) => !gender || gender === "all" || p.gender === gender)
     .filter((p) => !subCategory || p.subCategory === subCategory)
@@ -459,6 +478,7 @@ export async function discoverStores(opts: { pincode?: string; lat?: number; lng
     gender && gender !== "all"
       ? new Set(
           products
+            .filter((p) => p.status !== "on_hold")
             .filter((p) => p.gender === gender)
             .filter((p) => !subCategory || p.subCategory === subCategory)
             .map((p) => p.storeId)
@@ -496,7 +516,7 @@ export async function getAllShops() {
   const withExtras = await Promise.all(
     active.map(async (s) => ({
       ...s,
-      productCount: products.filter((p) => p.storeId === s.id).length,
+      productCount: products.filter((p) => p.storeId === s.id && p.status !== "on_hold").length,
       rating: await getStoreRatingSummary(s.id),
     }))
   );
@@ -529,15 +549,19 @@ export async function createProduct(storeId: string, input: Partial<Product>): P
     sizes: input.sizes?.length ? input.sizes : ["Free Size"],
     stockRemaining: input.stockRemaining ?? 10,
     createdAt: new Date().toISOString(),
+    // Every new listing starts "live" - only the admin hold/unhold tool
+    // (see holdProduct/unholdProduct below) ever sets "on_hold".
+    status: "live",
   };
   await query(
-    `INSERT INTO products (id, store_id, store_slug, category_id, gender, sub_category, title, description, fabric, color, brand, color_group_id, product_code, base_price, compare_at_price, cost_price, images, sizes, stock_remaining, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+    `INSERT INTO products (id, store_id, store_slug, category_id, gender, sub_category, title, description, fabric, color, brand, color_group_id, product_code, base_price, compare_at_price, cost_price, images, sizes, stock_remaining, created_at, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
     [
       product.id, product.storeId, product.storeSlug, product.categoryId, product.gender, product.subCategory,
       product.title, product.description ?? null, product.fabric ?? null, product.color ?? null, product.brand ?? null,
       product.colorGroupId ?? null, product.productCode ?? null, product.basePrice, product.compareAtPrice ?? null,
       product.costPrice ?? null, JSON.stringify(product.images), product.sizes, product.stockRemaining ?? null, product.createdAt,
+      product.status,
     ]
   );
   return product;
@@ -595,7 +619,30 @@ export async function getColorSiblings(product: Product): Promise<Product[]> {
 // submitStoreForReview below), since the pilot deliberately has a human
 // review each new seller instead of any automated KYC check.
 export async function activateStore(storeId: string): Promise<Store | null> {
-  const row = await queryOne<any>(`UPDATE stores SET status = 'active' WHERE id = $1 RETURNING *`, [storeId]);
+  const row = await queryOne<any>(`UPDATE stores SET status = 'active', activated_at = now() WHERE id = $1 RETURNING *`, [storeId]);
+  return row ? rowToStore(row) : null;
+}
+
+// Puts an already-active store on hold - e.g. a shopper complaint, a
+// policy violation discovered after approval - without touching anything
+// it already listed (see the "active"-only filters above: a suspended
+// store's products stop appearing in search/browse/reservation the moment
+// this runs, the same way a "draft"/"pending_review" store's never did).
+// Only ever applied from "active", matching the narrow admin UI
+// (app/admin/sellers/active) that only shows a "Put on hold" button next
+// to a currently-active store.
+export async function suspendStore(storeId: string): Promise<Store | null> {
+  const row = await queryOne<any>(`UPDATE stores SET status = 'suspended' WHERE id = $1 AND status = 'active' RETURNING *`, [storeId]);
+  return row ? rowToStore(row) : null;
+}
+
+// Reverses suspendStore - the site owner decided the hold was unwarranted
+// or the issue's resolved. Refreshes activated_at (same reasoning as
+// activateStore above: it's "when did this store last become visible to
+// shoppers", not "when was it first approved"), same as reinstating a
+// store is itself a fresh activation event.
+export async function reinstateStore(storeId: string): Promise<Store | null> {
+  const row = await queryOne<any>(`UPDATE stores SET status = 'active', activated_at = now() WHERE id = $1 AND status = 'suspended' RETURNING *`, [storeId]);
   return row ? rowToStore(row) : null;
 }
 
@@ -637,6 +684,35 @@ export async function submitStoreForReview(storeId: string, input: SubmitStoreFo
 export async function getStoresPendingReview(): Promise<Store[]> {
   const rows = await query<any>(`SELECT * FROM stores WHERE status = 'pending_review' ORDER BY submitted_for_review_at ASC NULLS LAST`);
   return rows.map(rowToStore);
+}
+
+// The site owner's active-sellers list (app/admin/sellers/active) - every
+// store currently visible to shoppers, newest-activated first, alongside
+// getSuspendedStores below for the "Reinstate" half of the same page.
+export async function getActiveStores(): Promise<Store[]> {
+  const rows = await query<any>(`SELECT * FROM stores WHERE status = 'active' ORDER BY activated_at DESC NULLS LAST, created_at DESC`);
+  return rows.map(rowToStore);
+}
+
+export async function getSuspendedStores(): Promise<Store[]> {
+  const rows = await query<any>(`SELECT * FROM stores WHERE status = 'suspended' ORDER BY created_at DESC`);
+  return rows.map(rowToStore);
+}
+
+// ---------------------------------------------------------------------
+// Admin content moderation: individual product hold/unhold (app/admin/
+// products, app/api/v1/admin/products/[productId]/hold|unhold) - the
+// narrower alternative to suspendStore above when only one listing is a
+// problem, not the whole seller.
+// ---------------------------------------------------------------------
+export async function holdProduct(productId: string): Promise<Product | null> {
+  const row = await queryOne<any>(`UPDATE products SET status = 'on_hold' WHERE id = $1 RETURNING *`, [productId]);
+  return row ? rowToProduct(row) : null;
+}
+
+export async function unholdProduct(productId: string): Promise<Product | null> {
+  const row = await queryOne<any>(`UPDATE products SET status = 'live' WHERE id = $1 RETURNING *`, [productId]);
+  return row ? rowToProduct(row) : null;
 }
 
 export async function updateStoreTheme(storeId: string, patch: { primary?: string; accent?: string; heroTitle?: string; heroSubtitle?: string }) {
@@ -1990,7 +2066,7 @@ export async function getSimilarProducts(productId: string, limit = 4) {
   const rows = await query<any>(
     `SELECT p.*, s.name AS _store_name FROM products p
      JOIN stores s ON s.id = p.store_id
-     WHERE p.id != $1 AND p.gender = $2 AND p.sub_category = $3 AND s.status = 'active'`,
+     WHERE p.id != $1 AND p.gender = $2 AND p.sub_category = $3 AND s.status = 'active' AND p.status = 'live'`,
     [productId, product.gender, product.subCategory]
   );
 
@@ -2036,7 +2112,7 @@ export async function getComplementaryProducts(productId: string, limit = 4) {
   const rows = await query<any>(
     `SELECT p.*, s.name AS _store_name, s.local_market AS _local_market, s.city AS _city
      FROM products p JOIN stores s ON s.id = p.store_id
-     WHERE p.store_id != $1 AND p.gender = $2 AND p.sub_category = ANY($3) AND s.status = 'active'`,
+     WHERE p.store_id != $1 AND p.gender = $2 AND p.sub_category = ANY($3) AND s.status = 'active' AND p.status = 'live'`,
     [product.storeId, product.gender, targetSubcats]
   );
   const candidates = rows.map((r) => ({
