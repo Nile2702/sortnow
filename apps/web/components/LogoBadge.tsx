@@ -15,26 +15,17 @@ export function LogoBadge({ size = 40 }: { size?: number }) {
   return <img src="/brand/logo.png" alt="" width={Math.round(size * ASPECT_RATIO)} height={size} style={{ display: "block" }} />;
 }
 
-// `height` sets the rendered height of the logo image in px (the "Sort
-// Now" label below it adds its own height on top of that); width follows
-// the image's own aspect ratio. Stacked rather than side-by-side because
-// the logo image alone doesn't spell out the full name on its own.
+// `height` sets the rendered height in px; width follows automatically
+// from the file's own aspect ratio.
 export function FullLogo({ height = 40, className }: { height?: number; className?: string }) {
   return (
-    <span className={className} style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: Math.round(height * 0.08) }}>
-      <img src="/brand/logo.png" alt="" width={Math.round(height * ASPECT_RATIO)} height={height} style={{ display: "block" }} />
-      <span
-        style={{
-          fontFamily: "var(--site-font-heading), Poppins, sans-serif",
-          fontWeight: 700,
-          fontSize: Math.max(10, Math.round(height * 0.3)),
-          letterSpacing: "0.04em",
-          lineHeight: 1,
-          whiteSpace: "nowrap",
-        }}
-      >
-        Sort Now
-      </span>
-    </span>
+    <img
+      src="/brand/logo.png"
+      alt="SORT NOW"
+      width={Math.round(height * ASPECT_RATIO)}
+      height={height}
+      className={className}
+      style={{ display: "block" }}
+    />
   );
 }
