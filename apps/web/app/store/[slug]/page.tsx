@@ -76,6 +76,29 @@ export default async function StorefrontPage({ params }: Props) {
           key === "hero" ? (
             <div key={key} data-section={key} style={{ maxWidth: 1440, margin: "0 auto", padding: "16px 16px 0" }}>
               {sectionComponents[key]}
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: "6px 14px",
+                  marginTop: 14,
+                  fontSize: 13,
+                  color: "#64748b",
+                }}
+              >
+                <span>
+                  📍 {store.localMarket}, {store.city} – {store.pincode}
+                </span>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "var(--store-primary, #1f2937)", fontWeight: 600, textDecoration: "none" }}
+                >
+                  Locate on map →
+                </a>
+              </div>
             </div>
           ) : (
             <section key={key} data-section={key}>

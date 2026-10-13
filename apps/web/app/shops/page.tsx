@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { StoreRatingBadge } from "../../components/StoreRatingBadge";
 import { getLocationPref } from "../../lib/location";
+import { haversineKm } from "../../lib/geo";
 
 // mapbox-gl alone is ~500KB - split out of the initial /shops bundle so
 // shoppers who never touch "Map" view (the default is List) don't pay for
@@ -52,6 +53,12 @@ export default function ShopsPage() {
   const [view, setView] = useState<"list" | "map">("list");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [storeFilter, setStoreFilter] = useState<string[] | null>(null);
+  // Populated when the typed search doesn't match any store's own text (name/
+  // city/pincode/localMarket) - see the debounced effect below. Undefined
+  // means "no area lookup has run for this query", distinct from an empty Set
+  // (looked it up, found nothing nearby), so the direct-text match above
+  // isn't masked by a stale/irrelevant area result.
+  const [areaMatchSlugs, setAreaMatchSlugs] = useState<Set<string> | undefined>(undefined);
 
   useEffect(() => {
     fetch("/api/v1/shops")
@@ -83,12 +90,65 @@ export default function ShopsPage() {
     if ("lat" in pref && "lng" in pref) setUserLocation({ lat: pref.lat, lng: pref.lng });
   }, []);
 
+  // Lets searching a real neighbourhood name (e.g. "Andheri") surface stores
+  // near it even when no store's own name/city/pincode/localMarket text
+  // contains that word - debounced so it only fires once typing pauses, and
+  // skipped entirely when the typed text already matches a store directly
+  // (the common case), since that's free and this costs a network round-trip
+  // to a rate-limited third-party service.
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 3) {
+      setAreaMatchSlugs(undefined);
+      return;
+    }
+    const lower = q.toLowerCase();
+    const hasDirectMatch = shops.some(
+      (s) => s.name.toLowerCase().includes(lower) || s.city.toLowerCase().includes(lower) || s.pincode.includes(lower) || s.localMarket.toLowerCase().includes(lower)
+    );
+    if (hasDirectMatch) {
+      setAreaMatchSlugs(undefined);
+      return;
+    }
+
+    let cancelled = false;
+    const AREA_RADIUS_KM = 8;
+    const timer = setTimeout(() => {
+      fetch(`/api/v1/location/label?area=${encodeURIComponent(q)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (cancelled) return;
+          const result = data?.result as { lat: number; lng: number } | null;
+          if (!result) {
+            setAreaMatchSlugs(new Set());
+            return;
+          }
+          const nearby = shops.filter((s) => haversineKm(result.lat, result.lng, s.latitude, s.longitude) <= AREA_RADIUS_KM);
+          setAreaMatchSlugs(new Set(nearby.map((s) => s.slug)));
+        })
+        .catch(() => {
+          if (!cancelled) setAreaMatchSlugs(new Set());
+        });
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, shops]);
+
   const cities = useMemo(() => Array.from(new Set(shops.map((s) => s.city))).sort(), [shops]);
   const categories = useMemo(() => Array.from(new Set(shops.map((s) => s.category))).sort(), [shops]);
 
   const filtered = shops.filter((s) => {
     const q = query.trim().toLowerCase();
-    const matchesQuery = !q || s.name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q) || s.pincode.includes(q);
+    const matchesQuery =
+      !q ||
+      s.name.toLowerCase().includes(q) ||
+      s.city.toLowerCase().includes(q) ||
+      s.pincode.includes(q) ||
+      s.localMarket.toLowerCase().includes(q) ||
+      areaMatchSlugs?.has(s.slug);
     const matchesCategory = category === "all" || s.category === category;
     const matchesStoreFilter = !storeFilter || storeFilter.includes(s.slug);
     return matchesQuery && matchesCategory && matchesStoreFilter;

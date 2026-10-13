@@ -35,6 +35,11 @@ export interface StoreRecord {
   slug: string;
   name: string;
   status: string;
+  city: string;
+  pincode: string;
+  localMarket: string;
+  latitude: number;
+  longitude: number;
   liveSale?: { headline: string; discountLabel: string; startedAt: string; endsAt: string } | null;
 }
 
