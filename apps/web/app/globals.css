@@ -10,8 +10,8 @@
      discount percentages (Myntra-style), independent of the brand's own
      red. Variable names kept as -ink-/-cream-/-bronze-/-glow- to avoid
      touching every call site; only the values changed. */
-  --sio-ink: #282c3f;
-  --sio-ink-soft: #4b4f5f;
+  --sio-ink: #000000;
+  --sio-ink-soft: #2b2b2b;
   --sio-cream: #f5f5f6;
   --sio-paper: #ffffff;
   --sio-line: #d4d5d9;
