@@ -34,7 +34,9 @@ export function SellerNav() {
     <div className="sio-print-hide" style={{ background: "var(--sio-ink)", color: "#fff" }}>
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "14px 20px 0", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <Link href="/seller" aria-label="SORT NOW Seller Portal home" style={{ display: "flex", alignItems: "center", gap: 10, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
-          <FullLogo height={34} />
+          <span style={{ display: "inline-flex", alignItems: "center", background: "#fff", color: "var(--sio-ink)", borderRadius: 10, padding: "6px 10px" }}>
+            <FullLogo height={34} />
+          </span>
           <span
             style={{
               fontSize: 11,
