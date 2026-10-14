@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getStoreBySlug, getLiveTheme, themeToCssVariables } from "../../../lib/theme";
-import { getStoreRatingSummary } from "../../../lib/seed-data";
+import { getStoreRatingSummary, getAllCategories } from "../../../lib/seed-data";
 import { HeroCarousel } from "../../../components/HeroCarousel";
 import { ProductGrid } from "../../../components/ProductGrid";
 import { CategoryNav } from "../../../components/CategoryNav";
@@ -11,20 +11,34 @@ import { StoreReviews } from "../../../components/StoreReviews";
 
 interface Props {
   params: { slug: string };
+  searchParams: { category?: string };
 }
 
 // ISR: anonymous storefront pages revalidate every 60s, busted early via
 // revalidateTag(`store:${slug}`) / (`theme:${storeId}`) on Theme Studio publish.
 export const revalidate = 60;
 
-export default async function StorefrontPage({ params }: Props) {
+export default async function StorefrontPage({ params, searchParams }: Props) {
   const store = await getStoreBySlug(params.slug);
   if (!store || store.status !== "active") notFound();
+  // A category pill under the hero (components/CategoryNav.tsx) links to
+  // ?category=<id> - this is the one place that reads it, to actually filter
+  // the grid instead of the pill just reloading the same unfiltered page.
+  const activeCategoryId = searchParams.category;
 
   const theme = await getLiveTheme(store.id);
   const css = themeToCssVariables(theme);
   const saleActive = !!store.liveSale && new Date(store.liveSale.endsAt).getTime() > Date.now();
   const rating = await getStoreRatingSummary(store.id);
+
+  // When a category pill is active, replace the normal section layout with
+  // one focused grid for that category instead of mixing a filtered view in
+  // with an unrelated "New Arrivals" section below it.
+  let activeCategoryName: string | undefined;
+  if (activeCategoryId) {
+    const categories = await getAllCategories();
+    activeCategoryName = categories[store.id]?.find((c: any) => c.id === activeCategoryId)?.name;
+  }
 
   // Every section in sectionOrder maps to a shared component - the same
   // components and design system the homepage uses. Only the store's
@@ -32,8 +46,10 @@ export default async function StorefrontPage({ params }: Props) {
   // differs per tenant, not the fonts, spacing, or layout.
   const sectionComponents: Record<string, JSX.Element | null> = {
     hero: theme.layout.heroCarousel ? <HeroCarousel slides={theme.layout.heroCarousel} /> : null,
-    categoryNav: <CategoryNav storeId={store.id} />,
-    featuredCollection: (
+    categoryNav: <CategoryNav storeId={store.id} activeCategoryId={activeCategoryId} />,
+    featuredCollection: activeCategoryId ? (
+      <ProductGrid storeId={store.id} gridStyle={theme.layout.gridStyle} title={activeCategoryName ?? "Category"} categoryId={activeCategoryId} limit={48} />
+    ) : (
       <ProductGrid
         storeId={store.id}
         gridStyle={theme.layout.gridStyle}
@@ -42,7 +58,7 @@ export default async function StorefrontPage({ params }: Props) {
         limit={theme.layout.featuredCollection?.maxItems ?? 8}
       />
     ),
-    newArrivals: <ProductGrid storeId={store.id} gridStyle={theme.layout.gridStyle} title="New Arrivals" sort="newest" />,
+    newArrivals: activeCategoryId ? null : <ProductGrid storeId={store.id} gridStyle={theme.layout.gridStyle} title="New Arrivals" sort="newest" />,
   };
 
   return (

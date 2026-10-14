@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isValidAdminKey } from "./lib/admin-auth";
+import { clientIp } from "./lib/rate-limit";
 
 /**
  * Resolves all three storefront access patterns to one internal route:
@@ -50,7 +51,7 @@ export async function middleware(req: NextRequest) {
   // invalid/missing key gets a real 403 rather than whatever a Server
   // Component can manage to render with a 200 status.
   if (url.pathname.startsWith("/admin")) {
-    if (!isValidAdminKey(url.searchParams.get("key"))) {
+    if (!isValidAdminKey(url.searchParams.get("key"), clientIp(req))) {
       return NextResponse.json(
         { error: "forbidden", message: "Missing or invalid admin key. Append ?key=<ADMIN_SECRET> to the URL." },
         { status: 403 }

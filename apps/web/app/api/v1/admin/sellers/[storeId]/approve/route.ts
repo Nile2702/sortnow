@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { activateStore, getAllStores } from "../../../../../../../lib/seed-data";
 import { isValidAdminKey } from "../../../../../../../lib/admin-auth";
+import { clientIp } from "../../../../../../../lib/rate-limit";
 
 // The ONLY path that flips a "pending_review" store to "active" - called
 // by the site owner from /admin/sellers after manually looking over the
@@ -11,7 +12,7 @@ import { isValidAdminKey } from "../../../../../../../lib/admin-auth";
 // lib/admin-auth.ts; middleware.ts does NOT cover /api/* routes, so this
 // has to check for itself.
 export async function POST(req: NextRequest, { params }: { params: { storeId: string } }) {
-  if (!isValidAdminKey(req.nextUrl.searchParams.get("key"))) {
+  if (!isValidAdminKey(req.nextUrl.searchParams.get("key"), clientIp(req))) {
     return NextResponse.json({ error: "forbidden", message: "Missing or invalid admin key." }, { status: 403 });
   }
 

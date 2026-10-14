@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { reinstateStore, getAllStores } from "../../../../../../../lib/seed-data";
 import { isValidAdminKey } from "../../../../../../../lib/admin-auth";
+import { clientIp } from "../../../../../../../lib/rate-limit";
 
 // Reverses suspendStore - flips a "suspended" store back to "active",
 // restoring it to every shopper-facing search/browse/reservation path
 // (see the "active"-only filters in lib/seed-data.ts). Gated the same way
 // as suspend/approve/reject - see lib/admin-auth.ts.
 export async function POST(req: NextRequest, { params }: { params: { storeId: string } }) {
-  if (!isValidAdminKey(req.nextUrl.searchParams.get("key"))) {
+  if (!isValidAdminKey(req.nextUrl.searchParams.get("key"), clientIp(req))) {
     return NextResponse.json({ error: "forbidden", message: "Missing or invalid admin key." }, { status: 403 });
   }
 

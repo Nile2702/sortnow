@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { holdProduct } from "../../../../../../../lib/seed-data";
 import { isValidAdminKey } from "../../../../../../../lib/admin-auth";
+import { clientIp } from "../../../../../../../lib/rate-limit";
 
 // Hides a single listing from every shopper-facing path (search, store
 // page, product page, reservations - see the "on_hold" filters in
@@ -11,7 +12,7 @@ import { isValidAdminKey } from "../../../../../../../lib/admin-auth";
 // - see lib/admin-auth.ts; middleware.ts does NOT cover /api/* routes, so
 // this has to check for itself.
 export async function POST(req: NextRequest, { params }: { params: { productId: string } }) {
-  if (!isValidAdminKey(req.nextUrl.searchParams.get("key"))) {
+  if (!isValidAdminKey(req.nextUrl.searchParams.get("key"), clientIp(req))) {
     return NextResponse.json({ error: "forbidden", message: "Missing or invalid admin key." }, { status: 403 });
   }
 

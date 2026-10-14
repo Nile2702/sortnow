@@ -10,7 +10,7 @@ import { getAllStores, resolvePincode, haversineKm } from "../../../../../../lib
 export async function GET(req: NextRequest, { params }: { params: { storeId: string } }) {
   const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
-  if (!store) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!store || store.status !== "active") return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const pincode = req.nextUrl.searchParams.get("pincode") ?? "";
   if (!/^\d{6}$/.test(pincode)) {

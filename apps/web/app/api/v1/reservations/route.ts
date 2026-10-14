@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { getAllStores, getAllProducts, createReservation, getProductReservedQuantity, ReservationItem } from "../../../../lib/seed-data";
+import { rateLimit, clientIp } from "../../../../lib/rate-limit";
 
 interface CartLikeItem extends ReservationItem {
   storeSlug: string;
@@ -11,6 +12,13 @@ interface CartLikeItem extends ReservationItem {
 // specific shopkeeper holds - so one reservation is created per store, and
 // every reservation created here is returned together.
 export async function POST(req: NextRequest) {
+  // Unlike reviews/waitlist/OTP, this endpoint had no rate limit at all -
+  // every create is a real DB write, a real notification email, and ties up
+  // real stock for the hold window, so it's an easy spam/stock-denial vector
+  // without one.
+  const limit = rateLimit(`reservations:${clientIp(req)}`, 10, 10 * 60_000);
+  if (!limit.ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+
   const body = (await req.json().catch(() => null)) as {
     items: CartLikeItem[];
     shopperName: string;

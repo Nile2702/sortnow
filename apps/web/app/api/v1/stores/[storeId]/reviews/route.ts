@@ -3,10 +3,14 @@ import { getAllStores, getStoreReviews, getStoreRatingSummary, addStoreReview } 
 import { rateLimit, clientIp } from "../../../../../../lib/rate-limit";
 
 // `storeId` also accepts a slug, matching every other /stores/[storeId]
-// route - the storefront page itself only knows the slug.
+// route - the storefront page itself only knows the slug. Only resolves for
+// an active store - reviews are a public/shopper-facing feature, same
+// visibility rule as the storefront page itself (a suspended/draft store
+// shouldn't be reviewable or have its reviews readable).
 async function resolveStoreId(storeId: string) {
   const stores = await getAllStores();
-  return stores.find((s) => s.slug === storeId || s.id === storeId)?.id;
+  const store = stores.find((s) => s.slug === storeId || s.id === storeId);
+  return store?.status === "active" ? store.id : undefined;
 }
 
 export async function GET(_req: NextRequest, { params }: { params: { storeId: string } }) {

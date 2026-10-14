@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { unholdProduct } from "../../../../../../../lib/seed-data";
 import { isValidAdminKey } from "../../../../../../../lib/admin-auth";
+import { clientIp } from "../../../../../../../lib/rate-limit";
 
 // Reverses hold/route.ts - flips a single "on_hold" listing back to
 // "live", restoring it to every shopper-facing path. Gated the same way -
 // see lib/admin-auth.ts.
 export async function POST(req: NextRequest, { params }: { params: { productId: string } }) {
-  if (!isValidAdminKey(req.nextUrl.searchParams.get("key"))) {
+  if (!isValidAdminKey(req.nextUrl.searchParams.get("key"), clientIp(req))) {
     return NextResponse.json({ error: "forbidden", message: "Missing or invalid admin key." }, { status: 403 });
   }
 

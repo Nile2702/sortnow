@@ -450,10 +450,15 @@ export const CATEGORY_TILES: { label: string; gender: Gender; subCategory: strin
 ];
 
 export async function getCategoryTileCounts() {
-  const products = await getAllProducts();
+  const [products, stores] = await Promise.all([getAllProducts(), getAllStores()]);
+  const storesById = new Map(stores.map((s) => [s.id, s]));
+  // Same visibility rules as searchProducts/discoverStores/getAllShops - a
+  // homepage category count shouldn't advertise stock that isn't actually
+  // browsable (a suspended store's or an on-hold listing's products).
+  const visible = products.filter((p) => storesById.get(p.storeId)?.status === "active" && p.status !== "on_hold");
   return CATEGORY_TILES.map((tile) => ({
     ...tile,
-    count: products.filter((p) => p.gender === tile.gender && (!tile.subCategory || p.subCategory === tile.subCategory)).length,
+    count: visible.filter((p) => p.gender === tile.gender && (!tile.subCategory || p.subCategory === tile.subCategory)).length,
   }));
 }
 
@@ -1278,7 +1283,8 @@ export async function upsertShopper(input: UpsertShopperInput): Promise<{ shoppe
       referrer.phone,
       "shopper",
       "referral_joined",
-      `${shopper.name} just joined SORT NOW using your invite link! You've now referred ${count} friend${count === 1 ? "" : "s"}.`
+      `${shopper.name} just joined SORT NOW using your invite link! You've now referred ${count} friend${count === 1 ? "" : "s"}.`,
+      referrer.email
     );
   }
   return { shopper, isNewCustomer: true };

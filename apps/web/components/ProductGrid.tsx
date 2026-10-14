@@ -30,7 +30,12 @@ const COLUMNS: Record<Props["gridStyle"], string> = {
 async function fetchProducts(storeId: string, opts: { categoryId?: string; sort?: string; limit?: number }) {
   const stores = await getAllStores();
   const store = stores.find((s) => s.id === storeId || s.slug === storeId);
-  if (!store) return [];
+  // Defense in depth: the page that renders this grid (app/store/[slug]/page.tsx)
+  // already 404s for a non-active store before this component ever mounts,
+  // but this component has no guarantee it's only ever called from there -
+  // it shouldn't trust that upstream gate alone to keep a suspended/draft
+  // store's products off the page.
+  if (!store || store.status !== "active") return [];
 
   const allProducts = await getAllProducts();
   // A held product (see Product.status) must not appear on the storefront
