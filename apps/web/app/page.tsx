@@ -562,7 +562,7 @@ function DiscoverPageInner() {
       <section style={{ background: "#fff", borderRadius: 18, padding: 24, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", border: "1px solid #f1f5f9" }}>
         <h2 style={{ fontSize: 20, marginBottom: 4, fontWeight: 700 }}>🧭 Shop in Sort</h2>
         <p style={{ fontSize: 13, color: "#64748b", marginBottom: 18 }}>
-          Sort products across every nearby store at once, then save the sort to shop it again later.
+          Sort products across every nearby store
         </p>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
