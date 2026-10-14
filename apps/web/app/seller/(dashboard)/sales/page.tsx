@@ -89,9 +89,11 @@ export default function SellerSalesPage() {
   function loadProducts() {
     if (!store) return;
     fetch(`/api/v1/seller/stores/${store.id}/products`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then(setProducts)
-      .catch(() => {});
+      // Previously silent - the "Select a product" dropdown just stayed
+      // empty with no indication billing couldn't load the catalog.
+      .catch(() => showToast("Couldn't load your products. Try refreshing the page."));
   }
 
   function loadSettings() {
@@ -115,9 +117,11 @@ export default function SellerSalesPage() {
   function loadBills() {
     if (!store) return;
     fetch(`/api/v1/seller/stores/${store.id}/bills`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then(setBills)
-      .catch(() => {});
+      // Previously silent - the invoice History section just stayed empty
+      // with no indication it had actually failed to load.
+      .catch(() => showToast("Couldn't load bill history. Try refreshing the page."));
   }
 
   useEffect(loadProducts, [store]);

@@ -26,6 +26,13 @@ export default function SellerDashboard() {
   const [saleForm, setSaleForm] = useState({ headline: "Flash Sale — Today Only", discountLabel: "Flat 30% Off", durationHours: 4 });
   const [savingSale, setSavingSale] = useState(false);
   const [pendingReservations, setPendingReservations] = useState(0);
+  // Products/reservations stats defaulted to their initial state (0 items,
+  // 0 pending) the instant `store` loaded, so every stat tile flashed a
+  // real-looking zero for a moment before its own fetch resolved - visually
+  // identical to "this store genuinely has none", not an obvious loading
+  // state. Tracked separately so the tiles can show a neutral placeholder
+  // instead, same as "Plan" already did via `planName ?? "…"`.
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     if (!store) return;
@@ -34,10 +41,16 @@ export default function SellerDashboard() {
     // request - harmless by itself, but exactly the kind of error that was
     // masking the real stuck-loading bugs elsewhere on pages that DO gate on
     // their data. Guarded the same way for consistency.
-    fetch(`/api/v1/seller/stores/${store.id}/products`)
-      .then((r) => r.json())
-      .then(setProducts)
-      .catch(() => {});
+    Promise.all([
+      fetch(`/api/v1/seller/stores/${store.id}/products`)
+        .then((r) => r.json())
+        .then(setProducts)
+        .catch(() => {}),
+      fetch(`/api/v1/seller/stores/${store.id}/reservations`)
+        .then((r) => r.json())
+        .then((list) => setPendingReservations(list.filter((r: any) => r.status === "pending").length))
+        .catch(() => {}),
+    ]).then(() => setStatsLoading(false));
     fetch(`/api/v1/seller/stores/${store.id}/billing`)
       .then((r) => r.json())
       .then((d) => setPlanName(d.plans.find((p: any) => p.code === d.subscription.planCode)?.name ?? null))
@@ -45,10 +58,6 @@ export default function SellerDashboard() {
     fetch(`/api/v1/stores/${store.id}`)
       .then((r) => r.json())
       .then((d) => setLiveSale(d.liveSale ?? null))
-      .catch(() => {});
-    fetch(`/api/v1/seller/stores/${store.id}/reservations`)
-      .then((r) => r.json())
-      .then((list) => setPendingReservations(list.filter((r: any) => r.status === "pending").length))
       .catch(() => {});
   }, [store]);
 
@@ -112,9 +121,9 @@ export default function SellerDashboard() {
   // stat with a real destination gets one, except Store Status, which has
   // nowhere to go.
   const stats: { label: string; value: string | number; icon: string; href?: string }[] = [
-    { label: "Total Products", value: products.length, icon: "📦", href: "/seller/products" },
-    { label: "Pending Reservations", value: pendingReservations, icon: "🕐", href: "/seller/reservations" },
-    { label: "Low Stock Alerts", value: lowStock, icon: "⚠️", href: "/seller/products?lowStock=1" },
+    { label: "Total Products", value: statsLoading ? "…" : products.length, icon: "📦", href: "/seller/products" },
+    { label: "Pending Reservations", value: statsLoading ? "…" : pendingReservations, icon: "🕐", href: "/seller/reservations" },
+    { label: "Low Stock Alerts", value: statsLoading ? "…" : lowStock, icon: "⚠️", href: "/seller/products?lowStock=1" },
     { label: "Plan", value: planName ?? "…", icon: "⭐", href: "/seller/billing" },
     { label: "Store Status", value: statusDisplay.label, icon: statusDisplay.icon },
   ];

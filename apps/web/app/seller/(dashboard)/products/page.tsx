@@ -36,6 +36,7 @@ function SellerProductsPageInner() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   // Lets the dashboard's "Low Stock Alerts" tile deep-link straight into
   // this filter already applied, instead of landing here and making the
@@ -89,10 +90,13 @@ function SellerProductsPageInner() {
 
   function load(storeId: string) {
     setLoading(true);
+    setLoadError(false);
     fetch(`/api/v1/seller/stores/${storeId}/products`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then(setProducts)
-      .catch(() => {})
+      // Silently swallowing this previously left the page stuck showing an
+      // empty catalog with no indication the load had actually failed.
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }
 
@@ -121,6 +125,20 @@ function SellerProductsPageInner() {
 
   if (storeLoading || !store) {
     return <main style={{ maxWidth: 1440, margin: "0 auto", padding: 40 }}>Loading…</main>;
+  }
+
+  if (loadError) {
+    return (
+      <main style={{ maxWidth: 1440, margin: "0 auto", padding: 40, textAlign: "center" }}>
+        <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load your products.</p>
+        <button
+          onClick={() => load(store.id)}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+        >
+          Retry
+        </button>
+      </main>
+    );
   }
 
   return (
