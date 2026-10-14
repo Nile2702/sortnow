@@ -12,7 +12,18 @@ import {
   syncFabricInText,
   type Gender,
 } from "../lib/catalog-constants";
-import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, cutoutFromMask, removeBackgroundRMBG } from "../lib/image-enhance";
+import {
+  autoAlignAndZoom,
+  autoEnhanceQuality,
+  stabilizeLighting,
+  reduceWrinkles,
+  compositeBackground,
+  pickAutoBackground,
+  BACKGROUND_PRESETS,
+  cutoutFromMask,
+  removeBackgroundRMBG,
+  hasRmbgModelLoadStarted,
+} from "../lib/image-enhance";
 import { checkDataUrlSafety } from "../lib/nsfw-check";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
@@ -335,8 +346,12 @@ export function ProductForm({
       // RMBG-1.4 - a model purpose-built for background removal (unlike
       // isnet, a repurposed generic salient-object-detection model), picked
       // after isnet kept leaving speckle/noise artifacts on real seller
-      // photos that no amount of post-processing fully chased away.
-      setBgRemoveProgress("Downloading model (one-time, first use only)…");
+      // photos that no amount of post-processing fully chased away. Only
+      // true the first time this page actually downloads it - unconditional
+      // before, so a second remove-background on this same page kept
+      // saying "one-time, first use only" even though it was already
+      // cached in memory and about to run instantly.
+      if (!hasRmbgModelLoadStarted()) setBgRemoveProgress("Downloading model (one-time, ~45MB, first use only)…");
       const maskUrl = await removeBackgroundRMBG(bgInput);
       setBgRemoveProgress("Processing photo…");
       const cutoutUrl = await cutoutFromMask(bgInput, maskUrl);
@@ -349,7 +364,12 @@ export function ProductForm({
       setPhotoStage("bg-removed");
     } catch (err) {
       console.error(err);
-      setBgRemoveError("Couldn't remove the background in this browser. Try a different browser or use the original photo.");
+      // A specific message (e.g. the model-download timeout in
+      // removeBackgroundRMBG) is more actionable than this generic
+      // fallback, which used to show unconditionally regardless of what
+      // actually went wrong - "try a different browser" is wrong advice for
+      // a slow/dropped connection, the far more likely real cause.
+      setBgRemoveError(err instanceof Error && err.message ? err.message : "Couldn't remove the background in this browser. Try a different browser or use the original photo.");
     } finally {
       setBgRemoving(false);
       setBgRemoveProgress("");

@@ -23,6 +23,7 @@ import {
   compositeBackground,
   pickAutoBackground,
   BACKGROUND_PRESETS,
+  hasRmbgModelLoadStarted,
 } from "../../../../../lib/image-enhance";
 import { checkDataUrlSafety } from "../../../../../lib/nsfw-check";
 import { showToast } from "../../../../../lib/toast";
@@ -451,7 +452,14 @@ export default function BulkPhotoUploadPage() {
 
     for (let i = 0; i < queue.length; i++) {
       const draft = queue[i];
-      setProgressLabel(`Removing background ${i + 1} of ${queue.length}: ${draft.fileName}`);
+      // The very first photo in a page load pays for a one-time ~45MB model
+      // download before any actual background removal happens - without
+      // saying so, that wait looked identical to the UI just being stuck,
+      // which is exactly what it was mistaken for.
+      const label = hasRmbgModelLoadStarted()
+        ? `Removing background ${i + 1} of ${queue.length}: ${draft.fileName}`
+        : `Downloading background-removal model (one-time, ~45MB)… then removing background ${i + 1} of ${queue.length}: ${draft.fileName}`;
+      setProgressLabel(label);
       updateDraft(draft.localId, { status: "removing-bg", error: "" });
       try {
         // Just the cutout - no lighting/quality/wrinkle correction bundled

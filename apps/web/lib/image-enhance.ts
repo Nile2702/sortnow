@@ -68,6 +68,19 @@ function getTransformersModule(): Promise<TransformersModule> {
   return transformersModulePromise;
 }
 
+// Whether getRmbgModel() below has already been called at least once this
+// page load - checked by callers *before* kicking off a photo's background
+// removal, to show a seller "downloading the AI model" instead of a plain
+// "removing background" the one time that's actually what's happening (the
+// ~45MB first-use download, not the sub-second inference pass every photo
+// after it gets). A page reload loses this (the module-level promise below
+// resets), which correctly shows the download message again if a fresh
+// page load means a fresh WASM runtime even when the browser's own HTTP
+// cache still has the file.
+export function hasRmbgModelLoadStarted(): boolean {
+  return rmbgModelPromise !== null;
+}
+
 // Lazily loads the RMBG-1.4 model (~45MB, cached by the browser after first
 // use) exactly once per page load, shared across every photo processed in a
 // bulk-upload batch or the single-product form. RMBG-1.4 is a model
@@ -168,7 +181,38 @@ export function resizeForAnalysis(dataUrl: string, maxDimension = 768): Promise<
 // downstream needs to change. RawImage.fromTensor(...).resize(...) handles
 // scaling the model's own fixed-size (1024x1024) output mask back up to the
 // original photo's resolution.
+// Races a promise against a plain timer - the model download/load below has
+// no timeout of its own (it's just `fetch` under the hood, via the browser's
+// own import()), so a dropped/stalled connection partway through a ~45MB
+// transfer previously just left a seller staring at "Removing background…"
+// forever with no error, no retry option, and no way to tell "still working"
+// from "silently stuck". Clears its own timer on either outcome so a fast,
+// successful call doesn't leave a dangling setTimeout behind.
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 export async function removeBackgroundRMBG(dataUrl: string): Promise<string> {
+  return withTimeout(
+    removeBackgroundRMBGInner(dataUrl),
+    120_000,
+    "This is taking much longer than expected - likely a slow or dropped connection while downloading the background-removal model (about 45MB, only needed once). Check your connection and try again."
+  );
+}
+
+async function removeBackgroundRMBGInner(dataUrl: string): Promise<string> {
   const { RawImage } = await getTransformersModule();
   const { model, processor } = await getRmbgModel();
 
