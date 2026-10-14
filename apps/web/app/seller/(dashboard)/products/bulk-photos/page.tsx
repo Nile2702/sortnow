@@ -4,7 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
-import { CATEGORY_TREE, COLOR_CATALOG, FABRIC_OPTIONS, BRAND_OPTIONS, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
+import {
+  CATEGORY_TREE,
+  COLOR_CATALOG,
+  FABRIC_OPTIONS,
+  BRAND_OPTIONS,
+  getSizeOptionsFor,
+  defaultSizedSubCategoryFor,
+  syncFabricInDescription,
+  type Gender,
+} from "../../../../../lib/catalog-constants";
 import {
   autoAlignAndZoom,
   cutoutFromMask,
@@ -307,6 +316,7 @@ export default function BulkPhotoUploadPage() {
         if (bulkFabric) {
           patch.fabric = bulkFabric;
           patch.fabricIsOther = bulkFabricIsOther;
+          patch.description = syncFabricInDescription(d.description, d.fabric, bulkFabric);
         }
         if (bulkBrand) {
           patch.brand = bulkBrand;
@@ -1138,7 +1148,16 @@ export default function BulkPhotoUploadPage() {
                           if (e.target.value === "__other__") {
                             updateDraft(d.localId, { fabric: "", fabricIsOther: true });
                           } else {
-                            updateDraft(d.localId, { fabric: e.target.value, fabricIsOther: false });
+                            // Re-picking a fabric after a description already
+                            // named the old one (typed by hand or from a
+                            // previous Auto-fill Details run) left that
+                            // description describing the wrong material -
+                            // swaps it in place rather than leaving it stale.
+                            updateDraft(d.localId, {
+                              fabric: e.target.value,
+                              fabricIsOther: false,
+                              description: syncFabricInDescription(d.description, d.fabric, e.target.value),
+                            });
                           }
                         }}
                         style={inputStyle()}

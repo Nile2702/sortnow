@@ -2,7 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CATEGORY_TREE, COLOR_CATALOG, FABRIC_OPTIONS, BRAND_OPTIONS, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../lib/catalog-constants";
+import {
+  CATEGORY_TREE,
+  COLOR_CATALOG,
+  FABRIC_OPTIONS,
+  BRAND_OPTIONS,
+  getSizeOptionsFor,
+  defaultSizedSubCategoryFor,
+  syncFabricInDescription,
+  type Gender,
+} from "../lib/catalog-constants";
 import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, cutoutFromMask, removeBackgroundRMBG } from "../lib/image-enhance";
 import { checkDataUrlSafety } from "../lib/nsfw-check";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
@@ -732,7 +741,12 @@ export function ProductForm({
               update("fabric", "");
             } else {
               setFabricIsOther(false);
-              update("fabric", e.target.value);
+              const nextFabric = e.target.value;
+              // Re-picking a fabric after a description already named the
+              // old one (typed by hand or from a previous Auto-fill Details
+              // run) left that description describing the wrong material -
+              // swaps it in place rather than leaving it stale.
+              setForm((f) => ({ ...f, fabric: nextFabric, description: syncFabricInDescription(f.description, f.fabric, nextFabric) }));
             }
           }}
           style={inputStyle()}
