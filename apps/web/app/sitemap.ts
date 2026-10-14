@@ -1,7 +1,6 @@
 import { MetadataRoute } from "next";
 import { getAllStores, getAllProducts } from "../lib/seed-data";
-
-const BASE_URL = "https://sortitout.in";
+import { SITE_URL as BASE_URL } from "../lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const stores = await getAllStores();

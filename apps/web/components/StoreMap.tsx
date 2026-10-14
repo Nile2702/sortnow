@@ -37,7 +37,7 @@ function MapUnavailable() {
         padding: 20,
       }}
     >
-      Map view needs a Mapbox token (NEXT_PUBLIC_MAPBOX_TOKEN) to be configured.
+      Map view isn't available right now - try List view instead.
     </div>
   );
 }

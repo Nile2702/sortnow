@@ -44,6 +44,7 @@ export function StoreReviews({ storeId }: { storeId: string }) {
   const [form, setForm] = useState({ authorName: "", rating: 5, comment: "" });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   useEffect(() => {
     fetch(`/api/v1/stores/${storeId}/reviews`)
@@ -59,24 +60,32 @@ export function StoreReviews({ storeId }: { storeId: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
+    setReviewError("");
     const res = await fetch(`/api/v1/stores/${storeId}/reviews`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-    if (res.ok) {
-      const newReview = await res.json();
-      setReviews((r) => [newReview, ...r]);
-      setSummary((s) => ({
-        average: Math.round(((s.average * s.count + newReview.rating) / (s.count + 1)) * 10) / 10,
-        count: s.count + 1,
-        breakdown: s.breakdown.map((b) => (b.star === newReview.rating ? { ...b, count: b.count + 1 } : b)),
-      }));
-      setForm({ authorName: "", rating: 5, comment: "" });
-      setSubmitted(true);
-      setTimeout(() => setSubmitted(false), 3000);
-    }
+    const body = await res.json().catch(() => null);
     setSubmitting(false);
+    // Same fix as the product review form: a rejected review (blank
+    // comment, rate-limited) used to just go back to submitting=false with
+    // no message - the shopper's review appeared to silently vanish with no
+    // explanation.
+    if (!res.ok) {
+      setReviewError(body?.message ?? "Couldn't submit your review. Try again.");
+      return;
+    }
+    const newReview = body;
+    setReviews((r) => [newReview, ...r]);
+    setSummary((s) => ({
+      average: Math.round(((s.average * s.count + newReview.rating) / (s.count + 1)) * 10) / 10,
+      count: s.count + 1,
+      breakdown: s.breakdown.map((b) => (b.star === newReview.rating ? { ...b, count: b.count + 1 } : b)),
+    }));
+    setForm({ authorName: "", rating: 5, comment: "" });
+    setSubmitted(true);
+    setTimeout(() => setSubmitted(false), 3000);
   }
 
   if (loading) return null;
@@ -177,6 +186,11 @@ export function StoreReviews({ storeId }: { storeId: string }) {
             {submitted && (
               <span className="sio-fade-in" style={{ color: "var(--sio-bronze-dark)", fontSize: 13 }}>
                 Thanks for rating this shop.
+              </span>
+            )}
+            {reviewError && (
+              <span className="sio-fade-in" style={{ color: "#b91c1c", fontSize: 13 }}>
+                {reviewError}
               </span>
             )}
           </form>

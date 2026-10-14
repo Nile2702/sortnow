@@ -1,7 +1,8 @@
 "use client";
 
-// Guest wishlist, localStorage-backed for this demo — same pattern as
-// lib/cart.ts. A real deployment persists this per shopper_id server-side.
+// Guest wishlist, localStorage-backed - same pattern as lib/cart.ts. A
+// signed-in shopper's wishlist isn't persisted server-side yet, only locally
+// on this device/browser.
 
 export interface WishlistItem {
   productId: string;

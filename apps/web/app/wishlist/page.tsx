@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WishlistItem, getWishlist, removeFromWishlist } from "../../lib/wishlist";
-import { addToCart } from "../../lib/cart";
 import { showToast } from "../../lib/toast";
 
 export default function WishlistPage() {
@@ -37,25 +36,31 @@ export default function WishlistPage() {
                 <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>{item.storeName}</div>
                 <div style={{ fontWeight: 700, marginBottom: 10 }}>₹{item.price}</div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={() => {
-                      addToCart({
-                        productId: item.productId,
-                        title: item.title,
-                        storeSlug: item.storeSlug,
-                        storeName: item.storeName,
-                        size: "Free Size",
-                        price: item.price,
-                        imageUrl: item.imageUrl,
-                        quantity: 1,
-                      });
-                      showToast("Added to Sort", "success", { label: "Go to Sort", href: "/cart" });
-                    }}
+                  {/* Links to the product page to pick a real size, rather
+                      than guessing one here - this page only ever knew
+                      title/price/image, never the product's actual size
+                      options, so an "Add to Sort" shortcut here could only
+                      ever fake a size (this used to hardcode "Free Size"
+                      regardless of what the product actually offered). */}
+                  <Link
+                    href={`/product/${item.productId}`}
                     className="sio-shine-btn"
-                    style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontSize: 13 }}
+                    style={{
+                      flex: 1,
+                      padding: "8px 0",
+                      borderRadius: 8,
+                      border: "none",
+                      background: "#0f172a",
+                      color: "#fff",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      textAlign: "center",
+                      textDecoration: "none",
+                      display: "block",
+                    }}
                   >
-                    Add to Sort
-                  </button>
+                    View product
+                  </Link>
                   <button
                     onClick={() => {
                       removeFromWishlist(item.productId);

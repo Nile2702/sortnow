@@ -1,10 +1,11 @@
 import { MetadataRoute } from "next";
+import { SITE_URL } from "../lib/site-url";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      { userAgent: "*", allow: "/", disallow: ["/seller", "/seller/", "/api/"] },
+      { userAgent: "*", allow: "/", disallow: ["/seller", "/seller/", "/admin", "/admin/", "/api/"] },
     ],
-    sitemap: "https://sortitout.in/sitemap.xml",
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

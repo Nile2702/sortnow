@@ -33,9 +33,14 @@ const SLIDES: Slide[] = [
     image: "/hero/store-interior.jpg",
   },
   {
+    // No specific discount/"live now" claim here - unlike the homepage's own
+    // "Live Sales Near You" section, this slider is static evergreen
+    // marketing copy, not driven by a store's real liveSale data, so it
+    // must never promise a specific, time-bound offer that may not
+    // actually be running.
     href: "/store/urban-vogue",
-    eyebrow: "LIVE NOW · URBAN VOGUE",
-    title: "Flat 40% Off — Festive Ethnic",
+    eyebrow: "FEATURED STORE",
+    title: "Urban Vogue — Festive Ethnic",
     subtitle: "Handpicked festive wear from Bandra's favourite ethnic boutique.",
     cta: "Shop Urban Vogue",
     bg: "linear-gradient(140deg, #180e0e 0%, #841f17 55%, #180e0e 100%)",

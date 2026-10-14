@@ -529,8 +529,7 @@ export default function AccountPage() {
               {devOtp && (
                 <>
                   {" "}
-                  <strong style={{ color: "var(--sio-ink)" }}>Dev mode — code: {devOtp}</strong> (no email provider connected yet, so it's
-                  shown here instead)
+                  Your code: <strong style={{ color: "var(--sio-ink)" }}>{devOtp}</strong>
                 </>
               )}
             </p>
@@ -660,7 +659,7 @@ export default function AccountPage() {
                 onChange={(e) => setMarketingOptIn(e.target.checked)}
                 style={{ marginTop: 2 }}
               />
-              <span>Send me offers, restocks, and nearby sales on WhatsApp/SMS (optional).</span>
+              <span>Send me offers, restocks, and nearby sales by email (optional).</span>
             </label>
             {error && <ErrorBanner text={error} />}
             <button

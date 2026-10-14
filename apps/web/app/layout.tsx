@@ -9,6 +9,7 @@ import { ScrollRevealInit } from "../components/ScrollRevealInit";
 import { ScrollToTop } from "../components/ScrollToTop";
 import { ToastHost } from "../components/ToastHost";
 import { LocationGate } from "../components/LocationGate";
+import { SITE_URL } from "../lib/site-url";
 
 // Poppins - a bold, geometric sans matching the weight/feel of the brand
 // logo's wordmark, used for both headings and body text.
@@ -18,7 +19,7 @@ const body = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"],
 export const metadata = {
   title: "SORT NOW — Find fashion near you",
   description: "Discover apparel from stores near you, sort by what matters, and walk into the store to try it on or buy.",
-  metadataBase: new URL("https://sortitout.in"),
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     title: "SORT NOW — Find fashion near you",
     description: "Discover apparel from stores near you, sort by what matters, and walk into the store to try it on or buy.",
