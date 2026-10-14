@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CartItem, getCart, removeFromCart, updateQuantity, cartTotal } from "../../lib/cart";
+import { allowsMultipleQuantity, MAX_MULTIPLE_QUANTITY } from "../../lib/catalog-constants";
 
 export default function CartPage() {
   const router = useRouter();
@@ -54,16 +55,21 @@ export default function CartPage() {
                   <div style={{ marginTop: 6, fontWeight: 700 }}>₹{item.price}</div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 14, marginLeft: "auto" }}>
-                  <input
-                    type="number"
-                    min={1}
-                    value={item.quantity}
-                    onChange={(e) => {
-                      updateQuantity(item.productId, item.size, Number(e.target.value));
-                      refresh();
-                    }}
-                    style={{ width: 56, padding: 6, borderRadius: 6, border: "1px solid #cbd5e1" }}
-                  />
+                  {allowsMultipleQuantity(item.subCategory) ? (
+                    <input
+                      type="number"
+                      min={1}
+                      max={MAX_MULTIPLE_QUANTITY}
+                      value={item.quantity}
+                      onChange={(e) => {
+                        updateQuantity(item.productId, item.size, Math.min(MAX_MULTIPLE_QUANTITY, Number(e.target.value)));
+                        refresh();
+                      }}
+                      style={{ width: 56, padding: 6, borderRadius: 6, border: "1px solid #cbd5e1" }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 13, color: "#64748b" }}>Qty 1</span>
+                  )}
                   <button
                     onClick={() => {
                       removeFromCart(item.productId, item.size);

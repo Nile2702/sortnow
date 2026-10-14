@@ -7,7 +7,7 @@ import { addToCart } from "../../../lib/cart";
 import { toggleWishlist, isWishlisted } from "../../../lib/wishlist";
 import { showToast } from "../../../lib/toast";
 import { getShopperSession } from "../../../lib/shopper-session";
-import { COLOR_CATALOG } from "../../../lib/catalog-constants";
+import { COLOR_CATALOG, allowsMultipleQuantity, MAX_MULTIPLE_QUANTITY } from "../../../lib/catalog-constants";
 import { LogoBadge } from "../../../components/LogoBadge";
 import { ProductCard } from "../../../components/ProductCard";
 
@@ -271,6 +271,7 @@ export default function ProductDetailPage() {
       price: product.basePrice,
       imageUrl: product.images[0]?.url ?? "",
       quantity,
+      subCategory: product.subCategory,
     });
     // Stays true (no revert timeout) - the item really is in the cart now,
     // so the button settles into "Go to Sort" rather than snapping back to
@@ -655,23 +656,30 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          <div style={{ marginBottom: 28 }}>
-            <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 10, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-              Quantity
+          {allowsMultipleQuantity(product.subCategory) && (
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 10, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                Quantity
+              </div>
+              <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--sio-line)", borderRadius: 999, overflow: "hidden" }}>
+                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} style={qtyBtnStyle()}>
+                  −
+                </button>
+                <span style={{ width: 44, textAlign: "center", fontWeight: 600, fontSize: 14 }}>{quantity}</span>
+                <button
+                  onClick={() =>
+                    setQuantity((q) => {
+                      const cap = product.stockRemaining != null ? Math.min(product.stockRemaining, MAX_MULTIPLE_QUANTITY) : MAX_MULTIPLE_QUANTITY;
+                      return Math.min(cap, q + 1);
+                    })
+                  }
+                  style={qtyBtnStyle()}
+                >
+                  +
+                </button>
+              </div>
             </div>
-            <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--sio-line)", borderRadius: 999, overflow: "hidden" }}>
-              <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} style={qtyBtnStyle()}>
-                −
-              </button>
-              <span style={{ width: 44, textAlign: "center", fontWeight: 600, fontSize: 14 }}>{quantity}</span>
-              <button
-                onClick={() => setQuantity((q) => (product.stockRemaining != null ? Math.min(product.stockRemaining, q + 1) : q + 1))}
-                style={qtyBtnStyle()}
-              >
-                +
-              </button>
-            </div>
-          </div>
+          )}
 
           <div className="sio-product-inline-actions" style={{ display: "flex", gap: 10, marginBottom: waitlistOpen ? 14 : 24 }}>
             {product.stockRemaining === 0 ? (

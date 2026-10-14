@@ -12,6 +12,12 @@ export interface CartItem {
   price: number;
   imageUrl: string;
   quantity: number;
+  // Lets the cart page decide whether this item's quantity is editable at
+  // all (see allowsMultipleQuantity in lib/catalog-constants.ts) - optional
+  // since carts saved before this field existed won't have it; those are
+  // treated as not multiple-eligible (the conservative default) rather than
+  // breaking on a missing field.
+  subCategory?: string;
 }
 
 const STORAGE_KEY = "sio:cart";

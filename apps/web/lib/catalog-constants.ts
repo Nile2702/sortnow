@@ -72,6 +72,25 @@ export function getSizeOptionsFor(subCategory: string | undefined): string[] {
   return group === "none" ? sizes : group === "freeSize" ? sizes : [...sizes, "Free Size"];
 }
 
+// Wanting more than one of the exact same item (same size/color) is unusual
+// for this O2O "reserve online, walk in and try it on" model - a saree,
+// dress, lehenga or pair of shoes is a one-per-person purchase. The real
+// exception is the same "no standard sizing" categories above: bangles,
+// earrings and bags are routinely bought as matching sets/pairs/multiples in
+// Indian retail. Reusing that existing grouping instead of a separate list
+// keeps the two concepts (no sizes / multiples make sense) from drifting
+// apart as new subcategories get added. Defaults to false (single item only)
+// for any subCategory not explicitly in the "none" group, same conservative
+// fallback direction as getSizeOptionsFor's own default.
+export function allowsMultipleQuantity(subCategory: string | undefined): boolean {
+  return !!subCategory && SUBCATEGORY_SIZE_GROUP[subCategory] === "none";
+}
+
+// Keeps the stepper from reading as a bulk-order control even for the
+// categories that do allow more than one - a shopper buying a matching pair
+// of earrings or a few bangles doesn't need a path to reserve twenty.
+export const MAX_MULTIPLE_QUANTITY = 3;
+
 // Picks a sensible default subCategory to land a seller on when they first
 // choose a gender - specifically, one that actually offers real sizes
 // (S/M/L, waist, footwear, kids' age, etc.), not just whatever happens to
