@@ -119,7 +119,11 @@ export default function BillingPage() {
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Billing & Subscription</h1>
-      <p style={{ color: "#64748b", marginBottom: 28 }}>{store.name}</p>
+      <p style={{ color: "#64748b", marginBottom: 4 }}>{store.name}</p>
+      <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 28 }}>
+        No real payment is processed yet - switching plans or boosting your store here doesn't charge a card. A real payment gateway
+        (Razorpay/Cashfree) will be added before this goes live for real transactions, same as AI photo credits.
+      </p>
 
       <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 28 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>

@@ -34,8 +34,8 @@ export default function QrMarketingPage() {
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>QR Marketing Hub</h1>
       <p style={{ color: "#64748b", marginBottom: 28 }}>
-        Generate a QR standee for {store.name} — scanning it takes shoppers straight to your live catalog with real-time stock, completing
-        the O2O foot-traffic loop (docs/03-multi-tenant-storefront.md §4).
+        Generate a QR standee for {store.name} — scanning it takes shoppers straight to your live catalog with real-time stock, turning
+        foot traffic in your store into online discovery.
       </p>
 
       <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
@@ -66,8 +66,8 @@ export default function QrMarketingPage() {
           </code>
 
           <p style={{ fontSize: 13, color: "#64748b" }}>
-            Each scan is tagged with <code>src=qr&amp;pos={label}</code> so your dashboard can attribute footfall to this exact standee vs.
-            online discovery — see the <code>store_analytics_events</code> table in <code>database/schema.sql</code>.
+            Each scan is tagged with <code>src=qr&amp;pos={label}</code> so your Analytics &amp; Reports tab can attribute footfall to this
+            exact standee vs. online discovery.
           </p>
         </div>
 

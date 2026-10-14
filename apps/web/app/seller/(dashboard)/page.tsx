@@ -91,6 +91,21 @@ export default function SellerDashboard() {
 
   const lowStock = products.filter((p) => (p.stockRemaining ?? 0) <= 5).length;
 
+  // store.status is a snake_case enum ("pending_review") - `textTransform:
+  // capitalize` on the raw value alone produced the ugly "Pending_review"
+  // (it capitalizes the first letter of each underscore-separated word, not
+  // the display label), and the icon below used to be a hardcoded green
+  // circle regardless of actual status, so a suspended/pending store
+  // wrongly looked "all good" at a glance.
+  const STATUS_DISPLAY: Record<string, { label: string; icon: string }> = {
+    active: { label: "Active", icon: "🟢" },
+    pending_review: { label: "Pending review", icon: "🟡" },
+    suspended: { label: "Suspended", icon: "🔴" },
+    draft: { label: "Draft", icon: "⚪" },
+    closed: { label: "Closed", icon: "⚫" },
+  };
+  const statusDisplay = STATUS_DISPLAY[store.status] ?? { label: store.status, icon: "⚪" };
+
   // Styled identically to the "Quick actions" cards below (same sio-card
   // hover lift), so a stat that isn't actually clickable reads as a bug
   // ("why doesn't this do anything") rather than plain information - every
@@ -101,7 +116,7 @@ export default function SellerDashboard() {
     { label: "Pending Reservations", value: pendingReservations, icon: "🕐", href: "/seller/reservations" },
     { label: "Low Stock Alerts", value: lowStock, icon: "⚠️", href: "/seller/products?lowStock=1" },
     { label: "Plan", value: planName ?? "…", icon: "⭐", href: "/seller/billing" },
-    { label: "Store Status", value: store.status, icon: "🟢" },
+    { label: "Store Status", value: statusDisplay.label, icon: statusDisplay.icon },
   ];
 
   return (

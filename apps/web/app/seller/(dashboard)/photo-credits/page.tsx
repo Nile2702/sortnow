@@ -122,8 +122,8 @@ export default function PhotoCreditsPage() {
       </div>
 
       <p style={{ fontSize: 12, color: "#94a3b8" }}>
-        This is a demo purchase flow — no real payment is processed. A real deployment would redirect to Razorpay/Cashfree checkout here (see{" "}
-        <code>docs/04-monetization-and-billing.md</code>), the same as plan subscriptions under Billing.
+        No real payment is processed yet — purchasing credits here doesn't charge a card. A real payment gateway (Razorpay/Cashfree) will be
+        added before this goes live for real transactions, same as plan subscriptions and store boosts under Billing.
       </p>
     </main>
   );
