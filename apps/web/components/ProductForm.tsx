@@ -9,7 +9,7 @@ import {
   BRAND_OPTIONS,
   getSizeOptionsFor,
   defaultSizedSubCategoryFor,
-  syncFabricInDescription,
+  syncFabricInText,
   type Gender,
 } from "../lib/catalog-constants";
 import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, cutoutFromMask, removeBackgroundRMBG } from "../lib/image-enhance";
@@ -742,11 +742,18 @@ export function ProductForm({
             } else {
               setFabricIsOther(false);
               const nextFabric = e.target.value;
-              // Re-picking a fabric after a description already named the
-              // old one (typed by hand or from a previous Auto-fill Details
-              // run) left that description describing the wrong material -
-              // swaps it in place rather than leaving it stale.
-              setForm((f) => ({ ...f, fabric: nextFabric, description: syncFabricInDescription(f.description, f.fabric, nextFabric) }));
+              // Re-picking a fabric after the title and/or description
+              // already named the old one (typed by hand or from a previous
+              // Auto-fill Details run - Gemini's own title prompt example is
+              // literally "Cotton Round-Neck T-Shirt") left both describing
+              // the wrong material - swaps it in place in each rather than
+              // leaving it stale.
+              setForm((f) => ({
+                ...f,
+                fabric: nextFabric,
+                title: syncFabricInText(f.title, f.fabric, nextFabric),
+                description: syncFabricInText(f.description, f.fabric, nextFabric),
+              }));
             }
           }}
           style={inputStyle()}

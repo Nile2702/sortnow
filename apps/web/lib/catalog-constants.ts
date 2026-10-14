@@ -134,20 +134,22 @@ export const FABRIC_OPTIONS: string[] = [
   "Leather",
 ];
 
-// A generated (or previously generated) description names the fabric the
-// seller picked at the time - re-picking a different one afterward
-// (ProductForm, bulk-photos) left the old fabric sitting in that prose
-// unchanged, describing a product that no longer matches its own Fabric
-// field. Swaps every case-insensitive, whole-word mention of the old
-// fabric for the new one; leaves the description untouched if the old
-// fabric was never actually filled in or never appears in it (e.g. a
-// seller's own hand-written description that didn't mention it), rather
-// than risk mangling unrelated text.
-export function syncFabricInDescription(description: string, oldFabric: string, newFabric: string): string {
-  if (!oldFabric.trim() || !newFabric.trim() || oldFabric === newFabric) return description;
+// A generated (or previously generated) title/description names the fabric
+// the seller picked at the time (Gemini's own title prompt example is
+// literally "Cotton Round-Neck T-Shirt - Navy Blue") - re-picking a
+// different one afterward (ProductForm, bulk-photos) left the old fabric
+// sitting in that text unchanged, describing a product that no longer
+// matches its own Fabric field. Swaps every case-insensitive, whole-word
+// mention of the old fabric for the new one in whichever text field is
+// passed in (title or description - same swap, just called once per
+// field); leaves that text untouched if the old fabric was never actually
+// filled in or never appears in it (e.g. a seller's own hand-written text
+// that didn't mention it), rather than risk mangling unrelated wording.
+export function syncFabricInText(text: string, oldFabric: string, newFabric: string): string {
+  if (!oldFabric.trim() || !newFabric.trim() || oldFabric === newFabric) return text;
   const escaped = oldFabric.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(`\\b${escaped}\\b`, "gi");
-  return pattern.test(description) ? description.replace(pattern, newFabric) : description;
+  return pattern.test(text) ? text.replace(pattern, newFabric) : text;
 }
 
 // Common apparel/footwear/accessory brands across the catalog's actual mix

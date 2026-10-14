@@ -11,7 +11,7 @@ import {
   BRAND_OPTIONS,
   getSizeOptionsFor,
   defaultSizedSubCategoryFor,
-  syncFabricInDescription,
+  syncFabricInText,
   type Gender,
 } from "../../../../../lib/catalog-constants";
 import {
@@ -316,7 +316,8 @@ export default function BulkPhotoUploadPage() {
         if (bulkFabric) {
           patch.fabric = bulkFabric;
           patch.fabricIsOther = bulkFabricIsOther;
-          patch.description = syncFabricInDescription(d.description, d.fabric, bulkFabric);
+          patch.title = syncFabricInText(d.title, d.fabric, bulkFabric);
+          patch.description = syncFabricInText(d.description, d.fabric, bulkFabric);
         }
         if (bulkBrand) {
           patch.brand = bulkBrand;
@@ -1148,15 +1149,18 @@ export default function BulkPhotoUploadPage() {
                           if (e.target.value === "__other__") {
                             updateDraft(d.localId, { fabric: "", fabricIsOther: true });
                           } else {
-                            // Re-picking a fabric after a description already
-                            // named the old one (typed by hand or from a
-                            // previous Auto-fill Details run) left that
-                            // description describing the wrong material -
-                            // swaps it in place rather than leaving it stale.
+                            // Re-picking a fabric after the title and/or
+                            // description already named the old one (typed
+                            // by hand or from a previous Auto-fill Details
+                            // run - Gemini's own title prompt example is
+                            // literally "Cotton Round-Neck T-Shirt") left
+                            // both describing the wrong material - swaps it
+                            // in place in each rather than leaving it stale.
                             updateDraft(d.localId, {
                               fabric: e.target.value,
                               fabricIsOther: false,
-                              description: syncFabricInDescription(d.description, d.fabric, e.target.value),
+                              title: syncFabricInText(d.title, d.fabric, e.target.value),
+                              description: syncFabricInText(d.description, d.fabric, e.target.value),
                             });
                           }
                         }}
