@@ -211,6 +211,32 @@ export default function ProductDetailPage() {
       .catch(() => {});
   }, [productId]);
 
+  // The store page injects --store-primary/--store-accent via a server-
+  // rendered <style> tag (lib/theme.ts), so Theme Studio's brand colors show
+  // up there - but this is a separate route with no such injection, so
+  // every product page silently fell back to the hardcoded platform red
+  // regardless of the seller's own theme. Applied directly to
+  // documentElement (this page is client-rendered, no server-side style tag
+  // available) and cleaned up on unmount/navigation so a theme color can't
+  // leak onto a different store's product page afterward.
+  useEffect(() => {
+    if (!product?.storeSlug) return;
+    let cancelled = false;
+    fetch(`/api/v1/stores/${product.storeSlug}/theme`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((theme) => {
+        if (cancelled || !theme) return;
+        if (theme.primary) document.documentElement.style.setProperty("--store-primary", theme.primary);
+        if (theme.accent) document.documentElement.style.setProperty("--store-accent", theme.accent);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      document.documentElement.style.removeProperty("--store-primary");
+      document.documentElement.style.removeProperty("--store-accent");
+    };
+  }, [product?.storeSlug]);
+
   if (notFound) {
     return (
       <main style={{ maxWidth: 600, margin: "80px auto", padding: 24, textAlign: "center" }}>
@@ -709,7 +735,7 @@ export default function ProductDetailPage() {
                   padding: "16px 24px",
                   borderRadius: 999,
                   border: "none",
-                  background: added ? "var(--sio-ink)" : "var(--sio-bronze)",
+                  background: added ? "var(--sio-ink)" : "var(--store-accent, var(--sio-bronze))",
                   color: "#fff",
                   fontSize: 14.5,
                   fontWeight: 700,
@@ -837,43 +863,49 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      {/* Description */}
-      <section className="sio-fade-in" style={{ animationDelay: "150ms", marginBottom: 1 }}>
-        <div style={{ ...SECTION_CARD, padding: 32, maxWidth: 760, marginBottom: 32 }}>
-          <SectionHeading>Product Description</SectionHeading>
-          <p style={{ color: "var(--sio-ink-soft)", lineHeight: 1.85, fontSize: 15, marginTop: 16 }}>
-            {product.description || "No description provided by the seller."}
-          </p>
-        </div>
-      </section>
+      {/* Description + Specifications, side by side on desktop instead of
+          each independently capping its own width - previously each had its
+          own fixed maxWidth (760px/640px) regardless of the actual viewport,
+          leaving roughly half of a wide screen blank next to them. Reusing
+          sio-two-col-grid (already used elsewhere on this page) means this
+          also collapses to one column on mobile for free, same as those. */}
+      <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 32, alignItems: "start" }}>
+        <section className="sio-fade-in" style={{ animationDelay: "150ms" }}>
+          <div style={{ ...SECTION_CARD, padding: 32, height: "100%" }}>
+            <SectionHeading>Product Description</SectionHeading>
+            <p style={{ color: "var(--sio-ink-soft)", lineHeight: 1.85, fontSize: 15, marginTop: 16 }}>
+              {product.description || "No description provided by the seller."}
+            </p>
+          </div>
+        </section>
 
-      {/* Specifications */}
-      <section className="sio-fade-in" style={{ animationDelay: "210ms" }}>
-        <div style={{ ...SECTION_CARD, padding: 32, maxWidth: 640, marginBottom: 32 }}>
-          <SectionHeading>Specifications</SectionHeading>
-          <table style={{ width: "100%", fontSize: 14, borderCollapse: "collapse", marginTop: 16 }}>
-            <tbody>
-              {[
-                ["Category", `${product.gender} / ${product.subCategory}`],
-                ["Fabric", product.fabric || "—"],
-                ...(product.color ? [["Color", product.color]] : []),
-                ["Available sizes", product.sizes.join(", ")],
-                ["Sold by", product.store.name],
-                // Only shown when the seller has set one - quote this to the
-                // shopkeeper at the counter for fast lookup instead of
-                // describing the item or scrolling through photos.
-                ...(product.productCode ? [["Product Code", product.productCode]] : []),
-                ["Product ID", product.id],
-              ].map(([label, value]) => (
-                <tr key={label} style={{ borderBottom: "1px solid var(--sio-line)" }}>
-                  <td style={{ padding: "12px 0", color: "var(--sio-muted)", width: "40%" }}>{label}</td>
-                  <td style={{ padding: "12px 0", fontWeight: 500, textTransform: label === "Category" ? "capitalize" : "none" }}>{value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+        <section className="sio-fade-in" style={{ animationDelay: "210ms" }}>
+          <div style={{ ...SECTION_CARD, padding: 32, height: "100%" }}>
+            <SectionHeading>Specifications</SectionHeading>
+            <table style={{ width: "100%", fontSize: 14, borderCollapse: "collapse", marginTop: 16 }}>
+              <tbody>
+                {[
+                  ["Category", `${product.gender} / ${product.subCategory}`],
+                  ["Fabric", product.fabric || "—"],
+                  ...(product.color ? [["Color", product.color]] : []),
+                  ["Available sizes", product.sizes.join(", ")],
+                  ["Sold by", product.store.name],
+                  // Only shown when the seller has set one - quote this to the
+                  // shopkeeper at the counter for fast lookup instead of
+                  // describing the item or scrolling through photos.
+                  ...(product.productCode ? [["Product Code", product.productCode]] : []),
+                  ["Product ID", product.id],
+                ].map(([label, value]) => (
+                  <tr key={label} style={{ borderBottom: "1px solid var(--sio-line)" }}>
+                    <td style={{ padding: "12px 0", color: "var(--sio-muted)", width: "40%" }}>{label}</td>
+                    <td style={{ padding: "12px 0", fontWeight: 500, textTransform: label === "Category" ? "capitalize" : "none" }}>{value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
 
       {/* Reviews */}
       <section id="reviews" className="sio-fade-in" style={{ animationDelay: "270ms" }}>

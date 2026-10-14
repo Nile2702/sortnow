@@ -684,7 +684,7 @@ body {
     height: 46px;
     border-radius: 10px;
     border: none;
-    background: var(--sio-bronze);
+    background: var(--store-accent, var(--sio-bronze));
     color: #fff;
     font-weight: 700;
     text-transform: uppercase;
