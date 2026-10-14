@@ -168,9 +168,9 @@ export function ProductCard({
             {product.title}
           </div>
           <div style={{ marginTop: 6, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontWeight: 700, fontSize: 14, color: "var(--sio-ink)" }}>₹{product.basePrice}</span>
+            <span style={{ fontWeight: 700, fontSize: 14, color: "var(--sio-ink)" }}>₹{product.basePrice.toLocaleString("en-IN")}</span>
             {product.compareAtPrice && product.compareAtPrice > product.basePrice && (
-              <span style={{ fontSize: 12, textDecoration: "line-through", color: "var(--sio-muted)" }}>₹{product.compareAtPrice}</span>
+              <span style={{ fontSize: 12, textDecoration: "line-through", color: "var(--sio-muted)" }}>₹{product.compareAtPrice.toLocaleString("en-IN")}</span>
             )}
             {discountPct > 0 && <span style={{ fontSize: 12, fontWeight: 600, color: "var(--sio-glow)" }}>{discountPct}% OFF</span>}
           </div>

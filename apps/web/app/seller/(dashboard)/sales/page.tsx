@@ -369,7 +369,7 @@ export default function SellerSalesPage() {
             {products.map((p) => (
               <option key={p.id} value={p.id} disabled={(p.stockRemaining ?? 0) <= 0}>
                 {p.productCode ? `[${p.productCode}] ` : ""}
-                {p.title} — ₹{p.basePrice} ({p.stockRemaining ?? 0} in stock)
+                {p.title} — ₹{p.basePrice.toLocaleString("en-IN")} ({p.stockRemaining ?? 0} in stock)
               </option>
             ))}
           </select>
@@ -424,7 +424,7 @@ export default function SellerSalesPage() {
                   {line.size ? ` (${line.size})` : ""} × {line.quantity}
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <strong>₹{line.unitPrice * line.quantity}</strong>
+                  <strong>₹{(line.unitPrice * line.quantity).toLocaleString("en-IN")}</strong>
                   <button
                     type="button"
                     onClick={() => removeFromCart(line.productId, line.size)}

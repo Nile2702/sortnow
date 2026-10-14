@@ -142,7 +142,7 @@ export default function AnalyticsPage() {
             <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 120 }}>
               {sales.last7Days.map((d) => (
                 <div key={d.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>₹{d.revenue}</div>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>₹{d.revenue.toLocaleString("en-IN")}</div>
                   <div style={{ width: "100%", height: Math.max(4, (d.revenue / maxSalesDay) * 80), background: "#16a34a", borderRadius: 4 }} />
                   <div style={{ fontSize: 10, color: "#94a3b8" }}>{new Date(d.date).toLocaleDateString("en-IN", { weekday: "short" })}</div>
                 </div>

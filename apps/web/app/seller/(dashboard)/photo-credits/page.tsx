@@ -98,7 +98,7 @@ export default function PhotoCreditsPage() {
           <div key={pack.id} className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 22, textAlign: "center" }}>
             <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 2 }}>{pack.credits}</div>
             <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 14 }}>credits</div>
-            <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>₹{pack.priceInr}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>₹{pack.priceInr.toLocaleString("en-IN")}</div>
             <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 18 }}>≈ ₹{(pack.priceInr / pack.credits).toFixed(1)} / photo</div>
             <button
               onClick={() => handleBuy(pack.id)}

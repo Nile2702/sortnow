@@ -246,7 +246,7 @@ function SellerProductsPageInner() {
                 </div>
               </div>
               <div style={{ textAlign: "right", minWidth: 110, flexShrink: 0 }}>
-                <div style={{ fontWeight: 700 }}>₹{p.basePrice}</div>
+                <div style={{ fontWeight: 700 }}>₹{p.basePrice.toLocaleString("en-IN")}</div>
                 {p.stockRemaining != null && (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, marginTop: 2 }}>
                     <input

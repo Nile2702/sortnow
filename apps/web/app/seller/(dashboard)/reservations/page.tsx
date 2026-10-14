@@ -161,12 +161,12 @@ export default function SellerReservationsPage() {
                     <span>
                       {item.title} · Size {item.size} · Qty {item.quantity}
                     </span>
-                    <span style={{ fontWeight: 600 }}>₹{item.price * item.quantity}</span>
+                    <span style={{ fontWeight: 600 }}>₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
                   </div>
                 ))}
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontWeight: 700 }}>Total: ₹{r.total}</span>
+                <span style={{ fontWeight: 700 }}>Total: ₹{r.total.toLocaleString("en-IN")}</span>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
                     onClick={() => updateStatus(r.id, "cancelled")}
@@ -199,7 +199,7 @@ export default function SellerReservationsPage() {
             return (
               <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, border: "1px solid #f1f5f9" }}>
                 <div style={{ fontSize: 13 }}>
-                  <strong>{r.shopperName}</strong> · {r.items.length} item{r.items.length > 1 ? "s" : ""} · ₹{r.total}
+                  <strong>{r.shopperName}</strong> · {r.items.length} item{r.items.length > 1 ? "s" : ""} · ₹{r.total.toLocaleString("en-IN")}
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: s.bg, color: s.fg }}>{s.label}</span>
               </div>

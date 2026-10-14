@@ -52,7 +52,7 @@ export default function CartPage() {
                   <div style={{ color: "#64748b", fontSize: 13 }}>
                     {item.storeName} · Size {item.size}
                   </div>
-                  <div style={{ marginTop: 6, fontWeight: 700 }}>₹{item.price}</div>
+                  <div style={{ marginTop: 6, fontWeight: 700 }}>₹{item.price.toLocaleString("en-IN")}</div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 14, marginLeft: "auto" }}>
                   {allowsMultipleQuantity(item.subCategory) ? (
@@ -92,7 +92,7 @@ export default function CartPage() {
           )}
 
           <div style={{ marginTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>Total: ₹{cartTotal(items)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>Total: ₹{cartTotal(items).toLocaleString("en-IN")}</div>
             <button
               onClick={() => router.push("/reserve")}
               className="sio-shine-btn"

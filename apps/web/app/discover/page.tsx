@@ -238,10 +238,10 @@ export default function DiscoverPage() {
                 {current.distanceKm != null ? ` · ${current.distanceKm} km away` : ""}
               </div>
               <div style={{ fontSize: 16, fontWeight: 700 }}>
-                ₹{current.basePrice}
+                ₹{current.basePrice.toLocaleString("en-IN")}
                 {current.compareAtPrice && (
                   <span style={{ textDecoration: "line-through", marginLeft: 8, opacity: 0.6, fontSize: 13, fontWeight: 400 }}>
-                    ₹{current.compareAtPrice}
+                    ₹{current.compareAtPrice.toLocaleString("en-IN")}
                   </span>
                 )}
               </div>

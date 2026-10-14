@@ -355,7 +355,7 @@ export function SiteHeader() {
                         </div>
                         <div style={{ fontSize: 11, color: "var(--sio-muted)" }}>{s.storeName}</div>
                       </div>
-                      <div style={{ fontSize: 13, fontWeight: 600, flexShrink: 0, color: "var(--sio-ink)" }}>₹{s.basePrice}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, flexShrink: 0, color: "var(--sio-ink)" }}>₹{s.basePrice.toLocaleString("en-IN")}</div>
                     </button>
                   ))}
                   <button

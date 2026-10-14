@@ -162,12 +162,12 @@ export default function ReservePage() {
                     {item.storeName} · Size {item.size} · Qty {item.quantity}
                   </div>
                 </div>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>₹{item.price * item.quantity}</div>
+                <div style={{ fontWeight: 700, fontSize: 13 }}>₹{(item.price * item.quantity).toLocaleString("en-IN")}</div>
               </div>
             ))}
             <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 12, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 16 }}>
               <span>Total</span>
-              <span>₹{cartTotal(items)}</span>
+              <span>₹{cartTotal(items).toLocaleString("en-IN")}</span>
             </div>
           </div>
           <Link href="/cart" style={{ display: "inline-block", marginTop: 14, fontSize: 13, color: "#64748b" }}>

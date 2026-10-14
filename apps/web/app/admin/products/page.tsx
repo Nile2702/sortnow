@@ -127,7 +127,7 @@ export default async function AdminProductsPage({
                     {p.productCode ? ` · ${p.productCode}` : ""}
                   </div>
                 </div>
-                <div style={{ fontWeight: 700, minWidth: 70, textAlign: "right" }}>₹{p.basePrice}</div>
+                <div style={{ fontWeight: 700, minWidth: 70, textAlign: "right" }}>₹{p.basePrice.toLocaleString("en-IN")}</div>
                 <form
                   action={`/api/v1/admin/products/${p.id}/${isHeld ? "unhold" : "hold"}?key=${encodeURIComponent(key)}&redirect=1${filterQS}`}
                   method="post"

@@ -176,7 +176,7 @@ export default function BillingPage() {
             >
               <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{plan.name}</div>
               <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
-                ₹{plan.monthlyPrice}
+                ₹{plan.monthlyPrice.toLocaleString("en-IN")}
                 <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/mo</span>
               </div>
               <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 14 }}>Up to {plan.skuLimit.toLocaleString("en-IN")} SKUs</div>
@@ -239,7 +239,7 @@ export default function BillingPage() {
           {boost.packages.map((pkg) => (
             <div key={pkg.days} style={{ border: "1px solid #f1f5f9", borderRadius: 12, padding: 16, textAlign: "center" }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}>{pkg.label}</div>
-              <div style={{ fontSize: 20, fontWeight: 700, margin: "6px 0" }}>₹{pkg.price}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, margin: "6px 0" }}>₹{pkg.price.toLocaleString("en-IN")}</div>
               <button
                 onClick={() => handleBoost(pkg.days)}
                 disabled={boosting === pkg.days}
@@ -273,13 +273,16 @@ export default function BillingPage() {
           <div>Date</div>
         </div>
         {data.invoices.map((inv) => {
-          const taxLabel = inv.igst > 0 ? `IGST ₹${inv.igst}` : `CGST ₹${inv.cgst} + SGST ₹${inv.sgst}`;
+          const taxLabel =
+            inv.igst > 0
+              ? `IGST ₹${inv.igst.toLocaleString("en-IN")}`
+              : `CGST ₹${inv.cgst.toLocaleString("en-IN")} + SGST ₹${inv.sgst.toLocaleString("en-IN")}`;
           return (
             <div key={inv.id} style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "14px 18px", fontSize: 13, borderBottom: "1px solid #f8fafc" }}>
               <div style={{ fontWeight: 600 }}>{inv.id}</div>
-              <div>₹{inv.taxableValue}</div>
+              <div>₹{inv.taxableValue.toLocaleString("en-IN")}</div>
               <div>{taxLabel}</div>
-              <div style={{ fontWeight: 700 }}>₹{inv.total}</div>
+              <div style={{ fontWeight: 700 }}>₹{inv.total.toLocaleString("en-IN")}</div>
               <div style={{ color: "#64748b" }}>{new Date(inv.issuedAt).toLocaleDateString("en-IN")}</div>
             </div>
           );

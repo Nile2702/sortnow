@@ -34,7 +34,7 @@ export default function WishlistPage() {
               <div style={{ padding: 12 }}>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{item.title}</div>
                 <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>{item.storeName}</div>
-                <div style={{ fontWeight: 700, marginBottom: 10 }}>₹{item.price}</div>
+                <div style={{ fontWeight: 700, marginBottom: 10 }}>₹{item.price.toLocaleString("en-IN")}</div>
                 <div style={{ display: "flex", gap: 8 }}>
                   {/* Links to the product page to pick a real size, rather
                       than guessing one here - this page only ever knew
