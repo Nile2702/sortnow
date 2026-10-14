@@ -10,7 +10,7 @@
 // gated behind photoCredits the way mannequin placement is - though that
 // assumption should be watched once real usage happens, since Google's
 // exact free-tier terms can change.
-import { CATEGORY_TREE } from "./catalog-constants";
+import { CATEGORY_TREE, COLOR_CATALOG, FABRIC_OPTIONS } from "./catalog-constants";
 
 // The non-lite flash model measured 8-130+ seconds per call in practice
 // (its extended "thinking" mode adds unpredictable overhead a simple
@@ -22,6 +22,7 @@ import { CATEGORY_TREE } from "./catalog-constants";
 const GEMINI_MODEL = process.env.GEMINI_TEXT_MODEL ?? "gemini-3.5-flash-lite";
 
 const CATEGORY_GUIDE = CATEGORY_TREE.map((c) => `- ${c.value}: ${c.subCategories.join(", ")}`).join("\n");
+const COLOR_NAMES = COLOR_CATALOG.map((c) => c.name);
 
 function buildPrompt(hint: string | undefined): string {
   return `You are helping a small Indian fashion retailer list a product on an online marketplace.
@@ -40,6 +41,12 @@ description, but rely on the photo for anything the hint doesn't cover.
 Valid gender/subCategory combinations (pick exactly one subCategory from the matching gender's list):
 ${CATEGORY_GUIDE}
 
+Valid color options (pick exactly one - the garment's single primary/dominant color, even if it has secondary colors or a print; never invent a color name not on this list):
+${COLOR_NAMES.join(", ")}
+
+Common fabric options (prefer one of these if it reasonably matches what you see; only answer with a different, more specific fabric name - e.g. "Jamdani Cotton" or "Georgette Silk" - if none of these genuinely fit):
+${FABRIC_OPTIONS.join(", ")}
+
 Return your answer as JSON with these fields:
 - safe: boolean, per the content-safety check above.
 - unsafeReason: a brief reason if safe is false, otherwise an empty string.
@@ -57,7 +64,8 @@ Return your answer as JSON with these fields:
   Never hedge or narrate your own uncertainty - do not use phrases like "appears to be", "seems to", "looks like", "likely", "possibly",
   "it can be seen that", or similar. State what the garment is and has, plainly (e.g. "The kurti is maroon with gold embroidery on the neckline"
   - not "The kurti appears to be maroon and seems to have some embroidery").
-- fabric: your best guess at the fabric (e.g. "Cotton", "Silk", "Denim") from visual texture, or an empty string if you can't tell.
+- fabric: your best guess at the fabric from visual texture - prefer a match from the common fabric options above, falling back to your own specific guess only if none fit. Empty string if you genuinely can't tell.
+- color: exactly one value from the valid color options above - the garment's dominant color.
 
 If the photo doesn't clearly show a garment, still make your best guess rather than refusing.`;
 }
@@ -72,8 +80,9 @@ const RESPONSE_SCHEMA = {
     subCategory: { type: "STRING" },
     description: { type: "STRING" },
     fabric: { type: "STRING" },
+    color: { type: "STRING", enum: COLOR_NAMES },
   },
-  required: ["safe", "title", "gender", "subCategory", "description", "fabric"],
+  required: ["safe", "title", "gender", "subCategory", "description", "fabric", "color"],
 };
 
 export interface AutofillSuggestion {
@@ -82,6 +91,7 @@ export interface AutofillSuggestion {
   subCategory: string;
   description: string;
   fabric: string;
+  color: string;
 }
 
 export type AutofillResult =
@@ -178,6 +188,13 @@ export async function autofillProductDetails(inputDataUrl: string, hint: string 
     // Fall back to the first subcategory for that gender rather than failing outright -
     // the model got the gender right, just not the exact subcategory label.
     parsedSuggestion.subCategory = validSubCategories[0] ?? parsedSuggestion.subCategory;
+  }
+  // The schema's own enum already constrains this in practice, but a
+  // defensive fallback costs nothing and keeps a malformed value from ever
+  // reaching a <select> that only ever renders COLOR_CATALOG's own options -
+  // left blank (same as "couldn't tell") rather than guessed at.
+  if (!COLOR_NAMES.includes(parsedSuggestion.color)) {
+    parsedSuggestion.color = "";
   }
 
   return { ok: true, suggestion: parsedSuggestion };

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
-import { CATEGORY_TREE, COLOR_CATALOG, BRAND_OPTIONS, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
+import { CATEGORY_TREE, COLOR_CATALOG, FABRIC_OPTIONS, BRAND_OPTIONS, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../../../../../lib/catalog-constants";
 import {
   autoAlignAndZoom,
   cutoutFromMask,
@@ -51,6 +51,10 @@ interface Draft {
   gender: string;
   subCategory: string;
   fabric: string;
+  // Same pattern as brandIsOther below, for the Fabric dropdown's own
+  // "+ Add new fabric" escape (a fixed list can't cover every real fabric -
+  // see FABRIC_OPTIONS' own comment).
+  fabricIsOther: boolean;
   description: string;
   basePrice: number;
   compareAtPrice: number | undefined;
@@ -148,6 +152,7 @@ export default function BulkPhotoUploadPage() {
   const [bulkGender, setBulkGender] = useState("");
   const [bulkSubCategory, setBulkSubCategory] = useState("");
   const [bulkFabric, setBulkFabric] = useState("");
+  const [bulkFabricIsOther, setBulkFabricIsOther] = useState(false);
   const [bulkBrand, setBulkBrand] = useState("");
   const [bulkBrandIsOther, setBulkBrandIsOther] = useState(false);
   const [bulkBasePrice, setBulkBasePrice] = useState("");
@@ -226,6 +231,7 @@ export default function BulkPhotoUploadPage() {
           gender: primary.gender,
           subCategory: primary.subCategory,
           fabric: primary.fabric,
+          fabricIsOther: primary.fabricIsOther,
           brand: primary.brand,
           brandIsOther: primary.brandIsOther,
           description: primary.description,
@@ -298,7 +304,10 @@ export default function BulkPhotoUploadPage() {
           patch.subCategory = bulkSubCategory;
           patch.sizes = getSizeOptionsFor(bulkSubCategory);
         }
-        if (bulkFabric) patch.fabric = bulkFabric;
+        if (bulkFabric) {
+          patch.fabric = bulkFabric;
+          patch.fabricIsOther = bulkFabricIsOther;
+        }
         if (bulkBrand) {
           patch.brand = bulkBrand;
           patch.brandIsOther = !brandOptions.includes(bulkBrand);
@@ -339,6 +348,7 @@ export default function BulkPhotoUploadPage() {
         gender: "women",
         subCategory: defaultSizedSubCategoryFor("women"),
         fabric: "",
+        fabricIsOther: false,
         description: "",
         basePrice: 999,
         compareAtPrice: undefined,
@@ -493,11 +503,18 @@ export default function BulkPhotoUploadPage() {
         // gender/subCategory dropdowns already do below.
         const nextGender = result.gender || draft.gender;
         const nextSubCategory = result.subCategory || defaultSizedSubCategoryFor(nextGender as Gender);
+        const nextFabric = result.fabric || draft.fabric;
         updateDraft(draft.localId, {
           status: "ready",
           title: result.title || draft.title,
           description: result.description || draft.description,
-          fabric: result.fabric || draft.fabric,
+          fabric: nextFabric,
+          // A fabric the AI (or a previous manual edit) landed on that isn't
+          // one of FABRIC_OPTIONS still needs to show via the dropdown's own
+          // "+ Add new fabric" escape, not silently revert to the dropdown's
+          // placeholder with the real value hidden underneath it.
+          fabricIsOther: !!nextFabric && !FABRIC_OPTIONS.includes(nextFabric),
+          color: result.color || draft.color,
           gender: nextGender,
           subCategory: nextSubCategory,
           sizes: nextSubCategory !== draft.subCategory ? getSizeOptionsFor(nextSubCategory) : draft.sizes,
@@ -738,7 +755,38 @@ export default function BulkPhotoUploadPage() {
                 </option>
               ))}
             </select>
-            <input value={bulkFabric} onChange={(e) => setBulkFabric(e.target.value)} placeholder="Fabric (unchanged)" style={inputStyle()} />
+            <div>
+              <select
+                value={bulkFabricIsOther ? "__other__" : bulkFabric}
+                onChange={(e) => {
+                  if (e.target.value === "__other__") {
+                    setBulkFabricIsOther(true);
+                    setBulkFabric("");
+                  } else {
+                    setBulkFabricIsOther(false);
+                    setBulkFabric(e.target.value);
+                  }
+                }}
+                style={inputStyle()}
+              >
+                <option value="">Fabric (unchanged)</option>
+                {FABRIC_OPTIONS.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+                <option value="__other__">+ Add new fabric</option>
+              </select>
+              {bulkFabricIsOther && (
+                <input
+                  autoFocus
+                  value={bulkFabric}
+                  onChange={(e) => setBulkFabric(e.target.value)}
+                  placeholder="Enter the fabric"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+              )}
+            </div>
             <div>
               <select
                 value={bulkBrandIsOther ? "__other__" : bulkBrand}
@@ -1083,12 +1131,38 @@ export default function BulkPhotoUploadPage() {
                       placeholder="Cost price (optional)"
                       style={inputStyle()}
                     />
-                    <input
-                      value={d.fabric}
-                      onChange={(e) => updateDraft(d.localId, { fabric: e.target.value })}
-                      placeholder="Fabric"
-                      style={inputStyle()}
-                    />
+                    <div>
+                      <select
+                        value={d.fabricIsOther ? "__other__" : d.fabric}
+                        onChange={(e) => {
+                          if (e.target.value === "__other__") {
+                            updateDraft(d.localId, { fabric: "", fabricIsOther: true });
+                          } else {
+                            updateDraft(d.localId, { fabric: e.target.value, fabricIsOther: false });
+                          }
+                        }}
+                        style={inputStyle()}
+                      >
+                        <option value="" disabled>
+                          Select fabric
+                        </option>
+                        {FABRIC_OPTIONS.map((f) => (
+                          <option key={f} value={f}>
+                            {f}
+                          </option>
+                        ))}
+                        <option value="__other__">+ Add new fabric</option>
+                      </select>
+                      {d.fabricIsOther && (
+                        <input
+                          autoFocus
+                          value={d.fabric}
+                          onChange={(e) => updateDraft(d.localId, { fabric: e.target.value })}
+                          placeholder="Enter the fabric, e.g. Jamdani Cotton"
+                          style={{ ...inputStyle(), marginTop: 8 }}
+                        />
+                      )}
+                    </div>
                     <select value={d.color ?? ""} onChange={(e) => updateDraft(d.localId, { color: e.target.value || undefined })} style={inputStyle()}>
                       <option value="" disabled>
                         Select color

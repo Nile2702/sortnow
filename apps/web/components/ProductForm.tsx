@@ -472,6 +472,10 @@ export function ProductForm({
       return;
     }
     if (result.fabric) setFabricIsOther(!FABRIC_OPTIONS.includes(result.fabric));
+    // Only when nothing's picked yet - a seller who already chose one or
+    // more colors (e.g. multi-color create flow) keeps their own picks
+    // rather than autofill silently narrowing it back down to just one.
+    if (result.color && selectedColors.length === 0) setSelectedColors([result.color]);
     setForm((f) => {
       const nextSubCategory = result.subCategory || defaultSizedSubCategoryFor(result.gender as Gender) || f.subCategory;
       // A changed subCategory can make the previously-picked sizes invalid
