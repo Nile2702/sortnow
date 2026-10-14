@@ -99,6 +99,19 @@ export function ProductForm({
   const [bgRemoving, setBgRemoving] = useState(false);
   const [bgRemoveProgress, setBgRemoveProgress] = useState("");
   const [bgRemoveError, setBgRemoveError] = useState("");
+  // Nothing here can show real download/compute progress (see
+  // hasRmbgModelLoadStarted's own comment in lib/image-enhance.ts) - a
+  // plain ticking counter at least proves the page is still alive and
+  // something is still happening, instead of leaving "is this stuck?" as a
+  // pure guess the whole time bgRemoving is true.
+  const [bgRemoveStartedAt, setBgRemoveStartedAt] = useState<number | null>(null);
+  const [bgRemoveElapsedSeconds, setBgRemoveElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!bgRemoveStartedAt) return;
+    const id = setInterval(() => setBgRemoveElapsedSeconds(Math.floor((Date.now() - bgRemoveStartedAt) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [bgRemoveStartedAt]);
 
   // Split from background removal per seller feedback - lighting/quality/
   // wrinkle correction and background removal used to run as one combined
@@ -339,6 +352,8 @@ export function ProductForm({
     setBgRemoving(true);
     setBgRemoveError("");
     setBgRemoveProgress("Loading background-removal model…");
+    setBgRemoveStartedAt(Date.now());
+    setBgRemoveElapsedSeconds(0);
     if (!originalImage) setOriginalImage(uploadedImage);
 
     try {
@@ -373,6 +388,7 @@ export function ProductForm({
     } finally {
       setBgRemoving(false);
       setBgRemoveProgress("");
+      setBgRemoveStartedAt(null);
     }
   }
 
@@ -1060,7 +1076,7 @@ export function ProductForm({
                   width: "100%",
                 }}
               >
-                {bgRemoving ? bgRemoveProgress || "Removing…" : "🪄 Remove Background (Free)"}
+                {bgRemoving ? `${bgRemoveProgress || "Removing…"} (${bgRemoveElapsedSeconds}s)` : "🪄 Remove Background (Free)"}
               </button>
 
               {cutoutImage && (

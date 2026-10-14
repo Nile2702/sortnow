@@ -153,6 +153,22 @@ export default function BulkPhotoUploadPage() {
   const [processing, setProcessing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [progressLabel, setProgressLabel] = useState("");
+  // Background removal and autofill are both entirely client-side (a WASM
+  // model download/inference, or a network call) with no way to show real
+  // download/compute progress - a seller who'd been waiting a while with
+  // nothing changing on screen had no way to tell "still genuinely working"
+  // from "silently stuck", which is exactly what got reported as a hang.
+  // A plain ticking counter can't fix a slow network or a slow device, but
+  // it does prove the page itself is alive and something is still
+  // happening, second by second, instead of leaving that as a guess.
+  const [processingStartedAt, setProcessingStartedAt] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!processingStartedAt) return;
+    const id = setInterval(() => setElapsedSeconds(Math.floor((Date.now() - processingStartedAt) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [processingStartedAt]);
 
   // "Apply to all" bar - every field starts blank/untouched so applying
   // never clobbers a draft's own value unless the seller actually typed
@@ -448,6 +464,8 @@ export default function BulkPhotoUploadPage() {
   // doesn't try to run several heavy WASM segmentation models at once.
   async function handleRemoveBackgroundsAll() {
     setProcessing(true);
+    setProcessingStartedAt(Date.now());
+    setElapsedSeconds(0);
     const queue = drafts.filter(eligibleForProcessing);
 
     for (let i = 0; i < queue.length; i++) {
@@ -487,10 +505,13 @@ export default function BulkPhotoUploadPage() {
 
     setProgressLabel("");
     setProcessing(false);
+    setProcessingStartedAt(null);
   }
 
   async function handleAutofillAll() {
     setProcessing(true);
+    setProcessingStartedAt(Date.now());
+    setElapsedSeconds(0);
     const queue = drafts.filter(eligibleForProcessing);
 
     for (let i = 0; i < queue.length; i++) {
@@ -545,6 +566,7 @@ export default function BulkPhotoUploadPage() {
 
     setProgressLabel("");
     setProcessing(false);
+    setProcessingStartedAt(null);
   }
 
   async function handlePublishAll() {
@@ -702,7 +724,7 @@ export default function BulkPhotoUploadPage() {
                 cursor: processing || !hasEligible ? "default" : "pointer",
               }}
             >
-              {processing ? progressLabel || "Processing…" : "✂️ Remove Backgrounds (Free)"}
+              {processing ? `${progressLabel || "Processing…"} (${elapsedSeconds}s)` : "✂️ Remove Backgrounds (Free)"}
             </button>
             <button
               type="button"
@@ -719,7 +741,7 @@ export default function BulkPhotoUploadPage() {
                 cursor: processing || !hasEligible ? "default" : "pointer",
               }}
             >
-              {processing ? progressLabel || "Processing…" : "✨ Auto-fill Details (AI)"}
+              {processing ? `${progressLabel || "Processing…"} (${elapsedSeconds}s)` : "✨ Auto-fill Details (AI)"}
             </button>
             <button
               type="button"
@@ -1030,7 +1052,16 @@ export default function BulkPhotoUploadPage() {
                   <button
                     type="button"
                     onClick={() => removeDraft(d.localId)}
-                    disabled={d.status === "removing-bg" || d.status === "autofilling" || d.status === "publishing"}
+                    // Only genuinely unsafe to interrupt mid-flight:
+                    // publishing has already started a real Cloudinary
+                    // upload server-side. Removing-bg/autofilling used to be
+                    // disabled too, which meant a photo whose background
+                    // removal got stuck (see hasRmbgModelLoadStarted's own
+                    // comment - a dropped connection downloading the ~45MB
+                    // model, or a slow device) left a seller with literally
+                    // no way out of that one draft short of reloading the
+                    // whole page and losing every other draft's progress.
+                    disabled={d.status === "publishing"}
                     style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 12 }}
                   >
                     Remove
@@ -1045,9 +1076,9 @@ export default function BulkPhotoUploadPage() {
                 {d.status === "queued" ? (
                   <p style={{ fontSize: 13, color: "#94a3b8" }}>{d.fileName} — waiting to be processed.</p>
                 ) : d.status === "removing-bg" ? (
-                  <p style={{ fontSize: 13, color: "#94a3b8" }}>Removing background…</p>
+                  <p style={{ fontSize: 13, color: "#94a3b8" }}>Removing background… ({elapsedSeconds}s)</p>
                 ) : d.status === "autofilling" ? (
-                  <p style={{ fontSize: 13, color: "#94a3b8" }}>Asking AI for title, category, and description…</p>
+                  <p style={{ fontSize: 13, color: "#94a3b8" }}>Asking AI for title, category, and description… ({elapsedSeconds}s)</p>
                 ) : d.status === "error" ? (
                   <p style={{ fontSize: 13, color: "#e11d48" }}>{d.error || "Something went wrong."}</p>
                 ) : d.status === "published" ? (
