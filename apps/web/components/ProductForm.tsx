@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CATEGORY_TREE, COLOR_CATALOG, FABRIC_OPTIONS, BRAND_OPTIONS, getSizeOptionsFor, defaultSizedSubCategoryFor, type Gender } from "../lib/catalog-constants";
 import { autoAlignAndZoom, autoEnhanceQuality, stabilizeLighting, reduceWrinkles, compositeBackground, pickAutoBackground, BACKGROUND_PRESETS, cutoutFromMask, removeBackgroundRMBG } from "../lib/image-enhance";
+import { checkDataUrlSafety } from "../lib/nsfw-check";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
 
 type PhotoStage = "raw" | "bg-removed" | "mannequin" | "restored";
@@ -1320,7 +1321,20 @@ function resizeForStorage(dataUrl: string, maxDimension = 1000, quality = 0.85):
 // app/api/v1/seller/upload/route.ts. Throws on failure so handleSubmit can
 // stop the save rather than falling back to embedding the raw base64 data
 // URL this endpoint replaces.
+//
+// Runs the free client-side NSFW pre-check (lib/nsfw-check.ts) first, on
+// every photo this is ever called with (main image, additional photos, and
+// each colorway's own photo all funnel through this one function) - the
+// last safety gate before a photo leaves the browser at all. A flagged
+// image never reaches the Cloudinary upload call below; it's rejected with
+// a plain, non-accusatory message instead, worded the same way an upload
+// failure already is (see the catch block in handleSubmit).
 async function uploadProductImage(dataUrl: string): Promise<string> {
+  const { safe } = await checkDataUrlSafety(dataUrl);
+  if (!safe) {
+    throw new Error("This image couldn't be uploaded — it may violate our content policy. If you believe this is a mistake, contact support.");
+  }
+
   const res = await fetch("/api/v1/seller/upload", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

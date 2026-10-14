@@ -14,6 +14,7 @@ import {
   pickAutoBackground,
   BACKGROUND_PRESETS,
 } from "../../../../../lib/image-enhance";
+import { checkDataUrlSafety } from "../../../../../lib/nsfw-check";
 import { showToast } from "../../../../../lib/toast";
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
@@ -86,7 +87,20 @@ function fileToDataUrl(file: File): Promise<string> {
 // single-product form (ProductForm.tsx) uses. Throws on failure so
 // handlePublishAll can mark that draft as errored instead of publishing a
 // product with a broken or missing photo.
+//
+// Runs the free client-side NSFW pre-check (lib/nsfw-check.ts) first, on
+// every photo this is ever called with (each draft's main image and all of
+// its additional angle photos all funnel through this one function) - the
+// last safety gate before a photo leaves the browser. A flagged image never
+// reaches the Cloudinary upload call below; it throws instead, same as any
+// other upload failure, so handlePublishAll's existing catch surfaces a
+// plain, non-accusatory message instead of publishing that photo.
 async function uploadProductImage(dataUrl: string): Promise<string> {
+  const { safe } = await checkDataUrlSafety(dataUrl);
+  if (!safe) {
+    throw new Error("This image couldn't be uploaded — it may violate our content policy. If you believe this is a mistake, contact support.");
+  }
+
   const res = await fetch("/api/v1/seller/upload", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

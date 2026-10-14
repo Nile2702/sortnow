@@ -1,5 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // nsfwjs (lib/nsfw-check.ts) ships its bundled MobileNetV2 model weights
+  // as prebuilt browserify/UMD bundles (node_modules/nsfwjs/dist/models/**).
+  // Those files' own internal browserify module-loader shim contains a
+  // generic `require(moduleId, true)` call (guarding a fallback path that
+  // never actually runs in a browser bundle like this), which webpack's
+  // static analyzer can't resolve to a real module and fails the production
+  // build over ("Cannot statically analyse 'require(…, …)'") - even though
+  // nothing here ever needs that fallback path at runtime. `noParse` tells
+  // webpack to include these specific files as opaque, already-finished
+  // bundles without trying to statically analyze what they require - exactly
+  // what a prebuilt UMD bundle like this is meant to be consumed as - so the
+  // build stops tripping over an internal detail of a bundle this code never
+  // calls into.
+  webpack(config) {
+    config.module.noParse = /node_modules[\\/]nsfwjs[\\/]dist[\\/]models[\\/]/;
+    return config;
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
