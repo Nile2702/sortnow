@@ -431,9 +431,11 @@ function DiscoverPageInner() {
 
       <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>Stores near you</h2>
       {loading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 44 }}>
-          {[1, 2, 3].map((i) => (
-            <SkeletonCard key={i} height={110} />
+        <div className="sio-scroll-row" style={{ marginBottom: 44 }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} style={{ minWidth: 260, flex: "0 0 260px" }}>
+              <SkeletonCard height={110} />
+            </div>
           ))}
         </div>
       ) : stores.length === 0 ? (
@@ -475,7 +477,7 @@ function DiscoverPageInner() {
           </div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 44 }}>
+        <div className="sio-scroll-row" style={{ marginBottom: 44 }}>
           {stores.map((s, i) => (
             <Link
               key={s.id}
@@ -493,6 +495,9 @@ function DiscoverPageInner() {
                 border: "1px solid #f1f5f9",
                 boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
                 animationDelay: `${i * 60}ms`,
+                minWidth: 260,
+                flex: "0 0 260px",
+                scrollSnapAlign: "start",
               }}
             >
               <div
