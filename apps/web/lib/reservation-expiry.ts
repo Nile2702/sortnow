@@ -19,3 +19,15 @@
 export function isPastReservationWindow(status: string, reservedUntil: string | Date, now: number = Date.now()): boolean {
   return status === "pending" && new Date(reservedUntil).getTime() < now;
 }
+
+// Whether a shopper can cancel this reservation right now (see the
+// "Cancel reservation" action on app/reservations/[reservationId]/page.tsx
+// and the honest promise in app/legal/refund-policy/page.tsx: "You can
+// cancel a reservation any time before its pickup window ends"). Only a
+// still-pending, not-yet-expired reservation qualifies - one already
+// fulfilled, cancelled, or past its window (even if the DB row hasn't been
+// write-on-read flipped to "expired" yet, see isPastReservationWindow
+// above) cannot be cancelled.
+export function canCancelReservation(status: string, reservedUntil: string | Date, now: number = Date.now()): boolean {
+  return status === "pending" && !isPastReservationWindow(status, reservedUntil, now);
+}

@@ -16,6 +16,14 @@ const TRIGGER_LABEL: Record<string, string> = {
   reservation_created: "New reservation",
   reservation_fulfilled: "Pickup completed",
   reservation_cancelled: "Reservation cancelled",
+  back_in_stock: "Back in stock",
+  referral_joined: "Referral joined",
+  store_approved: "Store approved",
+  store_rejected: "Store submission rejected",
+  store_suspended: "Store put on hold",
+  store_reinstated: "Store reinstated",
+  product_held: "Listing taken down",
+  product_unheld: "Listing restored",
 };
 
 export default function SellerNotificationsPage() {
@@ -40,16 +48,10 @@ export default function SellerNotificationsPage() {
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Notifications</h1>
       <p style={{ color: "#64748b", marginBottom: 24 }}>
-        Every SMS this platform has sent about {store.name} — to you when a reservation comes in, and to shoppers when their pickup is
-        confirmed or cancelled.{" "}
+        Every SMS this platform has sent about {store.name} — to you when a reservation comes in or your store/listing status changes, and
+        to shoppers when their pickup is confirmed, cancelled, or a waitlisted item comes back in stock.{" "}
         {!store.phone && (
-          <>
-            You don't have a phone number on file yet, so you're not receiving these yourself — add one via{" "}
-            <a href="/seller/signup" style={{ color: "#0f172a", fontWeight: 600 }}>
-              account settings
-            </a>{" "}
-            (or ask support).
-          </>
+          <>There's no phone number on file for this store yet, so you're not receiving these yourself — contact support to add one.</>
         )}
       </p>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getMyReservationIds } from "../../lib/reservations";
+import { canCancelReservation } from "../../lib/reservation-expiry";
 
 interface Reservation {
   id: string;
@@ -81,53 +82,148 @@ export default function ReservationsPage() {
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {reservations.map((r) => {
-            const s = STATUS_STYLE[r.status] ?? STATUS_STYLE.pending;
-            const msLeft = new Date(r.reservedUntil).getTime() - Date.now();
-            const isUrgent = r.status === "pending" && msLeft > 0 && msLeft <= URGENT_THRESHOLD_MS;
-            return (
-              <Link
-                key={r.id}
-                href={`/reservations/${r.id}`}
-                className="sio-card"
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  background: "#fff",
-                  borderRadius: 14,
-                  border: "1px solid #f1f5f9",
-                  padding: 16,
-                  textDecoration: "none",
-                  color: "inherit",
-                }}
-              >
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontWeight: 600 }}>{r.storeName}</span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: 999,
-                        background: isUrgent ? "#fee2e2" : s.bg,
-                        color: isUrgent ? "#991b1b" : s.fg,
-                      }}
-                    >
-                      {r.status === "pending" ? formatMinutesLeft(r.reservedUntil) : s.label}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
-                    {r.items.length} item{r.items.length > 1 ? "s" : ""} · {new Date(r.createdAt).toLocaleDateString("en-IN")}
-                  </div>
-                </div>
-                <div style={{ fontWeight: 700 }}>₹{r.total}</div>
-              </Link>
-            );
-          })}
+          {reservations.map((r) => (
+            <ReservationRow
+              key={r.id}
+              reservation={r}
+              onUpdate={(updated) => setReservations((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))}
+            />
+          ))}
         </div>
       )}
     </main>
+  );
+}
+
+function ReservationRow({ reservation: r, onUpdate }: { reservation: Reservation; onUpdate: (r: Reservation) => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const s = STATUS_STYLE[r.status] ?? STATUS_STYLE.pending;
+  const msLeft = new Date(r.reservedUntil).getTime() - Date.now();
+  const isUrgent = r.status === "pending" && msLeft > 0 && msLeft <= URGENT_THRESHOLD_MS;
+  const cancellable = canCancelReservation(r.status, r.reservedUntil);
+
+  async function handleCancel() {
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
+    setCancelling(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/reservations/${r.id}/cancel`, { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(data?.message || "Couldn't cancel this reservation.");
+        setConfirming(false);
+        return;
+      }
+      onUpdate(data);
+      setConfirming(false);
+    } catch {
+      setError("Couldn't cancel this reservation. Check your connection.");
+      setConfirming(false);
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  return (
+    <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}>
+      <Link
+        href={`/reservations/${r.id}`}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          textDecoration: "none",
+          color: "inherit",
+        }}
+      >
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontWeight: 600 }}>{r.storeName}</span>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                padding: "2px 8px",
+                borderRadius: 999,
+                background: isUrgent ? "#fee2e2" : s.bg,
+                color: isUrgent ? "#991b1b" : s.fg,
+              }}
+            >
+              {r.status === "pending" ? formatMinutesLeft(r.reservedUntil) : s.label}
+            </span>
+          </div>
+          <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
+            {r.items.length} item{r.items.length > 1 ? "s" : ""} · {new Date(r.createdAt).toLocaleDateString("en-IN")}
+          </div>
+        </div>
+        <div style={{ fontWeight: 700 }}>₹{r.total.toLocaleString("en-IN")}</div>
+      </Link>
+
+      {cancellable && (
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #f8fafc" }}>
+          {error && <p style={{ color: "#991b1b", fontSize: 12.5, margin: "0 0 8px" }}>{error}</p>}
+          {confirming ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 600 }}>Cancel this reservation?</span>
+              <button
+                onClick={handleCancel}
+                disabled={cancelling}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 999,
+                  border: "none",
+                  background: "#991b1b",
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: cancelling ? "default" : "pointer",
+                  opacity: cancelling ? 0.7 : 1,
+                }}
+              >
+                {cancelling ? "Cancelling…" : "Yes, cancel"}
+              </button>
+              <button
+                onClick={() => setConfirming(false)}
+                disabled={cancelling}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 999,
+                  border: "1px solid #e2e8f0",
+                  background: "#fff",
+                  color: "#0f172a",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Never mind
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleCancel}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 999,
+                border: "1px solid #fecaca",
+                background: "#fff",
+                color: "#991b1b",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Cancel reservation
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

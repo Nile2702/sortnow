@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isPastReservationWindow } from "./reservation-expiry.ts";
+import { isPastReservationWindow, canCancelReservation } from "./reservation-expiry.ts";
 
 const NOW = Date.parse("2026-01-15T12:00:00.000Z");
 
@@ -32,4 +32,18 @@ test("an already-expired reservation is not re-flagged (status check short-circu
 test("accepts a Date instance for reservedUntil, not just a string", () => {
   assert.equal(isPastReservationWindow("pending", new Date(NOW - 60_000), NOW), true);
   assert.equal(isPastReservationWindow("pending", new Date(NOW + 60_000), NOW), false);
+});
+
+test("canCancelReservation: a pending reservation within its window can be cancelled", () => {
+  assert.equal(canCancelReservation("pending", "2026-01-15T13:00:00.000Z", NOW), true);
+});
+
+test("canCancelReservation: a pending reservation past its window cannot be cancelled", () => {
+  assert.equal(canCancelReservation("pending", "2026-01-15T11:00:00.000Z", NOW), false);
+});
+
+test("canCancelReservation: a fulfilled/cancelled/expired reservation cannot be cancelled", () => {
+  assert.equal(canCancelReservation("fulfilled", "2026-01-15T13:00:00.000Z", NOW), false);
+  assert.equal(canCancelReservation("cancelled", "2026-01-15T13:00:00.000Z", NOW), false);
+  assert.equal(canCancelReservation("expired", "2020-01-01T00:00:00.000Z", NOW), false);
 });

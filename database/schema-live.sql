@@ -50,12 +50,23 @@ CREATE TYPE reservation_status AS ENUM ('pending', 'fulfilled', 'cancelled', 'ex
 -- reserved_until, never stored — see effectiveReservationStatus() in
 -- lib/seed-data.ts.
 CREATE TYPE notification_recipient AS ENUM ('seller', 'shopper');
+-- store_approved/store_rejected/store_suspended/store_reinstated/
+-- product_held/product_unheld added via scripts/migrate-notification-triggers.js
+-- on the live DB - sellers are now notified of their own account/listing
+-- status changes (lib/seed-data.ts activateStore/rejectStore/suspendStore/
+-- reinstateStore/holdProduct/unholdProduct), not just reservation activity.
 CREATE TYPE notification_trigger AS ENUM (
   'reservation_created',
   'reservation_fulfilled',
   'reservation_cancelled',
   'back_in_stock',
-  'referral_joined'
+  'referral_joined',
+  'store_approved',
+  'store_rejected',
+  'store_suspended',
+  'store_reinstated',
+  'product_held',
+  'product_unheld'
 );
 CREATE TYPE billing_mode AS ENUM ('gst', 'normal');
 CREATE TYPE bill_payment_mode AS ENUM ('cash', 'upi', 'card', 'other');
@@ -148,7 +159,15 @@ CREATE TABLE products (
     cost_price          NUMERIC(10,2),             -- never exposed shopper-side (see searchProducts)
     images              JSONB NOT NULL DEFAULT '[]'::jsonb,   -- { url: string }[]
     sizes               TEXT[] NOT NULL DEFAULT '{}',
-    stock_remaining     INT,
+    -- NULL means "stock isn't tracked for this listing" (unlimited) - the
+    -- CHECK only rejects an explicit negative value, never NULL (a CHECK
+    -- constraint treats a NULL expression result as satisfied). Added via
+    -- scripts/migrate-stock-credit-checks.js as a DB-level backstop behind
+    -- createReservation/createBill's own transactional, row-locked
+    -- stock-sufficiency recheck (see the comments on both in
+    -- lib/seed-data.ts) - belt and suspenders against the TOCTOU race this
+    -- column is exposed to from two call sites.
+    stock_remaining     INT CHECK (stock_remaining >= 0),
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     status              product_status NOT NULL DEFAULT 'live'
 );
@@ -287,7 +306,12 @@ CREATE TABLE subscriptions (
 -- as PLANS above.
 CREATE TABLE photo_credits (
     store_id    TEXT PRIMARY KEY REFERENCES stores(id) ON DELETE CASCADE,
-    credits     INT NOT NULL DEFAULT 3
+    -- CHECK added via scripts/migrate-stock-credit-checks.js, same backstop
+    -- reasoning as products.stock_remaining above - spendPhotoCredit is now
+    -- a single atomic UPDATE ... WHERE credits >= 1 (lib/seed-data.ts), so
+    -- this should never actually be reached, but a DB-level guard costs
+    -- nothing and catches any future logic bug directly.
+    credits     INT NOT NULL DEFAULT 3 CHECK (credits >= 0)
 );
 
 -- ---------------------------------------------------------------------

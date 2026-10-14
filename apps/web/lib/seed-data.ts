@@ -636,7 +636,12 @@ export async function getColorSiblings(product: Product): Promise<Product[]> {
 // review each new seller instead of any automated KYC check.
 export async function activateStore(storeId: string): Promise<Store | null> {
   const row = await queryOne<any>(`UPDATE stores SET status = 'active', activated_at = now() WHERE id = $1 RETURNING *`, [storeId]);
-  return row ? rowToStore(row) : null;
+  if (!row) return null;
+  const store = rowToStore(row);
+  if (store.phone) {
+    await notify(store.id, store.phone, "seller", "store_approved", `Your store is live on SORT NOW! Shoppers can now find ${store.name} and reserve items for pickup.`, store.email);
+  }
+  return store;
 }
 
 // Puts an already-active store on hold - e.g. a shopper complaint, a
@@ -649,7 +654,12 @@ export async function activateStore(storeId: string): Promise<Store | null> {
 // to a currently-active store.
 export async function suspendStore(storeId: string): Promise<Store | null> {
   const row = await queryOne<any>(`UPDATE stores SET status = 'suspended' WHERE id = $1 AND status = 'active' RETURNING *`, [storeId]);
-  return row ? rowToStore(row) : null;
+  if (!row) return null;
+  const store = rowToStore(row);
+  if (store.phone) {
+    await notify(store.id, store.phone, "seller", "store_suspended", `Your store has been temporarily put on hold - contact support if you have questions.`, store.email);
+  }
+  return store;
 }
 
 // Reverses suspendStore - the site owner decided the hold was unwarranted
@@ -659,7 +669,12 @@ export async function suspendStore(storeId: string): Promise<Store | null> {
 // store is itself a fresh activation event.
 export async function reinstateStore(storeId: string): Promise<Store | null> {
   const row = await queryOne<any>(`UPDATE stores SET status = 'active', activated_at = now() WHERE id = $1 AND status = 'suspended' RETURNING *`, [storeId]);
-  return row ? rowToStore(row) : null;
+  if (!row) return null;
+  const store = rowToStore(row);
+  if (store.phone) {
+    await notify(store.id, store.phone, "seller", "store_reinstated", `Good news - your store is back live on SORT NOW. Shoppers can reserve items again.`, store.email);
+  }
+  return store;
 }
 
 // Sets a "pending_review" store back to "draft" - the site owner declined
@@ -667,7 +682,12 @@ export async function reinstateStore(storeId: string): Promise<Store | null> {
 // resubmit via onboarding, which re-runs submitStoreForReview below.
 export async function rejectStore(storeId: string): Promise<Store | null> {
   const row = await queryOne<any>(`UPDATE stores SET status = 'draft' WHERE id = $1 RETURNING *`, [storeId]);
-  return row ? rowToStore(row) : null;
+  if (!row) return null;
+  const store = rowToStore(row);
+  if (store.phone) {
+    await notify(store.id, store.phone, "seller", "store_rejected", `Your store submission needs another look before it can go live - double-check your details in onboarding and resubmit, or contact support if you have questions.`, store.email);
+  }
+  return store;
 }
 
 export interface SubmitStoreForReviewInput {
@@ -721,14 +741,34 @@ export async function getSuspendedStores(): Promise<Store[]> {
 // narrower alternative to suspendStore above when only one listing is a
 // problem, not the whole seller.
 // ---------------------------------------------------------------------
+// Looks up the owning store's own phone/email for a product-moderation
+// notify() call - holdProduct/unholdProduct only get a product row back
+// from their own UPDATE, not the store's contact details.
+async function notifyStoreAboutProduct(product: Product, trigger: "product_held" | "product_unheld", message: string): Promise<void> {
+  const storeRow = await queryOne<any>(`SELECT phone, email FROM stores WHERE id = $1`, [product.storeId]);
+  if (storeRow?.phone) {
+    await notify(product.storeId, storeRow.phone, "seller", trigger, message, storeRow.email);
+  }
+}
+
 export async function holdProduct(productId: string): Promise<Product | null> {
   const row = await queryOne<any>(`UPDATE products SET status = 'on_hold' WHERE id = $1 RETURNING *`, [productId]);
-  return row ? rowToProduct(row) : null;
+  if (!row) return null;
+  const product = rowToProduct(row);
+  await notifyStoreAboutProduct(
+    product,
+    "product_held",
+    `Your listing "${product.title}" has been taken down and put on hold - it's no longer visible to shoppers. Contact support if you have questions.`
+  );
+  return product;
 }
 
 export async function unholdProduct(productId: string): Promise<Product | null> {
   const row = await queryOne<any>(`UPDATE products SET status = 'live' WHERE id = $1 RETURNING *`, [productId]);
-  return row ? rowToProduct(row) : null;
+  if (!row) return null;
+  const product = rowToProduct(row);
+  await notifyStoreAboutProduct(product, "product_unheld", `Your listing "${product.title}" is live again and visible to shoppers.`);
+  return product;
 }
 
 export async function updateStoreTheme(storeId: string, patch: { primary?: string; accent?: string; heroTitle?: string; heroSubtitle?: string }) {
@@ -819,6 +859,12 @@ function rowToReservation(r: any): Reservation {
   };
 }
 
+// Thrown inside the transaction below when every requested item fails its
+// (re-)checked stock availability - caught by createReservation to return
+// null the same way "nothing survived" already did before this function had
+// a transaction at all.
+class NoStockAvailableError extends Error {}
+
 export async function createReservation(input: {
   storeId: string;
   items: ReservationItem[];
@@ -830,27 +876,95 @@ export async function createReservation(input: {
   if (!storeRow) return null;
   const store = rowToStore(storeRow);
   const now = new Date();
-  const reservation: Reservation = {
-    id: `RSV-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
-    storeId: store.id,
-    storeName: store.name,
-    storeSlug: store.slug,
-    items: input.items,
-    total: input.items.reduce((sum, i) => sum + i.price * i.quantity, 0),
-    shopperName: input.shopperName,
-    shopperPhone: input.shopperPhone,
-    status: "pending",
-    reservedUntil: new Date(now.getTime() + input.durationMinutes * 60_000).toISOString(),
-    createdAt: now.toISOString(),
-  };
-  await query(
-    `INSERT INTO reservations (id, store_id, store_name, store_slug, items, total, shopper_name, shopper_phone, status, reserved_until, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-    [
-      reservation.id, reservation.storeId, reservation.storeName, reservation.storeSlug, JSON.stringify(reservation.items),
-      reservation.total, reservation.shopperName, reservation.shopperPhone, reservation.status, reservation.reservedUntil, reservation.createdAt,
-    ]
-  );
+  const reservedUntil = new Date(now.getTime() + input.durationMinutes * 60_000).toISOString();
+
+  // The stock-sufficiency check and the reservation insert used to be two
+  // separate round trips (a plain SELECT-derived count in
+  // getProductReservedQuantity, then an unconditional INSERT here) - two
+  // concurrent requests for the last unit of the same product could both
+  // read "1 available" before either had inserted, and both insert,
+  // overbooking it. Locking the relevant product rows with
+  // `SELECT ... FOR UPDATE` *inside* the same transaction as both the
+  // held-quantity recount and the INSERT forces a second concurrent call
+  // for the same product to block until this transaction commits (or rolls
+  // back) and then recompute against its actual effect, instead of a stale
+  // snapshot - the same pattern createBill uses for its own atomic
+  // stock-deduction + bill-insert. Product ids are locked in a fixed (sorted)
+  // order so two reservations spanning the same multiple products can never
+  // deadlock against each other.
+  let reservation: Reservation | null = null;
+  try {
+    reservation = await withTransaction(async (client) => {
+      const productIds = Array.from(new Set(input.items.map((i) => i.productId))).sort();
+      const lockedRows = productIds.length
+        ? (await client.query(`SELECT id, stock_remaining FROM products WHERE id = ANY($1::text[]) FOR UPDATE`, [productIds])).rows
+        : [];
+      const stockById = new Map<string, number | null>(lockedRows.map((r: any) => [r.id, r.stock_remaining]));
+
+      // Held quantity is recomputed from inside this same transaction
+      // (not via the exported getProductReservedQuantity, which uses the
+      // plain pooled `query` helper on a different connection with no
+      // lock) - only "pending" reservations whose window hasn't passed yet
+      // count, mirroring getProductReservedQuantity/flipIfExpired's own
+      // write-on-read expiry logic without needing to perform that write
+      // here too.
+      const heldById = new Map<string, number>();
+      const claimedById = new Map<string, number>();
+      const surviving: ReservationItem[] = [];
+      for (const item of input.items) {
+        const stock = stockById.get(item.productId);
+        if (stock != null) {
+          if (!heldById.has(item.productId)) {
+            const heldRows = await client.query(
+              `SELECT items FROM reservations WHERE store_id = $1 AND status = 'pending' AND reserved_until > now()`,
+              [input.storeId]
+            );
+            let held = 0;
+            for (const r of heldRows.rows as any[]) {
+              for (const it of r.items ?? []) {
+                if (it.productId === item.productId) held += it.quantity;
+              }
+            }
+            heldById.set(item.productId, held);
+          }
+          const held = heldById.get(item.productId)!;
+          const claimed = claimedById.get(item.productId) ?? 0;
+          const available = stock - held - claimed;
+          if (item.quantity > available) continue;
+          claimedById.set(item.productId, claimed + item.quantity);
+        }
+        surviving.push(item);
+      }
+      if (surviving.length === 0) throw new NoStockAvailableError();
+
+      const res: Reservation = {
+        id: `RSV-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
+        storeId: store.id,
+        storeName: store.name,
+        storeSlug: store.slug,
+        items: surviving,
+        total: surviving.reduce((sum, i) => sum + i.price * i.quantity, 0),
+        shopperName: input.shopperName,
+        shopperPhone: input.shopperPhone,
+        status: "pending",
+        reservedUntil,
+        createdAt: now.toISOString(),
+      };
+      await client.query(
+        `INSERT INTO reservations (id, store_id, store_name, store_slug, items, total, shopper_name, shopper_phone, status, reserved_until, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [
+          res.id, res.storeId, res.storeName, res.storeSlug, JSON.stringify(res.items),
+          res.total, res.shopperName, res.shopperPhone, res.status, res.reservedUntil, res.createdAt,
+        ]
+      );
+      return res;
+    });
+  } catch (e) {
+    if (e instanceof NoStockAvailableError) return null;
+    throw e;
+  }
+  if (!reservation) return null;
 
   const itemCount = reservation.items.reduce((sum, i) => sum + i.quantity, 0);
   const pickupTime = new Date(reservation.reservedUntil).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
@@ -945,8 +1059,14 @@ export async function getProductReservedQuantity(storeId: string, productId: str
   return held;
 }
 
+// `AND status = 'pending'` guards against two concurrent transitions of the
+// same reservation (e.g. a shopper's cancel racing a seller's fulfil, or a
+// double-submitted cancel click) both succeeding and both firing a
+// notification - only the first caller to land sees a non-null result, the
+// loser sees null and reports "no longer pending" instead of silently
+// double-transitioning (and double-notifying) the same reservation.
 export async function updateReservationStatus(id: string, status: "fulfilled" | "cancelled"): Promise<Reservation | null> {
-  const row = await queryOne<any>(`UPDATE reservations SET status = $2 WHERE id = $1 RETURNING *`, [id, status]);
+  const row = await queryOne<any>(`UPDATE reservations SET status = $2 WHERE id = $1 AND status = 'pending' RETURNING *`, [id, status]);
   if (!row) return null;
   const reservation = rowToReservation(row);
 
@@ -992,7 +1112,18 @@ export interface Notification {
   storeId: string;
   recipient: "seller" | "shopper";
   phone: string;
-  trigger: "reservation_created" | "reservation_fulfilled" | "reservation_cancelled" | "back_in_stock" | "referral_joined";
+  trigger:
+    | "reservation_created"
+    | "reservation_fulfilled"
+    | "reservation_cancelled"
+    | "back_in_stock"
+    | "referral_joined"
+    | "store_approved"
+    | "store_rejected"
+    | "store_suspended"
+    | "store_reinstated"
+    | "product_held"
+    | "product_unheld";
   message: string;
   createdAt: string;
 }
@@ -1015,6 +1146,12 @@ const NOTIFICATION_SUBJECTS: Record<Notification["trigger"], string> = {
   reservation_cancelled: "Your SORT NOW reservation was cancelled",
   back_in_stock: "Back in stock on SORT NOW",
   referral_joined: "Your SORT NOW referral joined",
+  store_approved: "Your store is live on SORT NOW",
+  store_rejected: "Your SORT NOW store submission needs another look",
+  store_suspended: "Your SORT NOW store has been put on hold",
+  store_reinstated: "Your SORT NOW store is live again",
+  product_held: "A listing was taken down on SORT NOW",
+  product_unheld: "Your listing is live again on SORT NOW",
 };
 
 // `email`, when the caller has one on file for this recipient (a store's
@@ -1450,6 +1587,12 @@ export async function updateBillingSettings(
 
 export type CreateBillResult = { bill: Bill } | { error: string };
 
+// Thrown inside createBill's transaction when a row-locked recheck finds
+// stock insufficient - caught right outside the transaction and turned back
+// into the same `{ error }` shape every other validation failure in this
+// function already returns.
+class InsufficientStockError extends Error {}
+
 export async function createBill(input: {
   storeId: string;
   items: { productId: string; quantity: number; size?: string }[];
@@ -1466,14 +1609,19 @@ export async function createBill(input: {
     return { error: "Discount must be between 0 and 100%." };
   }
 
-  // Resolve and validate every line before mutating any stock, so a bill
-  // either goes through completely or not at all - never half-deducted.
-  // Tracks how much of each product this same bill has already claimed
-  // (e.g. two lines for the same product in different sizes) - checking
-  // each line only against the product's own stockRemaining, independently,
-  // would let two lines of 3 each both pass against a stock of 4, since
-  // neither line's check sees the other's claim until stock is actually
-  // decremented afterward.
+  // Resolves/validates shape (product exists, quantity is a positive
+  // integer, size is valid) up front - none of that is stock-racy, it's the
+  // same regardless of what else might be happening concurrently. Stock
+  // *sufficiency* is deliberately NOT checked here against this plain,
+  // unlocked `storeProducts` read - that used to be the only check, against
+  // a snapshot taken well before the transaction below, which let two
+  // concurrent bills both read the same stale stock_remaining and both
+  // pass. It's rechecked (and is the only thing that can still reject the
+  // bill) inside the transaction, against a `SELECT ... FOR UPDATE`-locked
+  // read of the same rows, immediately before the deduction. Tracks how
+  // much of each product this same bill has already claimed (e.g. two lines
+  // for the same product in different sizes), since the locked check below
+  // is against each product's *total* requested quantity across all lines.
   const storeProducts = await getStoreProducts(input.storeId);
   const claimedByProduct = new Map<string, number>();
   const resolved: { product: Product; quantity: number; size?: string }[] = [];
@@ -1487,10 +1635,6 @@ export async function createBill(input: {
       return { error: `"${line.size}" isn't a valid size for "${product.title}".` };
     }
     const alreadyClaimed = claimedByProduct.get(product.id) ?? 0;
-    const available = (product.stockRemaining ?? 0) - alreadyClaimed;
-    if (line.quantity > available) {
-      return { error: `Only ${available} left in stock for "${product.title}".` };
-    }
     claimedByProduct.set(product.id, alreadyClaimed + line.quantity);
     resolved.push({ product, quantity: line.quantity, size: line.size });
   }
@@ -1544,30 +1688,52 @@ export async function createBill(input: {
     createdAt: new Date().toISOString(),
   };
 
-  // Stock deduction, invoice-counter bump, and the bill row itself all
-  // commit together - a crash partway through must never leave stock
-  // decremented with no bill to show for it (or vice versa).
-  await withTransaction(async (client) => {
-    for (const { product, quantity } of resolved) {
-      await client.query(`UPDATE products SET stock_remaining = COALESCE(stock_remaining, 0) - $2 WHERE id = $1`, [product.id, quantity]);
-    }
-    await client.query(
-      `INSERT INTO billing_settings (store_id, mode, gstin, tax_rate_percent, next_invoice_number, invoice_note)
-       VALUES ($1,$2,$3,$4,$5,$6)
-       ON CONFLICT (store_id) DO UPDATE SET next_invoice_number = $5`,
-      [input.storeId, settings.mode, settings.gstin ?? null, settings.taxRatePercent, settings.nextInvoiceNumber + 1, settings.invoiceNote ?? null]
-    );
-    await client.query(
-      `INSERT INTO bills (id, invoice_number, store_id, store_name, store_address, invoice_note, mode, gstin, tax_rate_percent, items, subtotal, discount_percent, discount_amount, cgst, sgst, grand_total, total_quantity, payment_mode, customer_name, customer_phone, status, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
-      [
-        bill.id, bill.invoiceNumber, bill.storeId, bill.storeName, bill.storeAddress ?? null, bill.invoiceNote ?? null,
-        bill.mode, bill.gstin ?? null, bill.taxRatePercent, JSON.stringify(bill.items), bill.subtotal, bill.discountPercent ?? null,
-        bill.discountAmount ?? null, bill.cgst, bill.sgst, bill.grandTotal, bill.totalQuantity, bill.paymentMode,
-        bill.customerName ?? null, bill.customerPhone ?? null, bill.status, bill.createdAt,
-      ]
-    );
-  });
+  // Row-locked recheck, stock deduction, invoice-counter bump, and the bill
+  // row itself all commit together - a crash partway through must never
+  // leave stock decremented with no bill to show for it (or vice versa),
+  // and the lock below must never be held any longer than this one
+  // transaction.
+  try {
+    await withTransaction(async (client) => {
+      const productIds = Array.from(claimedByProduct.keys()).sort();
+      const lockedRows = (
+        await client.query(`SELECT id, stock_remaining FROM products WHERE id = ANY($1::text[]) FOR UPDATE`, [productIds])
+      ).rows as { id: string; stock_remaining: number | null }[];
+      const stockById = new Map(lockedRows.map((r) => [r.id, r.stock_remaining]));
+      const productById = new Map(resolved.map(({ product }) => [product.id, product]));
+
+      for (const [productId, totalQuantity] of claimedByProduct) {
+        const available = stockById.get(productId) ?? 0;
+        if (totalQuantity > available) {
+          const product = productById.get(productId);
+          throw new InsufficientStockError(`Only ${available} left in stock for "${product?.title ?? productId}".`);
+        }
+      }
+
+      for (const { product, quantity } of resolved) {
+        await client.query(`UPDATE products SET stock_remaining = COALESCE(stock_remaining, 0) - $2 WHERE id = $1`, [product.id, quantity]);
+      }
+      await client.query(
+        `INSERT INTO billing_settings (store_id, mode, gstin, tax_rate_percent, next_invoice_number, invoice_note)
+         VALUES ($1,$2,$3,$4,$5,$6)
+         ON CONFLICT (store_id) DO UPDATE SET next_invoice_number = $5`,
+        [input.storeId, settings.mode, settings.gstin ?? null, settings.taxRatePercent, settings.nextInvoiceNumber + 1, settings.invoiceNote ?? null]
+      );
+      await client.query(
+        `INSERT INTO bills (id, invoice_number, store_id, store_name, store_address, invoice_note, mode, gstin, tax_rate_percent, items, subtotal, discount_percent, discount_amount, cgst, sgst, grand_total, total_quantity, payment_mode, customer_name, customer_phone, status, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
+        [
+          bill.id, bill.invoiceNumber, bill.storeId, bill.storeName, bill.storeAddress ?? null, bill.invoiceNote ?? null,
+          bill.mode, bill.gstin ?? null, bill.taxRatePercent, JSON.stringify(bill.items), bill.subtotal, bill.discountPercent ?? null,
+          bill.discountAmount ?? null, bill.cgst, bill.sgst, bill.grandTotal, bill.totalQuantity, bill.paymentMode,
+          bill.customerName ?? null, bill.customerPhone ?? null, bill.status, bill.createdAt,
+        ]
+      );
+    });
+  } catch (e) {
+    if (e instanceof InsufficientStockError) return { error: e.message };
+    throw e;
+  }
 
   // notifyWaitlistIfRestocked is never relevant here (a sale only ever
   // decreases stock), matching the original in-memory createBill, which
@@ -1703,16 +1869,25 @@ export function isBoostActive(boostedUntil?: string | null): boolean {
 }
 
 export async function boostStore(storeId: string, days: number): Promise<Store | null> {
-  const row = await queryOne<any>(`SELECT boosted_until FROM stores WHERE id = $1`, [storeId]);
-  if (!row) return null;
-  const currentBoostedUntil = row.boosted_until ? new Date(row.boosted_until).toISOString() : null;
   // Stacks onto any remaining boosted time rather than overwriting it, so
   // buying another package before the current one expires extends it
-  // instead of wasting the days already paid for.
-  const base = isBoostActive(currentBoostedUntil) ? new Date(currentBoostedUntil!).getTime() : Date.now();
-  const boostedUntil = new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
-  const updatedRow = await queryOne<any>(`UPDATE stores SET boosted_until = $2 WHERE id = $1 RETURNING *`, [storeId, boostedUntil]);
-  return updatedRow ? rowToStore(updatedRow) : null;
+  // instead of wasting the days already paid for. This used to be a plain
+  // read of boosted_until, a stack-or-restart decision made in JS, then a
+  // separate UPDATE - two concurrent purchases could both read the same
+  // "boosted until X" snapshot and both compute the same base, so the
+  // second purchase's days were silently lost instead of stacking on top of
+  // the first. The CASE here runs as part of one atomic UPDATE statement
+  // against the row Postgres is already locking for that statement, so a
+  // second concurrent UPDATE on the same row waits for the first to commit
+  // and then reads *its* result, not a stale snapshot.
+  const row = await queryOne<any>(
+    `UPDATE stores
+     SET boosted_until = (CASE WHEN boosted_until IS NOT NULL AND boosted_until > now() THEN boosted_until ELSE now() END) + make_interval(days => $2::int)
+     WHERE id = $1
+     RETURNING *`,
+    [storeId, days]
+  );
+  return row ? rowToStore(row) : null;
 }
 
 // ---------------------------------------------------------------------
@@ -1746,26 +1921,52 @@ export async function getPhotoCredits(storeId: string): Promise<number> {
   return row?.credits ?? STARTER_PHOTO_CREDITS;
 }
 
+// Both of these used to read the current balance (getPhotoCredits), decide
+// in JS whether it was sufficient / what the new total should be, then
+// write that back as a separate statement - a double-click or any other
+// concurrent call against the same store could read the same balance twice
+// and both writes would "succeed", with the second clobbering the first's
+// effect rather than compounding it (a classic lost-update race). Both are
+// now single atomic SQL statements: the affordability check and the
+// arithmetic happen in the same UPDATE as part of the same row lock
+// Postgres already takes for it, so a concurrent call against the same row
+// is forced to wait and then operate on the *other* call's result, not a
+// stale snapshot.
+
 export async function spendPhotoCredit(storeId: string): Promise<boolean> {
-  const balance = await getPhotoCredits(storeId);
-  if (balance <= 0) return false;
-  await query(
-    `INSERT INTO photo_credits (store_id, credits) VALUES ($1,$2) ON CONFLICT (store_id) DO UPDATE SET credits = $2`,
-    [storeId, balance - 1]
+  // ON CONFLICT ... DO UPDATE ... WHERE: if a photo_credits row already
+  // exists for this store, the decrement only applies (and only then does
+  // this statement affect a row) when its current balance is >= 1. If no
+  // row exists yet, the INSERT runs unconditionally (that WHERE only gates
+  // the conflict-update branch) - using STARTER_PHOTO_CREDITS - 1 so a
+  // store's very first spend still correctly reflects a starter credit
+  // having just been used, not left at the full starting balance.
+  const affected = await execute(
+    `INSERT INTO photo_credits (store_id, credits)
+     VALUES ($1, $2)
+     ON CONFLICT (store_id) DO UPDATE SET credits = photo_credits.credits - 1
+     WHERE photo_credits.credits >= 1`,
+    [storeId, STARTER_PHOTO_CREDITS - 1]
   );
-  return true;
+  return affected > 0;
 }
 
 export async function buyPhotoCredits(storeId: string, packageId: string): Promise<number | null> {
   const pack = PHOTO_CREDIT_PACKAGES.find((p) => p.id === packageId);
   if (!pack) return null;
-  const balance = await getPhotoCredits(storeId);
-  const next = balance + pack.credits;
-  await query(
-    `INSERT INTO photo_credits (store_id, credits) VALUES ($1,$2) ON CONFLICT (store_id) DO UPDATE SET credits = $2`,
-    [storeId, next]
+  // Same atomic insert-or-increment shape as spendPhotoCredit above: a
+  // fresh row starts at STARTER_PHOTO_CREDITS + the purchased credits (so a
+  // store's first-ever purchase doesn't silently drop its free starter
+  // credits), while an existing row is incremented by the purchased amount
+  // in the same statement that reads it.
+  const row = await queryOne<any>(
+    `INSERT INTO photo_credits (store_id, credits)
+     VALUES ($1, $2)
+     ON CONFLICT (store_id) DO UPDATE SET credits = photo_credits.credits + $3
+     RETURNING credits`,
+    [storeId, STARTER_PHOTO_CREDITS + pack.credits, pack.credits]
   );
-  return next;
+  return row ? row.credits : null;
 }
 
 // Platform is registered in Maharashtra (state code 27) for this demo -

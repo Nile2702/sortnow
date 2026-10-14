@@ -70,6 +70,9 @@ export default function ReservationDetailPage() {
   const [, forceTick] = useState(0);
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [store, setStore] = useState<StoreVisitInfo | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     function load() {
@@ -111,6 +114,33 @@ export default function ReservationDetailPage() {
       .then(setQrDataUrl)
       .catch(() => {});
   }, [reservationId]);
+
+  async function handleCancel() {
+    if (!confirmingCancel) {
+      setConfirmingCancel(true);
+      return;
+    }
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const res = await fetch(`/api/v1/reservations/${reservationId}/cancel`, { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setCancelError(data?.message || "Couldn't cancel this reservation. Try again.");
+        setConfirmingCancel(false);
+        return;
+      }
+      // Reflects the new cancelled state immediately, without waiting for
+      // the next 20s poll in the effect above.
+      setReservation(data);
+      setConfirmingCancel(false);
+    } catch {
+      setCancelError("Couldn't cancel this reservation. Check your connection and try again.");
+      setConfirmingCancel(false);
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   if (notFound) {
     return (
@@ -194,6 +224,73 @@ export default function ReservationDetailPage() {
             )}
             <div style={{ fontSize: 13, color: "#64748b", marginTop: 10 }}>{reservation.id}</div>
           </div>
+
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 14,
+              border: "1px solid #f1f5f9",
+              padding: 16,
+              marginBottom: 16,
+              textAlign: "center",
+            }}
+          >
+            {cancelError && <p style={{ color: "#991b1b", fontSize: 13, marginTop: 0, marginBottom: 10 }}>{cancelError}</p>}
+            {confirmingCancel ? (
+              <div style={{ display: "flex", gap: 10, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13.5, color: "#334155", fontWeight: 600 }}>Cancel this reservation? This can't be undone.</span>
+                <button
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                  style={{
+                    padding: "9px 18px",
+                    borderRadius: 999,
+                    border: "none",
+                    background: "#991b1b",
+                    color: "#fff",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: cancelling ? "default" : "pointer",
+                    opacity: cancelling ? 0.7 : 1,
+                  }}
+                >
+                  {cancelling ? "Cancelling…" : "Yes, cancel it"}
+                </button>
+                <button
+                  onClick={() => setConfirmingCancel(false)}
+                  disabled={cancelling}
+                  style={{
+                    padding: "9px 18px",
+                    borderRadius: 999,
+                    border: "1px solid #e2e8f0",
+                    background: "#fff",
+                    color: "#0f172a",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Never mind
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleCancel}
+                style={{
+                  padding: "9px 20px",
+                  borderRadius: 999,
+                  border: "1px solid #fecaca",
+                  background: "#fff",
+                  color: "#991b1b",
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel reservation
+              </button>
+            )}
+          </div>
         </>
       )}
 
@@ -207,12 +304,12 @@ export default function ReservationDetailPage() {
                 Size {item.size} · Qty {item.quantity}
               </div>
             </div>
-            <div style={{ fontWeight: 700 }}>₹{item.price * item.quantity}</div>
+            <div style={{ fontWeight: 700 }}>₹{(item.price * item.quantity).toLocaleString("en-IN")}</div>
           </div>
         ))}
         <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 16, fontSize: 18, fontWeight: 700 }}>
           <span>Total (pay at store if purchased)</span>
-          <span>₹{reservation.total}</span>
+          <span>₹{reservation.total.toLocaleString("en-IN")}</span>
         </div>
       </div>
 
