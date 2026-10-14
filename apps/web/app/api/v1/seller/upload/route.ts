@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { getSellerSession } from "../../../../../lib/auth/require-seller";
 import { rateLimit, clientIp } from "../../../../../lib/rate-limit";
+import { checkDataUrlSafetyServer } from "../../../../../lib/nsfw-check-server";
+
+// nsfwjs/@tensorflow/tfjs below need real Node APIs (Buffer-backed image
+// decoding, the CPU math backend) that the Edge runtime doesn't provide -
+// this route must stay on the Node.js runtime, not Edge.
+export const runtime = "nodejs";
 
 // Server-side home for product photo storage - replaces the old approach of
 // embedding the final base64 data URL directly in Product.images (see
@@ -48,6 +54,21 @@ export async function POST(req: NextRequest) {
   }
   if (imageDataUrl.length > MAX_DATA_URL_LENGTH) {
     return NextResponse.json({ error: "invalid_input", message: "Image is too large. Please use a photo under 3MB." }, { status: 400 });
+  }
+
+  // Server-side counterpart to the client-only nsfwjs pre-check in
+  // lib/nsfw-check.ts (ProductForm.tsx / bulk-photos/page.tsx run it before
+  // ever calling this endpoint) - this is the actual enforcement point,
+  // since a direct POST here with a valid seller session cookie (curl,
+  // Postman, a compromised cookie) skips the browser, and with it any
+  // client-side check, entirely. Runs before the Cloudinary upload so a
+  // flagged image is never stored anywhere.
+  const safety = await checkDataUrlSafetyServer(imageDataUrl);
+  if (!safety.safe) {
+    return NextResponse.json(
+      { error: "unsafe_image", message: safety.reason ?? "This image was flagged by our automated content check." },
+      { status: 400 }
+    );
   }
 
   try {
