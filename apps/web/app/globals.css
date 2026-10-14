@@ -406,6 +406,31 @@ body {
   color: var(--sio-ink);
 }
 
+/* The seller product form's photo pickers were plain unstyled <input
+   type="file"> elements - every other control on that form is a bordered,
+   padded field, so these stood out as the one raw, browser-default control
+   on the page. Only the "Choose file" button part can be restyled
+   cross-browser (the filename text next to it cannot), via these
+   vendor-prefixed pseudo-elements. */
+.sio-file-input::file-selector-button,
+.sio-file-input::-webkit-file-upload-button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  margin-right: 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: var(--sio-ink);
+  cursor: pointer;
+}
+
+.sio-file-input::file-selector-button:hover,
+.sio-file-input::-webkit-file-upload-button:hover {
+  background: #f8fafc;
+}
+
 /* =======================================================================
    Futuristic layer - glass surfaces, neon glow, scroll-reveal, particles,
    tilt cards, shine sweeps. Additive utility classes; nothing here mutates
