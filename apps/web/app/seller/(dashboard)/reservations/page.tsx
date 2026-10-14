@@ -35,6 +35,28 @@ function minutesLeft(reservedUntil: string) {
   return Math.max(0, Math.round((new Date(reservedUntil).getTime() - Date.now()) / 60000));
 }
 
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+// A plain honest breakdown over the last 30 days, no new tracking needed -
+// every reservation already carries the status this adds up (and "expired"
+// only became a real, persisted status once write-on-read expiry flipping
+// landed - see lib/seed-data.ts's flipIfExpired). "Uncollected" means
+// expired specifically: the shopper never showed up AND never cancelled,
+// as opposed to a cancellation, which is a deliberate shopper action, not a
+// no-show. The percentage is of resolved (fulfilled + expired) reservations
+// only - a reservation still pending hasn't had a chance to go either way
+// yet, and counting it would understate the rate while it's outstanding.
+function computeNoShowStats(reservations: Reservation[]) {
+  const cutoff = Date.now() - THIRTY_DAYS_MS;
+  const recent = reservations.filter((r) => new Date(r.createdAt).getTime() >= cutoff);
+  const fulfilled = recent.filter((r) => r.status === "fulfilled").length;
+  const expired = recent.filter((r) => r.status === "expired").length;
+  const cancelled = recent.filter((r) => r.status === "cancelled").length;
+  const resolved = fulfilled + expired;
+  const uncollectedPercent = resolved > 0 ? Math.round((expired / resolved) * 100) : 0;
+  return { fulfilled, expired, cancelled, resolved, uncollectedPercent };
+}
+
 export default function SellerReservationsPage() {
   const { store, loading } = useSellerStore();
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -77,9 +99,42 @@ export default function SellerReservationsPage() {
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Reservations</h1>
-      <p style={{ color: "#64748b", marginBottom: 28 }}>
+      <p style={{ color: "#64748b", marginBottom: 20 }}>
         {store.name} · shoppers who reserved items to pick up in person. Mark a reservation done once they've collected it, or cancel if they no-show.
       </p>
+
+      {(() => {
+        const stats = computeNoShowStats(reservations);
+        return (
+          <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, marginBottom: 28 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#64748b", marginBottom: 4 }}>Last 30 Days</div>
+            {stats.resolved === 0 ? (
+              <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>
+                No completed or expired reservations in the last 30 days yet - the no-show rate will show up here once some have.
+              </p>
+            ) : (
+              <p style={{ fontSize: 15, marginBottom: 14 }}>
+                <strong style={{ color: stats.uncollectedPercent > 0 ? "#991b1b" : "#16a34a" }}>{stats.uncollectedPercent}%</strong> of reservations
+                went uncollected (never picked up, hold expired).
+              </p>
+            )}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{stats.fulfilled}</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>Picked Up</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#991b1b" }}>{stats.expired}</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>Uncollected (Expired)</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#64748b" }}>{stats.cancelled}</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>Cancelled</div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Awaiting Pickup ({pending.length})</h2>
       {pending.length === 0 ? (

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { getAllStores, getAllProducts, createReservation, ReservationItem } from "../../../../lib/seed-data";
+import { getAllStores, getAllProducts, createReservation, getProductReservedQuantity, ReservationItem } from "../../../../lib/seed-data";
 
 interface CartLikeItem extends ReservationItem {
   storeSlug: string;
@@ -55,6 +55,15 @@ export async function POST(req: NextRequest) {
   const stores = await getAllStores();
   const products = await getAllProducts();
   const byStoreSlug = new Map<string, ReservationItem[]>();
+  // Stock a reservation would hold isn't tracked per-line, only per-product
+  // (same as createBill's claimedByProduct) - caches each product's
+  // already-held quantity (from OTHER pending, non-expired reservations;
+  // see getProductReservedQuantity) so a cart with two lines for the same
+  // product doesn't query it twice, and tracks what THIS request has
+  // claimed so far so two lines for the same product in one request can't
+  // both pass against the same remaining stock.
+  const heldByProduct = new Map<string, number>();
+  const claimedByProduct = new Map<string, number>();
   for (const item of items) {
     const store = stores.find((s) => s.slug === item.storeSlug);
     const product = products.find((p) => p.id === item.productId && p.storeId === store?.id);
@@ -64,6 +73,21 @@ export async function POST(req: NextRequest) {
     // actually be reservable even if the client still thinks it is, same
     // as both are already excluded from search/browse.
     if (!store || store.status !== "active" || !product || product.status === "on_hold") continue;
+
+    // Stock isn't tracked at all for a product with no stockRemaining set
+    // (same convention as everywhere else stockRemaining is read) - only
+    // enforce a cap when the seller actually set one.
+    if (product.stockRemaining != null) {
+      if (!heldByProduct.has(product.id)) {
+        heldByProduct.set(product.id, await getProductReservedQuantity(store.id, product.id));
+      }
+      const held = heldByProduct.get(product.id)!;
+      const claimed = claimedByProduct.get(product.id) ?? 0;
+      const available = product.stockRemaining - held - claimed;
+      if (item.quantity > available) continue;
+      claimedByProduct.set(product.id, claimed + item.quantity);
+    }
+
     const list = byStoreSlug.get(item.storeSlug) ?? [];
     list.push({
       productId: product.id,

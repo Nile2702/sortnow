@@ -41,7 +41,11 @@ CREATE TYPE store_status AS ENUM ('draft', 'pending_review', 'active', 'suspende
 -- "live".
 CREATE TYPE product_status AS ENUM ('live', 'on_hold');
 CREATE TYPE gender AS ENUM ('men', 'women', 'kids');
-CREATE TYPE reservation_status AS ENUM ('pending', 'fulfilled', 'cancelled');
+-- "expired" added via scripts/migrate-reservation-expired-status.js on the
+-- live DB - a "pending" reservation past its reservedUntil window is
+-- flipped to "expired" the first time anything reads it (write-on-read,
+-- see lib/seed-data.ts's flipIfExpired).
+CREATE TYPE reservation_status AS ENUM ('pending', 'fulfilled', 'cancelled', 'expired');
 -- Note: "expired" (ReservationStatus) is derived at read time from
 -- reserved_until, never stored — see effectiveReservationStatus() in
 -- lib/seed-data.ts.

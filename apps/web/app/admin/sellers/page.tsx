@@ -34,7 +34,11 @@ export default async function AdminSellersPage({ searchParams }: { searchParams:
           <div key={s.id} className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
               <div>
-                <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 2 }}>{s.name}</h2>
+                <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 2 }}>
+                  <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a", textDecoration: "none" }}>
+                    {s.name}
+                  </a>
+                </h2>
                 <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
                   {s.city} &middot; {s.localMarket} &middot; {s.pincode}
                 </p>

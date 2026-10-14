@@ -18,6 +18,8 @@ import { Gender, ALL_SIZES, CATEGORY_TREE } from "./catalog-constants";
 import { hashPassword, verifyPassword } from "./auth/password";
 import { validatePassword } from "./validate-password";
 import { lookupPincode } from "india-post-pincode";
+import { haversineKm } from "./geo";
+import { isPastReservationWindow } from "./reservation-expiry";
 import { fuzzyBestScore } from "./fuzzy-search";
 
 export type { Gender };
@@ -357,15 +359,7 @@ export async function getAllProducts(): Promise<Product[]> {
   return rows.map(rowToProduct);
 }
 
-const EARTH_RADIUS_KM = 6371;
-export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-  return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+export { haversineKm };
 
 // PIN -> lat/long lookup, standing in for the `pin_codes` reference table.
 // Backed by india-post-pincode's offline dataset (~19.5k real Indian PIN
@@ -598,6 +592,22 @@ export async function getStoreProducts(storeId: string): Promise<Product[]> {
   return rows.map(rowToProduct);
 }
 
+// Live/on-hold split for one store (app/admin/sellers/[storeId] - the site
+// owner's consolidated seller detail view), without pulling every product
+// row (and its images/sizes JSON) back just to count them like
+// getStoreProducts(storeId).length would. `status` is a NOT NULL enum (see
+// database/schema-live.sql), so every row lands in exactly one bucket.
+export async function getProductCountsForStore(storeId: string): Promise<{ total: number; live: number; onHold: number }> {
+  const rows = await query<any>(`SELECT status, COUNT(*)::int AS count FROM products WHERE store_id = $1 GROUP BY status`, [storeId]);
+  let live = 0;
+  let onHold = 0;
+  for (const r of rows) {
+    if (r.status === "on_hold") onHold = r.count;
+    else if (r.status === "live") live = r.count;
+  }
+  return { total: live + onHold, live, onHold };
+}
+
 // The other colorways of the same listing (e.g. the "select colors" step
 // creating one product per color) - same colorGroupId, same store, not
 // itself - so the product page can offer them as swatches.
@@ -782,7 +792,7 @@ export interface Reservation {
   total: number;
   shopperName: string;
   shopperPhone: string;
-  status: "pending" | "fulfilled" | "cancelled";
+  status: ReservationStatus;
   reservedUntil: string;
   createdAt: string;
 }
@@ -848,12 +858,49 @@ export async function createReservation(input: {
 
 export async function getReservation(id: string): Promise<Reservation | undefined> {
   const row = await queryOne<any>(`SELECT * FROM reservations WHERE id = $1`, [id]);
-  return row ? rowToReservation(row) : undefined;
+  if (!row) return undefined;
+  return flipIfExpired(rowToReservation(row));
 }
 
 export async function getStoreReservations(storeId: string): Promise<Reservation[]> {
   const rows = await query<any>(`SELECT * FROM reservations WHERE store_id = $1 ORDER BY created_at DESC`, [storeId]);
-  return rows.map(rowToReservation);
+  return Promise.all(rows.map(rowToReservation).map(flipIfExpired));
+}
+
+// Write-on-read: a "pending" reservation past its reservedUntil window is
+// flipped to "expired" in the DB the first time anything reads it, rather
+// than only computing that fact ephemerally for display (which would leave
+// the stored status "pending" forever and let it keep counting as held
+// stock - see getProductReservedQuantity below). No scheduled job does this
+// instead, deliberately: Vercel's Hobby plan only runs a cron once a day,
+// far too infrequent for a hold window measured in tens of minutes to a few
+// hours, so correctness can't depend on anything running on a schedule.
+// The `AND status = 'pending'` guards against a race where the row changed
+// (fulfilled/cancelled) between the SELECT above and this UPDATE.
+async function flipIfExpired(r: Reservation): Promise<Reservation> {
+  if (!isPastReservationWindow(r.status, r.reservedUntil)) return r;
+  const row = await queryOne<any>(`UPDATE reservations SET status = 'expired' WHERE id = $1 AND status = 'pending' RETURNING *`, [r.id]);
+  return row ? rowToReservation(row) : r;
+}
+
+// How many units of a product are currently held by *other* active
+// (pending, non-expired) reservations at this store - what a NEW
+// reservation's stock check needs to subtract from Product.stockRemaining
+// on top of whatever stock-tracking a seller's in-store billing already
+// does (see createBill). Goes through getStoreReservations so every
+// candidate reservation gets the same write-on-read expiry flip first -
+// otherwise a pending-but-actually-expired reservation nobody has viewed
+// yet would keep "holding" stock indefinitely.
+export async function getProductReservedQuantity(storeId: string, productId: string): Promise<number> {
+  const reservations = await getStoreReservations(storeId);
+  let held = 0;
+  for (const r of reservations) {
+    if (r.status !== "pending") continue;
+    for (const item of r.items) {
+      if (item.productId === productId) held += item.quantity;
+    }
+  }
+  return held;
 }
 
 export async function updateReservationStatus(id: string, status: "fulfilled" | "cancelled"): Promise<Reservation | null> {
@@ -870,10 +917,16 @@ export async function updateReservationStatus(id: string, status: "fulfilled" | 
   return reservation;
 }
 
-// A pending reservation past its window is effectively expired - derived
-// rather than stored, so nothing needs to poll and flip it server-side.
+// A pending reservation past its window is effectively expired. The actual
+// DB row is now flipped to "expired" the moment anything reads it via
+// getReservation/getStoreReservations (see flipIfExpired above), so this is
+// mostly a no-op by the time a caller sees it - kept as a defense-in-depth
+// fallback for any caller that ends up holding a Reservation object that
+// didn't go through that flip (e.g. the one just returned by
+// createReservation/updateReservationStatus, read straight from a fresh
+// UPDATE ... RETURNING).
 export function effectiveReservationStatus(r: Reservation): ReservationStatus {
-  if (r.status === "pending" && new Date(r.reservedUntil).getTime() < Date.now()) return "expired";
+  if (isPastReservationWindow(r.status, r.reservedUntil)) return "expired";
   return r.status;
 }
 

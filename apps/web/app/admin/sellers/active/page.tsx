@@ -41,7 +41,11 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 18 }}
           >
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15 }}>{s.name}</div>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>
+                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a", textDecoration: "none" }}>
+                  {s.name}
+                </a>
+              </div>
               <div style={{ fontSize: 13, color: "#64748b" }}>
                 {s.city} &middot; {s.phone || "no phone on file"}
               </div>
@@ -72,7 +76,11 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "#fef2f2", borderRadius: 14, border: "1px solid #fecdd3", padding: 18 }}
           >
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15 }}>{s.name}</div>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>
+                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a", textDecoration: "none" }}>
+                  {s.name}
+                </a>
+              </div>
               <div style={{ fontSize: 13, color: "#64748b" }}>
                 {s.city} &middot; {s.phone || "no phone on file"}
               </div>

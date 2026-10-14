@@ -21,9 +21,31 @@ const STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }> = 
   expired: { bg: "#fee2e2", fg: "#991b1b", label: "Expired" },
 };
 
+// Same 15-minute urgency cutoff as the reservation detail page.
+const URGENT_THRESHOLD_MS = 15 * 60 * 1000;
+
+function formatMinutesLeft(reservedUntil: string) {
+  const ms = new Date(reservedUntil).getTime() - Date.now();
+  if (ms <= 0) return "Time's up";
+  const totalMinutes = Math.floor(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours}h ${minutes}m left` : `${minutes}m left`;
+}
+
 export default function ReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [, forceTick] = useState(0);
+
+  // Ticks every second purely to re-render the per-row countdown below -
+  // same pattern as the reservation detail page's own live countdown, just
+  // against the reservedUntil timestamps already in `reservations` rather
+  // than refetching.
+  useEffect(() => {
+    const id = setInterval(() => forceTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     const ids = getMyReservationIds();
@@ -61,6 +83,8 @@ export default function ReservationsPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {reservations.map((r) => {
             const s = STATUS_STYLE[r.status] ?? STATUS_STYLE.pending;
+            const msLeft = new Date(r.reservedUntil).getTime() - Date.now();
+            const isUrgent = r.status === "pending" && msLeft > 0 && msLeft <= URGENT_THRESHOLD_MS;
             return (
               <Link
                 key={r.id}
@@ -81,7 +105,18 @@ export default function ReservationsPage() {
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontWeight: 600 }}>{r.storeName}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: s.bg, color: s.fg }}>{s.label}</span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        background: isUrgent ? "#fee2e2" : s.bg,
+                        color: isUrgent ? "#991b1b" : s.fg,
+                      }}
+                    >
+                      {r.status === "pending" ? formatMinutesLeft(r.reservedUntil) : s.label}
+                    </span>
                   </div>
                   <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
                     {r.items.length} item{r.items.length > 1 ? "s" : ""} · {new Date(r.createdAt).toLocaleDateString("en-IN")}
