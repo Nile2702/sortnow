@@ -10,6 +10,7 @@ import {
   cutoutFromMask,
   removeBackgroundRMBG,
   resizeForBgRemoval,
+  resizeForAnalysis,
   compositeBackground,
   pickAutoBackground,
   BACKGROUND_PRESETS,
@@ -398,6 +399,24 @@ export default function BulkPhotoUploadPage() {
     return d.status === "queued" || d.status === "error" || d.status === "ready";
   }
 
+  // What the product-creation API actually rejects a draft for (see
+  // lib/validate-product.ts: description/fabric are required there) plus
+  // color, which this page treats as required too even though the data
+  // model itself doesn't demand it elsewhere - a photo-only listing with no
+  // color picked is effectively unsearchable/unfilterable for a shopper.
+  // This used to only ever show up as a passive "⚠️ Won't publish yet"
+  // hint next to the fields themselves - Publish Products still went ahead
+  // and attempted every "ready" draft regardless, uploading its photos to
+  // Cloudinary before the server's own validation finally rejected it for
+  // the exact blank field this hint already knew about.
+  function missingRequiredFields(d: Draft): string[] {
+    const missing: string[] = [];
+    if (!d.fabric.trim()) missing.push("a fabric");
+    if (!d.description.trim()) missing.push("a description");
+    if (!d.color?.trim()) missing.push("a color");
+    return missing;
+  }
+
   // Background removal and AI autofill used to run as one combined "Process
   // All" pipeline - a seller who only wanted one of the two (photo's
   // background is already fine, or they'd rather write their own title) had
@@ -450,13 +469,16 @@ export default function BulkPhotoUploadPage() {
       setProgressLabel(`Asking AI about photo ${i + 1} of ${queue.length}: ${draft.fileName}`);
       updateDraft(draft.localId, { status: "autofilling", error: "" });
       try {
+        // Downscaled first (see resizeForAnalysis) - sending the raw,
+        // up-to-3MB upload directly made the base64 request body itself
+        // close to or over Vercel's Serverless Function body ceiling, which
+        // dropped the connection before any response came back and surfaced
+        // client-side as a bare "Network error" on every single photo.
+        const analysisImage = await resizeForAnalysis(draft.image).catch(() => draft.image);
         const res = await fetch("/api/v1/seller/photo-autofill", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          // Whatever's currently shown for this draft - the background-
-          // removed version if that step already ran, otherwise the raw
-          // upload. Autofill doesn't care which; it works from either.
-          body: JSON.stringify({ imageDataUrl: draft.image }),
+          body: JSON.stringify({ imageDataUrl: analysisImage }),
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result?.message ?? "Autofill failed");
@@ -492,7 +514,22 @@ export default function BulkPhotoUploadPage() {
   async function handlePublishAll() {
     if (!store) return;
     setPublishing(true);
-    const toPublish = drafts.filter((d) => d.status === "ready");
+    const ready = drafts.filter((d) => d.status === "ready");
+    // A "ready" draft (bg removal and/or autofill finished, or neither ever
+    // run) can still be missing a required field - the hint right above
+    // each draft's fields already said so, but nothing stopped Publish
+    // Products from attempting it anyway: a real Cloudinary upload for
+    // every one of its photos, only to have the server reject the create
+    // call afterward for the exact field this page already knew was
+    // blank. These are flagged as needing attention up front instead, with
+    // no upload attempted for them at all.
+    const toPublish = ready.filter((d) => missingRequiredFields(d).length === 0);
+    for (const d of ready) {
+      const missing = missingRequiredFields(d);
+      if (missing.length > 0) {
+        updateDraft(d.localId, { status: "error", error: `Can't publish yet - still needs ${missing.join(" and ")}.` });
+      }
+    }
 
     // Tracks what actually happened to each draft, rather than assuming
     // every attempt succeeded - this used to always report every attempted
@@ -559,7 +596,8 @@ export default function BulkPhotoUploadPage() {
 
     setPublishing(false);
     const publishedCount = results.filter(Boolean).length;
-    const failedCount = results.length - publishedCount;
+    const skippedCount = ready.length - toPublish.length;
+    const failedCount = results.length - publishedCount + skippedCount;
 
     if (publishedCount > 0) {
       showToast(`Published ${publishedCount} product${publishedCount === 1 ? "" : "s"}.`, "success");
@@ -932,10 +970,9 @@ export default function BulkPhotoUploadPage() {
                   </button>
                 </div>
 
-                {d.status === "ready" && (!d.description.trim() || !d.fabric.trim()) && (
+                {d.status === "ready" && missingRequiredFields(d).length > 0 && (
                   <p style={{ fontSize: 12, color: "#b45309", marginBottom: 8 }}>
-                    ⚠️ Won&rsquo;t publish yet - still needs {[!d.description.trim() && "a description", !d.fabric.trim() && "a fabric"].filter(Boolean).join(" and ")}.
-                    Run Auto-fill Details or fill it in below.
+                    ⚠️ Won&rsquo;t publish yet - still needs {missingRequiredFields(d).join(" and ")}. Run Auto-fill Details or fill it in below.
                   </p>
                 )}
                 {d.status === "queued" ? (
@@ -1053,7 +1090,9 @@ export default function BulkPhotoUploadPage() {
                       style={inputStyle()}
                     />
                     <select value={d.color ?? ""} onChange={(e) => updateDraft(d.localId, { color: e.target.value || undefined })} style={inputStyle()}>
-                      <option value="">Color (optional)</option>
+                      <option value="" disabled>
+                        Select color
+                      </option>
                       {COLOR_CATALOG.map((c) => (
                         <option key={c.name} value={c.name}>
                           {c.name}

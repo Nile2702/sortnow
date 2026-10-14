@@ -135,6 +135,33 @@ export function resizeForBgRemoval(dataUrl: string, maxDimension = 900): Promise
   });
 }
 
+// Downscales a photo before sending it to /api/v1/seller/photo-autofill for
+// AI analysis - a full up-to-3MB phone photo, base64-encoded, is itself
+// already close to (or over) Vercel's request body ceiling for a Serverless
+// Function, and the connection just gets reset before any JSON response
+// comes back - the browser sees that as a bare network-level fetch failure
+// ("Network error - couldn't reach the server"), not a readable error from
+// the route, which is also why it was never caught by that route's own
+// MAX_DATA_URL_LENGTH check (that check runs *after* the oversized request
+// already failed to arrive intact). This was already fixed in the
+// single-product form (ProductForm.tsx's own file-local resizeForAnalysis)
+// but missing from the bulk-upload flow, which called the same endpoint
+// with the raw, unresized photo every time - reading the garment's
+// color/style/category doesn't need anywhere near full resolution.
+export function resizeForAnalysis(dataUrl: string, maxDimension = 768): Promise<string> {
+  return loadImage(dataUrl).then((img) => {
+    const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+    if (scale === 1) return dataUrl;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas not supported");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.85);
+  });
+}
+
 // Runs RMBG-1.4 and returns a mask image in the same "alpha channel =
 // confidence, RGB unused" format cutoutFromMask expects, so every caller
 // just swaps this in for the old removeBackground() call and nothing else

@@ -6,6 +6,13 @@ import { rateLimit, clientIp } from "../../../../../lib/rate-limit";
 const MAX_DATA_URL_LENGTH = 6_000_000; // ~4.3MB raw image after base64 overhead, matching the 3MB upload cap client-side
 const MAX_HINT_LENGTH = 200;
 
+// autofillProductDetails can retry twice against Gemini's own 503s (see its
+// own comment), which on a slow attempt can add up past Vercel's default
+// Serverless Function timeout (10s on some plans) - the platform then kills
+// the function mid-request, and the client sees a bare connection failure
+// instead of a real error response. 60s comfortably covers the worst case.
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const session = getSellerSession();
   if (!session) {

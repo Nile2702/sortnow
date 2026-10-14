@@ -6,6 +6,12 @@ import { getPhotoCredits, spendPhotoCredit } from "../../../../../lib/seed-data"
 
 const MAX_DATA_URL_LENGTH = 6_000_000; // ~4.3MB raw image after base64 overhead, matching the 3MB upload cap client-side
 
+// Image generation (not just vision/text) is slower than photo-autofill's
+// classification call and has no retry loop to budget for, but is still
+// well past a default 10s Serverless Function timeout in practice - same
+// fix as photo-autofill/route.ts for the same reason.
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const session = getSellerSession();
   if (!session) {
