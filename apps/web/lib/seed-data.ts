@@ -882,6 +882,28 @@ export async function getStoreReservations(storeId: string): Promise<Reservation
   return Promise.all(rows.map(rowToReservation).map(flipIfExpired));
 }
 
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Same plain 30-day breakdown as the seller's own reservations page computes
+// client-side (app/seller/(dashboard)/reservations/page.tsx's
+// computeNoShowStats) - kept here too as a server-callable version so the
+// admin seller-detail page can get the same numbers without a client-side
+// fetch round-trip. "Uncollected" means expired specifically (never picked
+// up, hold lapsed), as opposed to a cancellation (a deliberate shopper
+// action). The percentage is of resolved (fulfilled + expired) reservations
+// only - one still pending hasn't gone either way yet.
+export async function getReservationNoShowStats(storeId: string) {
+  const reservations = await getStoreReservations(storeId);
+  const cutoff = Date.now() - THIRTY_DAYS_MS;
+  const recent = reservations.filter((r) => new Date(r.createdAt).getTime() >= cutoff);
+  const fulfilled = recent.filter((r) => r.status === "fulfilled").length;
+  const expired = recent.filter((r) => r.status === "expired").length;
+  const cancelled = recent.filter((r) => r.status === "cancelled").length;
+  const resolved = fulfilled + expired;
+  const uncollectedPercent = resolved > 0 ? Math.round((expired / resolved) * 100) : 0;
+  return { fulfilled, expired, cancelled, resolved, uncollectedPercent };
+}
+
 // Write-on-read: a "pending" reservation past its reservedUntil window is
 // flipped to "expired" in the DB the first time anything reads it, rather
 // than only computing that fact ephemerally for display (which would leave

@@ -1,4 +1,17 @@
-import { getAllStores, getSubscription, getProductCountsForStore, getStoreAnalytics, PLANS } from "../../../../lib/seed-data";
+import {
+  getAllStores,
+  getSubscription,
+  getProductCountsForStore,
+  getStoreAnalytics,
+  getSalesAnalytics,
+  getStoreRatingSummary,
+  getReservationNoShowStats,
+  getStoreReservations,
+  getStoreProducts,
+  getPhotoCredits,
+  isBoostActive,
+  PLANS,
+} from "../../../../lib/seed-data";
 
 // Consolidated read-only seller detail view - the site owner, looking at
 // /admin/sellers/active, wanted to click a store and see its plan, product
@@ -34,12 +47,21 @@ export default async function AdminSellerDetailPage({
     );
   }
 
-  const [subscription, productCounts, analytics] = await Promise.all([
+  const [subscription, productCounts, analytics, sales, rating, noShow, reservations, products, photoCredits] = await Promise.all([
     getSubscription(store.id),
     getProductCountsForStore(store.id),
     getStoreAnalytics(store.id),
+    getSalesAnalytics(store.id),
+    getStoreRatingSummary(store.id),
+    getReservationNoShowStats(store.id),
+    getStoreReservations(store.id),
+    getStoreProducts(store.id),
+    getPhotoCredits(store.id),
   ]);
   const plan = PLANS.find((p) => p.code === subscription.planCode);
+  const lastReservation = reservations[0]; // already ordered newest-first
+  const lastProduct = products[0]; // already ordered newest-first
+  const boosted = isBoostActive(store.boostedUntil);
 
   // Simple up/down/flat readout for the 7-day page-view trend: the older
   // half (days 1-3 of the 7, i.e. indices 0-2) vs. the most recent half
@@ -70,10 +92,14 @@ export default async function AdminSellerDetailPage({
           <a href={`/admin/products${keyQS}`} style={{ color: "#0f172a" }}>
             Product moderation
           </a>
+          <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: "#0f172a", fontWeight: 600 }}>
+            View live storefront ↗
+          </a>
         </nav>
       </div>
       <p style={{ color: "#64748b", marginBottom: 24, fontSize: 14 }}>
-        Consolidated view for the site owner - plan, listings, and a short footfall summary in one place. Use{" "}
+        Consolidated view for the site owner - plan, listings, sales, reservation reliability, ratings, and a short
+        footfall summary in one place. Use{" "}
         <a href={`/admin/sellers/active${keyQS}`} style={{ color: "inherit" }}>
           Active sellers
         </a>{" "}
@@ -101,6 +127,54 @@ export default async function AdminSellerDetailPage({
           <StatTile value={productCounts.total} label="Products listed" />
           <StatTile value={productCounts.live} label="Live" color="#16a34a" />
           <StatTile value={productCounts.onHold} label="On hold" color={productCounts.onHold > 0 ? "#b45309" : undefined} />
+          <StatTile value={boosted ? "Active" : "None"} label="Store boost" color={boosted ? "#b45309" : undefined} />
+          <StatTile value={photoCredits} label="AI photo credits" />
+        </div>
+      </section>
+
+      <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 20 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Sales &amp; revenue</h2>
+        <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 14 }}>
+          From in-store billing (cash/UPI/card at the counter) - not online payment, since reservations never take payment here.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
+          <StatTile value={`₹${sales.totalRevenue.toLocaleString("en-IN")}`} label="Total revenue" />
+          <StatTile value={sales.totalBills} label="Bills issued" />
+          <StatTile value={sales.repeatCustomers} label="Repeat customers" />
+          <StatTile
+            value={sales.profitAndLoss.itemsWithCostSold > 0 ? `${sales.profitAndLoss.profitMarginPercent}%` : "no cost data"}
+            label="Profit margin"
+          />
+        </div>
+      </section>
+
+      <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 20 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Reservation reliability</h2>
+        <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 14 }}>Last 30 days - a reservation isn&apos;t a sale until it&apos;s actually picked up.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
+          <StatTile value={noShow.fulfilled} label="Picked up" color="#16a34a" />
+          <StatTile value={noShow.expired} label="Uncollected (no-show)" color={noShow.expired > 0 ? "#991b1b" : undefined} />
+          <StatTile value={noShow.cancelled} label="Cancelled" />
+          <StatTile
+            value={noShow.resolved > 0 ? `${noShow.uncollectedPercent}%` : "no data yet"}
+            label="No-show rate"
+            color={noShow.uncollectedPercent > 0 ? "#991b1b" : undefined}
+          />
+        </div>
+      </section>
+
+      <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 20 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Rating &amp; recent activity</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
+          <StatTile value={rating.count > 0 ? `★ ${rating.average.toFixed(1)}` : "no reviews"} label={`${rating.count} review${rating.count === 1 ? "" : "s"}`} />
+          <Field
+            label="Last reservation"
+            value={lastReservation ? new Date(lastReservation.createdAt).toLocaleString("en-IN") : "none yet"}
+          />
+          <Field
+            label="Last product listed"
+            value={lastProduct ? new Date(lastProduct.createdAt).toLocaleString("en-IN") : "none yet"}
+          />
         </div>
       </section>
 
