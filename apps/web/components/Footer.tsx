@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FullLogo } from "./LogoBadge";
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from "../lib/support-contact";
 
 const COLUMNS = [
   {
@@ -49,6 +50,10 @@ const COLUMNS = [
       { label: "Terms of Use", href: "/legal/terms" },
       { label: "Privacy Policy", href: "/legal/privacy" },
       { label: "Refund & Cancellation", href: "/legal/refund-policy" },
+      // Same support contact the legal pages' own "Contact" sections point
+      // to (lib/support-contact.ts) - a tel: link rather than an internal
+      // route, so it's handled separately from the Link-based columns below.
+      { label: `Connect with us: ${SUPPORT_PHONE_DISPLAY}`, href: `tel:${SUPPORT_PHONE_TEL}` },
     ],
   },
 ];
@@ -88,6 +93,11 @@ const SELLER_COLUMNS = [
 
 export function Footer() {
   const pathname = usePathname();
+  // The admin moderation tool is a shared-secret-gated internal page, not a
+  // storefront - neither the shopper footer's "Popular markets"/category
+  // links nor a seller-facing one make sense there, and it has no brand
+  // marketing copy of its own to show instead.
+  if (pathname.startsWith("/admin")) return null;
   const isSeller = pathname.startsWith("/seller");
   const columns = isSeller ? SELLER_COLUMNS : COLUMNS;
 

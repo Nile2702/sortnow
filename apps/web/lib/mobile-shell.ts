@@ -6,12 +6,14 @@
 // Every shopper page except the product detail page gets the app shell:
 // its image-heavy, single-product layout already has its own back
 // navigation (the breadcrumb) and doesn't need a second location/search bar
-// competing for space above the fold. The seller portal is excluded
-// entirely - it already has its own dedicated "Seller Portal" nav bar built
-// for a merchant managing their store, and a shopper-facing Home/Category/
-// Reservations/Account bar underneath it would just be confusing there.
+// competing for space above the fold. The seller portal and the admin
+// moderation tool are excluded entirely - each has its own dedicated nav
+// bar (SellerNav / AdminNav) built for the person using it, and a
+// shopper-facing Home/Category/Reservations/Account bar underneath it would
+// just be confusing there.
 export function isMobileAppShellPage(pathname: string): boolean {
   if (pathname.startsWith("/seller")) return false;
+  if (pathname.startsWith("/admin")) return false;
   if (pathname.startsWith("/product/")) return false;
   return true;
 }

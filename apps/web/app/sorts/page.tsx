@@ -60,7 +60,8 @@ export default function MySortsPage() {
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={() => apply(s)}
-                  style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#0f172a", color: "#fff", cursor: "pointer" }}
+                  className="sio-btn-primary"
+                  style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--sio-bronze)", color: "#fff", cursor: "pointer" }}
                 >
                   Shop this sort
                 </button>

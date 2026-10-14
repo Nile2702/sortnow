@@ -195,8 +195,10 @@ export function SiteHeader() {
   // dedicated "Seller Portal" nav bar built for a merchant managing their
   // store - the shopper header's category menus, wishlist and cart icons
   // on top of it was just confusing double-navigation, the same reason
-  // mobile-shell.ts already excludes it from the mobile app shell.
+  // mobile-shell.ts already excludes it from the mobile app shell. Same
+  // reasoning for /admin, which has its own AdminNav bar.
   if (pathname.startsWith("/seller")) return null;
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <div

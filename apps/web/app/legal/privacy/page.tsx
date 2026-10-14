@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { LegalPage, LegalSection } from "../../../components/LegalPage";
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from "../../../lib/support-contact";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — SORT NOW",
@@ -57,7 +58,13 @@ export default function PrivacyPage() {
       </LegalSection>
 
       <LegalSection title="Contact">
-        <p>For privacy questions or data-deletion requests, contact the platform operator's support address listed on the site.</p>
+        <p>
+          For privacy questions or data-deletion requests, contact the platform operator at{" "}
+          <a href={`tel:${SUPPORT_PHONE_TEL}`} style={{ color: "var(--sio-bronze)", fontWeight: 600 }}>
+            {SUPPORT_PHONE_DISPLAY}
+          </a>
+          .
+        </p>
       </LegalSection>
     </LegalPage>
   );

@@ -129,14 +129,14 @@ export default function ReservePage() {
           <button
             type="submit"
             disabled={!isValid || reserving}
-            className="sio-shine-btn"
+            className="sio-shine-btn sio-btn-primary"
             style={{
               marginTop: 24,
               width: "100%",
               padding: "14px",
               borderRadius: 999,
               border: "none",
-              background: !isValid || reserving ? "#cbd5e1" : "#0f172a",
+              background: !isValid || reserving ? "#cbd5e1" : "var(--sio-bronze)",
               color: "#fff",
               fontWeight: 600,
               fontSize: 15,

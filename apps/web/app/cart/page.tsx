@@ -95,12 +95,12 @@ export default function CartPage() {
             <div style={{ fontSize: 20, fontWeight: 700 }}>Total: ₹{cartTotal(items).toLocaleString("en-IN")}</div>
             <button
               onClick={() => router.push("/reserve")}
-              className="sio-shine-btn"
+              className="sio-shine-btn sio-btn-primary"
               style={{
                 padding: "14px 28px",
                 borderRadius: 999,
                 border: "none",
-                background: "#0f172a",
+                background: "var(--sio-bronze)",
                 color: "#fff",
                 fontSize: 16,
                 fontWeight: 600,

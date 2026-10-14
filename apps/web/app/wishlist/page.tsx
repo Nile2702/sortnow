@@ -44,13 +44,13 @@ export default function WishlistPage() {
                       regardless of what the product actually offered). */}
                   <Link
                     href={`/product/${item.productId}`}
-                    className="sio-shine-btn"
+                    className="sio-shine-btn sio-btn-primary"
                     style={{
                       flex: 1,
                       padding: "8px 0",
                       borderRadius: 8,
                       border: "none",
-                      background: "#0f172a",
+                      background: "var(--sio-bronze)",
                       color: "#fff",
                       cursor: "pointer",
                       fontSize: 13,

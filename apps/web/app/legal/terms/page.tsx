@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { LegalPage, LegalSection } from "../../../components/LegalPage";
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from "../../../lib/support-contact";
 
 export const metadata: Metadata = {
   title: "Terms of Use — SORT NOW",
@@ -54,7 +55,13 @@ export default function TermsPage() {
       </LegalSection>
 
       <LegalSection title="Contact">
-        <p>Questions about these terms can be sent to the platform operator's support address listed on the site.</p>
+        <p>
+          Questions about these terms can be sent to the platform operator at{" "}
+          <a href={`tel:${SUPPORT_PHONE_TEL}`} style={{ color: "var(--sio-bronze)", fontWeight: 600 }}>
+            {SUPPORT_PHONE_DISPLAY}
+          </a>
+          .
+        </p>
       </LegalSection>
     </LegalPage>
   );

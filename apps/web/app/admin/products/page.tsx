@@ -41,17 +41,7 @@ export default async function AdminProductsPage({
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 12, marginBottom: 4 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700 }}>Product moderation</h1>
-        <nav style={{ display: "flex", gap: 16, fontSize: 13 }}>
-          <a href={`/admin/sellers?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a" }}>
-            Signup review queue
-          </a>
-          <a href={`/admin/sellers/active?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a" }}>
-            Active sellers
-          </a>
-        </nav>
-      </div>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Product moderation</h1>
       <p style={{ color: "#64748b", marginBottom: 20, fontSize: 14 }}>
         {products.length} listing{products.length === 1 ? "" : "s"} across every store
         {heldCount > 0 ? ` &middot; ${heldCount} currently on hold` : ""}. Holding a listing hides it from shoppers (search, its store page,

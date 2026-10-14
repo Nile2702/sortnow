@@ -82,20 +82,9 @@ export default async function AdminSellerDetailPage({
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "28px 20px 60px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 12, marginBottom: 4 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700 }}>{store.name}</h1>
-        <nav style={{ display: "flex", gap: 16, fontSize: 13 }}>
-          <a href={`/admin/sellers/active${keyQS}`} style={{ color: "#0f172a" }}>
-            &larr; Active sellers
-          </a>
-          <a href={`/admin/sellers${keyQS}`} style={{ color: "#0f172a" }}>
-            Signup review queue
-          </a>
-          <a href={`/admin/products${keyQS}`} style={{ color: "#0f172a" }}>
-            Product moderation
-          </a>
-          <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: "#0f172a", fontWeight: 600 }}>
-            View live storefront ↗
-          </a>
-        </nav>
+        <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: "#0f172a", fontWeight: 600, fontSize: 13 }}>
+          View live storefront ↗
+        </a>
       </div>
       <p style={{ color: "#64748b", marginBottom: 24, fontSize: 14 }}>
         Consolidated view for the site owner - plan, listings, sales, reservation reliability, ratings, and a short
