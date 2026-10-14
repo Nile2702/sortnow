@@ -21,6 +21,7 @@ import { lookupPincode } from "india-post-pincode";
 import { haversineKm } from "./geo";
 import { isPastReservationWindow } from "./reservation-expiry";
 import { fuzzyBestScore } from "./fuzzy-search";
+import { sendNotificationEmail } from "./email";
 
 export type { Gender };
 export { ALL_SIZES, CATEGORY_TREE };
@@ -846,12 +847,26 @@ export async function createReservation(input: {
     ]
   );
 
+  const itemCount = reservation.items.reduce((sum, i) => sum + i.quantity, 0);
+  const pickupTime = new Date(reservation.reservedUntil).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
   if (store.phone) {
-    const itemCount = reservation.items.reduce((sum, i) => sum + i.quantity, 0);
     await notify(store.id, store.phone, "seller", "reservation_created",
-      `New reservation from ${reservation.shopperName} (${reservation.shopperPhone}): ${itemCount} item${itemCount === 1 ? "" : "s"}, ₹${reservation.total}. Reserved until ${new Date(reservation.reservedUntil).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}.`
+      `New reservation from ${reservation.shopperName} (${reservation.shopperPhone}): ${itemCount} item${itemCount === 1 ? "" : "s"}, ₹${reservation.total}. Reserved until ${pickupTime}.`,
+      store.email
     );
   }
+
+  // Confirms the reservation to the shopper too, not just the seller - only
+  // real previously there was no shopper-facing notification at creation at
+  // all, just the live page they were already on. A guest (no account, no
+  // phone match) still gets the in-app/SMS-style log entry; only the real
+  // email needs a registered account with one on file.
+  const shopper = await findShopperByPhone(reservation.shopperPhone);
+  await notify(store.id, reservation.shopperPhone, "shopper", "reservation_created",
+    `Your reservation at ${store.name} is confirmed - ${itemCount} item${itemCount === 1 ? "" : "s"}, ₹${reservation.total}. Walk in before ${pickupTime} to pick it up.`,
+    shopper?.email
+  );
 
   return reservation;
 }
@@ -912,7 +927,8 @@ export async function updateReservationStatus(id: string, status: "fulfilled" | 
     status === "fulfilled"
       ? `Thanks for shopping with ${reservation.storeName}! Your order (₹${reservation.total}) has been picked up.`
       : `Your reservation at ${reservation.storeName} (₹${reservation.total}) was cancelled.`;
-  await notify(reservation.storeId, reservation.shopperPhone, "shopper", `reservation_${status}`, message);
+  const shopper = await findShopperByPhone(reservation.shopperPhone);
+  await notify(reservation.storeId, reservation.shopperPhone, "shopper", `reservation_${status}`, message, shopper?.email);
 
   return reservation;
 }
@@ -966,13 +982,32 @@ function rowToNotification(r: any): Notification {
   };
 }
 
-async function notify(storeId: string, phone: string, recipient: "seller" | "shopper", trigger: Notification["trigger"], message: string): Promise<void> {
+const NOTIFICATION_SUBJECTS: Record<Notification["trigger"], string> = {
+  reservation_created: "New reservation on SORT NOW",
+  reservation_fulfilled: "Your SORT NOW pickup is complete",
+  reservation_cancelled: "Your SORT NOW reservation was cancelled",
+  back_in_stock: "Back in stock on SORT NOW",
+  referral_joined: "Your SORT NOW referral joined",
+};
+
+// `email`, when the caller has one on file for this recipient (a store's
+// own email, or a shopper's if they're a registered account with one saved),
+// sends a real email alongside the existing SMS-style log/in-app record -
+// an additional delivery channel, not a replacement. Best-effort: a failed
+// or skipped email never blocks the notification itself from being
+// recorded, same as how a missing phone number already doesn't block this.
+async function notify(storeId: string, phone: string, recipient: "seller" | "shopper", trigger: Notification["trigger"], message: string, email?: string | null): Promise<void> {
   console.log(`[SMS -> +91${phone}] ${message}`);
   const id = `notif-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   await query(
     `INSERT INTO notifications (id, store_id, recipient, phone, trigger, message) VALUES ($1,$2,$3,$4,$5,$6)`,
     [id, storeId, recipient, phone, trigger, message]
   );
+  if (email) {
+    sendNotificationEmail(email, NOTIFICATION_SUBJECTS[trigger], message).catch((err) =>
+      console.error(`[notify] Failed to send notification email for ${trigger}:`, err)
+    );
+  }
 }
 
 export async function getStoreNotifications(storeId: string): Promise<Notification[]> {

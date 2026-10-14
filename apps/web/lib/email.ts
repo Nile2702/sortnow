@@ -34,18 +34,14 @@ function otpEmailBody(code: string) {
   return { text, html };
 }
 
-/** Sends a 6-digit OTP code to `email` via Resend, or logs it to the console if RESEND_API_KEY isn't set yet. */
-export async function sendOtpEmail(email: string, code: string): Promise<SendEmailResult> {
+// Shared Resend call - both sendOtpEmail and sendNotificationEmail below
+// just build their own subject/text/html and hand it to this.
+async function sendViaResend(to: string, subject: string, text: string, html: string, logContext: string): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    // No SMS gateway and no email provider configured yet - this is the
-    // only place the code can actually reach a human in this environment,
-    // the same reasoning that used to apply to sendSms() in lib/otp.ts.
-    console.log(`[OTP EMAIL -> ${email}] (dev mode, RESEND_API_KEY not set) Your SORT NOW verification code is ${code}.`);
+    console.log(`[${logContext} -> ${to}] (dev mode, RESEND_API_KEY not set) ${subject}: ${text}`);
     return { delivered: false, reason: "not_configured" };
   }
-
-  const { text, html } = otpEmailBody(code);
 
   let response: Response;
   try {
@@ -55,24 +51,43 @@ export async function sendOtpEmail(email: string, code: string): Promise<SendEma
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: RESEND_FROM,
-        to: [email],
-        subject: "Your SORT NOW verification code",
-        text,
-        html,
-      }),
+      body: JSON.stringify({ from: RESEND_FROM, to: [to], subject, text, html }),
     });
   } catch (err) {
-    console.error("[sendOtpEmail] Couldn't reach Resend:", err);
+    console.error(`[${logContext}] Couldn't reach Resend:`, err);
     return { delivered: false, reason: "upstream_error" };
   }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    console.error("[sendOtpEmail] Resend API error:", response.status, detail);
+    console.error(`[${logContext}] Resend API error:`, response.status, detail);
     return { delivered: false, reason: "upstream_error" };
   }
 
   return { delivered: true };
+}
+
+/** Sends a 6-digit OTP code to `email` via Resend, or logs it to the console if RESEND_API_KEY isn't set yet. */
+export async function sendOtpEmail(email: string, code: string): Promise<SendEmailResult> {
+  const { text, html } = otpEmailBody(code);
+  return sendViaResend(email, "Your SORT NOW verification code", text, html, "OTP EMAIL");
+}
+
+// Reuses the OTP email's own plain shell (a subject line, then the message
+// as-is) rather than a bespoke template per trigger - the messages built in
+// lib/seed-data.ts's notify() call sites (e.g. "New reservation from...",
+// "Thanks for shopping with...") already read as complete, human-written
+// notices, so wrapping them in one consistent shell is enough without
+// maintaining a separate HTML template per trigger type.
+function notificationEmailBody(message: string) {
+  const html = `<div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #0f172a;">
+  <p style="font-size: 15px; line-height: 1.5; margin: 0;">${message}</p>
+</div>`;
+  return { text: message, html };
+}
+
+/** Sends a real-event notification (reservation created/fulfilled/cancelled, etc.) to `email`, or logs it if RESEND_API_KEY isn't set yet. */
+export async function sendNotificationEmail(email: string, subject: string, message: string): Promise<SendEmailResult> {
+  const { text, html } = notificationEmailBody(message);
+  return sendViaResend(email, subject, text, html, "NOTIFICATION EMAIL");
 }
