@@ -392,7 +392,14 @@ export function MobileAppHeader() {
   function handleMic() {
     const Recognition = getSpeechRecognition();
     if (!Recognition) {
-      showToast("Voice search isn't supported in this browser.");
+      // Not a bug to "fix" - Apple's WebKit (so every browser on iOS, not
+      // just Safari, since the App Store requires them all to use it) has
+      // never implemented the Web Speech API's SpeechRecognition interface
+      // at all. This is the only case where the mic button can never work
+      // on this device no matter what - said plainly, with the fallback
+      // that's always available, rather than a generic "unsupported".
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      showToast(isIOS ? "Voice search isn't available on iPhone/iPad yet - type your search instead." : "Voice search isn't supported in this browser - type your search instead.");
       return;
     }
     const recognition = new Recognition();
@@ -401,9 +408,22 @@ export function MobileAppHeader() {
     recognition.maxAlternatives = 1;
     recognition.onstart = () => setListening(true);
     recognition.onend = () => setListening(false);
-    recognition.onerror = () => {
+    // Every failure used to show the same "Couldn't hear that" regardless
+    // of cause - including a blocked microphone permission, which needs a
+    // completely different fix (the browser's site settings, not just
+    // "try again") and otherwise looks identical to a normal mishear.
+    recognition.onerror = (event: any) => {
       setListening(false);
-      showToast("Couldn't hear that. Try again.");
+      if (event?.error === "aborted") return; // the seller tapped the mic again to cancel - not a failure worth a toast
+      const message: Record<string, string> =
+        {
+          "not-allowed": "Microphone access is blocked for this site. Check your browser's site settings to allow it, then try again.",
+          "permission-denied": "Microphone access is blocked for this site. Check your browser's site settings to allow it, then try again.",
+          "no-speech": "Didn't catch that - try speaking again, a little closer to the microphone.",
+          "audio-capture": "No microphone was found on this device.",
+          network: "Voice search needs an internet connection. Check your connection and try again.",
+        };
+      showToast(message[event?.error as string] ?? "Couldn't hear that. Try again.");
     };
     recognition.onresult = (event: any) => {
       const heard = event.results?.[0]?.[0]?.transcript?.trim();
@@ -412,7 +432,17 @@ export function MobileAppHeader() {
         router.push(`/search?q=${encodeURIComponent(heard)}`);
       }
     };
-    recognition.start();
+    try {
+      recognition.start();
+    } catch {
+      // Firing .start() on a recognizer the browser already considers
+      // active throws synchronously instead of calling onerror - a fresh
+      // instance is created on every tap specifically to avoid this, but a
+      // rapid double-tap can still race ahead of onend clearing the
+      // previous one. Same recovery either way: let them tap the mic again.
+      setListening(false);
+      showToast("Couldn't start voice search. Try tapping the mic again.");
+    }
   }
 
   return (
