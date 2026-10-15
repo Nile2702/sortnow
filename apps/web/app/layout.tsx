@@ -9,6 +9,7 @@ import { ScrollRevealInit } from "../components/ScrollRevealInit";
 import { ScrollToTop } from "../components/ScrollToTop";
 import { ToastHost } from "../components/ToastHost";
 import { LocationGate } from "../components/LocationGate";
+import { ServiceWorkerRegister } from "../components/ServiceWorkerRegister";
 import { SITE_URL } from "../lib/site-url";
 
 // Poppins - a bold, geometric sans matching the weight/feel of the brand
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ScrollRevealInit />
         <ToastHost />
         <LocationGate />
+        <ServiceWorkerRegister />
         <SiteHeader />
         <MobileAppHeader />
         <div style={{ flex: 1, position: "relative" }}>{children}</div>

@@ -20,10 +20,20 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#f5f5f6",
     theme_color: "#16140f",
+    // Chrome's actual installability check (the thing that decides between
+    // a "real" installed PWA vs. a plain bookmark shortcut that ignores all
+    // of this) wants both a 512x512 AND a 192x192 icon present, not just
+    // the one size - both are listed for each purpose below.
     icons: [
       {
         src: "/icon.png",
         sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icon-192.png",
+        sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
@@ -42,6 +52,12 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         src: "/icon-maskable.png",
         sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      {
+        src: "/icon-maskable-192.png",
+        sizes: "192x192",
         type: "image/png",
         purpose: "maskable",
       },
