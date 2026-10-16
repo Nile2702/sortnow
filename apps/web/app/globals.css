@@ -217,6 +217,17 @@ html {
   }
 }
 
+/* The homepage "Shop every style" photo-card grid: 4 across is too cramped
+   below tablet width, where each card would be narrower than its own
+   rounded corners can read well - 2 across keeps the cards big enough for
+   the label/photo to still look like the reference this was designed from,
+   not a shrunken afterthought of the desktop layout. */
+@media (max-width: 760px) {
+  .sio-category-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 /* Product-card grids (homepage, category, search, wishlist, similar
    products, store catalogs) use auto-fill/minmax or a fixed column count
    tuned for desktop, which resolves to a single column on a phone -

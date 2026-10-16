@@ -9,24 +9,26 @@ interface SubTile {
   gender: string;
   subCategory: string;
   count: number;
+  imageUrl?: string;
 }
 
 // A color per subcategory, the same way store avatars get one (see
 // page.tsx) - derived from the label's own characters, so it's stable
-// across reloads without needing to hand-pick a color per subcategory or
-// have real product photography for each tile.
+// across reloads. Used only as a fallback background for a tile whose
+// category has no live product (and therefore no real photo) yet.
 function tileColor(label: string) {
   const hue = (label.charCodeAt(0) * 37 + (label.charCodeAt(1) ?? 0) * 11) % 360;
-  return {
-    bg: `hsl(${hue}, 55%, 93%)`,
-    fg: `hsl(${hue}, 45%, 32%)`,
-  };
+  return `hsl(${hue}, 45%, 28%)`;
 }
 
-// Subcategory-level tiles (Sarees, Kurtis, Jeans, ...) instead of just the
-// three Women/Men/Kids blocks - more, smaller entry points a shopper can
-// scan and tap straight into, the way most fashion apps do their "shop by
-// category" row, without needing real photography assets per subcategory.
+// Large photo-card grid - restyled from the previous small letter-avatar
+// row to match a reference the user shared (a DTC site's "shop by goal"
+// section: big full-bleed photo cards, a bold label in the corner, a
+// circular arrow button). Each card's background is a real, currently-live
+// product photo for that category (see getCategoryTileCounts), not stock
+// photography, so it stays honest about what's actually in stock right now
+// instead of a generic category image that might not reflect real
+// inventory.
 export function CategoryTiles() {
   const [subTiles, setSubTiles] = useState<SubTile[]>([]);
 
@@ -40,57 +42,85 @@ export function CategoryTiles() {
 
   return (
     <section style={{ marginBottom: 48 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 20, borderBottom: "1px solid var(--sio-line)", paddingBottom: 12 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 600 }}>Shop by Category</h2>
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
+      <h2
+        style={{
+          fontSize: 32,
+          fontWeight: 800,
+          letterSpacing: "-0.01em",
+          marginBottom: 20,
+          fontFamily: "var(--site-font-heading)",
+        }}
+      >
+        Shop every{" "}
+        <em style={{ fontFamily: "var(--site-font-accent)", fontStyle: "italic", fontWeight: 600, color: "var(--sio-bronze)" }}>style</em>.
+      </h2>
+      <div
+        className="sio-category-grid"
+        style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}
+      >
         {subTiles.map((tile, i) => {
-          const { bg, fg } = tileColor(tile.label);
           const href = tile.subCategory
             ? `/category/${tile.gender}?subCategory=${encodeURIComponent(tile.subCategory)}`
             : `/category/${tile.gender}`;
           return (
-            // Fixed width rather than a grid column - a small number of
-            // tiles (this demo has 4) shouldn't stretch to fill the whole
-            // row width, or leave behind a wide band of empty grid tracks
-            // the way an auto-fill grid did; a wrapping flex row just sits
-            // left-aligned at its natural size either way.
-            <div key={`${tile.gender}-${tile.subCategory}`} className="sio-fade-in" style={{ flex: "0 0 84px", width: 84, animationDelay: `${i * 40}ms` }}>
+            <div key={`${tile.gender}-${tile.subCategory}`} className="sio-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
               <TiltCard>
                 <Link
                   href={href}
                   className="sio-card"
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 8,
+                    position: "relative",
+                    display: "block",
+                    aspectRatio: "3 / 4",
+                    borderRadius: 20,
+                    overflow: "hidden",
                     textDecoration: "none",
-                    color: "inherit",
+                    background: tileColor(tile.label),
                   }}
                 >
+                  {tile.imageUrl && (
+                    <img
+                      src={tile.imageUrl}
+                      alt=""
+                      aria-hidden
+                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  )}
+                  {/* Darkens the lower portion only, enough for the white
+                      label/count to stay readable against any photo without
+                      flattening the whole card to a dim overlay the way the
+                      hero slider's full-card darken does. */}
                   <div
                     aria-hidden
                     style={{
-                      width: "100%",
-                      aspectRatio: "1 / 1",
-                      borderRadius: 16,
-                      background: bg,
-                      color: fg,
+                      position: "absolute",
+                      inset: 0,
+                      background: "linear-gradient(0deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.05) 45%, transparent 70%)",
+                    }}
+                  />
+                  <div style={{ position: "absolute", top: 16, left: 16, right: 16, color: "#fff" }}>
+                    <div style={{ fontSize: 17, fontWeight: 700, fontFamily: "var(--site-font-heading)" }}>{tile.label}</div>
+                    <div style={{ fontSize: 12, opacity: 0.85 }}>{tile.count} items</div>
+                  </div>
+                  <span
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      bottom: 14,
+                      left: 14,
+                      width: 34,
+                      height: 34,
+                      borderRadius: "50%",
+                      background: "rgba(255,255,255,0.92)",
+                      color: "var(--sio-ink)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontFamily: "var(--site-font-heading)",
-                      fontWeight: 700,
-                      fontSize: 22,
+                      fontSize: 16,
                     }}
                   >
-                    {tile.label.charAt(0)}
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 600, color: "#111" }}>{tile.label}</div>
-                    <div style={{ fontSize: 10.5, color: "#94a3b8" }}>{tile.count} items</div>
-                  </div>
+                    →
+                  </span>
                 </Link>
               </TiltCard>
             </div>

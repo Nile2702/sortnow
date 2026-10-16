@@ -77,6 +77,13 @@ export function HeroSlider() {
   }, [paused]);
 
   const slide = SLIDES[index];
+  // Every slide's headline gets its own last word dropped into the italic
+  // serif accent (see the <em> below) - computed here rather than
+  // hand-splitting each title string in SLIDES, so any future slide gets
+  // the same treatment automatically.
+  const titleWords = slide.title.split(" ");
+  const titleLastWord = titleWords[titleWords.length - 1];
+  const titleRest = titleWords.slice(0, -1).join(" ");
 
   return (
     <div
@@ -90,9 +97,8 @@ export function HeroSlider() {
         borderRadius: 24,
       }}
     >
-      <Link
+      <div
         key={slide.href + index}
-        href={slide.href}
         className="sio-slide-in"
         style={{
           position: "relative",
@@ -105,7 +111,6 @@ export function HeroSlider() {
           padding: "0 32px",
           background: slide.bg,
           color: "#fff",
-          textDecoration: "none",
         }}
       >
         {slide.image && (
@@ -147,52 +152,90 @@ export function HeroSlider() {
           />
         ))}
 
-        <div
-          className="sio-neon-text"
-          style={{
-            position: "relative",
-            fontSize: 11,
-            letterSpacing: "0.22em",
-            fontWeight: 700,
-            marginBottom: 18,
-            textTransform: "uppercase",
-          }}
-        >
-          {slide.eyebrow}
+        {/* Headline block is its own link (the slide's actual destination) -
+            kept separate from the two CTA buttons below so neither button
+            ends up nested inside it (two overlapping <a> targets on the
+            same slide is invalid HTML and browsers handle it inconsistently). */}
+        <Link href={slide.href} style={{ position: "relative", textDecoration: "none", color: "inherit" }}>
+          <div
+            className="sio-neon-text"
+            style={{
+              fontSize: 11,
+              letterSpacing: "0.22em",
+              fontWeight: 700,
+              marginBottom: 18,
+              textTransform: "uppercase",
+            }}
+          >
+            {slide.eyebrow}
+          </div>
+          {/* Bold sans headline with its own last word dropped into an
+              italic serif (--site-font-accent, Playfair Display) - the
+              mixed-typography accent treatment referenced from Huel's own
+              homepage, applied consistently across every slide by always
+              italicizing the final word rather than hand-picking one per
+              slide. Conveniently, the fourth slide's own last word
+              ("Sorted") lands right on the brand name itself. */}
+          <h1
+            className="sio-hero-title"
+            style={{
+              fontSize: 56,
+              margin: 0,
+              marginBottom: 18,
+              maxWidth: 640,
+              fontFamily: "var(--site-font-heading)",
+              fontWeight: 800,
+              lineHeight: 1.08,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {titleRest} <em style={{ fontFamily: "var(--site-font-accent)", fontStyle: "italic", fontWeight: 600 }}>{titleLastWord}</em>
+          </h1>
+          <p style={{ fontSize: 15, opacity: 0.8, marginBottom: 30, maxWidth: 440, fontWeight: 300 }}>{slide.subtitle}</p>
+        </Link>
+        <div style={{ position: "relative", display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <Link
+            href={slide.href}
+            style={{
+              padding: "14px 34px",
+              border: "none",
+              background: "var(--sio-bronze)",
+              color: "#fff",
+              fontSize: 13.5,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.02em",
+              borderRadius: 10,
+              textDecoration: "none",
+            }}
+          >
+            {slide.cta} →
+          </Link>
+          {/* Second, outlined action alongside the slide's own primary CTA -
+              the two-button row (one filled, one outlined) is the other
+              half of the referenced look. Shared across every slide rather
+              than a bespoke secondary action per slide, the same way the
+              reference site repeats "Shop Bestsellers" under every hero
+              variant rather than writing a new one each time. */}
+          <Link
+            href="/discover"
+            style={{
+              padding: "14px 34px",
+              border: "1.5px solid rgba(255,255,255,0.7)",
+              background: "transparent",
+              color: "#fff",
+              fontSize: 13.5,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.02em",
+              borderRadius: 10,
+              textDecoration: "none",
+            }}
+          >
+            Browse Nearby
+          </Link>
         </div>
-        <h1
-          className="sio-hero-title"
-          style={{
-            position: "relative",
-            fontSize: 48,
-            margin: 0,
-            marginBottom: 18,
-            maxWidth: 640,
-            fontFamily: "var(--site-font-heading)",
-            fontWeight: 600,
-            lineHeight: 1.15,
-          }}
-        >
-          {slide.title}
-        </h1>
-        <p style={{ position: "relative", fontSize: 15, opacity: 0.8, marginBottom: 30, maxWidth: 440, fontWeight: 300 }}>{slide.subtitle}</p>
-        <span
-          style={{
-            position: "relative",
-            padding: "14px 34px",
-            border: "none",
-            background: "var(--sio-bronze)",
-            color: "#fff",
-            fontSize: 13.5,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.02em",
-            borderRadius: 10,
-          }}
-        >
-          {slide.cta} →
-        </span>
-      </Link>
+      </div>
 
       <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8 }}>
         {SLIDES.map((_, i) => (

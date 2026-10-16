@@ -1,4 +1,4 @@
-import { Poppins } from "next/font/google";
+import { Poppins, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "../components/SiteHeader";
 import { MobileAppHeader } from "../components/MobileAppHeader";
@@ -16,6 +16,11 @@ import { SITE_URL } from "../lib/site-url";
 // logo's wordmark, used for both headings and body text.
 const heading = Poppins({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--site-font-heading" });
 const body = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--site-font-body" });
+// A single elegant italic serif word dropped into an otherwise bold
+// sans-serif headline (the homepage hero, the category-tiles section
+// heading) - the same mixed-typography accent pattern used widely across
+// premium DTC sites, picked at the user's request after referencing one.
+const accent = Playfair_Display({ subsets: ["latin"], weight: ["600"], style: ["italic"], variable: "--site-font-accent" });
 
 export const metadata = {
   title: "SORT NOW — Find fashion near you",
@@ -34,7 +39,7 @@ export const viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${heading.variable} ${body.variable}`}>
+    <html lang="en" className={`${heading.variable} ${body.variable} ${accent.variable}`}>
       <body
         style={{
           margin: 0,

@@ -456,10 +456,15 @@ export async function getCategoryTileCounts() {
   // homepage category count shouldn't advertise stock that isn't actually
   // browsable (a suspended store's or an on-hold listing's products).
   const visible = products.filter((p) => storesById.get(p.storeId)?.status === "active" && p.status !== "on_hold");
-  return CATEGORY_TILES.map((tile) => ({
-    ...tile,
-    count: visible.filter((p) => p.gender === tile.gender && (!tile.subCategory || p.subCategory === tile.subCategory)).length,
-  }));
+  return CATEGORY_TILES.map((tile) => {
+    const matches = visible.filter((p) => p.gender === tile.gender && (!tile.subCategory || p.subCategory === tile.subCategory));
+    // A real product photo for the tile's own card background - picked from
+    // whatever's actually live right now rather than a fixed asset, so a
+    // newly-listed product can become the tile's photo and one that's sold
+    // out/held never lingers as the face of a category with nothing left
+    // to show for it.
+    return { ...tile, count: matches.length, imageUrl: matches[0]?.images[0]?.url };
+  });
 }
 
 export async function discoverStores(opts: { pincode?: string; lat?: number; lng?: number; radiusKm?: number; gender?: string; subCategory?: string }) {
