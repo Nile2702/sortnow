@@ -193,48 +193,25 @@ export function HeroSlider() {
           </h1>
           <p style={{ fontSize: 15, opacity: 0.8, marginBottom: 30, maxWidth: 440, fontWeight: 300 }}>{slide.subtitle}</p>
         </Link>
-        <div style={{ position: "relative", display: "flex", gap: 14, flexWrap: "wrap" }}>
-          <Link
-            href={slide.href}
-            style={{
-              padding: "14px 34px",
-              border: "none",
-              background: "var(--sio-bronze)",
-              color: "#fff",
-              fontSize: 13.5,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.02em",
-              borderRadius: 10,
-              textDecoration: "none",
-            }}
-          >
-            {slide.cta} →
-          </Link>
-          {/* Second, outlined action alongside the slide's own primary CTA -
-              the two-button row (one filled, one outlined) is the other
-              half of the referenced look. Shared across every slide rather
-              than a bespoke secondary action per slide, the same way the
-              reference site repeats "Shop Bestsellers" under every hero
-              variant rather than writing a new one each time. */}
-          <Link
-            href="/discover"
-            style={{
-              padding: "14px 34px",
-              border: "1.5px solid rgba(255,255,255,0.7)",
-              background: "transparent",
-              color: "#fff",
-              fontSize: 13.5,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.02em",
-              borderRadius: 10,
-              textDecoration: "none",
-            }}
-          >
-            Browse Nearby
-          </Link>
-        </div>
+        <Link
+          href={slide.href}
+          style={{
+            position: "relative",
+            display: "inline-block",
+            padding: "14px 34px",
+            border: "none",
+            background: "var(--sio-bronze)",
+            color: "#fff",
+            fontSize: 13.5,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.02em",
+            borderRadius: 10,
+            textDecoration: "none",
+          }}
+        >
+          {slide.cta} →
+        </Link>
       </div>
 
       <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8 }}>
