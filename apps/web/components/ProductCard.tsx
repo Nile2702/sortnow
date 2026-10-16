@@ -53,7 +53,18 @@ export function ProductCard({
       : 0;
 
   return (
-    <div className="sio-fade-in" style={{ animationDelay: `${index * 40}ms` }}>
+    // height: 100% here is load-bearing, not decorative - this div sits
+    // between the scroll-row item's own flex wrapper (stretched to the
+    // row's tallest card by .sio-scroll-row's default align-items: stretch)
+    // and the <Link> below, which wants height: 100% of *this* div.
+    // Without it, this plain block div just shrinks to its own content
+    // height regardless of how tall its stretched parent actually is,
+    // which breaks the stretch chain partway through - every card ends up
+    // sized to its own content instead of matching its row siblings, which
+    // is exactly why a card missing the trailing low-stock/distance line
+    // (see marginTop: "auto" below) looked visibly shorter than ones that
+    // had it, instead of just having blank space at the bottom like them.
+    <div className="sio-fade-in" style={{ animationDelay: `${index * 40}ms`, height: "100%" }}>
       <Link
         href={`/product/${product.id}`}
         className="sio-card"
