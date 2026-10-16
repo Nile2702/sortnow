@@ -106,7 +106,7 @@ export function Footer() {
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "48px 16px 28px", display: "flex", flexWrap: "wrap", gap: 40 }}>
         <div style={{ flex: "1 1 220px" }}>
           <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
-            <FullLogo height={46} />
+            <FullLogo height={46} chip />
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.7, color: "#94a3b8", maxWidth: 260 }}>
             {isSeller

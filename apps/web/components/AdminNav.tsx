@@ -30,7 +30,7 @@ export function AdminNav() {
     <div className="sio-print-hide" style={{ background: "var(--sio-ink)", color: "#fff" }}>
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "14px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, whiteSpace: "nowrap" }}>
-          <FullLogo height={34} />
+          <FullLogo height={34} chip />
           <span
             style={{
               fontSize: 11,

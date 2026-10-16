@@ -190,7 +190,7 @@ export default function SellerLoginPage() {
 
           <div style={{ position: "relative" }}>
             <Link href="/" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none", color: "#fff", marginBottom: 8 }}>
-              <FullLogo height={44} />
+              <FullLogo height={44} chip />
             </Link>
             <div style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 40 }}>
               Seller Portal

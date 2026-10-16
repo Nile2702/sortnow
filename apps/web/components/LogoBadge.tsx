@@ -16,16 +16,38 @@ export function LogoBadge({ size = 40 }: { size?: number }) {
 }
 
 // `height` sets the rendered height in px; width follows automatically
-// from the file's own aspect ratio.
-export function FullLogo({ height = 40, className }: { height?: number; className?: string }) {
-  return (
+// from the file's own aspect ratio. `chip`, for the few places this sits on
+// a near-black bar (SellerNav, AdminNav, Footer, the seller login hero) -
+// the new logo's "NOW" half is rendered in solid black, which disappears
+// entirely against --sio-ink with nothing behind it (confirmed live: only
+// "SORT" stayed legible). A light rounded backing restores contrast without
+// needing a second, reversed logo asset. Every other call site (white/cream
+// backgrounds) omits this and renders the plain image exactly as before.
+export function FullLogo({ height = 40, className, chip = false }: { height?: number; className?: string; chip?: boolean }) {
+  const img = (
     <img
       src="/brand/logo.png"
       alt="SORT NOW"
       width={Math.round(height * ASPECT_RATIO)}
       height={height}
-      className={className}
+      className={chip ? undefined : className}
       style={{ display: "block" }}
     />
+  );
+  if (!chip) return img;
+  const pad = Math.max(4, Math.round(height * 0.18));
+  return (
+    <span
+      className={className}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        background: "#fff",
+        borderRadius: Math.round((height + pad * 2) * 0.22),
+        padding: `${pad}px ${pad * 1.4}px`,
+      }}
+    >
+      {img}
+    </span>
   );
 }
