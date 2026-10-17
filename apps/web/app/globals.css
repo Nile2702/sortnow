@@ -16,14 +16,19 @@
   --sio-paper: #ffffff;
   --sio-line: #d4d5d9;
   /* Re-pointed from the original red/bronze to purple, matching the new
-     logo's own dominant color (#d26ae7, sampled directly from the logo
-     file) - darkened to the same hue for sufficient contrast as a filled
-     button's background with white text (measured contrast ratio ~6.2:1,
-     comfortably clears WCAG AA's 4.5:1 for normal text). Variable names
-     kept as -bronze- (see the note above this block) rather than renamed
-     to avoid touching every one of the many call sites already using them. */
-  --sio-bronze: #a020b6;
-  --sio-bronze-dark: #811a93;
+     logo's own dominant color exactly (#d26ae7, sampled directly from the
+     logo file) - an earlier pass darkened this for button-text contrast,
+     but that read as a noticeably different purple from the logo itself,
+     so this is the literal sampled value instead. Contrast tradeoff worth
+     knowing: white text on this is ~3:1, under WCAG AA's 4.5:1 for normal
+     body text (it does clear AA's lower 3:1 bar for large/bold text, which
+     is what every actual call site uses this for - short, bold, uppercase
+     button labels - never small body copy). -dark is the same hue/
+     saturation, just darkened for a visible hover state, not for contrast.
+     Variable names kept as -bronze- (see the note above this block) rather
+     than renamed, to avoid touching every call site already using them. */
+  --sio-bronze: #d26ae7;
+  --sio-bronze-dark: #bf2cdd;
   --sio-muted: #7e818c;
 
   /* Reused specifically for discount-percentage text (e.g. "33% OFF"),
