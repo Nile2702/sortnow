@@ -14,21 +14,33 @@ interface SubTile {
 
 // A color per subcategory, the same way store avatars get one (see
 // page.tsx) - derived from the label's own characters, so it's stable
-// across reloads. Used only as a fallback background for a tile whose
-// category has no live product (and therefore no real photo) yet.
+// across reloads. Used only as a fallback background for a tile with
+// neither a curated photo below nor a live product photo from the API.
 function tileColor(label: string) {
   const hue = (label.charCodeAt(0) * 37 + (label.charCodeAt(1) ?? 0) * 11) % 360;
   return `hsl(${hue}, 45%, 28%)`;
 }
 
+// Curated stock photography, one per tile, supplied directly by the user -
+// takes priority over the live-product-photo fallback below (originally
+// built so a tile's photo always matched real current inventory) because
+// these were chosen deliberately for a specific look, not because a photo
+// was missing. Keyed by the tile's own label (CATEGORY_TILES in
+// lib/seed-data.ts) rather than gender/subCategory, since that's the
+// stable, human-chosen identifier here.
+const CURATED_IMAGES: Record<string, string> = {
+  Sarees: "/categories/sarees.jpg",
+  Kurtis: "/categories/kurtis.webp",
+  Jeans: "/categories/jeans.jpg",
+  "Kids Wear": "/categories/kids-wear.jpg",
+};
+
 // Large photo-card grid - restyled from the previous small letter-avatar
 // row to match a reference the user shared (a DTC site's "shop by goal"
 // section: big full-bleed photo cards, a bold label in the corner, a
-// circular arrow button). Each card's background is a real, currently-live
-// product photo for that category (see getCategoryTileCounts), not stock
-// photography, so it stays honest about what's actually in stock right now
-// instead of a generic category image that might not reflect real
-// inventory.
+// circular arrow button). A tile not covered by CURATED_IMAGES above still
+// falls back to a real, currently-live product photo for that category
+// (see getCategoryTileCounts) rather than a generic placeholder.
 export function CategoryTiles() {
   const [subTiles, setSubTiles] = useState<SubTile[]>([]);
 
@@ -62,6 +74,7 @@ export function CategoryTiles() {
           const href = tile.subCategory
             ? `/category/${tile.gender}?subCategory=${encodeURIComponent(tile.subCategory)}`
             : `/category/${tile.gender}`;
+          const imageUrl = CURATED_IMAGES[tile.label] ?? tile.imageUrl;
           return (
             <div key={`${tile.gender}-${tile.subCategory}`} className="sio-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
               <TiltCard>
@@ -78,9 +91,9 @@ export function CategoryTiles() {
                     background: tileColor(tile.label),
                   }}
                 >
-                  {tile.imageUrl && (
+                  {imageUrl && (
                     <img
-                      src={tile.imageUrl}
+                      src={imageUrl}
                       alt=""
                       aria-hidden
                       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
