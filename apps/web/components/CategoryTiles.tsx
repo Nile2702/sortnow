@@ -99,19 +99,25 @@ export function CategoryTiles() {
                       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
                     />
                   )}
-                  {/* Darkens the lower portion only, enough for the white
-                      label/count to stay readable against any photo without
-                      flattening the whole card to a dim overlay the way the
-                      hero slider's full-card darken does. */}
+                  {/* Lightens the upper portion only, where the label/count
+                      sit - this used to darken the *lower* portion instead
+                      (a 0deg gradient's 0% stop lands at the bottom, not
+                      top), which never actually touched the text's own
+                      corner at all; black text on a bright/busy photo (the
+                      Kurtis card's cream wall, for one) was reported
+                      unreadable as a direct result. A light wash behind
+                      black text works the same way the dark wash behind
+                      white text did for the arrow button below - a backing
+                      that reads well regardless of the photo underneath it. */}
                   <div
                     aria-hidden
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: "linear-gradient(0deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.05) 45%, transparent 70%)",
+                      background: "linear-gradient(180deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.1) 45%, transparent 70%)",
                     }}
                   />
-                  <div style={{ position: "absolute", top: 16, left: 16, right: 16, color: "#fff" }}>
+                  <div style={{ position: "absolute", top: 16, left: 16, right: 16, color: "var(--sio-ink)" }}>
                     <div style={{ fontSize: 17, fontWeight: 700, fontFamily: "var(--site-font-heading)" }}>{tile.label}</div>
                     <div style={{ fontSize: 12, opacity: 0.85 }}>{tile.count} items</div>
                   </div>
