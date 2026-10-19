@@ -537,6 +537,67 @@ body {
   }
 }
 
+/* LoadingSpinner (components/LoadingSpinner.tsx) - the funnel SVG is a
+   static sibling; these chips are absolutely positioned over it and
+   animated by % of the container so the whole thing scales with `size`.
+   Three separate keyframes (not one shared one) because each chip starts
+   from a different spot under the funnel's wide opening and needs its own
+   path converging into the neck - a single keyframe can't vary its own
+   start position per element. */
+.sio-sort-loader {
+  position: relative;
+}
+
+.sio-sort-chip {
+  position: absolute;
+  width: 14%;
+  height: 14%;
+  border-radius: 3px;
+  top: 8%;
+  opacity: 0;
+}
+
+.sio-sort-chip:nth-of-type(1) {
+  background: var(--sio-ink);
+  animation: sio-sort-fall-a 2.4s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+}
+
+.sio-sort-chip:nth-of-type(2) {
+  background: var(--sio-glow);
+  animation: sio-sort-fall-b 2.4s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+  animation-delay: 0.8s;
+}
+
+.sio-sort-chip:nth-of-type(3) {
+  background: var(--sio-muted);
+  animation: sio-sort-fall-c 2.4s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+  animation-delay: 1.6s;
+}
+
+@keyframes sio-sort-fall-a {
+  0% { left: 22%; top: 8%; opacity: 0; transform: translate(-50%, 0) rotate(0deg); }
+  10% { opacity: 1; }
+  55% { left: 50%; top: 58%; opacity: 1; transform: translate(-50%, 0) rotate(160deg); }
+  85% { left: 50%; top: 92%; opacity: 1; transform: translate(-50%, 0) rotate(190deg); }
+  100% { left: 50%; top: 112%; opacity: 0; transform: translate(-50%, 0) rotate(200deg); }
+}
+
+@keyframes sio-sort-fall-b {
+  0% { left: 50%; top: 8%; opacity: 0; transform: translate(-50%, 0) rotate(0deg); }
+  10% { opacity: 1; }
+  55% { left: 50%; top: 58%; opacity: 1; transform: translate(-50%, 0) rotate(-140deg); }
+  85% { left: 50%; top: 92%; opacity: 1; transform: translate(-50%, 0) rotate(-170deg); }
+  100% { left: 50%; top: 112%; opacity: 0; transform: translate(-50%, 0) rotate(-190deg); }
+}
+
+@keyframes sio-sort-fall-c {
+  0% { left: 78%; top: 8%; opacity: 0; transform: translate(-50%, 0) rotate(0deg); }
+  10% { opacity: 1; }
+  55% { left: 50%; top: 58%; opacity: 1; transform: translate(-50%, 0) rotate(150deg); }
+  85% { left: 50%; top: 92%; opacity: 1; transform: translate(-50%, 0) rotate(180deg); }
+  100% { left: 50%; top: 112%; opacity: 0; transform: translate(-50%, 0) rotate(200deg); }
+}
+
 /* Plain solid surface - the "glassmorphic/neon" look (blur + tinted glow
    border) read as a sci-fi dashboard, not Myntra's flat, opaque white
    chrome. Kept as a near-opaque white so existing markup that relies on
@@ -607,6 +668,13 @@ body {
   .sio-particle,
   .sio-scanline::before {
     animation: none !important;
+  }
+  .sio-sort-chip {
+    animation: none !important;
+    opacity: 1 !important;
+    left: 50% !important;
+    top: 58% !important;
+    transform: translate(-50%, 0) !important;
   }
 }
 

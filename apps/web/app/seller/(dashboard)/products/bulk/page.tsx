@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
 import { parseCsv, SAMPLE_CSV } from "../../../../../lib/csv";
+import { LoadingScreen } from "../../../../../components/LoadingSpinner";
 
 interface ImportResult {
   totalRows: number;
@@ -51,7 +52,7 @@ export default function BulkImportPage() {
   }
 
   if (storeLoading || !store) {
-    return <main style={{ maxWidth: 800, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <LoadingScreen maxWidth={800} />;
   }
 
   return (

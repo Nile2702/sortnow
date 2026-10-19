@@ -27,6 +27,7 @@ import {
 } from "../../../../../lib/image-enhance";
 import { checkDataUrlSafety } from "../../../../../lib/nsfw-check";
 import { showToast } from "../../../../../lib/toast";
+import { LoadingScreen } from "../../../../../components/LoadingSpinner";
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
 
@@ -676,7 +677,7 @@ export default function BulkPhotoUploadPage() {
   }
 
   if (storeLoading || !store) {
-    return <main style={{ maxWidth: 1000, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <LoadingScreen maxWidth={1000} />;
   }
 
   const readyCount = drafts.filter((d) => d.status === "ready").length;

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { showToast } from "../../../../lib/toast";
+import { LoadingScreen } from "../../../../components/LoadingSpinner";
 
 interface ReservationItem {
   productId: string;
@@ -90,7 +91,7 @@ export default function SellerReservationsPage() {
   }
 
   if (loading || !store) {
-    return <main style={{ maxWidth: 1440, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <LoadingScreen maxWidth={1440} />;
   }
 
   const pending = reservations.filter((r) => r.status === "pending");

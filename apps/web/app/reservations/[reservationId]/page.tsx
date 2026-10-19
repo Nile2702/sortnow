@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import QRCode from "qrcode";
+import { LoadingScreen } from "../../../components/LoadingSpinner";
 
 interface ReservationItem {
   productId: string;
@@ -154,7 +155,7 @@ export default function ReservationDetailPage() {
   }
 
   if (!reservation) {
-    return <main style={{ maxWidth: 600, margin: "60px auto", padding: 16, textAlign: "center" }}>Loading…</main>;
+    return <LoadingScreen maxWidth={600} />;
   }
 
   const copy = STATUS_COPY[reservation.status] ?? STATUS_COPY.pending;

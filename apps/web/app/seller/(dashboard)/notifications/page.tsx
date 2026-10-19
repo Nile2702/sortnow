@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSellerStore } from "../../../../lib/use-seller-store";
+import { LoadingScreen, LoadingSpinner } from "../../../../components/LoadingSpinner";
 
 interface Notification {
   id: string;
@@ -41,7 +42,7 @@ export default function SellerNotificationsPage() {
   }, [store]);
 
   if (storeLoading || !store) {
-    return <main style={{ maxWidth: 900, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <LoadingScreen maxWidth={900} />;
   }
 
   return (
@@ -56,7 +57,9 @@ export default function SellerNotificationsPage() {
       </p>
 
       {loading ? (
-        <p style={{ color: "#64748b" }}>Loading…</p>
+        <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
+          <LoadingSpinner />
+        </div>
       ) : notifications.length === 0 ? (
         <p style={{ color: "#94a3b8" }}>Nothing sent yet — this fills up as reservations come in and get picked up.</p>
       ) : (

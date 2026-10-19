@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getMyReservationIds } from "../../lib/reservations";
 import { canCancelReservation } from "../../lib/reservation-expiry";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
 
 interface Reservation {
   id: string;
@@ -71,7 +72,9 @@ export default function ReservationsPage() {
       <h1 style={{ fontSize: 24, marginBottom: 20, fontWeight: 700 }}>My Reservations</h1>
 
       {loading ? (
-        <p style={{ color: "#64748b" }}>Loading…</p>
+        <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
+          <LoadingSpinner />
+        </div>
       ) : reservations.length === 0 ? (
         <p style={{ color: "#64748b" }}>
           No reservations yet.{" "}

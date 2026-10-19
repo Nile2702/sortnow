@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { ALL_SIZES, CATEGORY_TREE } from "../../lib/catalog-constants";
 import { ProductCard } from "../../components/ProductCard";
 import { ExploreOnMapButton } from "../../components/ExploreOnMapButton";
+import { LoadingScreen } from "../../components/LoadingSpinner";
 
 interface Product {
   id: string;
@@ -266,7 +267,7 @@ const filterRowStyle: React.CSSProperties = {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<main style={{ maxWidth: 1440, margin: "0 auto", padding: 16 }}>Loading…</main>}>
+    <Suspense fallback={<LoadingScreen maxWidth={1440} />}>
       <SearchPageInner />
     </Suspense>
   );

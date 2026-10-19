@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSellerStore } from "../../../../lib/use-seller-store";
+import { LoadingScreen } from "../../../../components/LoadingSpinner";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -124,7 +125,7 @@ function SellerProductsPageInner() {
   }
 
   if (storeLoading || !store) {
-    return <main style={{ maxWidth: 1440, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <LoadingScreen maxWidth={1440} />;
   }
 
   if (loadError) {
@@ -357,7 +358,7 @@ function SellerProductsPageInner() {
 
 export default function SellerProductsPage() {
   return (
-    <Suspense fallback={<main style={{ maxWidth: 1440, margin: "0 auto", padding: 40 }}>Loading…</main>}>
+    <Suspense fallback={<LoadingScreen maxWidth={1440} />}>
       <SellerProductsPageInner />
     </Suspense>
   );

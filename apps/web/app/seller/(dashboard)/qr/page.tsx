@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { useSellerStore } from "../../../../lib/use-seller-store";
+import { LoadingScreen } from "../../../../components/LoadingSpinner";
 
 const LABELS = ["Shop Window", "Billing Counter", "Table 1", "Table 2", "Trial Room"];
 
@@ -27,7 +28,7 @@ export default function QrMarketingPage() {
   }, [targetUrl]);
 
   if (loading || !store) {
-    return <main style={{ maxWidth: 900, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <LoadingScreen maxWidth={900} />;
   }
 
   return (

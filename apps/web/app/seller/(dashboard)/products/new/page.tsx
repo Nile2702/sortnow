@@ -2,12 +2,13 @@
 
 import { useSellerStore } from "../../../../../lib/use-seller-store";
 import { ProductForm } from "../../../../../components/ProductForm";
+import { LoadingScreen } from "../../../../../components/LoadingSpinner";
 
 export default function NewProductPage() {
   const { store, loading } = useSellerStore();
 
   if (loading || !store) {
-    return <main style={{ maxWidth: 700, margin: "0 auto", padding: 40 }}>Loading…</main>;
+    return <LoadingScreen maxWidth={700} />;
   }
 
   return (

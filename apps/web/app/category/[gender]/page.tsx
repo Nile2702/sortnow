@@ -6,6 +6,7 @@ import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { CATEGORY_TREE } from "../../../lib/catalog-constants";
 import { ProductCard } from "../../../components/ProductCard";
 import { ExploreOnMapButton } from "../../../components/ExploreOnMapButton";
+import { LoadingScreen } from "../../../components/LoadingSpinner";
 
 const SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
 
@@ -135,7 +136,7 @@ function CategoryPageInner() {
 
 export default function CategoryPage() {
   return (
-    <Suspense fallback={<main style={{ maxWidth: 1440, margin: "0 auto", padding: 16 }}>Loading…</main>}>
+    <Suspense fallback={<LoadingScreen maxWidth={1440} />}>
       <CategoryPageInner />
     </Suspense>
   );
