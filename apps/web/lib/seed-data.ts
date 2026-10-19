@@ -1951,7 +1951,30 @@ export async function voidBill(id: string, reason: string): Promise<Bill | null>
 // Billing: plans, subscriptions, GST invoices - matches
 // docs/04-monetization-and-billing.md. No real PSP (Razorpay/Cashfree) is
 // called - "subscribing" just flips the stored plan.
+//
+// Launch promotion: every store's first FREE_TRIAL_MONTHS are free on
+// whichever plan they pick, counted from activatedAt (when the site owner
+// actually approved them, not signup/draft - a store sitting in
+// pending_review shouldn't burn its free window before it can even list
+// anything). Derived at read time from that one timestamp, the same
+// "compute it from a stored instant, don't track a separate flag" pattern
+// already used for reservation expiry and sale campaigns - there's nothing
+// to expire/flip on a schedule, a date comparison is always correct.
 // ---------------------------------------------------------------------
+export const FREE_TRIAL_MONTHS = 6;
+
+export function freeTrialEndsAt(activatedAt?: string | null): string | null {
+  if (!activatedAt) return null;
+  const end = new Date(activatedAt);
+  end.setMonth(end.getMonth() + FREE_TRIAL_MONTHS);
+  return end.toISOString();
+}
+
+export function isInFreeTrial(activatedAt?: string | null): boolean {
+  const end = freeTrialEndsAt(activatedAt);
+  return !!end && Date.now() < new Date(end).getTime();
+}
+
 export interface Plan {
   code: "lite" | "pro" | "max";
   name: string;

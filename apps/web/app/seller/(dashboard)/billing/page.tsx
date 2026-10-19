@@ -23,11 +23,18 @@ interface Invoice {
   issuedAt: string;
 }
 
+interface FreeTrial {
+  active: boolean;
+  months: number;
+  endsAt: string | null;
+}
+
 interface BillingData {
   subscription: { planCode: string; status: string; currentPeriodEnd: string };
   invoices: Invoice[];
   skuCount: number;
   plans: Plan[];
+  freeTrial: FreeTrial;
 }
 
 interface BoostPackage {
@@ -115,6 +122,12 @@ export default function BillingPage() {
 
   const currentPlan = data.plans.find((p) => p.code === data.subscription.planCode)!;
   const usagePct = Math.min(100, Math.round((data.skuCount / currentPlan.skuLimit) * 100));
+  const { freeTrial } = data;
+  // What the seller's current plan would have cost for the full free
+  // window - the headline savings figure, not a pro-rated "days left"
+  // amount, since the ask here is "how much free are we offering" at a
+  // glance, not a precise remaining-value calculator.
+  const freeTrialValue = currentPlan.monthlyPrice * freeTrial.months;
 
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 20px 60px" }}>
@@ -124,6 +137,28 @@ export default function BillingPage() {
         No real payment is processed yet - switching plans or boosting your store here doesn't charge a card. A real payment gateway
         (Razorpay/Cashfree) will be added before this goes live for real transactions, same as AI photo credits.
       </p>
+
+      {freeTrial.active && freeTrial.endsAt && (
+        <div
+          className="sio-card"
+          style={{
+            background: "linear-gradient(135deg, #16a34a, #15803d)",
+            borderRadius: 16,
+            padding: 24,
+            marginBottom: 28,
+            color: "#fff",
+          }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", opacity: 0.85, marginBottom: 6 }}>
+            🎉 Launch offer — free for your first {freeTrial.months} months
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>You're saving ₹{freeTrialValue.toLocaleString("en-IN")}</div>
+          <div style={{ fontSize: 13, opacity: 0.9 }}>
+            {currentPlan.name} is free until {new Date(freeTrial.endsAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} —
+            switch plans anytime before then at no cost.
+          </div>
+        </div>
+      )}
 
       <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 28 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -138,15 +173,17 @@ export default function BillingPage() {
                 borderRadius: 999,
                 fontSize: 12,
                 fontWeight: 600,
-                background: data.subscription.status === "active" ? "#dcfce7" : "#fef3c7",
-                color: data.subscription.status === "active" ? "#16a34a" : "#b45309",
+                background: freeTrial.active ? "#dcfce7" : data.subscription.status === "active" ? "#dcfce7" : "#fef3c7",
+                color: freeTrial.active ? "#16a34a" : data.subscription.status === "active" ? "#16a34a" : "#b45309",
                 textTransform: "capitalize",
               }}
             >
-              {data.subscription.status}
+              {freeTrial.active ? "Free Trial" : data.subscription.status}
             </span>
             <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
-              Renews {new Date(data.subscription.currentPeriodEnd).toLocaleDateString("en-IN")}
+              {freeTrial.active && freeTrial.endsAt
+                ? `Free until ${new Date(freeTrial.endsAt).toLocaleDateString("en-IN")}`
+                : `Renews ${new Date(data.subscription.currentPeriodEnd).toLocaleDateString("en-IN")}`}
             </div>
           </div>
         </div>
@@ -175,10 +212,19 @@ export default function BillingPage() {
               }}
             >
               <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{plan.name}</div>
-              <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
-                ₹{plan.monthlyPrice.toLocaleString("en-IN")}
-                <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/mo</span>
-              </div>
+              {freeTrial.active ? (
+                <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#16a34a" }}>
+                  ₹0<span style={{ fontSize: 13, fontWeight: 400 }}>/mo</span>
+                  <span style={{ fontSize: 13, fontWeight: 400, color: "#94a3b8", textDecoration: "line-through", marginLeft: 8 }}>
+                    ₹{plan.monthlyPrice.toLocaleString("en-IN")}
+                  </span>
+                </div>
+              ) : (
+                <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
+                  ₹{plan.monthlyPrice.toLocaleString("en-IN")}
+                  <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/mo</span>
+                </div>
+              )}
               <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 14 }}>Up to {plan.skuLimit.toLocaleString("en-IN")} SKUs</div>
               <ul style={{ margin: 0, padding: 0, listStyle: "none", fontSize: 13, color: "#475569", marginBottom: 18 }}>
                 {plan.features.map((f) => (
@@ -264,6 +310,12 @@ export default function BillingPage() {
       </div>
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>GST Invoices</h2>
+      {freeTrial.active ? (
+        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, fontSize: 13, color: "#64748b" }}>
+          Nothing to invoice yet — you're in your free {freeTrial.months}-month launch period, so there's been no billing to generate a GST
+          invoice for.
+        </div>
+      ) : (
       <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", overflow: "hidden" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "12px 18px", fontSize: 12, fontWeight: 700, color: "#64748b", borderBottom: "1px solid #f1f5f9" }}>
           <div>Invoice</div>
@@ -288,6 +340,7 @@ export default function BillingPage() {
           );
         })}
       </div>
+      )}
       <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>
         Tax split follows the platform's registered state (Maharashtra, code 27) vs. the merchant's state-of-supply, per{" "}
         <code>fn_compute_gst_split()</code> in <code>database/schema.sql</code>.

@@ -10,6 +10,8 @@ import {
   getStoreProducts,
   getPhotoCredits,
   isBoostActive,
+  isInFreeTrial,
+  freeTrialEndsAt,
   PLANS,
 } from "../../../../lib/seed-data";
 
@@ -59,6 +61,8 @@ export default async function AdminSellerDetailPage({
     getPhotoCredits(store.id),
   ]);
   const plan = PLANS.find((p) => p.code === subscription.planCode);
+  const onFreeTrial = isInFreeTrial(store.activatedAt);
+  const freeTrialEnd = freeTrialEndsAt(store.activatedAt);
   const lastReservation = reservations[0]; // already ordered newest-first
   const lastProduct = products[0]; // already ordered newest-first
   const boosted = isBoostActive(store.boostedUntil);
@@ -112,7 +116,15 @@ export default async function AdminSellerDetailPage({
       <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 20 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Subscription &amp; listings</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
-          <StatTile value={plan ? plan.name : subscription.planCode} label={`Plan (₹${plan?.monthlyPrice ?? "?"}/mo, up to ${plan?.skuLimit ?? "?"} SKUs)`} />
+          <StatTile
+            value={plan ? plan.name : subscription.planCode}
+            label={
+              onFreeTrial
+                ? `Plan (free trial until ${freeTrialEnd ? new Date(freeTrialEnd).toLocaleDateString("en-IN") : "?"}, then ₹${plan?.monthlyPrice ?? "?"}/mo)`
+                : `Plan (₹${plan?.monthlyPrice ?? "?"}/mo, up to ${plan?.skuLimit ?? "?"} SKUs)`
+            }
+            color={onFreeTrial ? "#16a34a" : undefined}
+          />
           <StatTile value={productCounts.total} label="Products listed" />
           <StatTile value={productCounts.live} label="Live" color="#16a34a" />
           <StatTile value={productCounts.onHold} label="On hold" color={productCounts.onHold > 0 ? "#b45309" : undefined} />
