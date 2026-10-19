@@ -364,9 +364,19 @@ body {
   background: var(--sio-cream);
 }
 
-.sio-category-pill:hover {
-  background: var(--store-accent, var(--sio-ink)) !important;
-  color: #fff !important;
+/* Scoped to devices that actually have a hover concept - a touchscreen has
+   none, but WebKit (iOS Safari) still "simulates" :hover on the first tap of
+   any element that declares one, treating it as a preview and only firing
+   the real navigation on a second tap. That's indistinguishable from the
+   filter being broken to a mobile shopper, who taps once and sees nothing
+   happen. Without this guard, every store's category pills had exactly that
+   problem on an iPhone despite working fine everywhere a synthetic/mouse
+   click reaches them (dev tools, Android, desktop). */
+@media (hover: hover) and (pointer: fine) {
+  .sio-category-pill:hover {
+    background: var(--store-accent, var(--sio-ink)) !important;
+    color: #fff !important;
+  }
 }
 
 .sio-zoom-hover {
