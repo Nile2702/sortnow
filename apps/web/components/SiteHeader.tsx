@@ -7,6 +7,7 @@ import { getCart, cartCount } from "../lib/cart";
 import { getWishlist } from "../lib/wishlist";
 import { CATEGORY_TREE } from "../lib/catalog-constants";
 import { FullLogo } from "./LogoBadge";
+import { LoadingSpinner } from "./LoadingSpinner";
 import { getShopperSession, onShopperSessionChange, ShopperSession } from "../lib/shopper-session";
 import { isMobileAppShellPage, isProductDetailPage } from "../lib/mobile-shell";
 import { LocationPicker } from "./LocationPicker";
@@ -320,7 +321,10 @@ export function SiteHeader() {
               }}
             >
               {loadingSuggestions ? (
-                <div style={{ padding: "14px 12px", fontSize: 13, color: "var(--sio-muted)" }}>Searching…</div>
+                <div style={{ padding: "14px 12px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--sio-muted)" }}>
+                  <LoadingSpinner size={20} />
+                  Searching…
+                </div>
               ) : suggestions.length === 0 ? (
                 <div style={{ padding: "14px 12px", fontSize: 13, color: "var(--sio-muted)" }}>
                   No products found for &ldquo;{query.trim()}&rdquo;

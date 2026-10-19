@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSellerStore } from "../../../../lib/use-seller-store";
-import { PageSkeleton } from "../../../../components/PageSkeleton";
+import { LoadingScreen } from "../../../../components/LoadingSpinner";
 
 interface Theme {
   brand: { colors: { primary: string; accent: string } };
@@ -76,7 +76,7 @@ export default function ThemeStudioPage() {
   }
 
   if (storeLoading || !store || !theme) {
-    return <PageSkeleton maxWidth={1440} />;
+    return <LoadingScreen maxWidth={1440} />;
   }
 
   return (

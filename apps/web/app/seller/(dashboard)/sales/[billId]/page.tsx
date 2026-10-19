@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useSellerStore } from "../../../../../lib/use-seller-store";
-import { PageSkeleton } from "../../../../../components/PageSkeleton";
+import { LoadingScreen } from "../../../../../components/LoadingSpinner";
 
 interface Bill {
   id: string;
@@ -89,7 +89,7 @@ export default function SellerBillDetailPage() {
   }, [store, billId]);
 
   if (storeLoading || !store || (!bill && !notFound)) {
-    return <PageSkeleton maxWidth={700} />;
+    return <LoadingScreen maxWidth={700} />;
   }
   if (notFound || !bill) {
     return (
