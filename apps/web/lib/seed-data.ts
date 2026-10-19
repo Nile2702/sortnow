@@ -100,7 +100,10 @@ function rowToStore(r: any): Store {
     localMarket: r.local_market,
     latitude: Number(r.latitude),
     longitude: Number(r.longitude),
-    liveSale: r.live_sale ?? null,
+    // Always overwritten by getAllStores() right after this map, from
+    // whichever sale campaign (if any) is currently active for this store -
+    // there's no stores.live_sale column anymore to read a value from here.
+    liveSale: null,
     phone: r.phone ?? undefined,
     email: r.email ?? undefined,
     boostedUntil: r.boosted_until ? new Date(r.boosted_until).toISOString() : null,
@@ -120,7 +123,30 @@ function rowToStore(r: any): Store {
 // getAllStores();` this requires at the top of whichever handler used it.
 export async function getAllStores(): Promise<Store[]> {
   const rows = await query<any>(`SELECT * FROM stores ORDER BY created_at DESC`);
-  return rows.map(rowToStore);
+  const stores = rows.map(rowToStore);
+  // liveSale is derived here from any currently-active sale campaign,
+  // overriding whatever's in the stores.live_sale column (unused, kept only
+  // for schema history) - see the comment on getActiveSaleCampaignsByStore
+  // and SaleCampaign below for why a real, scoped Promotions campaign is
+  // the only thing that can ever put a Live Sale badge on a store now.
+  const byStore = await getActiveSaleCampaignsByStore(stores.map((s) => s.id));
+  for (const store of stores) {
+    const campaigns = byStore.get(store.id);
+    if (!campaigns || campaigns.length === 0) {
+      store.liveSale = null;
+      continue;
+    }
+    // Most recently started wins if a seller somehow has more than one
+    // campaign active at once - rare, but needs a deterministic pick.
+    const campaign = [...campaigns].sort((a, b) => (a.startsAt < b.startsAt ? 1 : -1))[0];
+    store.liveSale = {
+      headline: campaign.name,
+      discountLabel: formatSaleCampaignLabel(campaign),
+      startedAt: campaign.startsAt,
+      endsAt: campaign.endsAt,
+    };
+  }
+  return stores;
 }
 
 async function slugExists(slug: string): Promise<boolean> {
@@ -790,41 +816,17 @@ export async function updateStoreTheme(storeId: string, patch: { primary?: strin
   return theme;
 }
 
-// Live Sale: lets a merchant flag their store as running a flash sale right
-// now, with an end time - shown as a badge on /shops, /store/[slug], and the
-// homepage "Stores near you" list so nearby shoppers can catch it in time.
-export async function setStoreLiveSale(storeId: string, input: { headline: string; discountLabel: string; durationHours: number }) {
-  const existing = await queryOne<any>(`SELECT id FROM stores WHERE id = $1`, [storeId]);
-  if (!existing) return null;
-  const now = new Date();
-  const liveSale: LiveSale = {
-    headline: input.headline,
-    discountLabel: input.discountLabel,
-    startedAt: now.toISOString(),
-    endsAt: new Date(now.getTime() + input.durationHours * 60 * 60 * 1000).toISOString(),
-  };
-  await query(`UPDATE stores SET live_sale = $2 WHERE id = $1`, [storeId, JSON.stringify(liveSale)]);
-  return liveSale;
-}
-
-export async function clearStoreLiveSale(storeId: string) {
-  const affected = await execute(`UPDATE stores SET live_sale = NULL WHERE id = $1`, [storeId]);
-  return affected > 0 ? true : null;
-}
-
-export function isLiveSaleActive(liveSale?: LiveSale | null): liveSale is LiveSale {
-  return !!liveSale && new Date(liveSale.endsAt).getTime() > Date.now();
-}
-
 // ---------------------------------------------------------------------
 // Sale campaigns - a real, scoped discount a seller runs for a window of
-// time (app/seller/(dashboard)/promotions), as opposed to LiveSale above,
-// which is purely a cosmetic storefront banner that never touches any
-// product's price. See database/schema-live.sql's sale_campaigns comment
-// for the full reasoning; the short version: never written into
-// products.base_price/compare_at_price, only applied at read time (see
-// applyActiveSales below) so a product's stored price always matches what
-// the seller actually typed.
+// time (app/seller/(dashboard)/promotions). The LiveSale a store carries
+// (see Store.liveSale, getAllStores above) used to be independently
+// settable text a seller typed by hand - now it's entirely derived from
+// whichever sale campaign is currently active, so the storefront/directory
+// badge can never claim a discount that isn't actually running. See
+// database/schema-live.sql's sale_campaigns comment for the full pricing
+// reasoning: never written into products.base_price/compare_at_price, only
+// applied at read time (see applyActiveSales below) so a product's stored
+// price always matches what the seller actually typed.
 // ---------------------------------------------------------------------
 export interface SaleCampaign {
   id: string;
@@ -856,6 +858,17 @@ function rowToSaleCampaign(r: any): SaleCampaign {
     endsAt: new Date(r.ends_at).toISOString(),
     createdAt: new Date(r.created_at).toISOString(),
   };
+}
+
+// The Store.liveSale badge's discountLabel text, for whichever campaign
+// getAllStores picked - "20% off storewide" / "20% off Kurtis" / "20% off
+// on select items", so the badge's wording actually matches what it's
+// describing instead of a seller's own free-text guess.
+function formatSaleCampaignLabel(c: SaleCampaign): string {
+  const amount = c.discountType === "percent" ? `${c.discountValue}% off` : `₹${c.discountValue} off`;
+  if (c.scope === "all") return `${amount} storewide`;
+  if (c.scope === "category") return `${amount} ${c.subCategory}`;
+  return `${amount} on select items`;
 }
 
 export interface CreateSaleCampaignInput {
@@ -916,22 +929,33 @@ export async function cancelSaleCampaign(id: string, storeId: string): Promise<b
 // those are shared with the seller's own catalog-editing routes (see
 // app/api/v1/seller/products/[productId]/route.ts), which must always see
 // their real stored price, not a sale-discounted one.
+// Shared by applyActiveSales (product-level discount) and getAllStores
+// (store-level Live Sale badge, see rowToStore's caller below) - one query
+// for whichever set of stores the caller cares about, grouped so each
+// caller does its own store-id -> campaign[] lookup without a second round
+// trip.
+async function getActiveSaleCampaignsByStore(storeIds: string[]): Promise<Map<string, SaleCampaign[]>> {
+  const byStore = new Map<string, SaleCampaign[]>();
+  if (storeIds.length === 0) return byStore;
+  const rows = await query<any>(
+    `SELECT * FROM sale_campaigns WHERE store_id = ANY($1::text[]) AND starts_at <= now() AND ends_at > now()`,
+    [storeIds]
+  );
+  for (const r of rows) {
+    const c = rowToSaleCampaign(r);
+    if (!byStore.has(c.storeId)) byStore.set(c.storeId, []);
+    byStore.get(c.storeId)!.push(c);
+  }
+  return byStore;
+}
+
 export async function applyActiveSales<
   T extends { id: string; storeId: string; gender: string; subCategory: string; basePrice: number; compareAtPrice?: number }
 >(products: T[]): Promise<(T & { onSale?: boolean; saleEndsAt?: string })[]> {
   if (products.length === 0) return products;
   const storeIds = [...new Set(products.map((p) => p.storeId))];
-  const rows = await query<any>(
-    `SELECT * FROM sale_campaigns WHERE store_id = ANY($1::text[]) AND starts_at <= now() AND ends_at > now()`,
-    [storeIds]
-  );
-  if (rows.length === 0) return products;
-  const campaigns = rows.map(rowToSaleCampaign);
-  const byStore = new Map<string, SaleCampaign[]>();
-  for (const c of campaigns) {
-    if (!byStore.has(c.storeId)) byStore.set(c.storeId, []);
-    byStore.get(c.storeId)!.push(c);
-  }
+  const byStore = await getActiveSaleCampaignsByStore(storeIds);
+  if (byStore.size === 0) return products;
 
   return products.map((p) => {
     const match = byStore.get(p.storeId)?.find((c) => {

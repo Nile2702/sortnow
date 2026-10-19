@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSellerStore } from "../../../lib/use-seller-store";
-import { showToast } from "../../../lib/toast";
 import { LoadingScreen } from "../../../components/LoadingSpinner";
 
 interface Product {
@@ -24,8 +23,6 @@ export default function SellerDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [planName, setPlanName] = useState<string | null>(null);
   const [liveSale, setLiveSale] = useState<LiveSale | null>(null);
-  const [saleForm, setSaleForm] = useState({ headline: "Flash Sale — Today Only", discountLabel: "Flat 30% Off", durationHours: 4 });
-  const [savingSale, setSavingSale] = useState(false);
   const [pendingReservations, setPendingReservations] = useState(0);
   // Products/reservations stats defaulted to their initial state (0 items,
   // 0 pending) the instant `store` loaded, so every stat tile flashed a
@@ -63,37 +60,6 @@ export default function SellerDashboard() {
   }, [store]);
 
   const saleIsActive = !!liveSale && new Date(liveSale.endsAt).getTime() > Date.now();
-
-  async function handleStartSale(e: React.FormEvent) {
-    e.preventDefault();
-    if (!store) return;
-    setSavingSale(true);
-    const res = await fetch(`/api/v1/stores/${store.id}/live-sale`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(saleForm),
-    });
-    const body = await res.json().catch(() => null);
-    setSavingSale(false);
-    // A rejected save (e.g. a blank headline) used to still show the
-    // success toast and leave liveSale untouched, so the seller believed
-    // a sale was running when the server never actually started one.
-    if (!res.ok) {
-      showToast(body?.message ?? "Couldn't start the Live Sale. Check the fields and try again.", "default");
-      return;
-    }
-    setLiveSale(body);
-    showToast("Live Sale started — shoppers will see it now", "success");
-  }
-
-  async function handleEndSale() {
-    if (!store) return;
-    setSavingSale(true);
-    await fetch(`/api/v1/stores/${store.id}/live-sale`, { method: "DELETE" });
-    setLiveSale(null);
-    setSavingSale(false);
-    showToast("Live Sale ended");
-  }
 
   if (loading || !store) {
     return <LoadingScreen maxWidth={1440} />;
@@ -158,6 +124,12 @@ export default function SellerDashboard() {
         })}
       </div>
 
+      {/* Read-only - this badge used to be independently settable right here
+          (free-text headline/discount label a seller typed by hand), which
+          meant it could claim a discount with no real pricing behind it.
+          It's now entirely derived from whichever Promotions campaign is
+          actually running, so there's nothing to fill in or submit - only
+          somewhere to see it and jump to the real control, Promotions. */}
       <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, marginBottom: 32 }}>
         {saleIsActive && liveSale ? (
           <div>
@@ -169,59 +141,27 @@ export default function SellerDashboard() {
             <div style={{ color: "#64748b", fontSize: 13, marginBottom: 14 }}>
               {liveSale.discountLabel} · ends {new Date(liveSale.endsAt).toLocaleString()}
             </div>
-            <button
-              onClick={handleEndSale}
-              disabled={savingSale}
-              style={{ padding: "8px 16px", borderRadius: 999, border: "1px solid #e2e8f0", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            <Link
+              href="/seller/promotions"
+              style={{ padding: "8px 16px", borderRadius: 999, border: "1px solid #e2e8f0", background: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", color: "inherit" }}
             >
-              End Sale Now
-            </button>
+              Manage in Promotions →
+            </Link>
           </div>
         ) : (
-          <form onSubmit={handleStartSale}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>🔴 Start a Live Sale</h2>
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>No sale running right now</h2>
             <p style={{ color: "#64748b", fontSize: 13, marginBottom: 14 }}>
-              Flag your store as running a flash sale right now — shoppers see a live badge on your storefront, the shop directory, and nearby-store results.
+              Start one in Promotions and shoppers see a live badge here, on your storefront, the shop directory, and nearby-store results — on top
+              of the actual discounted prices.
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 0.8fr auto", gap: 10, alignItems: "end" }}>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, display: "block", marginBottom: 4 }}>Headline</label>
-                <input
-                  value={saleForm.headline}
-                  onChange={(e) => setSaleForm((f) => ({ ...f, headline: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, display: "block", marginBottom: 4 }}>Discount label</label>
-                <input
-                  value={saleForm.discountLabel}
-                  onChange={(e) => setSaleForm((f) => ({ ...f, discountLabel: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, display: "block", marginBottom: 4 }}>Duration</label>
-                <select
-                  value={saleForm.durationHours}
-                  onChange={(e) => setSaleForm((f) => ({ ...f, durationHours: Number(e.target.value) }))}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}
-                >
-                  <option value={2}>2 hours</option>
-                  <option value={4}>4 hours</option>
-                  <option value={8}>8 hours</option>
-                  <option value={24}>24 hours</option>
-                </select>
-              </div>
-              <button
-                type="submit"
-                disabled={savingSale}
-                style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "#dc2626", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
-              >
-                Go Live
-              </button>
-            </div>
-          </form>
+            <Link
+              href="/seller/promotions"
+              style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "#dc2626", color: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}
+            >
+              🔴 Start a sale
+            </Link>
+          </div>
         )}
       </div>
 

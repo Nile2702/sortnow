@@ -96,7 +96,10 @@ CREATE TABLE stores (
     local_market            TEXT NOT NULL,
     latitude                DOUBLE PRECISION NOT NULL,
     longitude               DOUBLE PRECISION NOT NULL,
-    live_sale               JSONB,                  -- LiveSale | null
+    -- live_sale JSONB column dropped via scripts/migrate-drop-live-sale-column.js -
+    -- Store.liveSale (LiveSale | null) is now derived entirely at read time
+    -- from whichever sale_campaigns row is currently active, see the
+    -- sale_campaigns comment below and getAllStores() in lib/seed-data.ts.
     phone                   TEXT,
     email                   TEXT,                   -- delivery address for seller OTP login (lib/email.ts); not collected at signup
     boosted_until           TIMESTAMPTZ,
@@ -183,15 +186,17 @@ CREATE INDEX idx_products_status ON products (status);
 -- ---------------------------------------------------------------------
 -- Sale campaigns (lib/seed-data.ts `SaleCampaign`) - added via
 -- scripts/migrate-sale-campaigns.js. A real, scoped discount a seller runs
--- for a window of time, as opposed to stores.live_sale above (a purely
--- cosmetic storefront banner that never touches any product's price).
+-- for a window of time. Stores.liveSale (the storefront/directory badge)
+-- is now entirely derived from whichever campaign here is currently active
+-- for that store - it used to be independent, hand-typed text a seller
+-- could set with no real discount behind it, which this table replaced.
 --
 -- Deliberately never writes to products.base_price/compare_at_price - a
 -- campaign is applied at read time only (see applyActiveSales() in
 -- lib/seed-data.ts, called from the shopper-facing product routes/
 -- components, never from the seller's own catalog-editing paths), the same
 -- "derive it at read time from a stored window" pattern already used for
--- live_sale and reservation expiry. That keeps a product's stored price
+-- reservation expiry. That keeps a product's stored price
 -- always equal to what the seller actually typed, so their own edit form
 -- never shows (or risks re-saving) a discounted price as if it were real.
 --
