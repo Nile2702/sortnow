@@ -34,6 +34,20 @@ interface ProductDetail {
   stockRemaining?: number;
   storeSlug: string;
   store: { name: string; city: string; localMarket: string; pincode: string };
+  onSale?: boolean;
+  saleEndsAt?: string;
+}
+
+// "2h 15m" / "45m" - minute-level is plenty for a "hurry up" countdown, no
+// need for the per-second ticking a checkout timer would want.
+function formatCountdown(ms: number): string {
+  const totalMinutes = Math.max(0, Math.floor(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0 && minutes === 0) return "less than a minute";
+  if (hours === 0) return `${minutes}m`;
+  if (hours < 24) return `${hours}h ${minutes}m`;
+  return `${Math.floor(hours / 24)}d ${hours % 24}h`;
 }
 
 function colorHex(name: string | undefined): string {
@@ -113,6 +127,13 @@ export default function ProductDetailPage() {
   const [waitlistJoined, setWaitlistJoined] = useState(false);
   const [waitlistError, setWaitlistError] = useState("");
   const [waitlistSubmitting, setWaitlistSubmitting] = useState(false);
+  // Ticks once a minute purely to re-render the sale countdown below - the
+  // deadline itself (product.saleEndsAt) never changes client-side.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [summary, setSummary] = useState<RatingSummary>({ average: 0, count: 0, breakdown: [] });
@@ -581,6 +602,14 @@ export default function ProductDetailPage() {
           {savingsAmount > 0 && (
             <div style={{ fontSize: 13, color: "var(--sio-bronze-dark)", fontWeight: 600, marginBottom: 4 }}>
               You save ₹{savingsAmount.toLocaleString("en-IN")} on this order
+            </div>
+          )}
+          {product.onSale && product.saleEndsAt && new Date(product.saleEndsAt).getTime() > now && (
+            <div
+              className="sio-breathe"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--sio-glow)", marginBottom: 8 }}
+            >
+              ⏰ Sale ends in {formatCountdown(new Date(product.saleEndsAt).getTime() - now)}
             </div>
           )}
           <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 20 }}>Inclusive of all taxes</div>

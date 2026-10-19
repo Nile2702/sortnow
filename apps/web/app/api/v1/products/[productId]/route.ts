@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllProducts, getAllStores, getColorSiblings } from "../../../../../lib/seed-data";
+import { getAllProducts, getAllStores, getColorSiblings, applyActiveSales } from "../../../../../lib/seed-data";
 
 export async function GET(_req: NextRequest, { params }: { params: { productId: string } }) {
   const products = await getAllProducts();
@@ -25,5 +25,6 @@ export async function GET(_req: NextRequest, { params }: { params: { productId: 
   // route, so it's stripped before responding rather than spread straight
   // through.
   const { costPrice: _costPrice, ...publicProduct } = product;
-  return NextResponse.json({ ...publicProduct, store, colorVariants });
+  const [withSale] = await applyActiveSales([publicProduct]);
+  return NextResponse.json({ ...withSale, store, colorVariants });
 }

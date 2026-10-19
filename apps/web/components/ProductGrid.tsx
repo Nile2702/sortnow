@@ -1,5 +1,5 @@
 import { ProductCard } from "./ProductCard";
-import { getAllProducts, getAllStores } from "../lib/seed-data";
+import { getAllProducts, getAllStores, applyActiveSales } from "../lib/seed-data";
 
 interface Props {
   storeId: string;
@@ -49,7 +49,8 @@ async function fetchProducts(storeId: string, opts: { categoryId?: string; sort?
 
   // Public, shopper-facing grid - costPrice (the seller's own purchase
   // cost) must never leave the seller dashboard, see Product.costPrice.
-  return list.slice(0, opts.limit ?? 8).map(({ costPrice: _costPrice, ...p }) => p);
+  const page = list.slice(0, opts.limit ?? 8).map(({ costPrice: _costPrice, ...p }) => p);
+  return await applyActiveSales(page);
 }
 
 // Same card design as every other shopper-facing grid on the site (see

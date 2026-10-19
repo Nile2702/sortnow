@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchProducts } from "../../../../../lib/seed-data";
+import { searchProducts, applyActiveSales } from "../../../../../lib/seed-data";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -16,5 +16,5 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q") ?? undefined;
 
   const results = await searchProducts({ pincode, lat, lng, radiusKm, gender, subCategory, minPrice, maxPrice, size, sort, q });
-  return NextResponse.json(results);
+  return NextResponse.json(await applyActiveSales(results));
 }

@@ -24,6 +24,11 @@ export interface ProductCardData {
   storeName?: string;
   stockRemaining?: number;
   distanceKm?: number | null;
+  // Set by lib/seed-data.ts applyActiveSales() when a seller's sale
+  // campaign currently discounts this product - distinct from a seller's
+  // own static compareAtPrice markdown, which has no campaign/end time
+  // behind it and isn't a "sale" in this sense.
+  onSale?: boolean;
 }
 
 // The one shared product card for every shopper-facing grid (homepage,
@@ -87,7 +92,7 @@ export function ProductCard({
             style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }}
           />
 
-          {soldOut && (
+          {soldOut ? (
             <span
               style={{
                 position: "absolute",
@@ -105,6 +110,26 @@ export function ProductCard({
             >
               Sold Out
             </span>
+          ) : (
+            product.onSale && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  left: 8,
+                  background: "var(--sio-glow)",
+                  color: "#fff",
+                  fontSize: 9.5,
+                  fontWeight: 700,
+                  padding: "3px 8px",
+                  borderRadius: 6,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.03em",
+                }}
+              >
+                Sale
+              </span>
+            )
           )}
 
           <button

@@ -74,6 +74,9 @@ CREATE TYPE bill_status AS ENUM ('issued', 'void');
 CREATE TYPE plan_code AS ENUM ('lite', 'pro', 'max');
 CREATE TYPE subscription_status AS ENUM ('active', 'past_due');
 CREATE TYPE analytics_event_type AS ENUM ('page_view', 'qr_scan');
+-- Added via scripts/migrate-sale-campaigns.js - see sale_campaigns below.
+CREATE TYPE sale_discount_type AS ENUM ('percent', 'flat');
+CREATE TYPE sale_scope AS ENUM ('all', 'category', 'products');
 
 -- ---------------------------------------------------------------------
 -- Stores (lib/seed-data.ts `Store`). seller_password_hash merges in what
@@ -176,6 +179,43 @@ CREATE INDEX idx_products_gender_subcategory ON products (gender, sub_category);
 CREATE INDEX idx_products_color_group ON products (store_id, color_group_id) WHERE color_group_id IS NOT NULL;
 CREATE INDEX idx_products_created_at ON products (created_at DESC);
 CREATE INDEX idx_products_status ON products (status);
+
+-- ---------------------------------------------------------------------
+-- Sale campaigns (lib/seed-data.ts `SaleCampaign`) - added via
+-- scripts/migrate-sale-campaigns.js. A real, scoped discount a seller runs
+-- for a window of time, as opposed to stores.live_sale above (a purely
+-- cosmetic storefront banner that never touches any product's price).
+--
+-- Deliberately never writes to products.base_price/compare_at_price - a
+-- campaign is applied at read time only (see applyActiveSales() in
+-- lib/seed-data.ts, called from the shopper-facing product routes/
+-- components, never from the seller's own catalog-editing paths), the same
+-- "derive it at read time from a stored window" pattern already used for
+-- live_sale and reservation expiry. That keeps a product's stored price
+-- always equal to what the seller actually typed, so their own edit form
+-- never shows (or risks re-saving) a discounted price as if it were real.
+--
+-- scope='category' matches on (gender, sub_category) - the pairing actually
+-- indexed and used throughout search/filtering - not products.category_id,
+-- which isn't a real per-store taxonomy FK (see the comment on products
+-- above). scope='products' lists explicit product ids in product_ids.
+-- ---------------------------------------------------------------------
+CREATE TABLE sale_campaigns (
+    id               TEXT PRIMARY KEY,
+    store_id         TEXT NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    name             TEXT NOT NULL,
+    discount_type    sale_discount_type NOT NULL,
+    discount_value   NUMERIC(10,2) NOT NULL CHECK (discount_value > 0),
+    scope            sale_scope NOT NULL,
+    gender           gender,             -- set when scope = 'category'
+    sub_category     TEXT,               -- set when scope = 'category'
+    product_ids      TEXT[],             -- set when scope = 'products'
+    starts_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ends_at          TIMESTAMPTZ NOT NULL,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (ends_at > starts_at)
+);
+CREATE INDEX idx_sale_campaigns_store_active ON sale_campaigns (store_id, starts_at, ends_at);
 
 -- ---------------------------------------------------------------------
 -- Reservations (lib/seed-data.ts `Reservation`) — the core "reserve

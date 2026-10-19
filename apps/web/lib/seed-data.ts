@@ -817,6 +817,145 @@ export function isLiveSaleActive(liveSale?: LiveSale | null): liveSale is LiveSa
 }
 
 // ---------------------------------------------------------------------
+// Sale campaigns - a real, scoped discount a seller runs for a window of
+// time (app/seller/(dashboard)/promotions), as opposed to LiveSale above,
+// which is purely a cosmetic storefront banner that never touches any
+// product's price. See database/schema-live.sql's sale_campaigns comment
+// for the full reasoning; the short version: never written into
+// products.base_price/compare_at_price, only applied at read time (see
+// applyActiveSales below) so a product's stored price always matches what
+// the seller actually typed.
+// ---------------------------------------------------------------------
+export interface SaleCampaign {
+  id: string;
+  storeId: string;
+  name: string;
+  discountType: "percent" | "flat";
+  discountValue: number;
+  scope: "all" | "category" | "products";
+  gender?: Gender;
+  subCategory?: string;
+  productIds?: string[];
+  startsAt: string;
+  endsAt: string;
+  createdAt: string;
+}
+
+function rowToSaleCampaign(r: any): SaleCampaign {
+  return {
+    id: r.id,
+    storeId: r.store_id,
+    name: r.name,
+    discountType: r.discount_type,
+    discountValue: Number(r.discount_value),
+    scope: r.scope,
+    gender: r.gender ?? undefined,
+    subCategory: r.sub_category ?? undefined,
+    productIds: r.product_ids ?? undefined,
+    startsAt: new Date(r.starts_at).toISOString(),
+    endsAt: new Date(r.ends_at).toISOString(),
+    createdAt: new Date(r.created_at).toISOString(),
+  };
+}
+
+export interface CreateSaleCampaignInput {
+  name: string;
+  discountType: "percent" | "flat";
+  discountValue: number;
+  scope: "all" | "category" | "products";
+  gender?: Gender;
+  subCategory?: string;
+  productIds?: string[];
+  startsAt?: string;
+  endsAt: string;
+}
+
+export async function createSaleCampaign(storeId: string, input: CreateSaleCampaignInput): Promise<SaleCampaign> {
+  const id = `sale-${storeId.slice(0, 24)}-${Date.now().toString(36)}`;
+  const startsAt = input.startsAt ? new Date(input.startsAt) : new Date();
+  const row = await queryOne<any>(
+    `INSERT INTO sale_campaigns (id, store_id, name, discount_type, discount_value, scope, gender, sub_category, product_ids, starts_at, ends_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+    [
+      id, storeId, input.name, input.discountType, input.discountValue, input.scope,
+      input.gender ?? null, input.subCategory ?? null, input.productIds ?? null,
+      startsAt.toISOString(), new Date(input.endsAt).toISOString(),
+    ]
+  );
+  return rowToSaleCampaign(row);
+}
+
+// Every campaign for this seller's own Promotions page - past, active, and
+// upcoming - so they can see history, not just what's live right now.
+export async function getSaleCampaignsForStore(storeId: string): Promise<SaleCampaign[]> {
+  const rows = await query<any>(`SELECT * FROM sale_campaigns WHERE store_id = $1 ORDER BY starts_at DESC`, [storeId]);
+  return rows.map(rowToSaleCampaign);
+}
+
+// Stops a campaign early. One not yet started is deleted outright (it never
+// ran, nothing to keep a record of); one already running has its end time
+// pulled to now instead, so it still shows up in the seller's own history
+// as "ended early" rather than vanishing.
+export async function cancelSaleCampaign(id: string, storeId: string): Promise<boolean> {
+  const row = await queryOne<any>(`SELECT starts_at FROM sale_campaigns WHERE id = $1 AND store_id = $2`, [id, storeId]);
+  if (!row) return false;
+  if (new Date(row.starts_at).getTime() > Date.now()) {
+    const affected = await execute(`DELETE FROM sale_campaigns WHERE id = $1 AND store_id = $2`, [id, storeId]);
+    return affected > 0;
+  }
+  const affected = await execute(`UPDATE sale_campaigns SET ends_at = now() WHERE id = $1 AND store_id = $2`, [id, storeId]);
+  return affected > 0;
+}
+
+// Applies whichever currently-active sale campaign matches each product,
+// returning NEW objects with a discounted basePrice/compareAtPrice - the
+// input array (and whatever query produced it) is never mutated, so this
+// is only ever safe to call at an actual shopper-facing read boundary
+// (search/detail/grid routes, components/ProductGrid.tsx), never inside
+// getAllProducts/searchProducts/getStoreProducts/rowToProduct themselves -
+// those are shared with the seller's own catalog-editing routes (see
+// app/api/v1/seller/products/[productId]/route.ts), which must always see
+// their real stored price, not a sale-discounted one.
+export async function applyActiveSales<
+  T extends { id: string; storeId: string; gender: string; subCategory: string; basePrice: number; compareAtPrice?: number }
+>(products: T[]): Promise<(T & { onSale?: boolean; saleEndsAt?: string })[]> {
+  if (products.length === 0) return products;
+  const storeIds = [...new Set(products.map((p) => p.storeId))];
+  const rows = await query<any>(
+    `SELECT * FROM sale_campaigns WHERE store_id = ANY($1::text[]) AND starts_at <= now() AND ends_at > now()`,
+    [storeIds]
+  );
+  if (rows.length === 0) return products;
+  const campaigns = rows.map(rowToSaleCampaign);
+  const byStore = new Map<string, SaleCampaign[]>();
+  for (const c of campaigns) {
+    if (!byStore.has(c.storeId)) byStore.set(c.storeId, []);
+    byStore.get(c.storeId)!.push(c);
+  }
+
+  return products.map((p) => {
+    const match = byStore.get(p.storeId)?.find((c) => {
+      if (c.scope === "all") return true;
+      if (c.scope === "category") return c.gender === p.gender && c.subCategory === p.subCategory;
+      return c.productIds?.includes(p.id) ?? false;
+    });
+    if (!match) return p;
+    const original = p.basePrice;
+    // Rounded to the nearest whole rupee, not the nearest paisa - Indian
+    // retail pricing doesn't show paise, and leaving the raw division result
+    // (e.g. 20% off ₹1,299 = ₹1,039.2) looked like a rounding bug rather
+    // than a deliberate price.
+    const discounted =
+      match.discountType === "percent" ? Math.round(original * (1 - match.discountValue / 100)) : Math.max(0, Math.round(original - match.discountValue));
+    // Whichever is higher becomes the crossed-out "MRP" - a product that
+    // already had its own compareAtPrice keeps showing that, one that
+    // didn't still shows its real pre-sale price crossed out.
+    const compareAtPrice = Math.max(p.compareAtPrice ?? 0, original);
+    return { ...p, basePrice: discounted, compareAtPrice, onSale: true, saleEndsAt: match.endsAt };
+  });
+}
+
+// ---------------------------------------------------------------------
 // Reservations - this platform doesn't sell online; a shopper "sorts"
 // (picks out) items near them, then reserves them at one store for a fixed
 // window so the seller can hold them for an in-person pickup. A shopper's
