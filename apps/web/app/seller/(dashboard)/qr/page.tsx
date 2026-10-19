@@ -5,11 +5,8 @@ import QRCode from "qrcode";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
 
-const LABELS = ["Shop Window", "Billing Counter", "Table 1", "Table 2", "Trial Room"];
-
 export default function QrMarketingPage() {
   const { store, loading } = useSellerStore();
-  const [label, setLabel] = useState(LABELS[0]);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
   // The site's own actual origin, not a hardcoded production domain - the
@@ -20,7 +17,11 @@ export default function QrMarketingPage() {
   // before window exists (this only runs client-side, but keeps the
   // pre-mount targetUrl computation type-safe).
   const origin = typeof window !== "undefined" ? window.location.origin : "https://sortitout.in";
-  const targetUrl = store ? `${origin}/store/${store.slug}?src=qr&pos=${encodeURIComponent(label)}` : "";
+  // One QR per store, not one per physical placement - a seller can just
+  // print as many copies of this same code as they need (shop window,
+  // counter, tables, trial room...) since nothing about the code itself
+  // differs by location, only where it's taped up.
+  const targetUrl = store ? `${origin}/store/${store.slug}?src=qr` : "";
 
   useEffect(() => {
     if (!targetUrl) return;
@@ -41,34 +42,14 @@ export default function QrMarketingPage() {
 
       <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
         <div>
-          <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }}>Placement label</label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-            {LABELS.map((l) => (
-              <button
-                key={l}
-                onClick={() => setLabel(l)}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: 999,
-                  border: label === l ? "2px solid #0f172a" : "1px solid #e2e8f0",
-                  background: "#fff",
-                  cursor: "pointer",
-                  fontSize: 13,
-                }}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
-
           <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }}>Links to</label>
           <code style={{ display: "block", fontSize: 12, background: "#f1f5f9", padding: "10px 12px", borderRadius: 8, wordBreak: "break-all", marginBottom: 20 }}>
             {targetUrl}
           </code>
 
           <p style={{ fontSize: 13, color: "#64748b" }}>
-            Each scan is tagged with <code>src=qr&amp;pos={label}</code> so your Analytics &amp; Reports tab can attribute footfall to this
-            exact standee vs. online discovery.
+            Print as many copies as you need — shop window, billing counter, trial room, wherever gets looked at. Every scan is tagged with{" "}
+            <code>src=qr</code> so your Analytics &amp; Reports tab can tell QR-driven visits apart from online discovery.
           </p>
         </div>
 
@@ -77,13 +58,12 @@ export default function QrMarketingPage() {
             {dataUrl ? <img src={dataUrl} alt="Store QR code" style={{ width: 220, height: 220 }} /> : <div style={{ width: 220, height: 220 }} />}
             <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, marginTop: 16 }}>{store.name}</div>
             <div style={{ fontSize: 12, color: "#64748b" }}>Scan to shop our latest collection</div>
-            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>{label}</div>
           </div>
 
           {dataUrl && (
             <a
               href={dataUrl}
-              download={`${store.slug}-qr-${label.toLowerCase().replace(/\s+/g, "-")}.png`}
+              download={`${store.slug}-qr.png`}
               style={{
                 marginTop: 16,
                 padding: "10px 22px",
