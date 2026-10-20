@@ -468,6 +468,107 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
       }
     }
 
+    // Everything above only ever *un-does* a hole the model's own confidence
+    // map already produced - it has nothing to work with when the model
+    // never produced a hole at all, which is exactly what happens when a
+    // genuinely open gap (most often between the legs in a full-body photo)
+    // is too thin for the model's fixed 1024x1024 inference pass to
+    // resolve: both sides just get merged into one solid blob with no
+    // transparency between them, rather than a hole that then gets wrongly
+    // patched. Recovered here with a different signal entirely - this
+    // photo's own confirmed background color (sampled from the real
+    // background pixels already identified above) - looking for an
+    // enclosed, skin-bordered patch deep inside the lower-body foreground
+    // whose color matches that backdrop far better than skin or fabric
+    // would, the same reasoning a person looks at the photo with ("that
+    // brownish bit between her legs is obviously the path, not her").
+    {
+      const isSkinTone = (r: number, g: number, b: number) =>
+        r > 95 && g > 40 && b > 20 && Math.max(r, g, b) - Math.min(r, g, b) > 15 && r - g > 15 && r > b;
+
+      const bgSamples: number[][] = [];
+      for (let i = 0; i < pixelCount && bgSamples.length < 2000; i += 7) {
+        if (closed[i] === 0) bgSamples.push([originalData[i * 4], originalData[i * 4 + 1], originalData[i * 4 + 2]]);
+      }
+      const bboxTop2 = bgSamples.length >= 20 ? closed.findIndex((v) => v === 1) : -1;
+      if (bboxTop2 !== -1) {
+        let minY2 = height;
+        let maxY2 = 0;
+        for (let i = 0; i < pixelCount; i++) {
+          if (closed[i] !== 1) continue;
+          const y = (i / width) | 0;
+          if (y < minY2) minY2 = y;
+          if (y > maxY2) maxY2 = y;
+        }
+        const lowerZoneTop = minY2 + (maxY2 - minY2) * 0.33;
+
+        const looksLikeBackground = (r: number, g: number, b: number) => {
+          for (const [br, bg, bb] of bgSamples) {
+            if ((r - br) ** 2 + (g - bg) ** 2 + (b - bb) ** 2 < 35 * 35) return true;
+          }
+          return false;
+        };
+
+        const candidate = new Uint8Array(pixelCount);
+        for (let i = 0; i < pixelCount; i++) {
+          if (closed[i] !== 1) continue;
+          const y = (i / width) | 0;
+          if (y < lowerZoneTop) continue;
+          const o = i * 4;
+          if (looksLikeBackground(originalData[o], originalData[o + 1], originalData[o + 2])) candidate[i] = 1;
+        }
+
+        // Only carve out a candidate patch that's fully interior (touching
+        // the image border means it's already-identified real background,
+        // nothing to recover) and bordered mostly by skin - the same
+        // corroborating signal the patch-prevention pass above uses, now
+        // required in the opposite direction before creating a new hole.
+        const visited2 = new Uint8Array(pixelCount);
+        const stack2: number[] = [];
+        for (let start = 0; start < pixelCount; start++) {
+          if (!candidate[start] || visited2[start]) continue;
+          stack2.length = 0;
+          stack2.push(start);
+          visited2[start] = 1;
+          const component2 = [start];
+          const borderPixels2: number[] = [];
+          let touchesBorder = false;
+          while (stack2.length) {
+            const i = stack2.pop() as number;
+            const x = i % width;
+            const y = (i / width) | 0;
+            if (x === 0 || x === width - 1 || y === 0 || y === height - 1) touchesBorder = true;
+            const neighbors = [
+              [x - 1, y],
+              [x + 1, y],
+              [x, y - 1],
+              [x, y + 1],
+            ];
+            for (const [nx, ny] of neighbors) {
+              if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+              const ni = ny * width + nx;
+              if (candidate[ni] && !visited2[ni]) {
+                visited2[ni] = 1;
+                stack2.push(ni);
+                component2.push(ni);
+              } else if (!candidate[ni] && closed[ni] === 1) {
+                borderPixels2.push(ni);
+              }
+            }
+          }
+          if (touchesBorder || component2.length < 12) continue;
+          let skinCount2 = 0;
+          for (const b of borderPixels2) {
+            const o = b * 4;
+            if (isSkinTone(originalData[o], originalData[o + 1], originalData[o + 2])) skinCount2++;
+          }
+          if (borderPixels2.length > 0 && skinCount2 / borderPixels2.length > 0.4) {
+            for (const i of component2) closed[i] = 0;
+          }
+        }
+      }
+    }
+
     // Two follow-up fixes (interior-erosion forcing, then a larger fp16
     // model) each closed off one specific way the model's confidence could
     // wobble mid-garment and leave a patch at partial alpha - showing the
@@ -488,6 +589,18 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
     // slightly harder (non-antialiased) cutout edge instead of a soft one -
     // a fixed, predictable cost instead of an intermittent, device-specific
     // artifact.
+    // A tiny (1px radius, so a 3px-wide window) deterministic box-blur of
+    // the already-decided binary mask - not the model's own float
+    // confidence - into a short alpha gradient right at the edge. This is
+    // why it doesn't bring back the per-device wobble the binary-alpha
+    // switch above exists to prevent: every device blurs the exact same 0/1
+    // array the exact same way, there's no float-reduction-order
+    // sensitivity left to vary by hardware or thread count. Trades the
+    // harder, visibly jagged (non-antialiased) edge the note above accepted
+    // for a softer one, at effectively the same cost as everything else in
+    // this function.
+    const feathered = featherMask(closed, width, height, 1);
+
     const outCanvas = document.createElement("canvas");
     outCanvas.width = width;
     outCanvas.height = height;
@@ -501,7 +614,7 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
       outData[o] = originalData[o];
       outData[o + 1] = originalData[o + 1];
       outData[o + 2] = originalData[o + 2];
-      outData[o + 3] = closed[i] === 1 ? 255 : 0;
+      outData[o + 3] = feathered[i];
     }
     // A fully-transparent pixel keeps the real photo's own color at that
     // spot (whatever the backdrop looked like there) - see the note at the
@@ -605,6 +718,36 @@ function boxMorph(mask: Uint8Array, width: number, height: number, radius: numbe
     }
   }
   return result;
+}
+
+// Same separable-prefix-sum shape as boxMorph above, but averaging instead
+// of min/max - turns a hard-edged binary mask into a short, deterministic
+// alpha gradient (see cutoutFromMask's final output step) rather than
+// boxMorph's own all-or-nothing dilate/erode result.
+function featherMask(mask: Uint8Array, width: number, height: number, radius: number): Uint8ClampedArray {
+  const rowBlurred = new Float32Array(width * height);
+  const rowPrefix = new Float32Array(width + 1);
+  for (let y = 0; y < height; y++) {
+    const off = y * width;
+    for (let x = 0; x < width; x++) rowPrefix[x + 1] = rowPrefix[x] + mask[off + x];
+    for (let x = 0; x < width; x++) {
+      const lo = Math.max(0, x - radius);
+      const hi = Math.min(width - 1, x + radius);
+      rowBlurred[off + x] = (rowPrefix[hi + 1] - rowPrefix[lo]) / (hi - lo + 1);
+    }
+  }
+
+  const out = new Uint8ClampedArray(width * height);
+  const colPrefix = new Float32Array(height + 1);
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) colPrefix[y + 1] = colPrefix[y] + rowBlurred[y * width + x];
+    for (let y = 0; y < height; y++) {
+      const lo = Math.max(0, y - radius);
+      const hi = Math.min(height - 1, y + radius);
+      out[y * width + x] = Math.round(((colPrefix[hi + 1] - colPrefix[lo]) / (hi - lo + 1)) * 255);
+    }
+  }
+  return out;
 }
 
 // Shared by the single-product form and the AI bulk photo upload flow -
