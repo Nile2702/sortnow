@@ -20,7 +20,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "cdn.sortitout.in" },
+      { protocol: "https", hostname: "cdn.sortnow.in" },
       { protocol: "https", hostname: "res.cloudinary.com" },
     ],
   },

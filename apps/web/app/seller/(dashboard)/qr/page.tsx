@@ -16,7 +16,7 @@ export default function QrMarketingPage() {
   // scannable there at all. Falls back to the real domain in an SSR pass
   // before window exists (this only runs client-side, but keeps the
   // pre-mount targetUrl computation type-safe).
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://sortitout.in";
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://sortnow.in";
   // One QR per store, not one per physical placement - a seller can just
   // print as many copies of this same code as they need (shop window,
   // counter, tables, trial room...) since nothing about the code itself

@@ -4,15 +4,15 @@ import { clientIp } from "./lib/rate-limit";
 
 /**
  * Resolves all three storefront access patterns to one internal route:
- *   1. sortitout.in/store/urban-vogue          -> passthrough
- *   2. urban-vogue.sortitout.in                -> rewrite to /store/urban-vogue
+ *   1. sortnow.in/store/urban-vogue            -> passthrough
+ *   2. urban-vogue.sortnow.in                  -> rewrite to /store/urban-vogue
  *   3. www.urbanvogue.com (custom domain)      -> rewrite to /store/[resolved-slug]
  *
  * Custom-domain -> slug resolution is cached at the edge (KV) since it can't
  * be derived from the hostname alone.
  */
 
-const PLATFORM_ROOT_DOMAIN = "sortitout.in";
+const PLATFORM_ROOT_DOMAIN = "sortnow.in";
 
 // Matches a private LAN IP (10.x, 192.168.x, 172.16-31.x), with or without a
 // port - lets a phone on the same Wi-Fi hit this machine's LAN address
@@ -77,7 +77,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Tenant subdomain, e.g. urban-vogue.sortitout.in
+  // 2. Tenant subdomain, e.g. urban-vogue.sortnow.in
   if (host.endsWith(`.${PLATFORM_ROOT_DOMAIN}`)) {
     const slug = host.replace(`.${PLATFORM_ROOT_DOMAIN}`, "");
     url.pathname = `/store/${slug}${url.pathname}`;
