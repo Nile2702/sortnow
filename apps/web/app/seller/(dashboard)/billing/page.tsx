@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
 
+// Hidden for the pilot - paid storefront ranking isn't something to sell
+// sellers on yet at this stage. The feature itself (API routes, DB column,
+// handleBoost below) is untouched, just not shown here; flip back to true
+// to bring the section back.
+const SHOW_BOOST = false;
+
 interface Plan {
   code: string;
   name: string;
@@ -162,9 +168,12 @@ export default function BillingPage() {
           </div>
           <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>You're saving ₹{freeTrialValue.toLocaleString("en-IN")}</div>
           <div style={{ fontSize: 13, opacity: 0.9 }}>
-            {currentPlan.name} is free until {new Date(freeTrial.endsAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
-            {currentPlan.meteredBeyondIncluded && currentPlan.includedSkus > 0 ? ` — including any extra-listing charges past ${currentPlan.includedSkus.toLocaleString("en-IN")} SKUs` : ""} —
-            switch plans anytime before then at no cost.
+            {currentPlan.name}'s monthly fee is free until{" "}
+            {new Date(freeTrial.endsAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} — switch plans anytime before
+            then at no cost.
+            {currentPlan.meteredBeyondIncluded && currentPlan.includedSkus > 0
+              ? ` Extra listings past ${currentPlan.includedSkus.toLocaleString("en-IN")} SKUs are still billed as usual.`
+              : ""}
           </div>
         </div>
       )}
@@ -218,11 +227,15 @@ export default function BillingPage() {
           </div>
         )}
 
-        {!freeTrial.active && (
-          <div style={{ fontSize: 13, fontWeight: 600, marginTop: 12, paddingTop: 12, borderTop: "1px solid #f8fafc" }}>
-            Estimated this month: ₹{data.estimatedMonthlyCost.toLocaleString("en-IN")}
-          </div>
-        )}
+        {/* Shown even during the free trial - it only waives the flat
+            monthly fee, so this can be non-zero for a Max store that's
+            listed past its included 2,000 SKUs. */}
+        <div style={{ fontSize: 13, fontWeight: 600, marginTop: 12, paddingTop: 12, borderTop: "1px solid #f8fafc" }}>
+          Estimated this month: ₹{data.estimatedMonthlyCost.toLocaleString("en-IN")}
+          {freeTrial.active && data.estimatedMonthlyCost > 0 && (
+            <span style={{ fontWeight: 400, color: "#94a3b8" }}> (extra-listing charges only — your monthly fee is free)</span>
+          )}
+        </div>
       </div>
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Plans</h2>
@@ -257,15 +270,10 @@ export default function BillingPage() {
                     <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/mo</span>
                   </div>
                 )
-              ) : // Flex: no flat fee at all - every listing is the real charge, shown below instead.
-              freeTrial.active ? (
-                <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#16a34a" }}>
-                  ₹0.00<span style={{ fontSize: 13, fontWeight: 400 }}>/listing</span>
-                  <span style={{ fontSize: 13, fontWeight: 400, color: "#94a3b8", textDecoration: "line-through", marginLeft: 8 }}>
-                    ₹{plan.perListingPrice.toFixed(2)}
-                  </span>
-                </div>
               ) : (
+                // Flex: no flat fee to waive during the trial - every
+                // listing is a real, metered charge from the first SKU,
+                // same with or without an active trial.
                 <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
                   ₹{plan.perListingPrice.toFixed(2)}
                   <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/listing</span>
@@ -275,17 +283,13 @@ export default function BillingPage() {
               {plan.monthlyPrice > 0 && (
                 <div style={{ fontSize: 12.5, color: "#94a3b8", marginBottom: 2 }}>
                   {plan.meteredBeyondIncluded ? (
-                    // Max: a real, billed overage rate past its included tier.
+                    // Max: a real, billed overage rate past its included
+                    // tier - still applies during the free trial, which
+                    // only waives the flat monthly fee above, not metered
+                    // usage past what's included.
                     <>
-                      {plan.skuBand} SKUs — first {plan.includedSkus.toLocaleString("en-IN")} included, then{" "}
-                      {freeTrial.active ? (
-                        <>
-                          <span style={{ textDecoration: "line-through" }}>₹{plan.perListingPrice.toFixed(2)}</span> free
-                        </>
-                      ) : (
-                        <>₹{plan.perListingPrice.toFixed(2)}</>
-                      )}{" "}
-                      per extra listing
+                      {plan.skuBand} SKUs — first {plan.includedSkus.toLocaleString("en-IN")} included, then ₹{plan.perListingPrice.toFixed(2)} per extra
+                      listing
                     </>
                   ) : (
                     // Pro: a flat fee with a hard cap - this is reference
@@ -320,59 +324,63 @@ export default function BillingPage() {
         })}
       </div>
 
-      <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Boost Your Store</h2>
-      <p style={{ color: "#64748b", fontSize: 13, marginBottom: 14 }}>
-        Rank first in "Stores near you" and on /shops for a fixed window — the more shoppers see your store, the more that traffic is worth.
-      </p>
-      <div
-        className="sio-card"
-        style={{
-          background: "#fff",
-          borderRadius: 16,
-          border: boostActive ? "2px solid #d97706" : "1px solid #f1f5f9",
-          padding: 22,
-          marginBottom: 32,
-        }}
-      >
-        {boostActive ? (
-          <div style={{ marginBottom: 16 }}>
-            <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "#fef3c7", color: "#b45309" }}>
-              ⚡ Featured
-            </span>
-            <span style={{ marginLeft: 10, fontSize: 13, color: "#64748b" }}>
-              Active until {new Date(boost.boostedUntil!).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
-            </span>
-          </div>
-        ) : (
-          <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 16 }}>Not currently boosted.</p>
-        )}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-          {boost.packages.map((pkg) => (
-            <div key={pkg.days} style={{ border: "1px solid #f1f5f9", borderRadius: 12, padding: 16, textAlign: "center" }}>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>{pkg.label}</div>
-              <div style={{ fontSize: 20, fontWeight: 700, margin: "6px 0" }}>₹{pkg.price.toLocaleString("en-IN")}</div>
-              <button
-                onClick={() => handleBoost(pkg.days)}
-                disabled={boosting === pkg.days}
-                style={{
-                  width: "100%",
-                  padding: "9px",
-                  borderRadius: 999,
-                  border: "none",
-                  background: "#d97706",
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: boosting === pkg.days ? "default" : "pointer",
-                  opacity: boosting === pkg.days ? 0.7 : 1,
-                }}
-              >
-                {boosting === pkg.days ? "Applying…" : boostActive ? "Extend" : "Boost"}
-              </button>
+      {SHOW_BOOST && (
+        <>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Boost Your Store</h2>
+          <p style={{ color: "#64748b", fontSize: 13, marginBottom: 14 }}>
+            Rank first in "Stores near you" and on /shops for a fixed window — the more shoppers see your store, the more that traffic is worth.
+          </p>
+          <div
+            className="sio-card"
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              border: boostActive ? "2px solid #d97706" : "1px solid #f1f5f9",
+              padding: 22,
+              marginBottom: 32,
+            }}
+          >
+            {boostActive ? (
+              <div style={{ marginBottom: 16 }}>
+                <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "#fef3c7", color: "#b45309" }}>
+                  ⚡ Featured
+                </span>
+                <span style={{ marginLeft: 10, fontSize: 13, color: "#64748b" }}>
+                  Active until {new Date(boost.boostedUntil!).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                </span>
+              </div>
+            ) : (
+              <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 16 }}>Not currently boosted.</p>
+            )}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+              {boost.packages.map((pkg) => (
+                <div key={pkg.days} style={{ border: "1px solid #f1f5f9", borderRadius: 12, padding: 16, textAlign: "center" }}>
+                  <div style={{ fontWeight: 700, fontSize: 16 }}>{pkg.label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, margin: "6px 0" }}>₹{pkg.price.toLocaleString("en-IN")}</div>
+                  <button
+                    onClick={() => handleBoost(pkg.days)}
+                    disabled={boosting === pkg.days}
+                    style={{
+                      width: "100%",
+                      padding: "9px",
+                      borderRadius: 999,
+                      border: "none",
+                      background: "#d97706",
+                      color: "#fff",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: boosting === pkg.days ? "default" : "pointer",
+                      opacity: boosting === pkg.days ? 0.7 : 1,
+                    }}
+                  >
+                    {boosting === pkg.days ? "Applying…" : boostActive ? "Extend" : "Boost"}
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>GST Invoices</h2>
       {freeTrial.active ? (

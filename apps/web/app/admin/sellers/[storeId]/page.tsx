@@ -127,8 +127,8 @@ export default async function AdminSellerDetailPage({
             color={onFreeTrial ? "#16a34a" : undefined}
           />
           <StatTile
-            value={onFreeTrial ? "₹0" : `₹${(plan ? estimateMonthlyCost(plan, productCounts.total) : 0).toLocaleString("en-IN")}`}
-            label="Estimated this month"
+            value={`₹${(plan ? estimateMonthlyCost(plan, productCounts.total, onFreeTrial) : 0).toLocaleString("en-IN")}`}
+            label={onFreeTrial ? "Estimated this month (fee waived)" : "Estimated this month"}
             color={onFreeTrial ? "#16a34a" : undefined}
           />
           <StatTile value={productCounts.total} label="Products listed" />

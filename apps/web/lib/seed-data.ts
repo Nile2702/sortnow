@@ -2013,9 +2013,16 @@ export const PLANS: Plan[] = [
 // its included tier) the per-listing rate on whatever's past includedSkus.
 // Pro has nothing past its included tier to meter, so this is always just
 // its flat fee regardless of skuCount.
-export function estimateMonthlyCost(plan: Plan, skuCount: number): number {
+//
+// waiveMonthlyFee (the free launch trial) only zeroes the flat subscription
+// fee - any metered overage (Max past 2,000 SKUs, or Flex's per-listing
+// charge on every SKU) still applies. The trial waives the cost of
+// subscribing, not the cost of actually using more than what's included -
+// otherwise a seller could dodge all billing indefinitely just by listing
+// enough SKUs on Max during the free window.
+export function estimateMonthlyCost(plan: Plan, skuCount: number, waiveMonthlyFee = false): number {
   const overageSkus = plan.meteredBeyondIncluded ? Math.max(0, skuCount - plan.includedSkus) : 0;
-  return plan.monthlyPrice + overageSkus * plan.perListingPrice;
+  return (waiveMonthlyFee ? 0 : plan.monthlyPrice) + overageSkus * plan.perListingPrice;
 }
 
 interface Subscription {

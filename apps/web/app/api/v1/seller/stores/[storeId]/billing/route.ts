@@ -34,6 +34,9 @@ export async function GET(_req: NextRequest, { params }: { params: { storeId: st
     skuCount,
     plans: PLANS,
     freeTrial: { active, months: FREE_TRIAL_MONTHS, endsAt: freeTrialEndsAt(store.activatedAt) },
-    estimatedMonthlyCost: active ? 0 : estimateMonthlyCost(currentPlan, skuCount),
+    // The trial waives the flat subscription fee, not metered overage - a
+    // Max store that lists past 2,000 SKUs is still billed for the excess
+    // even while "free".
+    estimatedMonthlyCost: estimateMonthlyCost(currentPlan, skuCount, active),
   });
 }
