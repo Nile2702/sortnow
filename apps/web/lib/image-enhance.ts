@@ -335,6 +335,17 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
         enqueue(x, y + 1);
       }
 
+      // Cheap, standard RGB skin-tone rule of thumb (Peer et al.) - not meant
+      // to be a general skin detector, just selective enough to tell "this
+      // hole is bordered by an arm/hand" apart from "this hole is bordered
+      // by more fabric". Requires a clear warm (R noticeably above both G
+      // and B) cast, which a neutral cream/beige/white garment's own color
+      // normally doesn't have even though it's also light - without that,
+      // this product's own off-white fabric would false-positive as "skin"
+      // right along with real skin.
+      const isSkinTone = (r: number, g: number, b: number) =>
+        r > 95 && g > 40 && b > 20 && Math.max(r, g, b) - Math.min(r, g, b) > 15 && r - g > 15 && r > b;
+
       const patched = closed.slice();
       const visited = new Uint8Array(pixelCount);
       const stack: number[] = [];
@@ -344,6 +355,7 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
         stack.push(start);
         visited[start] = 1;
         const component = [start];
+        const borderPixels: number[] = [];
         let belowNeckZone = false;
         while (stack.length) {
           const i = stack.pop() as number;
@@ -363,10 +375,26 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
               visited[ni] = 1;
               stack.push(ni);
               component.push(ni);
+            } else if (!isBackground[ni]) {
+              borderPixels.push(ni);
             }
           }
         }
-        if (belowNeckZone) {
+        if (!belowNeckZone) continue;
+        // A real gap between a limb and the torso (hand on hip, arms
+        // akimbo, crossed arms - all common on-model poses) is bordered by
+        // actual skin, unlike the light-fabric-stripe false positive this
+        // patch exists for, which only ever borders more garment fabric.
+        // Leaving a skin-bordered hole transparent (a true gap) is far less
+        // jarring than stamping an oddly-shaped patch of whatever backdrop
+        // color was behind the model into the middle of the garment.
+        let skinCount = 0;
+        for (const b of borderPixels) {
+          const o = b * 4;
+          if (isSkinTone(originalData[o], originalData[o + 1], originalData[o + 2])) skinCount++;
+        }
+        const looksLikeLimbGap = borderPixels.length > 0 && skinCount / borderPixels.length > 0.3;
+        if (!looksLikeLimbGap) {
           for (const i of component) patched[i] = 1;
         }
       }
