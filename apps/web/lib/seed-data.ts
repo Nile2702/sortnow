@@ -1978,26 +1978,45 @@ export function isInFreeTrial(activatedAt?: string | null): boolean {
 // Pricing is purely SKU-volume based now - no feature gating (QR Marketing,
 // Theme Studio, etc. are free seller tools regardless of plan and always
 // have been; the old feature bullet lists never actually gated anything in
-// code, they were just copy). skuLimit null means no real cap - Flex is
-// pay-per-listing with nothing to cap, and Max's "2,000 or more" is sized
-// for sellers who'll keep growing past that, not a hard ceiling.
+// code, they were just copy).
+//
+// perListingPrice means two different things depending on meteredBeyondIncluded:
+//  - Flex (meteredBeyondIncluded: true, includedSkus: 0): a real charge on
+//    every single SKU - true pay-as-you-go, no flat fee at all.
+//  - Pro (meteredBeyondIncluded: false): a reference number only
+//    (monthlyPrice / includedSkus), shown so a seller can judge value at a
+//    glance - Pro is a flat ₹1,999/mo for up to 1,000 SKUs regardless of
+//    how many they actually use; nothing is ever metered per-listing here.
+//  - Max (meteredBeyondIncluded: true, includedSkus: 2000): the flat
+//    ₹3,499/mo covers the first 2,000 SKUs, and every SKU past that is a
+//    real, billed overage at this rate - the "2,000 **or more**" in the
+//    plan's own name is exactly this: unlike Pro, Max doesn't hard-cap, it
+//    meters past its included tier.
 export interface Plan {
   code: "flex" | "pro" | "max";
   name: string;
   skuBand: string;
-  skuLimit: number | null;
+  includedSkus: number;
   monthlyPrice: number;
-  // Rupees per listing "at max" capacity for Pro/Max (monthlyPrice divided
-  // across the plan's SKU band) - for Flex, which has no monthly fee, this
-  // is simply its real, permanent per-listing charge.
   perListingPrice: number;
+  meteredBeyondIncluded: boolean;
 }
 
 export const PLANS: Plan[] = [
-  { code: "flex", name: "Flex", skuBand: "0+", skuLimit: null, monthlyPrice: 0, perListingPrice: 3.0 },
-  { code: "pro", name: "Pro", skuBand: "Up to 1,000", skuLimit: 1000, monthlyPrice: 1999, perListingPrice: 2.0 },
-  { code: "max", name: "Max", skuBand: "2,000+", skuLimit: null, monthlyPrice: 3499, perListingPrice: 1.75 },
+  { code: "flex", name: "Flex", skuBand: "0+", includedSkus: 0, monthlyPrice: 0, perListingPrice: 3.0, meteredBeyondIncluded: true },
+  { code: "pro", name: "Pro", skuBand: "Up to 1,000", includedSkus: 1000, monthlyPrice: 1999, perListingPrice: 2.0, meteredBeyondIncluded: false },
+  { code: "max", name: "Max", skuBand: "2,000+", includedSkus: 2000, monthlyPrice: 3499, perListingPrice: 1.75, meteredBeyondIncluded: true },
 ];
+
+// What a store would actually owe this month on `plan` for `skuCount`
+// listings - the flat monthly fee, plus (only for a plan that meters past
+// its included tier) the per-listing rate on whatever's past includedSkus.
+// Pro has nothing past its included tier to meter, so this is always just
+// its flat fee regardless of skuCount.
+export function estimateMonthlyCost(plan: Plan, skuCount: number): number {
+  const overageSkus = plan.meteredBeyondIncluded ? Math.max(0, skuCount - plan.includedSkus) : 0;
+  return plan.monthlyPrice + overageSkus * plan.perListingPrice;
+}
 
 interface Subscription {
   storeId: string;

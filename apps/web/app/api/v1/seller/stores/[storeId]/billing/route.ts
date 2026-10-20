@@ -8,6 +8,7 @@ import {
   isInFreeTrial,
   freeTrialEndsAt,
   FREE_TRIAL_MONTHS,
+  estimateMonthlyCost,
 } from "../../../../../../../lib/seed-data";
 import { requireSellerForStore } from "../../../../../../../lib/auth/require-seller";
 
@@ -25,6 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: { storeId: st
   // showing the usual demo invoice history here would directly contradict
   // the free-trial messaging on the same page.
   const invoices = active ? [] : await getInvoicesForStore(store.id);
+  const currentPlan = PLANS.find((p) => p.code === subscription.planCode)!;
 
   return NextResponse.json({
     subscription,
@@ -32,5 +34,6 @@ export async function GET(_req: NextRequest, { params }: { params: { storeId: st
     skuCount,
     plans: PLANS,
     freeTrial: { active, months: FREE_TRIAL_MONTHS, endsAt: freeTrialEndsAt(store.activatedAt) },
+    estimatedMonthlyCost: active ? 0 : estimateMonthlyCost(currentPlan, skuCount),
   });
 }

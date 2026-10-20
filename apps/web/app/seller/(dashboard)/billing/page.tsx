@@ -8,9 +8,10 @@ interface Plan {
   code: string;
   name: string;
   skuBand: string;
-  skuLimit: number | null;
+  includedSkus: number;
   monthlyPrice: number;
   perListingPrice: number;
+  meteredBeyondIncluded: boolean;
 }
 
 interface Invoice {
@@ -36,6 +37,7 @@ interface BillingData {
   skuCount: number;
   plans: Plan[];
   freeTrial: FreeTrial;
+  estimatedMonthlyCost: number;
 }
 
 interface BoostPackage {
@@ -122,12 +124,17 @@ export default function BillingPage() {
   const boostActive = !!boost.boostedUntil && new Date(boost.boostedUntil).getTime() > Date.now();
 
   const currentPlan = data.plans.find((p) => p.code === data.subscription.planCode)!;
-  const usagePct = currentPlan.skuLimit ? Math.min(100, Math.round((data.skuCount / currentPlan.skuLimit) * 100)) : null;
+  // Flex has nothing "included" to show a quota bar against (every SKU is
+  // billed), so it gets its own usage readout below instead of this bar.
+  const usagePct = currentPlan.includedSkus > 0 ? Math.min(100, Math.round((data.skuCount / currentPlan.includedSkus) * 100)) : null;
+  const overageSkus = currentPlan.meteredBeyondIncluded ? Math.max(0, data.skuCount - currentPlan.includedSkus) : 0;
   const { freeTrial } = data;
   // What the seller's current plan would have cost for the full free
   // window - the headline savings figure, not a pro-rated "days left"
   // amount, since the ask here is "how much free are we offering" at a
-  // glance, not a precise remaining-value calculator.
+  // glance, not a precise remaining-value calculator. Uses just the flat
+  // fee, not any projected overage, since that depends on SKU growth no
+  // one can predict 6 months out.
   const freeTrialValue = currentPlan.monthlyPrice * freeTrial.months;
 
   return (
@@ -155,7 +162,8 @@ export default function BillingPage() {
           </div>
           <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>You're saving ₹{freeTrialValue.toLocaleString("en-IN")}</div>
           <div style={{ fontSize: 13, opacity: 0.9 }}>
-            {currentPlan.name} is free until {new Date(freeTrial.endsAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} —
+            {currentPlan.name} is free until {new Date(freeTrial.endsAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+            {currentPlan.meteredBeyondIncluded && currentPlan.includedSkus > 0 ? ` — including any extra-listing charges past ${currentPlan.includedSkus.toLocaleString("en-IN")} SKUs` : ""} —
             switch plans anytime before then at no cost.
           </div>
         </div>
@@ -192,14 +200,28 @@ export default function BillingPage() {
         {usagePct !== null ? (
           <>
             <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>
-              SKU usage: {data.skuCount} / {currentPlan.skuLimit}
+              SKU usage: {data.skuCount.toLocaleString("en-IN")} / {currentPlan.includedSkus.toLocaleString("en-IN")} included
+              {overageSkus > 0 && (
+                <span style={{ color: "#b45309", fontWeight: 600 }}>
+                  {" "}
+                  (+{overageSkus.toLocaleString("en-IN")} extra at ₹{currentPlan.perListingPrice.toFixed(2)} each)
+                </span>
+              )}
             </div>
             <div style={{ height: 8, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${usagePct}%`, background: usagePct > 90 ? "#e11d48" : "#0f172a", borderRadius: 999 }} />
             </div>
           </>
         ) : (
-          <div style={{ fontSize: 13, color: "#64748b" }}>{data.skuCount.toLocaleString("en-IN")} SKUs listed — no cap on this plan</div>
+          <div style={{ fontSize: 13, color: "#64748b" }}>
+            {data.skuCount.toLocaleString("en-IN")} SKUs listed × ₹{currentPlan.perListingPrice.toFixed(2)} each — no monthly fee on this plan
+          </div>
+        )}
+
+        {!freeTrial.active && (
+          <div style={{ fontSize: 13, fontWeight: 600, marginTop: 12, paddingTop: 12, borderTop: "1px solid #f8fafc" }}>
+            Estimated this month: ₹{data.estimatedMonthlyCost.toLocaleString("en-IN")}
+          </div>
         )}
       </div>
 
@@ -219,7 +241,9 @@ export default function BillingPage() {
               }}
             >
               <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{plan.name}</div>
+
               {plan.monthlyPrice > 0 ? (
+                // Pro/Max: a real flat monthly fee - the headline number.
                 freeTrial.active ? (
                   <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#16a34a" }}>
                     ₹0<span style={{ fontSize: 13, fontWeight: 400 }}>/mo</span>
@@ -233,24 +257,47 @@ export default function BillingPage() {
                     <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/mo</span>
                   </div>
                 )
+              ) : // Flex: no flat fee at all - every listing is the real charge, shown below instead.
+              freeTrial.active ? (
+                <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#16a34a" }}>
+                  ₹0.00<span style={{ fontSize: 13, fontWeight: 400 }}>/listing</span>
+                  <span style={{ fontSize: 13, fontWeight: 400, color: "#94a3b8", textDecoration: "line-through", marginLeft: 8 }}>
+                    ₹{plan.perListingPrice.toFixed(2)}
+                  </span>
+                </div>
               ) : (
-                <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: "#64748b" }}>No monthly fee</div>
+                <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
+                  ₹{plan.perListingPrice.toFixed(2)}
+                  <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/listing</span>
+                </div>
               )}
-              <div style={{ fontSize: 13, marginBottom: 2 }}>
-                {freeTrial.active ? (
-                  <>
-                    <span style={{ fontWeight: 700, color: "#16a34a" }}>₹0.00</span>{" "}
-                    <span style={{ color: "#94a3b8", textDecoration: "line-through" }}>₹{plan.perListingPrice.toFixed(2)}</span>
-                    <span style={{ color: "#94a3b8" }}> /listing</span>
-                  </>
-                ) : (
-                  <>
-                    <span style={{ fontWeight: 700 }}>₹{plan.perListingPrice.toFixed(2)}</span>
-                    <span style={{ color: "#94a3b8" }}>{plan.monthlyPrice > 0 ? " /listing at max capacity" : " /listing"}</span>
-                  </>
-                )}
-              </div>
-              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 18 }}>{plan.skuBand} SKUs</div>
+
+              {plan.monthlyPrice > 0 && (
+                <div style={{ fontSize: 12.5, color: "#94a3b8", marginBottom: 2 }}>
+                  {plan.meteredBeyondIncluded ? (
+                    // Max: a real, billed overage rate past its included tier.
+                    <>
+                      {plan.skuBand} SKUs — first {plan.includedSkus.toLocaleString("en-IN")} included, then{" "}
+                      {freeTrial.active ? (
+                        <>
+                          <span style={{ textDecoration: "line-through" }}>₹{plan.perListingPrice.toFixed(2)}</span> free
+                        </>
+                      ) : (
+                        <>₹{plan.perListingPrice.toFixed(2)}</>
+                      )}{" "}
+                      per extra listing
+                    </>
+                  ) : (
+                    // Pro: a flat fee with a hard cap - this is reference
+                    // math only ("what that works out to per SKU if you use
+                    // all of them"), never an actual separate charge.
+                    <>
+                      {plan.skuBand} SKUs for one flat fee (≈₹{plan.perListingPrice.toFixed(2)}/listing if fully used)
+                    </>
+                  )}
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 18 }}>{plan.monthlyPrice === 0 ? `${plan.skuBand} SKUs — no monthly fee` : " "}</div>
               <button
                 onClick={() => handleSwitch(plan.code)}
                 disabled={isCurrent || switching === plan.code}

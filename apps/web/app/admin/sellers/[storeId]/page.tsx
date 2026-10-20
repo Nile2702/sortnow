@@ -12,6 +12,7 @@ import {
   isBoostActive,
   isInFreeTrial,
   freeTrialEndsAt,
+  estimateMonthlyCost,
   PLANS,
 } from "../../../../lib/seed-data";
 
@@ -123,6 +124,11 @@ export default async function AdminSellerDetailPage({
                 ? `Plan (free trial until ${freeTrialEnd ? new Date(freeTrialEnd).toLocaleDateString("en-IN") : "?"}, then ₹${plan?.monthlyPrice ?? "?"}/mo)`
                 : `Plan (${plan?.monthlyPrice ? `₹${plan.monthlyPrice}/mo` : `₹${plan?.perListingPrice ?? "?"}/listing`}, ${plan?.skuBand ?? "?"} SKUs)`
             }
+            color={onFreeTrial ? "#16a34a" : undefined}
+          />
+          <StatTile
+            value={onFreeTrial ? "₹0" : `₹${(plan ? estimateMonthlyCost(plan, productCounts.total) : 0).toLocaleString("en-IN")}`}
+            label="Estimated this month"
             color={onFreeTrial ? "#16a34a" : undefined}
           />
           <StatTile value={productCounts.total} label="Products listed" />
