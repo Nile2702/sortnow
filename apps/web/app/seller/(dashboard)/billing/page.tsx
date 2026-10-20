@@ -443,9 +443,9 @@ export default function BillingPage() {
         >
           <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: "#b91c1c" }}>Danger Zone</h2>
           <p style={{ color: "#64748b", fontSize: 13, marginBottom: 16 }}>
-            Closing your store immediately removes it from search, your storefront link, and every shopper-facing listing - your products
-            and past data aren't deleted, just hidden. Reopening afterward requires contacting support; it's not something you can undo
-            yourself.
+            Closing your store takes it down everywhere shoppers see it — search, the shop directory, and your own storefront link —
+            right away. Nothing is deleted; your products and past data stay exactly as they are, just hidden. Reopening isn't
+            self-service after that — you'll need to contact support.
           </p>
 
           {!confirmingClose ? (
