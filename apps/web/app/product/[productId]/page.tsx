@@ -428,7 +428,7 @@ export default function ProductDetailPage() {
         <div style={{ display: "flex", gap: 4 }}>
           <button type="button" onClick={handleToggleWishlist} aria-label="Wishlist" className="sio-product-mobile-header-btn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlisted ? "var(--sio-bronze-dark)" : "none"} stroke={wishlisted ? "var(--sio-bronze-dark)" : "currentColor"} strokeWidth="2">
-              <path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2 4.5 5.6 4c2-.3 3.8.7 4.9 2.4C11.6 4.7 13.4 3.7 15.4 4c3.6.5 5.3 4.1 3.6 7.7C19.5 16.4 12 21 12 21z" />
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </button>
           <button type="button" onClick={handleShare} aria-label="Share" className="sio-product-mobile-header-btn">
@@ -795,7 +795,7 @@ export default function ProductDetailPage() {
               }}
             >
               <svg width={19} height={19} viewBox="0 0 24 24" fill={wishlisted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6">
-                <path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2 4.5 5.6 4c2-.3 3.8.7 4.9 2.4C11.6 4.7 13.4 3.7 15.4 4c3.6.5 5.3 4.1 3.6 7.7C19.5 16.4 12 21 12 21z" />
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
             </button>
           </div>
@@ -1157,7 +1157,7 @@ export default function ProductDetailPage() {
       <div className="sio-product-action-bar">
         <button type="button" onClick={handleToggleWishlist} aria-label="Wishlist" className="sio-product-action-heart">
           <svg width="21" height="21" viewBox="0 0 24 24" fill={wishlisted ? "var(--sio-bronze-dark)" : "none"} stroke={wishlisted ? "var(--sio-bronze-dark)" : "currentColor"} strokeWidth="2">
-            <path d="M12 21s-7.5-4.6-10-9.3C0.3 8.1 2 4.5 5.6 4c2-.3 3.8.7 4.9 2.4C11.6 4.7 13.4 3.7 15.4 4c3.6.5 5.3 4.1 3.6 7.7C19.5 16.4 12 21 12 21z" />
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </button>
         <button
