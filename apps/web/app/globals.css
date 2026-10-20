@@ -27,6 +27,11 @@
   --sio-bronze: #000000;
   --sio-bronze-dark: #2b2b2b;
   --sio-muted: #7e818c;
+  /* Wishlist "saved" state specifically - kept independent of --sio-bronze
+     (which is the general brand/button color, currently black) because a
+     filled heart reads as "saved" far faster in red, the near-universal
+     convention shoppers already expect from every other e-commerce app. */
+  --sio-wishlist-active: #f43f5e;
 
   /* Reused specifically for discount-percentage text (e.g. "33% OFF"),
      matching Myntra's orange rather than treating it as a generic second

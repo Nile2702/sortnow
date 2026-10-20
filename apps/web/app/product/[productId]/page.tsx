@@ -427,7 +427,7 @@ export default function ProductDetailPage() {
         </Link>
         <div style={{ display: "flex", gap: 4 }}>
           <button type="button" onClick={handleToggleWishlist} aria-label="Wishlist" className="sio-product-mobile-header-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlisted ? "var(--sio-bronze-dark)" : "none"} stroke={wishlisted ? "var(--sio-bronze-dark)" : "currentColor"} strokeWidth="2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlisted ? "var(--sio-wishlist-active)" : "none"} stroke={wishlisted ? "var(--sio-wishlist-active)" : "currentColor"} strokeWidth="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </button>
@@ -786,7 +786,7 @@ export default function ProductDetailPage() {
                 borderRadius: "50%",
                 border: "1px solid var(--sio-line)",
                 background: "#fff",
-                color: wishlisted ? "var(--sio-bronze-dark)" : "var(--sio-muted)",
+                color: wishlisted ? "var(--sio-wishlist-active)" : "var(--sio-muted)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -1156,7 +1156,7 @@ export default function ProductDetailPage() {
       <div className="sio-product-action-spacer" />
       <div className="sio-product-action-bar">
         <button type="button" onClick={handleToggleWishlist} aria-label="Wishlist" className="sio-product-action-heart">
-          <svg width="21" height="21" viewBox="0 0 24 24" fill={wishlisted ? "var(--sio-bronze-dark)" : "none"} stroke={wishlisted ? "var(--sio-bronze-dark)" : "currentColor"} strokeWidth="2">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill={wishlisted ? "var(--sio-wishlist-active)" : "none"} stroke={wishlisted ? "var(--sio-wishlist-active)" : "currentColor"} strokeWidth="2">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </button>

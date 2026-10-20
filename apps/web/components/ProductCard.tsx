@@ -162,7 +162,7 @@ export function ProductCard({
               alignItems: "center",
               justifyContent: "center",
               cursor: "pointer",
-              color: wishlisted ? "var(--sio-bronze)" : "#bbb",
+              color: wishlisted ? "var(--sio-wishlist-active)" : "#bbb",
             }}
           >
             <svg width={14} height={14} viewBox="0 0 24 24" fill={wishlisted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
