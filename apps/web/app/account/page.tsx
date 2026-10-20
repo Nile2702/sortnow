@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import { getShopperSession, setShopperSession, clearShopperSession, ShopperSession } from "../../lib/shopper-session";
 
-type Step = "phone" | "otp" | "profile";
+type Step = "phone" | "otp" | "profile" | "google-phone";
 type Category = "men" | "women" | "kids";
 type Mode = "login" | "signup";
 
@@ -41,6 +42,18 @@ export default function AccountPage() {
   const [otpEmail, setOtpEmail] = useState("");
   const [otpNeedsEmail, setOtpNeedsEmail] = useState(false);
 
+  // "Continue with Google" - a verified email proves identity instantly, but
+  // every shopper record here is keyed by phone (reservations, notifications,
+  // password login all look up by it), so a brand-new Google sign-in still
+  // needs one more step to collect that before an account can exist. See
+  // /api/v1/auth/google.
+  const [googleReady, setGoogleReady] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [pendingGoogleCredential, setPendingGoogleCredential] = useState("");
+  const [pendingGoogleName, setPendingGoogleName] = useState("");
+  const [pendingGoogleEmail, setPendingGoogleEmail] = useState("");
+  const [googleAgreed, setGoogleAgreed] = useState(false);
+
   // Profile-step fields - only asked of a genuinely first-time customer
   // (see handleVerify: existingShopper comes back null).
   const [name, setName] = useState("");
@@ -72,6 +85,29 @@ export default function AccountPage() {
       .then(setReferrals);
   }, [session]);
 
+  // Renders Google's own button into the placeholder div below once both the
+  // Identity Services script (loaded via next/script) and a client ID are
+  // ready. No client ID (NEXT_PUBLIC_GOOGLE_CLIENT_ID unset, e.g. this
+  // deployment hasn't been through Google Cloud Console setup yet) means the
+  // whole section simply never renders - same graceful-degradation shape as
+  // RESEND_API_KEY elsewhere in this app.
+  useEffect(() => {
+    if (!googleReady || session || (step !== "phone" && step !== "google-phone")) return;
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const google = (window as any).google;
+    if (!clientId || !google?.accounts?.id) return;
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: (response: { credential: string }) => handleGoogleCredential(response.credential),
+    });
+    const target = document.getElementById("google-signin-button");
+    if (target) {
+      target.innerHTML = "";
+      google.accounts.id.renderButton(target, { theme: "outline", size: "large", width: 360, text: mode === "signup" ? "signup_with" : "signin_with" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [googleReady, session, step, mode]);
+
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -101,6 +137,77 @@ export default function AccountPage() {
     // shopper already proved they own this address, no reason to ask twice.
     if (otpEmail.trim()) setEmail(otpEmail.trim());
     setStep("otp");
+  }
+
+  // Called by Google's own button once the person picks an account there -
+  // credential is a signed ID token, re-verified server-side (see
+  // /api/v1/auth/google) rather than trusted as-is.
+  async function handleGoogleCredential(credential: string) {
+    setError("");
+    setGoogleBusy(true);
+    const res = await fetch("/api/v1/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential }),
+    });
+    const result = await res.json().catch(() => null);
+    setGoogleBusy(false);
+    if (!res.ok) {
+      setError(result?.message ?? "Couldn't sign in with Google. Try again.");
+      return;
+    }
+    if (result.shopper) {
+      setAlreadyHadAccount(mode === "signup");
+      const restored: ShopperSession = {
+        name: result.shopper.name,
+        phone: result.shopper.phone,
+        email: result.shopper.email,
+        preferredCategory: result.shopper.preferredCategory,
+        pincode: result.shopper.pincode,
+        city: result.shopper.city,
+        dateOfBirth: result.shopper.dateOfBirth,
+      };
+      setShopperSession(restored);
+      setSession(restored);
+      return;
+    }
+    // Verified identity, but no account yet - one more step to get a phone
+    // number before there's anywhere to put a session.
+    setPendingGoogleCredential(credential);
+    setPendingGoogleName(result.googleName ?? "");
+    setPendingGoogleEmail(result.googleEmail ?? "");
+    setStep("google-phone");
+  }
+
+  async function handleFinishGoogleSignup(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!/^\d{10}$/.test(phone)) return setError("Enter a valid 10-digit mobile number.");
+    if (!googleAgreed) return setError("Please accept the Terms & Privacy Policy to continue.");
+    setGoogleBusy(true);
+    const res = await fetch("/api/v1/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential: pendingGoogleCredential, phone, agreed: true }),
+    });
+    const result = await res.json().catch(() => null);
+    setGoogleBusy(false);
+    if (!res.ok) {
+      setError(result?.message ?? "Couldn't finish setting up your account. Try again.");
+      return;
+    }
+    const newSession: ShopperSession = {
+      name: result.shopper.name,
+      phone,
+      email: result.shopper.email,
+      preferredCategory: result.shopper.preferredCategory,
+      pincode: result.shopper.pincode,
+      city: result.shopper.city,
+      dateOfBirth: result.shopper.dateOfBirth,
+    };
+    setShopperSession(newSession);
+    setJustSignedUp(true);
+    setSession(newSession);
   }
 
   async function handlePasswordLogin(e: React.FormEvent) {
@@ -251,6 +358,10 @@ export default function AccountPage() {
     setLoginPassword("");
     setOtpEmail("");
     setOtpNeedsEmail(false);
+    setPendingGoogleCredential("");
+    setPendingGoogleName("");
+    setPendingGoogleEmail("");
+    setGoogleAgreed(false);
   }
 
   if (!ready) return <main style={{ maxWidth: 440, margin: "60px auto", padding: 16 }} />;
@@ -378,6 +489,8 @@ export default function AccountPage() {
         </p>
       </div>
 
+      <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onLoad={() => setGoogleReady(true)} />
+
       <StepIndicator step={step} />
 
       <div
@@ -389,6 +502,19 @@ export default function AccountPage() {
           boxShadow: "0 20px 40px rgba(22, 20, 15, 0.05)",
         }}
       >
+        {(step === "phone" || step === "google-phone") && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+          <div style={{ marginBottom: step === "phone" ? 18 : 0 }}>
+            <div id="google-signin-button" style={{ display: "flex", justifyContent: "center" }} />
+            {step === "phone" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0" }}>
+                <div style={{ flex: 1, height: 1, background: "var(--sio-line)" }} />
+                <span style={{ fontSize: 12, color: "var(--sio-muted)" }}>or use your mobile number</span>
+                <div style={{ flex: 1, height: 1, background: "var(--sio-line)" }} />
+              </div>
+            )}
+          </div>
+        )}
+
         {step === "phone" && mode === "login" && usePasswordLogin && (
           <form onSubmit={handlePasswordLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
@@ -561,6 +687,48 @@ export default function AccountPage() {
           </form>
         )}
 
+        {step === "google-phone" && (
+          <form onSubmit={handleFinishGoogleSignup} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <p style={{ fontSize: 13, color: "var(--sio-muted)", textAlign: "center", marginTop: -4 }}>
+              Signed in as <strong style={{ color: "var(--sio-ink)" }}>{pendingGoogleEmail}</strong>. One more thing — what's your mobile number?
+            </p>
+            <div>
+              <label style={labelStyle}>Mobile number</label>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                placeholder="10-digit mobile number"
+                style={inputStyle}
+                autoFocus
+              />
+              <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>
+                Used for reservation pickups and seller notifications — never shared publicly.
+              </p>
+            </div>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "var(--sio-muted)", cursor: "pointer" }}>
+              <input type="checkbox" checked={googleAgreed} onChange={(e) => setGoogleAgreed(e.target.checked)} style={{ marginTop: 2 }} />
+              <span>I agree to SORT NOW's Terms of Service and Privacy Policy.</span>
+            </label>
+            {error && <ErrorBanner text={error} />}
+            <button type="submit" disabled={googleBusy} className="sio-btn-primary sio-shine-btn" style={{ ...buttonStyle, opacity: googleBusy ? 0.7 : 1 }}>
+              {googleBusy ? "Setting up…" : "Finish signing up"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStep("phone");
+                setError("");
+                setPhone("");
+                setGoogleAgreed(false);
+                setPendingGoogleCredential("");
+              }}
+              style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 13, cursor: "pointer", padding: 4 }}
+            >
+              ← Use a different sign-in method
+            </button>
+          </form>
+        )}
+
         {step === "profile" && (
           <form onSubmit={handleCompleteProfile} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <p style={{ fontSize: 13, color: "var(--sio-muted)", textAlign: "center", marginTop: -4 }}>
@@ -678,7 +846,10 @@ export default function AccountPage() {
 }
 
 function StepIndicator({ step }: { step: Step }) {
-  const current = STEP_ORDER.indexOf(step);
+  // "google-phone" is a side path off "phone", not a fourth stage - shown at
+  // the same position as "profile" (the other "just need one more thing"
+  // step) rather than adding a dot that would apply to every other flow too.
+  const current = STEP_ORDER.indexOf(step === "google-phone" ? "profile" : step);
   return (
     <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 18 }}>
       {STEP_ORDER.map((s, i) => (

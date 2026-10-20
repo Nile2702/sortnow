@@ -1542,6 +1542,11 @@ export interface Shopper {
   // more shoppers makes a seller's subscription more worth paying for.
   referralCode: string;
   referredBy?: string;
+  // Google's stable per-account "sub" claim, set the first time a shopper
+  // uses "Continue with Google" (see /api/v1/auth/google) - undefined for
+  // every shopper who has only ever used phone+OTP. Matched on, never shown
+  // back to the client.
+  googleId?: string;
 }
 
 function rowToShopper(r: any): Shopper {
@@ -1559,6 +1564,7 @@ function rowToShopper(r: any): Shopper {
     createdAt: new Date(r.created_at).toISOString(),
     referralCode: r.referral_code ?? "",
     referredBy: r.referred_by ?? undefined,
+    googleId: r.google_id ?? undefined,
   };
 }
 
@@ -1587,6 +1593,26 @@ export async function findShopperByPhone(phone: string): Promise<Shopper | null>
 // right after verifying for the first time.
 export async function updateShopperEmail(shopperId: string, email: string): Promise<void> {
   await execute(`UPDATE shoppers SET email = $2 WHERE id = $1`, [shopperId, email]);
+}
+
+// The two lookups "Continue with Google" needs before it knows which shopper
+// (if any) a verified Google identity belongs to - see
+// /api/v1/auth/google. Tried in that order: a returning Google sign-in
+// matches by googleId directly; a shopper who originally signed up by
+// phone+OTP but happens to share the same email as their Google account
+// matches by email instead (and gets linked, see linkShopperGoogleId).
+export async function findShopperByGoogleId(googleId: string): Promise<Shopper | null> {
+  const row = await queryOne<any>(`SELECT * FROM shoppers WHERE google_id = $1`, [googleId]);
+  return row ? rowToShopper(row) : null;
+}
+
+export async function findShopperByEmail(email: string): Promise<Shopper | null> {
+  const row = await queryOne<any>(`SELECT * FROM shoppers WHERE email IS NOT NULL AND lower(email) = lower($1)`, [email]);
+  return row ? rowToShopper(row) : null;
+}
+
+export async function linkShopperGoogleId(shopperId: string, googleId: string): Promise<void> {
+  await execute(`UPDATE shoppers SET google_id = $2 WHERE id = $1`, [shopperId, googleId]);
 }
 
 export async function findShopperByReferralCode(code: string): Promise<Shopper | null> {
@@ -1625,6 +1651,11 @@ export interface UpsertShopperInput {
   // Referral code from the invite link (?ref=CODE) the shopper signed up
   // through - only ever applied on first creation, never on a later update.
   referredByCode?: string;
+  // Set only by the "Continue with Google" finalize step (see
+  // /api/v1/auth/google) when creating a brand-new shopper whose phone
+  // wasn't on file yet - links the account to that Google identity from the
+  // moment it's created, same as linkShopperGoogleId does for an existing one.
+  googleId?: string;
 }
 
 // Creates a shopper the first time their phone verifies, or updates the
@@ -1665,14 +1696,16 @@ export async function upsertShopper(input: UpsertShopperInput): Promise<{ shoppe
     createdAt: new Date().toISOString(),
     referralCode: await generateReferralCode(input.name),
     referredBy: referrer?.id,
+    googleId: input.googleId,
   };
   await query(
-    `INSERT INTO shoppers (id, name, phone, email, preferred_category, pincode, city, date_of_birth, marketing_opt_in, password_hash, created_at, referral_code, referred_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+    `INSERT INTO shoppers (id, name, phone, email, preferred_category, pincode, city, date_of_birth, marketing_opt_in, password_hash, created_at, referral_code, referred_by, google_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
     [
       shopper.id, shopper.name, shopper.phone, shopper.email ?? null, shopper.preferredCategory ?? null,
       shopper.pincode ?? null, shopper.city ?? null, shopper.dateOfBirth ?? null, shopper.marketingOptIn,
       shopper.passwordHash ?? null, shopper.createdAt, shopper.referralCode, shopper.referredBy ?? null,
+      shopper.googleId ?? null,
     ]
   );
   if (referrer) {
