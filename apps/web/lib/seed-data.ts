@@ -766,6 +766,45 @@ export async function getSuspendedStores(): Promise<Store[]> {
   return rows.map(rowToStore);
 }
 
+// Self-service "quit SORT NOW" for a seller (app/seller/(dashboard)/billing's
+// Danger Zone) - unlike suspendStore, this is something the seller does to
+// themselves, not something imposed on them, so there's no notify() call
+// (they already know - they just clicked it). Only ever applied from
+// "active", same reasoning as suspendStore: a draft/pending_review store
+// was never visible to shoppers in the first place, so there's nothing for
+// "closed" to mean there yet. Reuses the "closed" status already in
+// store_status and the banner already in app/seller/(dashboard)/layout.tsx
+// (it existed in the enum with nothing that could ever produce it until
+// now). Reopening is admin-only (app/admin/sellers/active's "Closed
+// stores" section, via the existing activateStore) - deliberately not
+// self-service, so a seller can't accidentally close and instantly reopen
+// without at least a support conversation in between.
+export async function closeStore(storeId: string): Promise<Store | null> {
+  const row = await queryOne<any>(`UPDATE stores SET status = 'closed' WHERE id = $1 AND status = 'active' RETURNING *`, [storeId]);
+  return row ? rowToStore(row) : null;
+}
+
+export async function getClosedStores(): Promise<Store[]> {
+  const rows = await query<any>(`SELECT * FROM stores WHERE status = 'closed' ORDER BY created_at DESC`);
+  return rows.map(rowToStore);
+}
+
+// Reopens a store the seller previously closed themselves - admin-only
+// (app/admin/sellers/active's "Closed stores" section), unlike suspend/
+// reinstate which is a pair the seller has no button for at all. Guarded to
+// only ever apply from "closed" (unlike activateStore, which has no status
+// guard since its only caller already filters to pending_review stores) so
+// this can't be pointed at a draft/suspended store by mistake.
+export async function reactivateClosedStore(storeId: string): Promise<Store | null> {
+  const row = await queryOne<any>(`UPDATE stores SET status = 'active', activated_at = now() WHERE id = $1 AND status = 'closed' RETURNING *`, [storeId]);
+  if (!row) return null;
+  const store = rowToStore(row);
+  if (store.phone) {
+    await notify(store.id, store.phone, "seller", "store_reinstated", `Welcome back - your store is live on SORT NOW again. Shoppers can reserve items from it once more.`, store.email);
+  }
+  return store;
+}
+
 // ---------------------------------------------------------------------
 // Admin content moderation: individual product hold/unhold (app/admin/
 // products, app/api/v1/admin/products/[productId]/hold|unhold) - the

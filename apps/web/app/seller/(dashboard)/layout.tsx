@@ -13,7 +13,7 @@ const STATUS_BANNER: Record<string, { bg: string; fg: string; text: string }> = 
   pending_review: { bg: "#fef9c3", fg: "#854d0e", text: "Your store is pending review - it isn't visible to shoppers yet. We'll let you know once it's approved." },
   suspended: { bg: "#fee2e2", fg: "#991b1b", text: "Your store is currently suspended and isn't visible to shoppers. Contact support if you have questions." },
   draft: { bg: "#f1f5f9", fg: "#475569", text: "Your store hasn't been submitted for review yet - finish onboarding to go live." },
-  closed: { bg: "#f1f5f9", fg: "#475569", text: "Your store is closed and isn't visible to shoppers." },
+  closed: { bg: "#f1f5f9", fg: "#475569", text: "Your store is closed and isn't visible to shoppers. Contact support if you'd like to reopen it." },
 };
 
 export default async function SellerLayout({ children }: { children: React.ReactNode }) {

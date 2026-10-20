@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
+import { showToast } from "../../../../lib/toast";
 
 // Hidden for the pilot - paid storefront ranking isn't something to sell
 // sellers on yet at this stage. The feature itself (API routes, DB column,
@@ -58,12 +60,16 @@ interface BoostData {
 }
 
 export default function BillingPage() {
+  const router = useRouter();
   const { store, loading: storeLoading } = useSellerStore();
   const [data, setData] = useState<BillingData | null>(null);
   const [switching, setSwitching] = useState<string | null>(null);
   const [boost, setBoost] = useState<BoostData | null>(null);
   const [boosting, setBoosting] = useState<number | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [closeError, setCloseError] = useState("");
 
   // Without the .catch() on each of these, a dropped/failed request was an
   // unhandled rejection - data/boost stayed null forever and this page was
@@ -107,6 +113,22 @@ export default function BillingPage() {
     const result = await res.json().catch(() => null);
     if (result) setBoost((b) => (b ? { ...b, boostedUntil: result.boostedUntil } : b));
     setBoosting(null);
+  }
+
+  async function handleCloseStore() {
+    if (!store) return;
+    setClosing(true);
+    setCloseError("");
+    const res = await fetch(`/api/v1/seller/stores/${store.id}/close`, { method: "POST" });
+    setClosing(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setCloseError(body.message ?? "Couldn't close the store.");
+      return;
+    }
+    showToast("Your store is now closed");
+    router.push("/seller");
+    router.refresh();
   }
 
   if (loadError) {
@@ -413,6 +435,55 @@ export default function BillingPage() {
         Tax split follows the platform's registered state (Maharashtra, code 27) vs. the merchant's state-of-supply, per{" "}
         <code>fn_compute_gst_split()</code> in <code>database/schema.sql</code>.
       </p>
+
+      {store.status === "active" && (
+        <div
+          className="sio-card"
+          style={{ background: "#fff", borderRadius: 16, border: "1px solid #fecdd3", padding: 24, marginTop: 40 }}
+        >
+          <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: "#b91c1c" }}>Danger Zone</h2>
+          <p style={{ color: "#64748b", fontSize: 13, marginBottom: 16 }}>
+            Closing your store immediately removes it from search, your storefront link, and every shopper-facing listing - your products
+            and past data aren't deleted, just hidden. Reopening afterward requires contacting support; it's not something you can undo
+            yourself.
+          </p>
+
+          {!confirmingClose ? (
+            <button
+              onClick={() => setConfirmingClose(true)}
+              style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid #fecdd3", background: "#fff", color: "#b91c1c", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+            >
+              Close My Store
+            </button>
+          ) : (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecdd3", borderRadius: 12, padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+                Are you sure you want to close {store.name}? Shoppers won't be able to find or reserve from it anymore.
+              </p>
+              {closeError && <p style={{ fontSize: 13, color: "#b91c1c", marginBottom: 12 }}>{closeError}</p>}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={handleCloseStore}
+                  disabled={closing}
+                  style={{ padding: "9px 18px", borderRadius: 999, border: "none", background: "#b91c1c", color: "#fff", fontWeight: 600, fontSize: 13, cursor: closing ? "default" : "pointer", opacity: closing ? 0.7 : 1 }}
+                >
+                  {closing ? "Closing…" : "Yes, close my store"}
+                </button>
+                <button
+                  onClick={() => {
+                    setConfirmingClose(false);
+                    setCloseError("");
+                  }}
+                  disabled={closing}
+                  style={{ padding: "9px 18px", borderRadius: 999, border: "1px solid #e2e8f0", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }
