@@ -340,7 +340,14 @@ body {
 }
 
 .sio-skeleton {
-  background: linear-gradient(90deg, #f1ede4 0px, #faf8f4 40px, #f1ede4 80px);
+  /* Previous base/highlight pair (#f1ede4 / #faf8f4) were two shades of
+     cream ~4% apart in lightness - the animation genuinely ran (confirmed
+     by watching background-position actually change over time), but the
+     sweep was too close in tone to the page's own cream background to
+     read as "loading" rather than just a static block. Widened to a
+     visible gray base with a white sweep - same motion, now actually
+     visible. */
+  background: linear-gradient(90deg, #e3e1db 0px, #ffffff 40px, #e3e1db 80px);
   background-size: 800px 100%;
   animation: sio-shimmer 1.4s linear infinite;
 }
