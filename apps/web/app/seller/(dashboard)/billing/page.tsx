@@ -17,7 +17,7 @@ interface Plan {
   includedSkus: number;
   monthlyPrice: number;
   perListingPrice: number;
-  meteredBeyondIncluded: boolean;
+  overagePrice: number | null;
 }
 
 interface Invoice {
@@ -133,7 +133,7 @@ export default function BillingPage() {
   // Flex has nothing "included" to show a quota bar against (every SKU is
   // billed), so it gets its own usage readout below instead of this bar.
   const usagePct = currentPlan.includedSkus > 0 ? Math.min(100, Math.round((data.skuCount / currentPlan.includedSkus) * 100)) : null;
-  const overageSkus = currentPlan.meteredBeyondIncluded ? Math.max(0, data.skuCount - currentPlan.includedSkus) : 0;
+  const overageSkus = currentPlan.overagePrice != null ? Math.max(0, data.skuCount - currentPlan.includedSkus) : 0;
   const { freeTrial } = data;
   // What the seller's current plan would have cost for the full free
   // window - the headline savings figure, not a pro-rated "days left"
@@ -171,7 +171,7 @@ export default function BillingPage() {
             {currentPlan.name}'s monthly fee is free until{" "}
             {new Date(freeTrial.endsAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} — switch plans anytime before
             then at no cost.
-            {currentPlan.meteredBeyondIncluded && currentPlan.includedSkus > 0
+            {currentPlan.overagePrice != null && currentPlan.includedSkus > 0
               ? ` Extra listings past ${currentPlan.includedSkus.toLocaleString("en-IN")} SKUs are still billed as usual.`
               : ""}
           </div>
@@ -213,7 +213,7 @@ export default function BillingPage() {
               {overageSkus > 0 && (
                 <span style={{ color: "#b45309", fontWeight: 600 }}>
                   {" "}
-                  (+{overageSkus.toLocaleString("en-IN")} extra at ₹{currentPlan.perListingPrice.toFixed(2)} each)
+                  (+{overageSkus.toLocaleString("en-IN")} extra at ₹{(currentPlan.overagePrice ?? 0).toFixed(2)} each)
                 </span>
               )}
             </div>
@@ -282,21 +282,16 @@ export default function BillingPage() {
 
               {plan.monthlyPrice > 0 && (
                 <div style={{ fontSize: 12.5, color: "#94a3b8", marginBottom: 2 }}>
-                  {plan.meteredBeyondIncluded ? (
-                    // Max: a real, billed overage rate past its included
-                    // tier - still applies during the free trial, which
-                    // only waives the flat monthly fee above, not metered
-                    // usage past what's included.
+                  {/* perListingPrice here is always reference math only
+                      ("what that works out to per SKU if fully used") -
+                      never an actual charge on its own, for either plan.
+                      overagePrice (Max only) is the real, billed rate past
+                      includedSkus - still applies during the free trial,
+                      which only waives the flat monthly fee above. */}
+                  {plan.skuBand} SKUs, one flat fee (≈₹{plan.perListingPrice.toFixed(2)}/listing if fully used)
+                  {plan.overagePrice != null && (
                     <>
-                      {plan.skuBand} SKUs — first {plan.includedSkus.toLocaleString("en-IN")} included, then ₹{plan.perListingPrice.toFixed(2)} per extra
-                      listing
-                    </>
-                  ) : (
-                    // Pro: a flat fee with a hard cap - this is reference
-                    // math only ("what that works out to per SKU if you use
-                    // all of them"), never an actual separate charge.
-                    <>
-                      {plan.skuBand} SKUs for one flat fee (≈₹{plan.perListingPrice.toFixed(2)}/listing if fully used)
+                      ; above {plan.includedSkus.toLocaleString("en-IN")}, each extra listing is ₹{plan.overagePrice.toFixed(2)}
                     </>
                   )}
                 </div>

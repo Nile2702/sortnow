@@ -1980,18 +1980,17 @@ export function isInFreeTrial(activatedAt?: string | null): boolean {
 // have been; the old feature bullet lists never actually gated anything in
 // code, they were just copy).
 //
-// perListingPrice means two different things depending on meteredBeyondIncluded:
-//  - Flex (meteredBeyondIncluded: true, includedSkus: 0): a real charge on
-//    every single SKU - true pay-as-you-go, no flat fee at all.
-//  - Pro (meteredBeyondIncluded: false): a reference number only
-//    (monthlyPrice / includedSkus), shown so a seller can judge value at a
-//    glance - Pro is a flat ₹1,999/mo for up to 1,000 SKUs regardless of
-//    how many they actually use; nothing is ever metered per-listing here.
-//  - Max (meteredBeyondIncluded: true, includedSkus: 2000): the flat
-//    ₹3,499/mo covers the first 2,000 SKUs, and every SKU past that is a
-//    real, billed overage at this rate - the "2,000 **or more**" in the
-//    plan's own name is exactly this: unlike Pro, Max doesn't hard-cap, it
-//    meters past its included tier.
+// perListingPrice is always a reference stat only - "what that works out to
+// per SKU if fully used" (monthlyPrice / includedSkus) - never charged on
+// its own. overagePrice is the real, billed rate: null means the plan
+// hard-caps at includedSkus with nothing metered past it (Pro); a number
+// means every SKU past includedSkus is charged at that rate. Flex has no
+// included tier at all (includedSkus: 0) and its overagePrice equals its
+// perListingPrice, since with nothing free to use up, "the reference stat"
+// and "the real charge" are the same number from SKU 1 - true
+// pay-as-you-go. Max's overagePrice (₹1.50) is deliberately lower than its
+// own perListingPrice (₹1.75) - a volume discount on top of what the flat
+// fee already buys.
 export interface Plan {
   code: "flex" | "pro" | "max";
   name: string;
@@ -1999,20 +1998,19 @@ export interface Plan {
   includedSkus: number;
   monthlyPrice: number;
   perListingPrice: number;
-  meteredBeyondIncluded: boolean;
+  overagePrice: number | null;
 }
 
 export const PLANS: Plan[] = [
-  { code: "flex", name: "Flex", skuBand: "0+", includedSkus: 0, monthlyPrice: 0, perListingPrice: 3.0, meteredBeyondIncluded: true },
-  { code: "pro", name: "Pro", skuBand: "Up to 1,000", includedSkus: 1000, monthlyPrice: 1999, perListingPrice: 2.0, meteredBeyondIncluded: false },
-  { code: "max", name: "Max", skuBand: "2,000+", includedSkus: 2000, monthlyPrice: 3499, perListingPrice: 1.75, meteredBeyondIncluded: true },
+  { code: "flex", name: "Flex", skuBand: "0+", includedSkus: 0, monthlyPrice: 0, perListingPrice: 3.0, overagePrice: 3.0 },
+  { code: "pro", name: "Pro", skuBand: "Up to 1,000", includedSkus: 1000, monthlyPrice: 1999, perListingPrice: 2.0, overagePrice: null },
+  { code: "max", name: "Max", skuBand: "Up to 2,000", includedSkus: 2000, monthlyPrice: 3499, perListingPrice: 1.75, overagePrice: 1.5 },
 ];
 
 // What a store would actually owe this month on `plan` for `skuCount`
-// listings - the flat monthly fee, plus (only for a plan that meters past
-// its included tier) the per-listing rate on whatever's past includedSkus.
-// Pro has nothing past its included tier to meter, so this is always just
-// its flat fee regardless of skuCount.
+// listings - the flat monthly fee, plus (only for a plan with a real
+// overagePrice) that rate on whatever's past includedSkus. Pro has no
+// overagePrice, so this is always just its flat fee regardless of skuCount.
 //
 // waiveMonthlyFee (the free launch trial) only zeroes the flat subscription
 // fee - any metered overage (Max past 2,000 SKUs, or Flex's per-listing
@@ -2021,8 +2019,8 @@ export const PLANS: Plan[] = [
 // otherwise a seller could dodge all billing indefinitely just by listing
 // enough SKUs on Max during the free window.
 export function estimateMonthlyCost(plan: Plan, skuCount: number, waiveMonthlyFee = false): number {
-  const overageSkus = plan.meteredBeyondIncluded ? Math.max(0, skuCount - plan.includedSkus) : 0;
-  return (waiveMonthlyFee ? 0 : plan.monthlyPrice) + overageSkus * plan.perListingPrice;
+  const overageSkus = plan.overagePrice != null ? Math.max(0, skuCount - plan.includedSkus) : 0;
+  return (waiveMonthlyFee ? 0 : plan.monthlyPrice) + overageSkus * (plan.overagePrice ?? 0);
 }
 
 interface Subscription {
