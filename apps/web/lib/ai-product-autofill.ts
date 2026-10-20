@@ -3,13 +3,15 @@
 // title, category, description, and fabric guess - turning one photo + a
 // few words into a mostly-filled listing instead of a blank form.
 //
-// Unlike lib/ai-photo-enhance.ts (image generation, no free tier at all),
+// Unlike lib/ai-photo-enhance.ts (image generation, which now runs on each
+// seller's own Gemini API key - see getGeminiApiKey in lib/seed-data.ts),
 // this is a vision *understanding* task - the model reads the photo and
 // returns text/JSON, not a new image. Google's free tier generally does
-// cover this kind of call for the standard flash model, so this is NOT
-// gated behind photoCredits the way mannequin placement is - though that
-// assumption should be watched once real usage happens, since Google's
-// exact free-tier terms can change.
+// cover this kind of call for the standard flash model, so this still runs
+// on the platform's own shared GEMINI_API_KEY rather than requiring a
+// seller to have their own key configured - though that assumption should
+// be watched once real usage happens, since Google's exact free-tier terms
+// can change.
 import { CATEGORY_TREE, COLOR_CATALOG, FABRIC_OPTIONS } from "./catalog-constants";
 
 // The non-lite flash model measured 8-130+ seconds per call in practice

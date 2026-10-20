@@ -8,7 +8,7 @@ import {
   getReservationNoShowStats,
   getStoreReservations,
   getStoreProducts,
-  getPhotoCredits,
+  getGeminiApiKey,
   isBoostActive,
   isInFreeTrial,
   freeTrialEndsAt,
@@ -50,7 +50,7 @@ export default async function AdminSellerDetailPage({
     );
   }
 
-  const [subscription, productCounts, analytics, sales, rating, noShow, reservations, products, photoCredits] = await Promise.all([
+  const [subscription, productCounts, analytics, sales, rating, noShow, reservations, products, geminiKey] = await Promise.all([
     getSubscription(store.id, store.activatedAt),
     getProductCountsForStore(store.id),
     getStoreAnalytics(store.id),
@@ -59,7 +59,7 @@ export default async function AdminSellerDetailPage({
     getReservationNoShowStats(store.id),
     getStoreReservations(store.id),
     getStoreProducts(store.id),
-    getPhotoCredits(store.id),
+    getGeminiApiKey(store.id),
   ]);
   const plan = PLANS.find((p) => p.code === subscription.planCode);
   const onFreeTrial = isInFreeTrial(store.activatedAt);
@@ -135,7 +135,11 @@ export default async function AdminSellerDetailPage({
           <StatTile value={productCounts.live} label="Live" color="#16a34a" />
           <StatTile value={productCounts.onHold} label="On hold" color={productCounts.onHold > 0 ? "#b45309" : undefined} />
           <StatTile value={boosted ? "Active" : "None"} label="Store boost" color={boosted ? "#b45309" : undefined} />
-          <StatTile value={photoCredits} label="AI photo credits" />
+          <StatTile
+            value={geminiKey ? `✓ ••••${geminiKey.slice(-4)}` : "Not set"}
+            label="Gemini API key (seller's own)"
+            color={geminiKey ? "#16a34a" : undefined}
+          />
         </div>
       </section>
 

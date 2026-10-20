@@ -16,7 +16,7 @@ const TABS = [
   { label: "QR Marketing", href: "/seller/qr" },
   { label: "Analytics & Reports", href: "/seller/analytics" },
   { label: "Billing", href: "/seller/billing" },
-  { label: "AI Photo Credits", href: "/seller/photo-credits" },
+  { label: "Gemini API Key", href: "/seller/gemini-key" },
   { label: "Onboarding", href: "/seller/onboarding" },
 ];
 

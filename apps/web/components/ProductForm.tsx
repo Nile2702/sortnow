@@ -129,7 +129,9 @@ export function ProductForm({
   const [restoringPhoto, setRestoringPhoto] = useState(false);
   const [restoreError, setRestoreError] = useState("");
 
-  const [credits, setCredits] = useState<number | null>(null);
+  // null while loading, then true/false - whether this seller has their own
+  // Gemini API key configured (see app/seller/(dashboard)/gemini-key/page.tsx).
+  const [hasGeminiKey, setHasGeminiKey] = useState<boolean | null>(null);
 
   const [autofillHint, setAutofillHint] = useState("");
   const [autofilling, setAutofilling] = useState(false);
@@ -215,9 +217,9 @@ export function ProductForm({
   }
 
   useEffect(() => {
-    fetch(`/api/v1/seller/stores/${storeId}/photo-credits`)
+    fetch(`/api/v1/seller/stores/${storeId}/gemini-key`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setCredits(d?.balance ?? null));
+      .then((d) => setHasGeminiKey(d?.hasKey ?? false));
   }, [storeId]);
 
   // Brand dropdown below: BRAND_OPTIONS' common apparel/footwear labels,
@@ -394,8 +396,8 @@ export function ProductForm({
 
   async function handleAddMannequin() {
     if (!uploadedImage) return;
-    if (credits !== null && credits <= 0) {
-      setMannequinError("You're out of AI photo credits.");
+    if (hasGeminiKey === false) {
+      setMannequinError("Add your free Gemini API key in Settings to use this feature.");
       return;
     }
     setMannequinApplying(true);
@@ -414,18 +416,17 @@ export function ProductForm({
     }
     setUploadedImage(result.imageDataUrl);
     setPhotoStage("mannequin");
-    if (typeof result.creditsRemaining === "number") setCredits(result.creditsRemaining);
   }
 
   // For a "hard copy" photo - a seller's own photo of a physical, printed
   // product photo (a catalog page, banner, or poster already showing a
   // model wearing the garment) - rather than "Add Mannequin", which assumes
-  // a flat garment with no person in it. Same paid Gemini image-edit call
-  // and credit cost, different prompt (see lib/ai-photo-enhance.ts).
+  // a flat garment with no person in it. Same Gemini image-edit call on the
+  // seller's own key, different prompt (see lib/ai-photo-enhance.ts).
   async function handleRestoreRealPhoto() {
     if (!uploadedImage) return;
-    if (credits !== null && credits <= 0) {
-      setRestoreError("You're out of AI photo credits.");
+    if (hasGeminiKey === false) {
+      setRestoreError("Add your free Gemini API key in Settings to use this feature.");
       return;
     }
     setRestoringPhoto(true);
@@ -444,7 +445,6 @@ export function ProductForm({
     }
     setUploadedImage(result.imageDataUrl);
     setPhotoStage("restored");
-    if (typeof result.creditsRemaining === "number") setCredits(result.creditsRemaining);
   }
 
   function handleRevertToOriginal() {
@@ -1128,26 +1128,26 @@ export function ProductForm({
               <button
                 type="button"
                 onClick={handleAddMannequin}
-                disabled={mannequinApplying || bgRemoving || enhancing || credits === 0}
+                disabled={mannequinApplying || bgRemoving || enhancing || hasGeminiKey === false}
                 style={{
                   marginTop: 6,
                   padding: "7px 12px",
                   borderRadius: 999,
                   border: "none",
-                  background: mannequinApplying || credits === 0 ? "#94a3b8" : "#7c3aed",
+                  background: mannequinApplying || hasGeminiKey === false ? "#94a3b8" : "#7c3aed",
                   color: "#fff",
                   fontSize: 12,
                   fontWeight: 600,
-                  cursor: mannequinApplying || credits === 0 ? "default" : "pointer",
+                  cursor: mannequinApplying || hasGeminiKey === false ? "default" : "pointer",
                   whiteSpace: "nowrap",
                   width: "100%",
                 }}
               >
-                {mannequinApplying ? "Applying…" : credits === 0 ? "✨ Add Mannequin — 0 credits left" : "✨ Add Mannequin (1 credit)"}
+                {mannequinApplying ? "Applying…" : hasGeminiKey === false ? "✨ Add Mannequin — needs a Gemini key" : "✨ Add Mannequin"}
               </button>
-              {credits === 0 && (
-                <a href="/seller/photo-credits" style={{ display: "block", marginTop: 6, textAlign: "center", fontSize: 11, color: "#7c3aed" }}>
-                  Buy more credits →
+              {hasGeminiKey === false && (
+                <a href="/seller/gemini-key" style={{ display: "block", marginTop: 6, textAlign: "center", fontSize: 11, color: "#7c3aed" }}>
+                  Add your free Gemini API key →
                 </a>
               )}
 
@@ -1226,11 +1226,12 @@ export function ProductForm({
                   <strong style={{ color: "var(--sio-ink)" }}>Remove Background</strong> cuts out the garment, centers and zooms it to
                   fill the frame, then lets you pick a studio-style backdrop (or auto-pick one). Both are free, run right in your
                   browser, and can be used together in either order, or on their own.{" "}
-                  <strong style={{ color: "var(--sio-ink)" }}>Add Mannequin</strong> sends the photo to Gemini AI and uses 1 photo credit
-                  {credits !== null && (
+                  <strong style={{ color: "var(--sio-ink)" }}>Add Mannequin</strong> sends the photo to Gemini AI using your own free
+                  Gemini API key
+                  {hasGeminiKey === false && (
                     <>
                       {" "}
-                      (you have <strong style={{ color: "var(--sio-ink)" }}>{credits}</strong> left)
+                      (<a href="/seller/gemini-key" style={{ color: "#7c3aed" }}>add one</a> to use this)
                     </>
                   )}
                   .

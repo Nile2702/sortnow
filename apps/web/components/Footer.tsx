@@ -77,7 +77,7 @@ const SELLER_COLUMNS = [
       { label: "Theme Studio", href: "/seller/theme" },
       { label: "QR Marketing", href: "/seller/qr" },
       { label: "Analytics & Reports", href: "/seller/analytics" },
-      { label: "AI Photo Credits", href: "/seller/photo-credits" },
+      { label: "Gemini API Key", href: "/seller/gemini-key" },
     ],
   },
   {

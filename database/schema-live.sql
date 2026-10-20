@@ -120,7 +120,16 @@ CREATE TABLE stores (
     -- When this store most recently became "active" - set by
     -- activateStore() (first approval) and reinstateStore() (after a
     -- suspension). Shown as "Activated" on app/admin/sellers/active.
-    activated_at            TIMESTAMPTZ
+    activated_at            TIMESTAMPTZ,
+    -- Added via scripts/migrate-gemini-byok.js - the seller's own free
+    -- Gemini API key, used only by the "Add Mannequin" photo step (see
+    -- getGeminiApiKey/updateStoreGeminiKey in lib/seed-data.ts). Never
+    -- read by rowToStore/getAllStores, so it can't leak into any
+    -- shopper-facing response the way every other column here can -
+    -- only those two narrow functions touch this column. Stored in
+    -- plaintext - this pilot has no secret-management/KMS setup, and
+    -- this is the first column here that would actually need one.
+    gemini_api_key          TEXT
 );
 CREATE INDEX idx_stores_status ON stores (status);
 CREATE INDEX idx_stores_phone ON stores (phone) WHERE phone IS NOT NULL;
@@ -350,19 +359,16 @@ CREATE TABLE subscriptions (
     current_period_end    TIMESTAMPTZ NOT NULL
 );
 
--- Store Boost and AI photo credits are both already columns/tables of
--- their own (stores.boosted_until; photo_credits below) — BOOST_PACKAGES
--- and PHOTO_CREDIT_PACKAGES remain static TS constants, same reasoning
--- as PLANS above.
-CREATE TABLE photo_credits (
-    store_id    TEXT PRIMARY KEY REFERENCES stores(id) ON DELETE CASCADE,
-    -- CHECK added via scripts/migrate-stock-credit-checks.js, same backstop
-    -- reasoning as products.stock_remaining above - spendPhotoCredit is now
-    -- a single atomic UPDATE ... WHERE credits >= 1 (lib/seed-data.ts), so
-    -- this should never actually be reached, but a DB-level guard costs
-    -- nothing and catches any future logic bug directly.
-    credits     INT NOT NULL DEFAULT 3 CHECK (credits >= 0)
-);
+-- Store Boost is a column of its own (stores.boosted_until) - BOOST_PACKAGES
+-- remains a static TS constant, same reasoning as PLANS above.
+--
+-- The old photo_credits table (one row per store, a metered balance sold in
+-- fake-priced packs with no real payment processor ever wired up) was
+-- dropped via scripts/migrate-gemini-byok.js when the "Add Mannequin" AI
+-- step moved to a bring-your-own-Gemini-key model - see
+-- stores.gemini_api_key below and getGeminiApiKey/updateStoreGeminiKey in
+-- lib/seed-data.ts. Nothing is metered or charged by SORT NOW for that
+-- feature anymore.
 
 -- ---------------------------------------------------------------------
 -- Analytics (lib/seed-data.ts `AnalyticsEvent`). No app-assigned id

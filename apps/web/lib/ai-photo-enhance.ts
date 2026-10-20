@@ -1,13 +1,16 @@
-// Paid second stage of the photo pipeline (see components/ProductForm.tsx):
-// free client-side background removal (lib client code, @imgly/background-
+// Second stage of the photo pipeline (see components/ProductForm.tsx): free
+// client-side background removal (lib client code, @imgly/background-
 // removal) runs first, so by the time an image reaches here it typically
 // already has a plain/transparent background. This step's job is placing
 // the garment on a mannequin - a real generative-AI task with no free-tier
-// equivalent, which is why it's metered against a store's photoCredits
-// (see lib/seed-data.ts) rather than being unlimited like background
-// removal. Still handles a raw, unedited photo reasonably (the prompt is
-// written to not assume a clean background), since a seller can also run
-// this step directly without bothering with background removal first.
+// equivalent on the *platform's* side, which is why it runs on the seller's
+// own Gemini API key (see getGeminiApiKey in lib/seed-data.ts) rather than
+// a shared one - nothing is metered or charged by SORT NOW here, the seller
+// pays Google directly for their own usage, if anything at all (Gemini's
+// free tier covers this kind of occasional use for most sellers). Still
+// handles a raw, unedited photo reasonably (the prompt is written to not
+// assume a clean background), since a seller can also run this step
+// directly without bothering with background removal first.
 const GEMINI_MODEL = process.env.GEMINI_IMAGE_MODEL ?? "gemini-2.5-flash-image";
 
 const MANNEQUIN_PROMPT = `You are editing a product photo for an online clothing marketplace.
@@ -64,12 +67,7 @@ function parseDataUrl(dataUrl: string): { mimeType: string; base64: string } | n
   return { mimeType: match[1], base64: match[2] };
 }
 
-async function callGeminiImageEdit(inputDataUrl: string, prompt: string, errorContext: string): Promise<EnhanceResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return { ok: false, code: "not_configured", error: "AI photo enhancement isn't configured on this deployment yet (missing GEMINI_API_KEY)." };
-  }
-
+async function callGeminiImageEdit(apiKey: string, inputDataUrl: string, prompt: string, errorContext: string): Promise<EnhanceResult> {
   const parsed = parseDataUrl(inputDataUrl);
   if (!parsed) {
     return { ok: false, code: "invalid_image", error: "Unsupported image format." };
@@ -117,8 +115,8 @@ async function callGeminiImageEdit(inputDataUrl: string, prompt: string, errorCo
   return { ok: true, imageDataUrl: `data:${mimeType};base64,${data}` };
 }
 
-export async function enhanceProductPhoto(inputDataUrl: string): Promise<EnhanceResult> {
-  return callGeminiImageEdit(inputDataUrl, MANNEQUIN_PROMPT, "mannequin");
+export async function enhanceProductPhoto(apiKey: string, inputDataUrl: string): Promise<EnhanceResult> {
+  return callGeminiImageEdit(apiKey, inputDataUrl, MANNEQUIN_PROMPT, "mannequin");
 }
 
 // Note on scope: this is a single generative image-edit call, prompted to
@@ -128,6 +126,6 @@ export async function enhanceProductPhoto(inputDataUrl: string): Promise<Enhance
 // desired result - there's no physically-based rendering or guaranteed
 // pixel-level fidelity here, and results will vary with source photo
 // quality, the same as the mannequin-generation step above.
-export async function restoreRealPhoto(inputDataUrl: string): Promise<EnhanceResult> {
-  return callGeminiImageEdit(inputDataUrl, RESTORE_REAL_PHOTO_PROMPT, "restore");
+export async function restoreRealPhoto(apiKey: string, inputDataUrl: string): Promise<EnhanceResult> {
+  return callGeminiImageEdit(apiKey, inputDataUrl, RESTORE_REAL_PHOTO_PROMPT, "restore");
 }

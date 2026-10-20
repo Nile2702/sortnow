@@ -2152,82 +2152,37 @@ export async function boostStore(storeId: string, days: number): Promise<Store |
 }
 
 // ---------------------------------------------------------------------
-// AI Photo Credits: the Gemini-based mannequin-placement step (unlike free
-// client-side background removal) is a real per-call cost to whoever's
-// paying the Google Cloud bill, so it's metered separately from SKU-based
-// subscription plans. A store spends 1 credit per successful enhancement;
-// "purchasing" a pack here is the same kind of demo stand-in as
-// changePlan()/billing subscribe - it flips the stored balance with no
-// real payment processor call. A real deployment would redirect to
-// Razorpay/Cashfree checkout here, same as billing/subscribe.
-// ---------------------------------------------------------------------
-export interface PhotoCreditPackage {
-  id: string;
-  credits: number;
-  priceInr: number;
+// Gemini API key (bring-your-own-key): the mannequin-placement step in
+// lib/ai-photo-enhance.ts is a real generative-AI call with a per-call cost
+// on whoever's Google Cloud bill it runs against. This used to run on the
+// platform's own shared key, metered against a "photo credits" balance a
+// seller bought from SORT NOW (fake pricing, no real payment processor ever
+// wired up - see git history). That meant SORT NOW was the one taking
+// money for Google's usage, however nominally. Now each seller supplies
+// their own free Gemini API key (from https://aistudio.google.com/app/apikey)
+// and the mannequin call runs against *that* key - nothing is metered or
+// charged by SORT NOW, and whatever Google eventually charges (if anything;
+// its free tier covers this kind of occasional use for most sellers) is
+// between the seller and Google directly.
+//
+// Deliberately NOT part of the Store interface/rowToStore - every other
+// Store field flows through getAllStores() into plenty of shopper-facing
+// responses (search results, product detail, store pages), and this one
+// must never leak into any of those. Only these two narrow functions ever
+// touch the column, and neither is called from a shopper-facing path.
+//
+// No encryption-at-rest here - this is the first plaintext-sensitive
+// column in this schema (seller_password_hash is a one-way hash, not
+// comparable), and this pilot has no secret-management/KMS setup to do it
+// properly. Worth revisiting before handling real sellers' keys at scale.
+export async function getGeminiApiKey(storeId: string): Promise<string | null> {
+  const row = await queryOne<any>(`SELECT gemini_api_key FROM stores WHERE id = $1`, [storeId]);
+  return row?.gemini_api_key ?? null;
 }
 
-export const PHOTO_CREDIT_PACKAGES: PhotoCreditPackage[] = [
-  { id: "pack-10", credits: 10, priceInr: 39 },
-  { id: "pack-50", credits: 50, priceInr: 179 },
-  { id: "pack-200", credits: 200, priceInr: 649 },
-];
-
-// New stores start with a few free credits so sellers can try the paid
-// mannequin step once before deciding whether to buy more.
-const STARTER_PHOTO_CREDITS = 3;
-
-export async function getPhotoCredits(storeId: string): Promise<number> {
-  const row = await queryOne<any>(`SELECT credits FROM photo_credits WHERE store_id = $1`, [storeId]);
-  return row?.credits ?? STARTER_PHOTO_CREDITS;
-}
-
-// Both of these used to read the current balance (getPhotoCredits), decide
-// in JS whether it was sufficient / what the new total should be, then
-// write that back as a separate statement - a double-click or any other
-// concurrent call against the same store could read the same balance twice
-// and both writes would "succeed", with the second clobbering the first's
-// effect rather than compounding it (a classic lost-update race). Both are
-// now single atomic SQL statements: the affordability check and the
-// arithmetic happen in the same UPDATE as part of the same row lock
-// Postgres already takes for it, so a concurrent call against the same row
-// is forced to wait and then operate on the *other* call's result, not a
-// stale snapshot.
-
-export async function spendPhotoCredit(storeId: string): Promise<boolean> {
-  // ON CONFLICT ... DO UPDATE ... WHERE: if a photo_credits row already
-  // exists for this store, the decrement only applies (and only then does
-  // this statement affect a row) when its current balance is >= 1. If no
-  // row exists yet, the INSERT runs unconditionally (that WHERE only gates
-  // the conflict-update branch) - using STARTER_PHOTO_CREDITS - 1 so a
-  // store's very first spend still correctly reflects a starter credit
-  // having just been used, not left at the full starting balance.
-  const affected = await execute(
-    `INSERT INTO photo_credits (store_id, credits)
-     VALUES ($1, $2)
-     ON CONFLICT (store_id) DO UPDATE SET credits = photo_credits.credits - 1
-     WHERE photo_credits.credits >= 1`,
-    [storeId, STARTER_PHOTO_CREDITS - 1]
-  );
-  return affected > 0;
-}
-
-export async function buyPhotoCredits(storeId: string, packageId: string): Promise<number | null> {
-  const pack = PHOTO_CREDIT_PACKAGES.find((p) => p.id === packageId);
-  if (!pack) return null;
-  // Same atomic insert-or-increment shape as spendPhotoCredit above: a
-  // fresh row starts at STARTER_PHOTO_CREDITS + the purchased credits (so a
-  // store's first-ever purchase doesn't silently drop its free starter
-  // credits), while an existing row is incremented by the purchased amount
-  // in the same statement that reads it.
-  const row = await queryOne<any>(
-    `INSERT INTO photo_credits (store_id, credits)
-     VALUES ($1, $2)
-     ON CONFLICT (store_id) DO UPDATE SET credits = photo_credits.credits + $3
-     RETURNING credits`,
-    [storeId, STARTER_PHOTO_CREDITS + pack.credits, pack.credits]
-  );
-  return row ? row.credits : null;
+// `key: null` clears it - the settings UI's "Remove key" action.
+export async function updateStoreGeminiKey(storeId: string, key: string | null): Promise<void> {
+  await execute(`UPDATE stores SET gemini_api_key = $2 WHERE id = $1`, [storeId, key]);
 }
 
 // Platform is registered in Maharashtra (state code 27) for this demo -
