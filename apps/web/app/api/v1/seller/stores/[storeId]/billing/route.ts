@@ -18,9 +18,9 @@ export async function GET(_req: NextRequest, { params }: { params: { storeId: st
   const denied = requireSellerForStore(store.id, store.slug);
   if (denied) return denied;
 
-  const subscription = await getSubscription(store.id);
-  const skuCount = (await getStoreProducts(store.id)).length;
   const active = isInFreeTrial(store.activatedAt);
+  const subscription = await getSubscription(store.id, store.activatedAt);
+  const skuCount = (await getStoreProducts(store.id)).length;
   // No invoice should exist for a window nothing was actually billed for -
   // showing the usual demo invoice history here would directly contradict
   // the free-trial messaging on the same page.

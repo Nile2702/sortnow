@@ -1975,30 +1975,28 @@ export function isInFreeTrial(activatedAt?: string | null): boolean {
   return !!end && Date.now() < new Date(end).getTime();
 }
 
+// Pricing is purely SKU-volume based now - no feature gating (QR Marketing,
+// Theme Studio, etc. are free seller tools regardless of plan and always
+// have been; the old feature bullet lists never actually gated anything in
+// code, they were just copy). skuLimit null means no real cap - Flex is
+// pay-per-listing with nothing to cap, and Max's "2,000 or more" is sized
+// for sellers who'll keep growing past that, not a hard ceiling.
 export interface Plan {
-  code: "lite" | "pro" | "max";
+  code: "flex" | "pro" | "max";
   name: string;
-  skuLimit: number;
+  skuBand: string;
+  skuLimit: number | null;
   monthlyPrice: number;
-  features: string[];
+  // Rupees per listing "at max" capacity for Pro/Max (monthlyPrice divided
+  // across the plan's SKU band) - for Flex, which has no monthly fee, this
+  // is simply its real, permanent per-listing charge.
+  perListingPrice: number;
 }
 
 export const PLANS: Plan[] = [
-  { code: "lite", name: "Lite", skuLimit: 100, monthlyPrice: 499, features: ["1 theme", "Path-based URL", "Basic analytics"] },
-  {
-    code: "pro",
-    name: "Pro",
-    skuLimit: 2500,
-    monthlyPrice: 1999,
-    features: ["Full Theme Studio", "Subdomain", "QR standee generator", "WhatsApp notifications"],
-  },
-  {
-    code: "max",
-    name: "Max",
-    skuLimit: 25000,
-    monthlyPrice: 6999,
-    features: ["Custom domain", "Multi-store", "Bulk CSV import", "Priority search ranking"],
-  },
+  { code: "flex", name: "Flex", skuBand: "0+", skuLimit: null, monthlyPrice: 0, perListingPrice: 3.0 },
+  { code: "pro", name: "Pro", skuBand: "Up to 1,000", skuLimit: 1000, monthlyPrice: 1999, perListingPrice: 2.0 },
+  { code: "max", name: "Max", skuBand: "2,000+", skuLimit: null, monthlyPrice: 3499, perListingPrice: 1.75 },
 ];
 
 interface Subscription {
@@ -2012,9 +2010,18 @@ function futureDate(days: number): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
-export async function getSubscription(storeId: string): Promise<Subscription> {
+// `activatedAt` only matters for the no-subscription-row fallback below - a
+// store that's never made an explicit plan choice defaults to Max (free)
+// while its launch trial is running, since that's the whole point of the
+// promotion, or Flex (no commitment, pay per listing) once it's over. A
+// store that HAS made an explicit choice (changePlan, below) always shows
+// that instead, trial or not.
+export async function getSubscription(storeId: string, activatedAt?: string | null): Promise<Subscription> {
   const row = await queryOne<any>(`SELECT * FROM subscriptions WHERE store_id = $1`, [storeId]);
-  if (!row) return { storeId, planCode: "lite", status: "active", currentPeriodEnd: futureDate(30) };
+  if (!row) {
+    const planCode = isInFreeTrial(activatedAt) ? "max" : "flex";
+    return { storeId, planCode, status: "active", currentPeriodEnd: futureDate(30) };
+  }
   return {
     storeId: row.store_id,
     planCode: row.plan_code,

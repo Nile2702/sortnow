@@ -256,7 +256,7 @@ function futureDate(days: number): string {
 
 const SUBSCRIPTIONS: Record<string, { planCode: string; currentPeriodEnd: string }> = {
   "store-urban-vogue": { planCode: "pro", currentPeriodEnd: futureDate(18) },
-  "store-south-silk-house": { planCode: "lite", currentPeriodEnd: futureDate(9) },
+  "store-south-silk-house": { planCode: "flex", currentPeriodEnd: futureDate(9) },
   "store-denim-district": { planCode: "max", currentPeriodEnd: futureDate(25) },
 };
 

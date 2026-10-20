@@ -71,7 +71,12 @@ CREATE TYPE notification_trigger AS ENUM (
 CREATE TYPE billing_mode AS ENUM ('gst', 'normal');
 CREATE TYPE bill_payment_mode AS ENUM ('cash', 'upi', 'card', 'other');
 CREATE TYPE bill_status AS ENUM ('issued', 'void');
-CREATE TYPE plan_code AS ENUM ('lite', 'pro', 'max');
+-- 'flex' added via scripts/migrate-sku-based-plans.js when pricing moved
+-- from flat feature-gated plans to purely SKU-volume-based ones (see the
+-- PLANS array in lib/seed-data.ts) - 'lite' is no longer offered but stays
+-- in the enum (Postgres can't cheaply drop an enum value); any 'lite'
+-- subscription row was migrated to 'flex' at the same time.
+CREATE TYPE plan_code AS ENUM ('lite', 'pro', 'max', 'flex');
 CREATE TYPE subscription_status AS ENUM ('active', 'past_due');
 CREATE TYPE analytics_event_type AS ENUM ('page_view', 'qr_scan');
 -- Added via scripts/migrate-sale-campaigns.js - see sale_campaigns below.
@@ -340,7 +345,7 @@ CREATE INDEX idx_bills_status ON bills (store_id, status);
 -- ---------------------------------------------------------------------
 CREATE TABLE subscriptions (
     store_id              TEXT PRIMARY KEY REFERENCES stores(id) ON DELETE CASCADE,
-    plan_code             plan_code NOT NULL DEFAULT 'lite',
+    plan_code             plan_code NOT NULL DEFAULT 'flex',
     status                subscription_status NOT NULL DEFAULT 'active',
     current_period_end    TIMESTAMPTZ NOT NULL
 );

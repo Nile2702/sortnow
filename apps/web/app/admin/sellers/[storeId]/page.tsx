@@ -50,7 +50,7 @@ export default async function AdminSellerDetailPage({
   }
 
   const [subscription, productCounts, analytics, sales, rating, noShow, reservations, products, photoCredits] = await Promise.all([
-    getSubscription(store.id),
+    getSubscription(store.id, store.activatedAt),
     getProductCountsForStore(store.id),
     getStoreAnalytics(store.id),
     getSalesAnalytics(store.id),
@@ -121,7 +121,7 @@ export default async function AdminSellerDetailPage({
             label={
               onFreeTrial
                 ? `Plan (free trial until ${freeTrialEnd ? new Date(freeTrialEnd).toLocaleDateString("en-IN") : "?"}, then ₹${plan?.monthlyPrice ?? "?"}/mo)`
-                : `Plan (₹${plan?.monthlyPrice ?? "?"}/mo, up to ${plan?.skuLimit ?? "?"} SKUs)`
+                : `Plan (${plan?.monthlyPrice ? `₹${plan.monthlyPrice}/mo` : `₹${plan?.perListingPrice ?? "?"}/listing`}, ${plan?.skuBand ?? "?"} SKUs)`
             }
             color={onFreeTrial ? "#16a34a" : undefined}
           />

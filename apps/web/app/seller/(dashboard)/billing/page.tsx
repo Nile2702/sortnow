@@ -7,9 +7,10 @@ import { LoadingScreen } from "../../../../components/LoadingSpinner";
 interface Plan {
   code: string;
   name: string;
-  skuLimit: number;
+  skuBand: string;
+  skuLimit: number | null;
   monthlyPrice: number;
-  features: string[];
+  perListingPrice: number;
 }
 
 interface Invoice {
@@ -121,7 +122,7 @@ export default function BillingPage() {
   const boostActive = !!boost.boostedUntil && new Date(boost.boostedUntil).getTime() > Date.now();
 
   const currentPlan = data.plans.find((p) => p.code === data.subscription.planCode)!;
-  const usagePct = Math.min(100, Math.round((data.skuCount / currentPlan.skuLimit) * 100));
+  const usagePct = currentPlan.skuLimit ? Math.min(100, Math.round((data.skuCount / currentPlan.skuLimit) * 100)) : null;
   const { freeTrial } = data;
   // What the seller's current plan would have cost for the full free
   // window - the headline savings figure, not a pro-rated "days left"
@@ -188,12 +189,18 @@ export default function BillingPage() {
           </div>
         </div>
 
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>
-          SKU usage: {data.skuCount} / {currentPlan.skuLimit}
-        </div>
-        <div style={{ height: 8, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${usagePct}%`, background: usagePct > 90 ? "#e11d48" : "#0f172a", borderRadius: 999 }} />
-        </div>
+        {usagePct !== null ? (
+          <>
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>
+              SKU usage: {data.skuCount} / {currentPlan.skuLimit}
+            </div>
+            <div style={{ height: 8, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${usagePct}%`, background: usagePct > 90 ? "#e11d48" : "#0f172a", borderRadius: 999 }} />
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: 13, color: "#64748b" }}>{data.skuCount.toLocaleString("en-IN")} SKUs listed — no cap on this plan</div>
+        )}
       </div>
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Plans</h2>
@@ -212,27 +219,38 @@ export default function BillingPage() {
               }}
             >
               <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{plan.name}</div>
-              {freeTrial.active ? (
-                <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#16a34a" }}>
-                  ₹0<span style={{ fontSize: 13, fontWeight: 400 }}>/mo</span>
-                  <span style={{ fontSize: 13, fontWeight: 400, color: "#94a3b8", textDecoration: "line-through", marginLeft: 8 }}>
+              {plan.monthlyPrice > 0 ? (
+                freeTrial.active ? (
+                  <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#16a34a" }}>
+                    ₹0<span style={{ fontSize: 13, fontWeight: 400 }}>/mo</span>
+                    <span style={{ fontSize: 13, fontWeight: 400, color: "#94a3b8", textDecoration: "line-through", marginLeft: 8 }}>
+                      ₹{plan.monthlyPrice.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
                     ₹{plan.monthlyPrice.toLocaleString("en-IN")}
-                  </span>
-                </div>
+                    <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/mo</span>
+                  </div>
+                )
               ) : (
-                <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
-                  ₹{plan.monthlyPrice.toLocaleString("en-IN")}
-                  <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/mo</span>
-                </div>
+                <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: "#64748b" }}>No monthly fee</div>
               )}
-              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 14 }}>Up to {plan.skuLimit.toLocaleString("en-IN")} SKUs</div>
-              <ul style={{ margin: 0, padding: 0, listStyle: "none", fontSize: 13, color: "#475569", marginBottom: 18 }}>
-                {plan.features.map((f) => (
-                  <li key={f} style={{ marginBottom: 6 }}>
-                    ✓ {f}
-                  </li>
-                ))}
-              </ul>
+              <div style={{ fontSize: 13, marginBottom: 2 }}>
+                {freeTrial.active ? (
+                  <>
+                    <span style={{ fontWeight: 700, color: "#16a34a" }}>₹0.00</span>{" "}
+                    <span style={{ color: "#94a3b8", textDecoration: "line-through" }}>₹{plan.perListingPrice.toFixed(2)}</span>
+                    <span style={{ color: "#94a3b8" }}> /listing</span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontWeight: 700 }}>₹{plan.perListingPrice.toFixed(2)}</span>
+                    <span style={{ color: "#94a3b8" }}>{plan.monthlyPrice > 0 ? " /listing at max capacity" : " /listing"}</span>
+                  </>
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 18 }}>{plan.skuBand} SKUs</div>
               <button
                 onClick={() => handleSwitch(plan.code)}
                 disabled={isCurrent || switching === plan.code}
