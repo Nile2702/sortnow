@@ -110,8 +110,14 @@ CREATE TABLE stores (
     boosted_until           TIMESTAMPTZ,
     seller_password_hash    TEXT NOT NULL,
     -- Submitted (not verified - no real KYC provider is called, see
-    -- app/seller/(dashboard)/onboarding/page.tsx) GSTIN/PAN/UPI details,
-    -- plus when they were submitted for the site owner's manual review.
+    -- app/seller/(dashboard)/account/page.tsx's onboarding wizard, shown
+    -- only while status is "draft") GSTIN/PAN/UPI details, plus when they
+    -- were submitted for the site owner's manual review. All five of these
+    -- (plus phone/email above) stay editable afterward from the same page's
+    -- AccountDetailsForm once status moves past "draft" - see
+    -- updateStoreAccountDetails in lib/seed-data.ts.
+    legal_business_name     TEXT,   -- added via scripts/migrate-seller-account-fields.js
+    business_type           TEXT,   -- added via scripts/migrate-seller-account-fields.js
     gstin                   TEXT,
     pan                     TEXT,
     upi_vpa                 TEXT,

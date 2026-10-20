@@ -16,9 +16,13 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
   const denied = requireSellerForStore(store.id, store.slug);
   if (denied) return denied;
 
-  const body = (await req.json().catch(() => null)) as { gstin?: string; pan?: string; upiVpa?: string } | null;
+  const body = (await req.json().catch(() => null)) as
+    | { legalBusinessName?: string; businessType?: string; gstin?: string; pan?: string; upiVpa?: string }
+    | null;
 
   const updated = await submitStoreForReview(store.id, {
+    legalBusinessName: body?.legalBusinessName,
+    businessType: body?.businessType,
     gstin: body?.gstin,
     pan: body?.pan,
     upiVpa: body?.upiVpa,

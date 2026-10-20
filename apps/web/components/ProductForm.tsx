@@ -1226,8 +1226,8 @@ export function ProductForm({
                   <strong style={{ color: "var(--sio-ink)" }}>Remove Background</strong> cuts out the garment, centers and zooms it to
                   fill the frame, then lets you pick a studio-style backdrop (or auto-pick one). Both are free, run right in your
                   browser, and can be used together in either order, or on their own.{" "}
-                  <strong style={{ color: "var(--sio-ink)" }}>Add Mannequin</strong> sends the photo to Gemini AI using your own free
-                  Gemini API key
+                  <strong style={{ color: "var(--sio-ink)" }}>Add Mannequin</strong> sends the photo to Gemini AI using your own API key —
+                  Google charges a small fee per photo directly to you, not through SORT NOW
                   {hasGeminiKey === false && (
                     <>
                       {" "}

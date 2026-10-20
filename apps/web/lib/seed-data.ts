@@ -71,10 +71,15 @@ export interface Store {
   // "Stores near you" and /shops while active, same "flip a flag, no real
   // payment processor" convention as changePlan()/photo credits.
   boostedUntil?: string | null;
-  // Submitted (not verified - see onboarding page) during KYC onboarding.
-  // Populated once the seller reaches submitStoreForReview() below, which
-  // moves status to "pending_review" pending the site owner's manual
-  // review via /admin/sellers.
+  // Submitted (not verified - see the Account page) during KYC onboarding,
+  // and editable afterward from the same page (updateStoreAccountDetails) if
+  // something changes. gstin/pan/upiVpa are first populated once the seller
+  // reaches submitStoreForReview() below, which moves status to
+  // "pending_review" pending the site owner's manual review via
+  // /admin/sellers. legalBusinessName/businessType are collected in the same
+  // onboarding step but aren't part of that review gate.
+  legalBusinessName?: string | null;
+  businessType?: string | null;
   gstin?: string | null;
   pan?: string | null;
   upiVpa?: string | null;
@@ -107,6 +112,8 @@ function rowToStore(r: any): Store {
     phone: r.phone ?? undefined,
     email: r.email ?? undefined,
     boostedUntil: r.boosted_until ? new Date(r.boosted_until).toISOString() : null,
+    legalBusinessName: r.legal_business_name ?? null,
+    businessType: r.business_type ?? null,
     gstin: r.gstin ?? null,
     pan: r.pan ?? null,
     upiVpa: r.upi_vpa ?? null,
@@ -722,26 +729,74 @@ export async function rejectStore(storeId: string): Promise<Store | null> {
 }
 
 export interface SubmitStoreForReviewInput {
+  legalBusinessName?: string;
+  businessType?: string;
   gstin?: string;
   pan?: string;
   upiVpa?: string;
 }
 
-// Called once by the onboarding flow's final step. No real KYC provider is
-// ever called (see app/seller/(dashboard)/onboarding/page.tsx) - this just
-// records whatever the seller typed in and moves the store from "draft" to
-// "pending_review" so it shows up on the site owner's manual review queue
-// (getStoresPendingReview below). Only draft stores move - resubmitting
-// while already pending_review/active is a no-op so a seller can't use
-// this to undo an admin's decision.
+// Called once by the onboarding wizard's final step (app/seller/(dashboard)/
+// account/page.tsx, shown only while status is still "draft" - see
+// updateStoreAccountDetails below for editing any of this afterward). No
+// real KYC provider is ever called - this just records whatever the seller
+// typed in and moves the store from "draft" to "pending_review" so it shows
+// up on the site owner's manual review queue (getStoresPendingReview below).
+// Only draft stores move - resubmitting while already pending_review/active
+// is a no-op so a seller can't use this to undo an admin's decision.
 export async function submitStoreForReview(storeId: string, input: SubmitStoreForReviewInput): Promise<Store | null> {
   const row = await queryOne<any>(
     `UPDATE stores
-     SET status = 'pending_review', gstin = $2, pan = $3, upi_vpa = $4, submitted_for_review_at = now()
+     SET status = 'pending_review', legal_business_name = $2, business_type = $3, gstin = $4, pan = $5, upi_vpa = $6, submitted_for_review_at = now()
      WHERE id = $1 AND status = 'draft'
      RETURNING *`,
-    [storeId, input.gstin?.trim() || null, input.pan?.trim() || null, input.upiVpa?.trim() || null]
+    [
+      storeId,
+      input.legalBusinessName?.trim() || null,
+      input.businessType?.trim() || null,
+      input.gstin?.trim() || null,
+      input.pan?.trim() || null,
+      input.upiVpa?.trim() || null,
+    ]
   );
+  return row ? rowToStore(row) : null;
+}
+
+export interface UpdateStoreAccountInput {
+  legalBusinessName?: string;
+  businessType?: string;
+  gstin?: string;
+  pan?: string;
+  upiVpa?: string;
+  phone?: string;
+  email?: string;
+}
+
+// The Account page's "edit my details afterward" path - unlike
+// submitStoreForReview above, this works from any status (a seller fixing a
+// typo'd GSTIN while already active shouldn't need the site owner's help),
+// and only touches fields actually present in `patch` so a partial save
+// never blanks out the rest. Validation (format checks, required-ness)
+// happens in the API route, same division of labor as updateBillingSettings.
+export async function updateStoreAccountDetails(storeId: string, patch: UpdateStoreAccountInput): Promise<Store | null> {
+  const sets: string[] = [];
+  const values: unknown[] = [storeId];
+  function set(column: string, value: unknown) {
+    values.push(value);
+    sets.push(`${column} = $${values.length}`);
+  }
+  if (patch.legalBusinessName !== undefined) set("legal_business_name", patch.legalBusinessName.trim() || null);
+  if (patch.businessType !== undefined) set("business_type", patch.businessType.trim() || null);
+  if (patch.gstin !== undefined) set("gstin", patch.gstin.trim() || null);
+  if (patch.pan !== undefined) set("pan", patch.pan.trim() || null);
+  if (patch.upiVpa !== undefined) set("upi_vpa", patch.upiVpa.trim() || null);
+  if (patch.phone !== undefined) set("phone", patch.phone.trim() || null);
+  if (patch.email !== undefined) set("email", patch.email.trim() || null);
+  if (sets.length === 0) {
+    const row = await queryOne<any>(`SELECT * FROM stores WHERE id = $1`, [storeId]);
+    return row ? rowToStore(row) : null;
+  }
+  const row = await queryOne<any>(`UPDATE stores SET ${sets.join(", ")} WHERE id = $1 RETURNING *`, values);
   return row ? rowToStore(row) : null;
 }
 
@@ -2159,11 +2214,13 @@ export async function boostStore(storeId: string, days: number): Promise<Store |
 // seller bought from SORT NOW (fake pricing, no real payment processor ever
 // wired up - see git history). That meant SORT NOW was the one taking
 // money for Google's usage, however nominally. Now each seller supplies
-// their own free Gemini API key (from https://aistudio.google.com/app/apikey)
-// and the mannequin call runs against *that* key - nothing is metered or
-// charged by SORT NOW, and whatever Google eventually charges (if anything;
-// its free tier covers this kind of occasional use for most sellers) is
-// between the seller and Google directly.
+// their own Gemini API key (from https://aistudio.google.com/app/apikey,
+// free to create) and the mannequin call runs against *that* key - nothing
+// is metered or charged by SORT NOW. Google doesn't offer a free tier for
+// this kind of image generation (confirmed against ai.google.dev/gemini-api/
+// docs/pricing - every "Nano Banana" image model is paid-tier only), so this
+// is a real, small charge (a few US cents per image) the seller pays Google
+// directly, not something they can avoid by staying under a free quota.
 //
 // Deliberately NOT part of the Store interface/rowToStore - every other
 // Store field flows through getAllStores() into plenty of shopper-facing

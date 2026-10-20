@@ -84,7 +84,7 @@ const SELLER_COLUMNS = [
     title: "Account",
     links: [
       { label: "Billing", href: "/seller/billing" },
-      { label: "Onboarding", href: "/seller/onboarding" },
+      { label: "Account", href: "/seller/account" },
       { label: "Visit SORT NOW", href: "/" },
     ],
   },

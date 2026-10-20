@@ -97,8 +97,9 @@ export default function GeminiKeyPage() {
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Gemini API Key</h1>
       <p style={{ color: "#64748b", marginBottom: 28 }}>
         Used only by the <strong>Add Mannequin</strong> step in your product photos (background removal is always free and needs no key).
-        You bring your own free Gemini API key from Google — nothing is bought or charged through SORT NOW for this feature; whatever Google
-        charges, if anything, is between you and Google directly.
+        You bring your own Gemini API key from Google — nothing is bought or charged through SORT NOW for this feature. Google doesn't offer
+        a free tier for this kind of image generation, so each photo is a small, real charge (typically a few rupees) billed to your own
+        Google account, not to SORT NOW.
       </p>
 
       <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 24 }}>
@@ -143,7 +144,7 @@ export default function GeminiKeyPage() {
       </div>
 
       <div className="sio-card" style={{ background: "#f8fafc", borderRadius: 16, border: "1px solid #f1f5f9", padding: 20 }}>
-        <h2 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>How to get a free key</h2>
+        <h2 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>How to get a key</h2>
         <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: "#475569", lineHeight: 1.8 }}>
           <li>
             Open{" "}
@@ -152,12 +153,16 @@ export default function GeminiKeyPage() {
             </a>{" "}
             and sign in with any Google account.
           </li>
-          <li>Click "Create API key".</li>
-          <li>Copy the key it generates and paste it above.</li>
+          <li>Click "Create API key" — this part is free and takes about two minutes.</li>
+          <li>
+            Image generation isn't covered by Google's free tier, so you'll also need to turn on billing for your Google account if you
+            haven't already (Google will prompt you) — each mannequin photo then costs Google's own small fee, typically a few rupees,
+            charged directly to you.
+          </li>
+          <li>Copy the key and paste it above.</li>
         </ol>
         <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 12 }}>
-          Takes about two minutes, no credit card required for the free tier — which comfortably covers occasional mannequin photos for a
-          typical store.
+          SORT NOW never sees or charges for any of this — it's entirely between you and Google.
         </p>
       </div>
     </main>

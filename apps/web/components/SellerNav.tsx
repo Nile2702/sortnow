@@ -17,7 +17,7 @@ const TABS = [
   { label: "Analytics & Reports", href: "/seller/analytics" },
   { label: "Billing", href: "/seller/billing" },
   { label: "Gemini API Key", href: "/seller/gemini-key" },
-  { label: "Onboarding", href: "/seller/onboarding" },
+  { label: "Account", href: "/seller/account" },
 ];
 
 export function SellerNav() {

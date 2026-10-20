@@ -2,16 +2,24 @@
 // client-side background removal (lib client code, @imgly/background-
 // removal) runs first, so by the time an image reaches here it typically
 // already has a plain/transparent background. This step's job is placing
-// the garment on a mannequin - a real generative-AI task with no free-tier
-// equivalent on the *platform's* side, which is why it runs on the seller's
-// own Gemini API key (see getGeminiApiKey in lib/seed-data.ts) rather than
-// a shared one - nothing is metered or charged by SORT NOW here, the seller
-// pays Google directly for their own usage, if anything at all (Gemini's
-// free tier covers this kind of occasional use for most sellers). Still
-// handles a raw, unedited photo reasonably (the prompt is written to not
-// assume a clean background), since a seller can also run this step
-// directly without bothering with background removal first.
-const GEMINI_MODEL = process.env.GEMINI_IMAGE_MODEL ?? "gemini-2.5-flash-image";
+// the garment on a mannequin - a real generative-AI task Google only offers
+// on paid tiers (confirmed directly against ai.google.dev/gemini-api/docs/
+// pricing - every "Nano Banana" image model shows "Free Tier: Not
+// available", unlike Gemini's text/vision models), which is why it runs on
+// the seller's own Gemini API key (see getGeminiApiKey in lib/seed-data.ts)
+// rather than a shared one - nothing is metered or charged by SORT NOW
+// here, but it is a real (very small, a few US cents per image) charge the
+// seller pays Google directly, not a free allowance. Still handles a raw,
+// unedited photo reasonably (the prompt is written to not assume a clean
+// background), since a seller can also run this step directly without
+// bothering with background removal first.
+//
+// gemini-2.5-flash-image (the model this used to default to) was shut down
+// by Google on 2026-10-02 - gemini-3.1-flash-lite-image is its cheapest
+// still-supported replacement as of this writing. Override via
+// GEMINI_IMAGE_MODEL if Google deprecates this one too before the code
+// here is updated again.
+const GEMINI_MODEL = process.env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-lite-image";
 
 const MANNEQUIN_PROMPT = `You are editing a product photo for an online clothing marketplace.
 Take the garment shown in this photo and produce a professional e-commerce

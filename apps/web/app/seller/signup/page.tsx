@@ -62,7 +62,7 @@ export default function SellerSignupPage() {
     }
 
     showToast(`Welcome, ${result.name} — let's finish setting up your store`, "success");
-    router.push("/seller/onboarding");
+    router.push("/seller/account");
     router.refresh();
   }
 
