@@ -391,6 +391,76 @@ body {
   }
 }
 
+/* Category/search-style product listings: a horizontal pill row + an
+   auto-fill grid below 761px (unchanged from before - pills suit a narrow
+   screen, a sidebar doesn't), a left filter sidebar + a fixed 4-column grid
+   at 761px and up, matching the standard desktop marketplace layout
+   (Myntra/Amazon/etc.) shoppers already expect. 761px matches this
+   codebase's one existing mobile/desktop cutover point (see the other
+   760px media queries in this file). */
+.sio-listing-sidebar,
+.sio-listing-main-topbar {
+  display: none;
+}
+.sio-listing-mobile-filters {
+  display: flex;
+}
+.sio-listing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+@media (min-width: 761px) {
+  .sio-listing-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+  }
+  .sio-listing-sidebar {
+    display: block;
+    width: 240px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 88px;
+  }
+  .sio-listing-main-topbar {
+    display: flex;
+  }
+  .sio-listing-mobile-filters {
+    display: none;
+  }
+  .sio-listing-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .sio-listing-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.sio-sidebar-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 13.5px;
+  cursor: pointer;
+  color: var(--sio-ink, #0f172a);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sio-sidebar-link:hover {
+    background: #f1f5f9;
+  }
+}
+.sio-sidebar-link[data-active="true"] {
+  background: #0f172a;
+  color: #fff;
+  font-weight: 600;
+}
+
 .sio-zoom-hover {
   overflow: hidden;
 }

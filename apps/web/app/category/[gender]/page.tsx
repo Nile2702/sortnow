@@ -72,10 +72,10 @@ function CategoryPageInner() {
         {subCategory || genderLabel} {subCategory ? `· ${genderLabel}` : ""}
       </h1>
 
+      {/* Mobile (<=760px): the original horizontal pill row, unchanged. */}
       <section
-        className="sio-card"
+        className="sio-card sio-listing-mobile-filters"
         style={{
-          display: "flex",
           flexWrap: "wrap",
           gap: 12,
           alignItems: "center",
@@ -109,27 +109,64 @@ function CategoryPageInner() {
         </div>
       </section>
 
-      {loading ? (
-        <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
-          {[1, 2, 3, 4].map((i) => (
-            <SkeletonCard key={i} />
-          ))}
+      {/* Desktop (>=761px): left filter sidebar + a fixed 4-column grid,
+          matching the standard marketplace listing layout (see
+          .sio-listing-* in globals.css) - same subCategory/sort state and
+          setQuery() as the mobile pill row above, just presented as a
+          vertical list instead of pills. */}
+      <div className="sio-listing-layout">
+        <aside className="sio-listing-sidebar">
+          <div className="sio-card" style={{ background: "#fff", padding: 16, borderRadius: 16, border: "1px solid #f1f5f9" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 10 }}>
+              Filters
+            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", marginBottom: 6, marginTop: 14 }}>Category</div>
+            <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <button className="sio-sidebar-link" data-active={!subCategory} onClick={() => setQuery("subCategory", "")}>
+                All {genderLabel}
+              </button>
+              {subCats.map((sc) => (
+                <button key={sc} className="sio-sidebar-link" data-active={subCategory === sc} onClick={() => setQuery("subCategory", sc)}>
+                  {sc}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </aside>
+
+        <div className="sio-listing-main">
+          <div className="sio-listing-main-topbar" style={{ justifyContent: "flex-end", gap: 10, alignItems: "center", marginBottom: 16 }}>
+            {!loading && <ExploreOnMapButton products={products} />}
+            <select value={sort} onChange={(e) => setQuery("sort", e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}>
+              <option value="newest">Newest first</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+            </select>
+          </div>
+
+          {loading ? (
+            <div className="sio-listing-grid">
+              {[1, 2, 3, 4].map((i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          ) : products.length === 0 ? (
+            <p style={{ color: "#64748b" }}>
+              No products in {subCategory || genderLabel} yet.{" "}
+              <Link href="/shops" style={{ color: "#1e3a8a" }}>
+                Browse all shops
+              </Link>{" "}
+              instead.
+            </p>
+          ) : (
+            <div className="sio-listing-grid">
+              {products.map((p, i) => (
+                <ProductCard key={p.id} product={p} index={i} />
+              ))}
+            </div>
+          )}
         </div>
-      ) : products.length === 0 ? (
-        <p style={{ color: "#64748b" }}>
-          No products in {subCategory || genderLabel} yet.{" "}
-          <Link href="/shops" style={{ color: "#1e3a8a" }}>
-            Browse all shops
-          </Link>{" "}
-          instead.
-        </p>
-      ) : (
-        <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
-          {products.map((p, i) => (
-            <ProductCard key={p.id} product={p} index={i} />
-          ))}
-        </div>
-      )}
+      </div>
     </main>
   );
 }
