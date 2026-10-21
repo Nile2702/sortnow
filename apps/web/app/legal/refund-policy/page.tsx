@@ -42,7 +42,7 @@ export default function RefundPolicyPage() {
         <p>
           For billing disputes or questions, contact the platform operator at{" "}
           <a href={`tel:${SUPPORT_PHONE_TEL}`} style={{ color: "var(--sio-bronze)", fontWeight: 600 }}>
-            {SUPPORT_PHONE_DISPLAY}
+            <span data-nosnippet>{SUPPORT_PHONE_DISPLAY}</span>
           </a>
           .
         </p>

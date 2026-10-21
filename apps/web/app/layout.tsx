@@ -22,13 +22,16 @@ const body = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"],
 // premium DTC sites, picked at the user's request after referencing one.
 const accent = Playfair_Display({ subsets: ["latin"], weight: ["600"], style: ["italic"], variable: "--site-font-accent" });
 
+const SITE_DESCRIPTION =
+  "SORT NOW helps you discover fashion from real local boutiques near you by PIN code — browse Men, Women & Kids apparel, filter by size and price, reserve items online, and try them on in-store before you buy. No online payment needed.";
+
 export const metadata = {
   title: "SORT NOW — Find fashion near you",
-  description: "Discover apparel from stores near you, sort by what matters, and walk into the store to try it on or buy.",
+  description: SITE_DESCRIPTION,
   metadataBase: new URL(SITE_URL),
   openGraph: {
     title: "SORT NOW — Find fashion near you",
-    description: "Discover apparel from stores near you, sort by what matters, and walk into the store to try it on or buy.",
+    description: SITE_DESCRIPTION,
     type: "website",
   },
 };

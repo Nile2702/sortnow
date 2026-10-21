@@ -123,7 +123,15 @@ export function Footer() {
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {col.links.map((l) => (
                 <Link key={l.href} href={l.href} style={{ fontSize: 13, color: "#94a3b8", textDecoration: "none" }}>
-                  {l.label}
+                  {/* data-nosnippet: visible and clickable as normal, just
+                      excluded from what Google pulls into a search result
+                      snippet - keeps the support phone number genuinely
+                      useful to a real visitor without it getting lifted
+                      out and displayed as a standalone "fact" in search
+                      results. Google-specific but harmless everywhere
+                      else (just an unrecognized attribute to other
+                      crawlers/browsers). */}
+                  {l.href.startsWith("tel:") ? <span data-nosnippet>{l.label}</span> : l.label}
                 </Link>
               ))}
             </div>

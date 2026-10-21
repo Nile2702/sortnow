@@ -58,7 +58,7 @@ export default function TermsPage() {
         <p>
           Questions about these terms can be sent to the platform operator at{" "}
           <a href={`tel:${SUPPORT_PHONE_TEL}`} style={{ color: "var(--sio-bronze)", fontWeight: 600 }}>
-            {SUPPORT_PHONE_DISPLAY}
+            <span data-nosnippet>{SUPPORT_PHONE_DISPLAY}</span>
           </a>
           .
         </p>
