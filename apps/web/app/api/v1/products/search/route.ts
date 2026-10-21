@@ -9,12 +9,32 @@ export async function GET(req: NextRequest) {
   const radiusKm = searchParams.get("radius") ? Number(searchParams.get("radius")) : undefined;
   const gender = searchParams.get("gender") ?? undefined;
   const subCategory = searchParams.get("subCategory") ?? undefined;
+  const subCategories = searchParams.get("subCategories")?.split(",").filter(Boolean);
+  const storeIds = searchParams.get("storeIds")?.split(",").filter(Boolean);
+  const colors = searchParams.get("colors")?.split(",").filter(Boolean);
+  const minDiscount = searchParams.get("minDiscount") ? Number(searchParams.get("minDiscount")) : undefined;
   const minPrice = searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : undefined;
   const maxPrice = searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : undefined;
   const size = searchParams.get("size") ?? undefined;
   const sort = searchParams.get("sort") ?? undefined;
   const q = searchParams.get("q") ?? undefined;
 
-  const results = await searchProducts({ pincode, lat, lng, radiusKm, gender, subCategory, minPrice, maxPrice, size, sort, q });
+  const results = await searchProducts({
+    pincode,
+    lat,
+    lng,
+    radiusKm,
+    gender,
+    subCategory,
+    subCategories,
+    storeIds,
+    colors,
+    minDiscount,
+    minPrice,
+    maxPrice,
+    size,
+    sort,
+    q,
+  });
   return NextResponse.json(await applyActiveSales(results));
 }

@@ -7,6 +7,7 @@ import { CATEGORY_TREE } from "../../../lib/catalog-constants";
 import { ProductCard } from "../../../components/ProductCard";
 import { ExploreOnMapButton } from "../../../components/ExploreOnMapButton";
 import { LoadingScreen } from "../../../components/LoadingSpinner";
+import { CategoryFilterSidebar, ProductFacets } from "../../../components/CategoryFilterSidebar";
 
 const SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
 
@@ -27,37 +28,122 @@ function SkeletonCard() {
   return <div className="sio-skeleton" style={{ borderRadius: 14, height: 260 }} />;
 }
 
+function csv(value: string | null): string[] {
+  return value ? value.split(",").filter(Boolean) : [];
+}
 
 function CategoryPageInner() {
   const { gender } = useParams<{ gender: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const subCategory = searchParams.get("subCategory") ?? "";
+
+  // subCategories accepts either the new plural ?subCategories=A,B or the
+  // older singular ?subCategory=A (still linked to from the homepage's
+  // category tiles) - read once on first render so a link like that still
+  // lands pre-filtered instead of showing everything.
+  const subCategories = searchParams.get("subCategories") != null ? csv(searchParams.get("subCategories")) : csv(searchParams.get("subCategory"));
+  const storeIds = csv(searchParams.get("storeIds"));
+  const colors = csv(searchParams.get("colors"));
+  const minPriceParam = searchParams.get("minPrice");
+  const maxPriceParam = searchParams.get("maxPrice");
+  const priceRange: [number, number] | null = minPriceParam && maxPriceParam ? [Number(minPriceParam), Number(maxPriceParam)] : null;
+  const minDiscountParam = searchParams.get("minDiscount");
+  const minDiscount = minDiscountParam ? Number(minDiscountParam) : undefined;
   const sort = searchParams.get("sort") ?? "newest";
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [facets, setFacets] = useState<ProductFacets | null>(null);
 
   const genderLabel = GENDER_LABELS[gender] ?? gender;
   const subCats = SUBCATEGORIES[gender] ?? [];
 
+  const filterKey = JSON.stringify({ gender, subCategories, storeIds, colors, priceRange, minDiscount, sort });
+
   useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams({ gender, sort });
-    if (subCategory) params.set("subCategory", subCategory);
+    if (subCategories.length) params.set("subCategories", subCategories.join(","));
+    if (storeIds.length) params.set("storeIds", storeIds.join(","));
+    if (colors.length) params.set("colors", colors.join(","));
+    if (priceRange) {
+      params.set("minPrice", String(priceRange[0]));
+      params.set("maxPrice", String(priceRange[1]));
+    }
+    if (minDiscount != null) params.set("minDiscount", String(minDiscount));
     fetch(`/api/v1/products/search?${params}`)
       .then((r) => r.json())
       .then(setProducts)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [gender, subCategory, sort]);
+  }, [filterKey]);
 
-  function setQuery(key: string, value: string) {
+  // Facets are fetched separately from the product list itself (not derived
+  // from `products` client-side) because each facet group's count needs
+  // every OTHER active filter applied but excludes its own selection - see
+  // getProductFacets in lib/seed-data.ts. Same dependency list as the
+  // product fetch above, since any filter change can shift every count.
+  useEffect(() => {
+    const params = new URLSearchParams({ gender });
+    if (subCategories.length) params.set("subCategories", subCategories.join(","));
+    if (storeIds.length) params.set("storeIds", storeIds.join(","));
+    if (colors.length) params.set("colors", colors.join(","));
+    if (priceRange) {
+      params.set("minPrice", String(priceRange[0]));
+      params.set("maxPrice", String(priceRange[1]));
+    }
+    if (minDiscount != null) params.set("minDiscount", String(minDiscount));
+    fetch(`/api/v1/products/facets?${params}`)
+      .then((r) => r.json())
+      .then(setFacets)
+      .catch(() => {});
+  }, [filterKey]);
+
+  // Merges one or more query-param changes into a single navigation instead
+  // of each filter handler doing its own router.push - a sidebar checkbox
+  // only ever needs to touch its own key, but this is shared so every
+  // handler (mobile pills included) stays a one-liner.
+  function updateParams(patch: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value) params.set(key, value);
-    else params.delete(key);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
     router.push(`/category/${gender}?${params.toString()}`);
   }
+
+  function setMobileSubCategory(sc: string) {
+    // The mobile pill row is single-pick (same feel as before this
+    // sidebar existed) - selecting a pill replaces the whole set rather
+    // than toggling into it. Clears the legacy singular param too so a
+    // stale ?subCategory= from a shared link never fights the new one.
+    updateParams({ subCategories: sc ? sc : undefined, subCategory: undefined });
+  }
+
+  function toggleInList(list: string[], value: string): string[] {
+    return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+  }
+
+  function toggleSubCategory(sc: string) {
+    updateParams({ subCategories: toggleInList(subCategories, sc).join(",") || undefined, subCategory: undefined });
+  }
+  function toggleStore(id: string) {
+    updateParams({ storeIds: toggleInList(storeIds, id).join(",") || undefined });
+  }
+  function toggleColor(c: string) {
+    updateParams({ colors: toggleInList(colors, c).join(",") || undefined });
+  }
+  function setPriceRange(range: [number, number] | null) {
+    updateParams({ minPrice: range ? String(range[0]) : undefined, maxPrice: range ? String(range[1]) : undefined });
+  }
+  function setMinDiscount(value: number | undefined) {
+    updateParams({ minDiscount: value != null ? String(value) : undefined });
+  }
+  function setSort(value: string) {
+    updateParams({ sort: value });
+  }
+
+  const headingSuffix = subCategories.length === 1 ? subCategories[0] : subCategories.length > 1 ? `${subCategories.length} categories` : "";
 
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "24px 16px 48px" }}>
@@ -66,10 +152,10 @@ function CategoryPageInner() {
           Home
         </Link>{" "}
         / {genderLabel}
-        {subCategory && ` / ${subCategory}`}
+        {headingSuffix && ` / ${headingSuffix}`}
       </div>
       <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 20 }}>
-        {subCategory || genderLabel} {subCategory ? `· ${genderLabel}` : ""}
+        {headingSuffix || genderLabel} {headingSuffix ? `· ${genderLabel}` : ""}
       </h1>
 
       {/* Mobile (<=760px): the original horizontal pill row, unchanged. */}
@@ -90,18 +176,18 @@ function CategoryPageInner() {
         }}
       >
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <button onClick={() => setQuery("subCategory", "")} style={pillStyle(!subCategory)}>
+          <button onClick={() => setMobileSubCategory("")} style={pillStyle(subCategories.length === 0)}>
             All {genderLabel}
           </button>
           {subCats.map((sc) => (
-            <button key={sc} onClick={() => setQuery("subCategory", sc)} style={pillStyle(subCategory === sc)}>
+            <button key={sc} onClick={() => setMobileSubCategory(sc)} style={pillStyle(subCategories.length === 1 && subCategories[0] === sc)}>
               {sc}
             </button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
           {!loading && <ExploreOnMapButton products={products} />}
-          <select value={sort} onChange={(e) => setQuery("sort", e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}>
+          <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}>
             <option value="newest">Newest first</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
@@ -111,33 +197,31 @@ function CategoryPageInner() {
 
       {/* Desktop (>=761px): left filter sidebar + a fixed 4-column grid,
           matching the standard marketplace listing layout (see
-          .sio-listing-* in globals.css) - same subCategory/sort state and
-          setQuery() as the mobile pill row above, just presented as a
-          vertical list instead of pills. */}
+          .sio-listing-* in globals.css). Facets (counts per option, price
+          bounds) come from a dedicated endpoint - see the facets effect
+          above. */}
       <div className="sio-listing-layout">
         <aside className="sio-listing-sidebar">
-          <div className="sio-card" style={{ background: "#fff", padding: 16, borderRadius: 16, border: "1px solid #f1f5f9" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 10 }}>
-              Filters
-            </div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", marginBottom: 6, marginTop: 14 }}>Category</div>
-            <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <button className="sio-sidebar-link" data-active={!subCategory} onClick={() => setQuery("subCategory", "")}>
-                All {genderLabel}
-              </button>
-              {subCats.map((sc) => (
-                <button key={sc} className="sio-sidebar-link" data-active={subCategory === sc} onClick={() => setQuery("subCategory", sc)}>
-                  {sc}
-                </button>
-              ))}
-            </nav>
-          </div>
+          <CategoryFilterSidebar
+            genderLabel={genderLabel}
+            facets={facets}
+            selectedSubCategories={subCategories}
+            onToggleSubCategory={toggleSubCategory}
+            selectedStoreIds={storeIds}
+            onToggleStore={toggleStore}
+            selectedColors={colors}
+            onToggleColor={toggleColor}
+            priceRange={priceRange}
+            onPriceRangeChange={setPriceRange}
+            minDiscount={minDiscount}
+            onMinDiscountChange={setMinDiscount}
+          />
         </aside>
 
         <div className="sio-listing-main">
           <div className="sio-listing-main-topbar" style={{ justifyContent: "flex-end", gap: 10, alignItems: "center", marginBottom: 16 }}>
             {!loading && <ExploreOnMapButton products={products} />}
-            <select value={sort} onChange={(e) => setQuery("sort", e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}>
+            <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}>
               <option value="newest">Newest first</option>
               <option value="price_asc">Price: Low to High</option>
               <option value="price_desc">Price: High to Low</option>
@@ -152,7 +236,7 @@ function CategoryPageInner() {
             </div>
           ) : products.length === 0 ? (
             <p style={{ color: "#64748b" }}>
-              No products in {subCategory || genderLabel} yet.{" "}
+              No products match these filters yet.{" "}
               <Link href="/shops" style={{ color: "#1e3a8a" }}>
                 Browse all shops
               </Link>{" "}

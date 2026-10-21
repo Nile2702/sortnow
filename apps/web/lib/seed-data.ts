@@ -409,20 +409,34 @@ export function resolvePincode(pincode: string): { lat: number; lng: number; cit
 // sort": a shopper filters once (category, price, size, radius) and shops
 // directly from the matching products across every nearby store, rather
 // than picking one store first. See docs/01-product-and-personas.md §3.
-export async function searchProducts(opts: {
+interface SearchCandidate extends Product {
+  storeName: string;
+  storeCity: string;
+  storeLocalMarket: string;
+  distanceKm: number | null;
+  searchScore: number;
+}
+
+// Shared by searchProducts and getProductFacets below - applies every
+// filter that ISN'T one of the "facet" dimensions the sidebar lets a
+// shopper multi-select (category, store, color, discount): location/
+// radius, gender, the search query, and price/size. A facet count still
+// needs all of these respected, it just needs its OWN dimension's selection
+// excluded (see applyFacetFilters) - the standard faceted-search
+// convention, so picking a second color doesn't zero every other color's
+// count out.
+async function getSearchCandidates(opts: {
   pincode?: string;
   lat?: number;
   lng?: number;
   radiusKm?: number;
   gender?: string;
-  subCategory?: string;
   minPrice?: number;
   maxPrice?: number;
   size?: string;
-  sort?: string;
   q?: string;
-}) {
-  const { pincode, lat, lng, radiusKm = 10, gender, subCategory, minPrice, maxPrice, size, sort, q } = opts;
+}): Promise<SearchCandidate[]> {
+  const { pincode, lat, lng, radiusKm = 10, gender, minPrice, maxPrice, size, q } = opts;
   // See discoverStores() below for why raw coordinates take priority.
   const origin = lat != null && lng != null ? { lat, lng } : pincode ? resolvePincode(pincode) : undefined;
   const searchQuery = q?.trim().toLowerCase();
@@ -431,7 +445,7 @@ export async function searchProducts(opts: {
   const products = await getAllProducts();
   const storesById = new Map(stores.map((s) => [s.id, s]));
 
-  let results = products
+  return products
     .map((p) => {
       const store = storesById.get(p.storeId)!;
       const distanceKm = origin
@@ -456,12 +470,56 @@ export async function searchProducts(opts: {
     .filter((p) => p.status !== "on_hold")
     .filter((p) => !origin || p.distanceKm === null || p.distanceKm <= radiusKm)
     .filter((p) => !gender || gender === "all" || p.gender === gender)
-    .filter((p) => !subCategory || p.subCategory === subCategory)
     .filter((p) => minPrice == null || p.basePrice >= minPrice)
     .filter((p) => maxPrice == null || p.basePrice <= maxPrice)
     .filter((p) => !size || p.sizes.includes(size))
     .filter((p) => !searchQuery || p.searchScore > 0);
+}
 
+function discountPercent(p: { basePrice: number; compareAtPrice?: number }): number {
+  if (!p.compareAtPrice || p.compareAtPrice <= p.basePrice) return 0;
+  return Math.round(((p.compareAtPrice - p.basePrice) / p.compareAtPrice) * 100);
+}
+
+interface FacetFilters {
+  subCategory?: string;
+  subCategories?: string[];
+  storeIds?: string[];
+  colors?: string[];
+  minDiscount?: number;
+}
+
+function applyFacetFilters<T extends SearchCandidate>(candidates: T[], facets: FacetFilters, skip?: "subCategory" | "store" | "color" | "discount"): T[] {
+  const subCats = facets.subCategories?.length ? facets.subCategories : facets.subCategory ? [facets.subCategory] : [];
+  return candidates
+    .filter((p) => skip === "subCategory" || subCats.length === 0 || subCats.includes(p.subCategory))
+    .filter((p) => skip === "store" || !facets.storeIds?.length || facets.storeIds.includes(p.storeId))
+    .filter((p) => skip === "color" || !facets.colors?.length || (p.color != null && facets.colors.includes(p.color)))
+    .filter((p) => skip === "discount" || !facets.minDiscount || discountPercent(p) >= facets.minDiscount);
+}
+
+export async function searchProducts(opts: {
+  pincode?: string;
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
+  gender?: string;
+  subCategory?: string;
+  subCategories?: string[];
+  storeIds?: string[];
+  colors?: string[];
+  minDiscount?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  size?: string;
+  sort?: string;
+  q?: string;
+}) {
+  const candidates = await getSearchCandidates(opts);
+  let results = applyFacetFilters(candidates, opts);
+
+  const { sort, q } = opts;
+  const searchQuery = q?.trim().toLowerCase();
   if (sort === "price_asc") results = [...results].sort((a, b) => a.basePrice - b.basePrice);
   else if (sort === "price_desc") results = [...results].sort((a, b) => b.basePrice - a.basePrice);
   else if (sort === "newest") results = [...results].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -471,6 +529,82 @@ export async function searchProducts(opts: {
   // costPrice (seller's own purchase cost) must never reach this
   // shopper-facing search result, same reasoning as searchScore itself.
   return results.map(({ searchScore, costPrice: _costPrice, ...p }) => p);
+}
+
+// Powers the category page's left filter sidebar - one call returns counts
+// for every facet group at once (category, store, color, discount tier)
+// plus the achievable price range, each computed with every OTHER active
+// facet filter still applied so the sidebar always reflects "what happens
+// if I also pick this", not just the currently-selected combination.
+export async function getProductFacets(
+  opts: {
+    pincode?: string;
+    lat?: number;
+    lng?: number;
+    radiusKm?: number;
+    gender?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    size?: string;
+    q?: string;
+  } & FacetFilters
+) {
+  const candidates = await getSearchCandidates(opts);
+  const stores = await getAllStores();
+  const storeNameById = new Map(stores.map((s) => [s.id, s.name]));
+
+  function countBy(items: SearchCandidate[], keyFn: (p: SearchCandidate) => string | undefined): Map<string, number> {
+    const counts = new Map<string, number>();
+    for (const p of items) {
+      const key = keyFn(p);
+      if (key == null) continue;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return counts;
+  }
+
+  const subCategoryCounts = countBy(
+    applyFacetFilters(candidates, opts, "subCategory"),
+    (p) => p.subCategory
+  );
+  const storeCounts = countBy(
+    applyFacetFilters(candidates, opts, "store"),
+    (p) => p.storeId
+  );
+  const colorCounts = countBy(
+    applyFacetFilters(candidates, opts, "color"),
+    (p) => p.color
+  );
+  const forDiscount = applyFacetFilters(candidates, opts, "discount");
+  const discountTiers = [10, 20, 30, 40, 50].map((minDiscount) => ({
+    minDiscount,
+    count: forDiscount.filter((p) => discountPercent(p) >= minDiscount).length,
+  }));
+
+  // The slider's own bounds shouldn't shrink to whatever price range is
+  // already selected, but should still respect every other active facet -
+  // recomputed from a price-unfiltered candidate set for exactly that
+  // reason.
+  const candidatesForPriceRange = await getSearchCandidates({ ...opts, minPrice: undefined, maxPrice: undefined });
+  const forPrice = applyFacetFilters(candidatesForPriceRange, opts);
+  const prices = forPrice.map((p) => p.basePrice);
+  const priceRange = prices.length
+    ? { min: Math.floor(Math.min(...prices) / 100) * 100, max: Math.ceil(Math.max(...prices) / 100) * 100 }
+    : { min: 0, max: 0 };
+
+  return {
+    subCategories: Array.from(subCategoryCounts.entries())
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count),
+    stores: Array.from(storeCounts.entries())
+      .map(([id, count]) => ({ id, name: storeNameById.get(id) ?? id, count }))
+      .sort((a, b) => b.count - a.count),
+    colors: Array.from(colorCounts.entries())
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count),
+    discountTiers,
+    priceRange,
+  };
 }
 
 // Featured category tiles for the homepage "Browse by Category" strip.

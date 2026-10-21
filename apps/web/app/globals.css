@@ -461,6 +461,47 @@ body {
   font-weight: 600;
 }
 
+/* Dual-handle price range slider (CategoryFilterSidebar) - two overlapping
+   native range inputs sharing one visual track. Each input's own default
+   track/background is hidden (transparent, pointer-events off) so only the
+   colored div the component draws underneath shows through; pointer-events
+   is re-enabled on just the thumb so both handles stay independently
+   draggable even though the inputs fully overlap. */
+.sio-range-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 32px;
+}
+.sio-range-thumb::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  background: transparent;
+}
+.sio-range-thumb::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+.sio-range-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #ec4899;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.sio-range-thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #ec4899;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
 .sio-zoom-hover {
   overflow: hidden;
 }
