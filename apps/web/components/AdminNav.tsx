@@ -26,6 +26,9 @@ export function AdminNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const keyQS = `?key=${encodeURIComponent(searchParams.get("key") ?? "")}`;
+  const activeHref = [...TABS]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find((tab) => pathname === tab.href || pathname.startsWith(`${tab.href}/`))?.href;
 
   return (
     <div className="sio-print-hide" style={{ background: "var(--sio-ink)", color: "#fff" }}>
@@ -50,7 +53,16 @@ export function AdminNav() {
 
         <nav style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {TABS.map((tab) => {
-            const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+            // /admin/sellers/active starts with /admin/sellers, so a plain
+            // "does my href prefix-match the path" check marks both "Seller
+            // review queue" and "Active sellers" active at once on the
+            // Active sellers page. Picking only the longest (most specific)
+            // matching href - computed once below, same for every tab in
+            // this render - keeps a seller detail page like
+            // /admin/sellers/<id> falling back to "Seller review queue"
+            // (nothing more specific claims it) while a real sibling route
+            // like /admin/sellers/active takes precedence over it.
+            const active = tab.href === activeHref;
             return (
               <Link
                 key={tab.href}
