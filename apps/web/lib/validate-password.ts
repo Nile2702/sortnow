@@ -1,9 +1,13 @@
-// Shared password strength rules for seller signup - previously the only
-// check anywhere was `length < 8` (lib/seed-data.ts's createStore), which
-// let through things like "aaaaaaaa" or "11111111". Same validator
-// signature convention as validate-product.ts/validate-bill.ts so the
-// signup route, createStore, and the client-side form can all point at one
-// source of truth instead of three independently-drifting copies.
+// Shared password strength rules - previously `length >= 8, a letter, a
+// number`, which still passed through things like "password1". Added a
+// required special character on top of those same three original rules
+// (length/letter/number unchanged) - the minimal strengthening actually
+// wanted, not a full rebuild into mixed-case + a longer minimum. Same
+// validator signature convention as validate-product.ts/validate-bill.ts so
+// the signup route, createStore, and every client-side form can all point
+// at one source of truth instead of independently-drifting copies
+// (app/account/page.tsx had its own stale inline copy of this rule before
+// it was switched over to call this directly).
 const MIN_LENGTH = 8;
 const MAX_LENGTH = 128;
 
@@ -26,6 +30,9 @@ export function validatePassword(password: unknown): { errors: string[] } {
   }
   if (!/[0-9]/.test(password)) {
     errors.push("Password must include at least one number.");
+  }
+  if (!/[^a-zA-Z0-9]/.test(password)) {
+    errors.push("Password must include at least one special character (e.g. $, !, #).");
   }
 
   return { errors };

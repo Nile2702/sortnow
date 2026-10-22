@@ -150,7 +150,7 @@ export default function SellerSignupPage() {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters, with a letter and a number"
+              placeholder="At least 8 characters, a letter, a number, and a symbol"
               required
               minLength={8}
               autoComplete="new-password"

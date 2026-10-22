@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import { getShopperSession, setShopperSession, clearShopperSession, ShopperSession } from "../../lib/shopper-session";
+import { validatePassword } from "../../lib/validate-password";
 
 type Step = "phone" | "otp" | "profile" | "google-phone";
 type Category = "men" | "women" | "kids";
@@ -293,8 +294,9 @@ export default function AccountPage() {
     if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Enter a valid email, or leave it blank.");
     if (pincode.trim() && !/^\d{6}$/.test(pincode.trim())) return setError("Pincode must be 6 digits, or leave it blank.");
     if (dateOfBirth && new Date(dateOfBirth) > new Date()) return setError("Date of birth can't be in the future.");
-    if (password && (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password))) {
-      return setError("Password must be at least 8 characters and include a letter and a number, or leave it blank.");
+    if (password) {
+      const { errors } = validatePassword(password);
+      if (errors.length > 0) return setError(`${errors[0]} Or leave the password field blank.`);
     }
 
     setSavingProfile(true);
@@ -809,7 +811,7 @@ export default function AccountPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 8 characters, a letter and a number"
+                placeholder="At least 8 characters, a letter, a number, and a symbol"
                 style={inputStyle}
               />
               <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>
