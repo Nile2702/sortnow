@@ -1461,6 +1461,8 @@ export interface PlatformCustomerStats {
   referredSignupCount: number;
   dailyFootfall: { date: string; count: number }[];
   topStoresByFootfall: { storeId: string; storeName: string; count: number }[];
+  topCities: { city: string; count: number }[];
+  recentReservations: Reservation[];
 }
 
 const FOURTEEN_DAYS = 14;
@@ -1527,6 +1529,20 @@ export async function getPlatformCustomerStats(): Promise<PlatformCustomerStats>
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
+  const cityCounts = new Map<string, number>();
+  for (const s of shoppers) {
+    if (!s.city) continue;
+    cityCounts.set(s.city, (cityCounts.get(s.city) ?? 0) + 1);
+  }
+  const topCities = Array.from(cityCounts.entries())
+    .map(([city, count]) => ({ city, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
+  // reservations is already createdAt-DESC (see getAllReservations) - a
+  // plain slice is enough for "most recent activity", no re-sort needed.
+  const recentReservations = reservations.slice(0, 15);
+
   return {
     totalCustomers: shoppers.length,
     newCustomersThisWeek,
@@ -1543,6 +1559,8 @@ export async function getPlatformCustomerStats(): Promise<PlatformCustomerStats>
     referredSignupCount,
     dailyFootfall,
     topStoresByFootfall,
+    topCities,
+    recentReservations,
   };
 }
 

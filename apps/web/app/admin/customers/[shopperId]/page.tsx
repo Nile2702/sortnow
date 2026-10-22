@@ -62,7 +62,9 @@ export default async function AdminCustomerDetailPage({ params, searchParams }: 
                 <div key={r.id} style={{ border: "1px solid #f1f5f9", borderRadius: 12, padding: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{r.storeName}</div>
+                      <Link href={`/admin/sellers/${r.storeId}?${keyQS}`} style={{ fontWeight: 700, fontSize: 14, color: "#0f172a", textDecoration: "none" }}>
+                        {r.storeName}
+                      </Link>
                       <div style={{ fontSize: 12, color: "#94a3b8" }}>
                         Booked {new Date(r.createdAt).toLocaleString("en-IN")}
                         {r.fulfilledAt && ` · Picked up ${new Date(r.fulfilledAt).toLocaleString("en-IN")}`}
