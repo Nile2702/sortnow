@@ -1237,6 +1237,13 @@ export interface Reservation {
   status: ReservationStatus;
   reservedUntil: string;
   createdAt: string;
+  // When status actually flipped to "fulfilled" (the real in-store pickup
+  // moment) - undefined for anything fulfilled before this column existed
+  // (see scripts/migrate-reservation-fulfilled-at.js) and for every
+  // non-fulfilled reservation. createdAt is "when booked", not "when
+  // visited" - footfall reporting (getPlatformCustomerStats) needs the
+  // latter and falls back to createdAt only for that pre-migration gap.
+  fulfilledAt?: string;
 }
 
 function rowToReservation(r: any): Reservation {
@@ -1252,6 +1259,7 @@ function rowToReservation(r: any): Reservation {
     status: r.status,
     reservedUntil: new Date(r.reserved_until).toISOString(),
     createdAt: new Date(r.created_at).toISOString(),
+    fulfilledAt: r.fulfilled_at ? new Date(r.fulfilled_at).toISOString() : undefined,
   };
 }
 
@@ -1397,6 +1405,24 @@ export async function getStoreReservations(storeId: string): Promise<Reservation
   return Promise.all(rows.map(rowToReservation).map(flipIfExpired));
 }
 
+// Platform-wide, every store - backs the admin customer/footfall page. Every
+// other reservation query in this file is scoped to one store (a seller
+// only ever needs their own); this is the one cross-store listing.
+export async function getAllReservations(): Promise<Reservation[]> {
+  const rows = await query<any>(`SELECT * FROM reservations ORDER BY created_at DESC`);
+  return Promise.all(rows.map(rowToReservation).map(flipIfExpired));
+}
+
+// shopper_phone is indexed (idx_reservations_shopper_phone) and populated
+// from the same OTP-verified phone as the Shopper record itself, so an exact
+// match is enough here - no need for findShopperByPhone's last-10-digits
+// normalization (that exists to tolerate a seller/admin typing a phone
+// number inconsistently, not relevant to an exact value already on file).
+export async function getShopperReservations(phone: string): Promise<Reservation[]> {
+  const rows = await query<any>(`SELECT * FROM reservations WHERE shopper_phone = $1 ORDER BY created_at DESC`, [phone]);
+  return Promise.all(rows.map(rowToReservation).map(flipIfExpired));
+}
+
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Same plain 30-day breakdown as the seller's own reservations page computes
@@ -1417,6 +1443,107 @@ export async function getReservationNoShowStats(storeId: string) {
   const resolved = fulfilled + expired;
   const uncollectedPercent = resolved > 0 ? Math.round((expired / resolved) * 100) : 0;
   return { fulfilled, expired, cancelled, resolved, uncollectedPercent };
+}
+
+export interface PlatformCustomerStats {
+  totalCustomers: number;
+  newCustomersThisWeek: number;
+  newCustomersThisMonth: number;
+  totalReservations: number;
+  pending: number;
+  fulfilled: number;
+  expired: number;
+  cancelled: number;
+  uncollectedPercent: number;
+  customersWithAVisit: number;
+  repeatCustomerCount: number;
+  repeatCustomerPercent: number;
+  referredSignupCount: number;
+  dailyFootfall: { date: string; count: number }[];
+  topStoresByFootfall: { storeId: string; storeName: string; count: number }[];
+}
+
+const FOURTEEN_DAYS = 14;
+
+// Backs the admin customer/footfall page (app/admin/customers) - the
+// platform-wide counterpart to getReservationNoShowStats above, which is
+// scoped to one store. "Footfall" here means a reservation actually picked
+// up in-store (status fulfilled), not a reservation merely booked - the
+// distinction getAllReservations existing alone doesn't make, which is the
+// whole reason this is its own function rather than just inlined in the
+// page.
+export async function getPlatformCustomerStats(): Promise<PlatformCustomerStats> {
+  const [shoppers, reservations] = await Promise.all([getAllShoppers(), getAllReservations()]);
+
+  const now = Date.now();
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const newCustomersThisWeek = shoppers.filter((s) => now - new Date(s.createdAt).getTime() <= WEEK_MS).length;
+  const newCustomersThisMonth = shoppers.filter((s) => now - new Date(s.createdAt).getTime() <= THIRTY_DAYS_MS).length;
+  const referredSignupCount = shoppers.filter((s) => s.referredBy).length;
+
+  const pending = reservations.filter((r) => r.status === "pending").length;
+  const fulfilled = reservations.filter((r) => r.status === "fulfilled").length;
+  const expired = reservations.filter((r) => r.status === "expired").length;
+  const cancelled = reservations.filter((r) => r.status === "cancelled").length;
+  const resolved = fulfilled + expired;
+  const uncollectedPercent = resolved > 0 ? Math.round((expired / resolved) * 100) : 0;
+
+  // Repeat-visit rate is measured against customers who've actually walked
+  // into a store at least once (fulfilled >= 1), not against every signup -
+  // someone who never picked anything up was never in a position to repeat.
+  const fulfilledCountByPhone = new Map<string, number>();
+  for (const r of reservations) {
+    if (r.status !== "fulfilled") continue;
+    fulfilledCountByPhone.set(r.shopperPhone, (fulfilledCountByPhone.get(r.shopperPhone) ?? 0) + 1);
+  }
+  const customersWithAVisit = fulfilledCountByPhone.size;
+  const repeatCustomerCount = Array.from(fulfilledCountByPhone.values()).filter((c) => c >= 2).length;
+  const repeatCustomerPercent = customersWithAVisit > 0 ? Math.round((repeatCustomerCount / customersWithAVisit) * 100) : 0;
+
+  // Bucketed by fulfilledAt (the real pickup moment) - falls back to
+  // createdAt only for a reservation fulfilled before that column existed
+  // (see the Reservation.fulfilledAt comment), which would otherwise vanish
+  // from this trend entirely instead of just being slightly mis-dated.
+  const dailyMap = new Map<string, number>();
+  for (let i = FOURTEEN_DAYS - 1; i >= 0; i--) {
+    dailyMap.set(new Date(now - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10), 0);
+  }
+  for (const r of reservations) {
+    if (r.status !== "fulfilled") continue;
+    const day = new Date(r.fulfilledAt ?? r.createdAt).toISOString().slice(0, 10);
+    if (dailyMap.has(day)) dailyMap.set(day, (dailyMap.get(day) ?? 0) + 1);
+  }
+  const dailyFootfall = Array.from(dailyMap.entries()).map(([date, count]) => ({ date, count }));
+
+  const storeFootfall = new Map<string, { storeName: string; count: number }>();
+  for (const r of reservations) {
+    if (r.status !== "fulfilled") continue;
+    const entry = storeFootfall.get(r.storeId) ?? { storeName: r.storeName, count: 0 };
+    entry.count++;
+    storeFootfall.set(r.storeId, entry);
+  }
+  const topStoresByFootfall = Array.from(storeFootfall.entries())
+    .map(([storeId, v]) => ({ storeId, storeName: v.storeName, count: v.count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  return {
+    totalCustomers: shoppers.length,
+    newCustomersThisWeek,
+    newCustomersThisMonth,
+    totalReservations: reservations.length,
+    pending,
+    fulfilled,
+    expired,
+    cancelled,
+    uncollectedPercent,
+    customersWithAVisit,
+    repeatCustomerCount,
+    repeatCustomerPercent,
+    referredSignupCount,
+    dailyFootfall,
+    topStoresByFootfall,
+  };
 }
 
 // Write-on-read: a "pending" reservation past its reservedUntil window is
@@ -1462,7 +1589,10 @@ export async function getProductReservedQuantity(storeId: string, productId: str
 // loser sees null and reports "no longer pending" instead of silently
 // double-transitioning (and double-notifying) the same reservation.
 export async function updateReservationStatus(id: string, status: "fulfilled" | "cancelled"): Promise<Reservation | null> {
-  const row = await queryOne<any>(`UPDATE reservations SET status = $2 WHERE id = $1 AND status = 'pending' RETURNING *`, [id, status]);
+  const row = await queryOne<any>(
+    `UPDATE reservations SET status = $2, fulfilled_at = CASE WHEN $2 = 'fulfilled' THEN now() ELSE fulfilled_at END WHERE id = $1 AND status = 'pending' RETURNING *`,
+    [id, status]
+  );
   if (!row) return null;
   const reservation = rowToReservation(row);
 
@@ -1700,6 +1830,22 @@ function rowToShopper(r: any): Shopper {
     referredBy: r.referred_by ?? undefined,
     googleId: r.google_id ?? undefined,
   };
+}
+
+// Backs the admin customer-list page (app/admin/customers) - every other
+// shopper lookup in this file fetches a single record by a unique key
+// (phone/email/googleId/referralCode); this is the one bulk listing, so it's
+// the only place that needs to worry about an unbounded result set as the
+// platform grows. Fine at pilot scale (same no-pagination tradeoff every
+// other admin list page already makes - see getStoresPendingReview).
+export async function getAllShoppers(): Promise<Shopper[]> {
+  const rows = await query<any>(`SELECT * FROM shoppers ORDER BY created_at DESC`);
+  return rows.map(rowToShopper);
+}
+
+export async function getShopperById(id: string): Promise<Shopper | null> {
+  const row = await queryOne<any>(`SELECT * FROM shoppers WHERE id = $1`, [id]);
+  return row ? rowToShopper(row) : null;
 }
 
 export async function findShopperByPhone(phone: string): Promise<Shopper | null> {

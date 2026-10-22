@@ -259,7 +259,14 @@ CREATE TABLE reservations (
     shopper_phone   TEXT NOT NULL,
     status          reservation_status NOT NULL DEFAULT 'pending',
     reserved_until  TIMESTAMPTZ NOT NULL,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- When status actually flipped to 'fulfilled' (the real in-store pickup
+    -- moment) - NULL for anything fulfilled before this column existed, and
+    -- for every non-fulfilled reservation. created_at is "when booked", not
+    -- "when visited"; admin footfall reporting needs the latter (see
+    -- getPlatformCustomerStats in lib/seed-data.ts). Added by
+    -- scripts/migrate-reservation-fulfilled-at.js.
+    fulfilled_at    TIMESTAMPTZ
 );
 CREATE INDEX idx_reservations_store_id ON reservations (store_id, created_at DESC);
 CREATE INDEX idx_reservations_shopper_phone ON reservations (shopper_phone);

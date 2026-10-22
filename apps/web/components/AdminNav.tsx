@@ -8,6 +8,7 @@ const TABS = [
   { label: "Seller review queue", href: "/admin/sellers" },
   { label: "Active sellers", href: "/admin/sellers/active" },
   { label: "Product moderation", href: "/admin/products" },
+  { label: "Customers & Footfall", href: "/admin/customers" },
 ];
 
 // Every /admin/* page previously had no chrome of its own at all - they sat
