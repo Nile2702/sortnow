@@ -85,11 +85,6 @@ export default function SellerLoginPage() {
     router.refresh();
   }
 
-  function fillDemoPassword() {
-    setPassword("sortitout123");
-    setShowPassword(true);
-  }
-
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
     setOtpError(null);
@@ -297,8 +292,7 @@ export default function SellerLoginPage() {
                       style={{ ...inputStyle, marginBottom: 6 }}
                     />
                     <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginBottom: 4 }}>
-                      Only works if a phone number is on file for your store (set at signup, or ask support to add one). Demo: Urban Vogue's
-                      is 9876543210.
+                      Only works if a phone number is on file for your store (set at signup, or ask support to add one).
                     </p>
                     {otpNeedsEmail && (
                       <>
@@ -477,36 +471,6 @@ export default function SellerLoginPage() {
               >
                 {submitting ? "Signing in…" : "Sign in"}
               </button>
-
-              <div
-                style={{
-                  marginTop: 20,
-                  paddingTop: 16,
-                  borderTop: "1px dashed var(--sio-line)",
-                  fontSize: 12.5,
-                  color: "var(--sio-muted)",
-                  textAlign: "center",
-                  lineHeight: 1.6,
-                }}
-              >
-                This is a demo — every seed store shares the same password.
-                <br />
-                <button
-                  type="button"
-                  onClick={fillDemoPassword}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--sio-bronze)",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    padding: "4px 0",
-                    fontSize: 12.5,
-                  }}
-                >
-                  Autofill demo password →
-                </button>
-              </div>
             </form>
             )}
 
