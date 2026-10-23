@@ -22,6 +22,7 @@ import { haversineKm } from "./geo";
 import { isPastReservationWindow } from "./reservation-expiry";
 import { fuzzyBestScore } from "./fuzzy-search";
 import { sendNotificationEmail } from "./email";
+import { encryptField, decryptField } from "./encryption";
 
 export type { Gender };
 export { ALL_SIZES, CATEGORY_TREE };
@@ -114,9 +115,13 @@ function rowToStore(r: any): Store {
     boostedUntil: r.boosted_until ? new Date(r.boosted_until).toISOString() : null,
     legalBusinessName: r.legal_business_name ?? null,
     businessType: r.business_type ?? null,
-    gstin: r.gstin ?? null,
-    pan: r.pan ?? null,
-    upiVpa: r.upi_vpa ?? null,
+    // Encrypted at rest (see lib/encryption.ts) - decryptField passes a
+    // legacy pre-migration plaintext value through unchanged, so this works
+    // the same regardless of whether this particular row has been migrated
+    // yet.
+    gstin: decryptField(r.gstin ?? null),
+    pan: decryptField(r.pan ?? null),
+    upiVpa: decryptField(r.upi_vpa ?? null),
     submittedForReviewAt: r.submitted_for_review_at ? new Date(r.submitted_for_review_at).toISOString() : null,
     createdAt: r.created_at ? new Date(r.created_at).toISOString() : undefined,
     activatedAt: r.activated_at ? new Date(r.activated_at).toISOString() : null,
@@ -888,9 +893,12 @@ export async function submitStoreForReview(storeId: string, input: SubmitStoreFo
       storeId,
       input.legalBusinessName?.trim() || null,
       input.businessType?.trim() || null,
-      input.gstin?.trim() || null,
-      input.pan?.trim() || null,
-      input.upiVpa?.trim() || null,
+      // Encrypted at rest (see lib/encryption.ts) - a seller's own tax/
+      // payout details, never meant to be readable from a raw database
+      // dump.
+      input.gstin?.trim() ? encryptField(input.gstin.trim()) : null,
+      input.pan?.trim() ? encryptField(input.pan.trim()) : null,
+      input.upiVpa?.trim() ? encryptField(input.upiVpa.trim()) : null,
     ]
   );
   return row ? rowToStore(row) : null;
@@ -921,9 +929,10 @@ export async function updateStoreAccountDetails(storeId: string, patch: UpdateSt
   }
   if (patch.legalBusinessName !== undefined) set("legal_business_name", patch.legalBusinessName.trim() || null);
   if (patch.businessType !== undefined) set("business_type", patch.businessType.trim() || null);
-  if (patch.gstin !== undefined) set("gstin", patch.gstin.trim() || null);
-  if (patch.pan !== undefined) set("pan", patch.pan.trim() || null);
-  if (patch.upiVpa !== undefined) set("upi_vpa", patch.upiVpa.trim() || null);
+  // Encrypted at rest (see lib/encryption.ts), same as submitStoreForReview.
+  if (patch.gstin !== undefined) set("gstin", patch.gstin.trim() ? encryptField(patch.gstin.trim()) : null);
+  if (patch.pan !== undefined) set("pan", patch.pan.trim() ? encryptField(patch.pan.trim()) : null);
+  if (patch.upiVpa !== undefined) set("upi_vpa", patch.upiVpa.trim() ? encryptField(patch.upiVpa.trim()) : null);
   if (patch.phone !== undefined) set("phone", patch.phone.trim() || null);
   if (patch.email !== undefined) set("email", patch.email.trim() || null);
   if (sets.length === 0) {
@@ -2563,14 +2572,17 @@ export async function boostStore(storeId: string, days: number): Promise<Store |
 // column in this schema (seller_password_hash is a one-way hash, not
 // comparable), and this pilot has no secret-management/KMS setup to do it
 // properly. Worth revisiting before handling real sellers' keys at scale.
+// Encrypted at rest (see lib/encryption.ts) - a seller's own Gemini key,
+// first plaintext-sensitive column in this schema when it was added, now
+// not plaintext anymore.
 export async function getGeminiApiKey(storeId: string): Promise<string | null> {
   const row = await queryOne<any>(`SELECT gemini_api_key FROM stores WHERE id = $1`, [storeId]);
-  return row?.gemini_api_key ?? null;
+  return decryptField(row?.gemini_api_key ?? null);
 }
 
 // `key: null` clears it - the settings UI's "Remove key" action.
 export async function updateStoreGeminiKey(storeId: string, key: string | null): Promise<void> {
-  await execute(`UPDATE stores SET gemini_api_key = $2 WHERE id = $1`, [storeId, key]);
+  await execute(`UPDATE stores SET gemini_api_key = $2 WHERE id = $1`, [storeId, key ? encryptField(key) : null]);
 }
 
 // Platform is registered in Maharashtra (state code 27) for this demo -
