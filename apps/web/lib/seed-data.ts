@@ -2031,12 +2031,14 @@ export async function upsertShopper(input: UpsertShopperInput): Promise<{ shoppe
 
 // Alternative to OTP for a shopper who set a password - OTP always still
 // works (see /api/v1/auth/otp/verify) regardless of whether this is set, so
-// this is purely a skip-the-SMS-wait convenience, not a second factor.
-// Returns null for "wrong phone", "wrong password", and "never set a
-// password" alike, same as a seller login's invalid_credentials - nothing
-// here should let a caller distinguish those cases.
-export async function verifyShopperPassword(phone: string, password: string): Promise<Shopper | null> {
-  const shopper = await findShopperByPhone(phone);
+// this is purely a skip-the-wait convenience, not a second factor. Keyed by
+// email, matching the login page's email-first flow (see
+// /api/v1/shopper/auth/password-login). Returns null for "wrong email",
+// "wrong password", and "never set a password" alike, same as a seller
+// login's invalid_credentials - nothing here should let a caller distinguish
+// those cases.
+export async function verifyShopperPasswordByEmail(email: string, password: string): Promise<Shopper | null> {
+  const shopper = await findShopperByEmail(email);
   if (!shopper?.passwordHash) return null;
   if (!verifyPassword(password, shopper.passwordHash)) return null;
   return shopper;

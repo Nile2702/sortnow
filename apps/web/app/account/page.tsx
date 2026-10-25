@@ -6,19 +6,25 @@ import Script from "next/script";
 import { getShopperSession, setShopperSession, clearShopperSession, ShopperSession } from "../../lib/shopper-session";
 import { validatePassword } from "../../lib/validate-password";
 
-type Step = "phone" | "otp" | "profile" | "google-phone";
+type Step = "email" | "otp" | "profile" | "google-phone";
 type Category = "men" | "women" | "kids";
 type Mode = "login" | "signup";
 
-const STEP_ORDER: Step[] = ["phone", "otp", "profile"];
+const STEP_ORDER: Step[] = ["email", "otp", "profile"];
 
 export default function AccountPage() {
   const [session, setSession] = useState<ShopperSession | null>(null);
   const [ready, setReady] = useState(false);
   const [mode, setMode] = useState<Mode>("login");
-  const [step, setStep] = useState<Step>("phone");
+  const [step, setStep] = useState<Step>("email");
   const [noAccountFound, setNoAccountFound] = useState(false);
   const [alreadyHadAccount, setAlreadyHadAccount] = useState(false);
+  // The account identifier throughout this page - entered first, verified by
+  // OTP, and used to look up (or create) the shopper record. Phone is only
+  // ever collected afterwards (profile step, or google-phone), since
+  // reservations/notifications/pickup still need one on file even though
+  // it's no longer what a shopper logs in with.
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
@@ -26,7 +32,7 @@ export default function AccountPage() {
   const [verifying, setVerifying] = useState(false);
   // Alternative to the OTP step for a returning shopper who set a password
   // during an earlier signup - OTP always still works regardless (see the
-  // "Use OTP instead" link below), this is purely a skip-the-SMS-wait
+  // "Use OTP instead" link below), this is purely a skip-the-wait
   // convenience, never the only way in.
   const [usePasswordLogin, setUsePasswordLogin] = useState(false);
   const [loginPassword, setLoginPassword] = useState("");
@@ -37,16 +43,11 @@ export default function AccountPage() {
   // lib/email.ts) - the server has nowhere else to actually deliver the code
   // to in this environment, so it hands it back for the demo to display.
   const [devOtp, setDevOtp] = useState("");
-  // OTP delivery is by email now (no SMS/DLT gateway). A returning shopper
-  // with an email already on file never sees this - it only appears once
-  // the server says it needs one for this phone number (see handleSendOtp).
-  const [otpEmail, setOtpEmail] = useState("");
-  const [otpNeedsEmail, setOtpNeedsEmail] = useState(false);
 
   // "Continue with Google" - a verified email proves identity instantly, but
-  // every shopper record here is keyed by phone (reservations, notifications,
-  // password login all look up by it), so a brand-new Google sign-in still
-  // needs one more step to collect that before an account can exist. See
+  // every shopper record here is keyed by phone (reservations, notifications
+  // all look up by it), so a brand-new Google sign-in still needs one more
+  // step to collect that before an account can exist. See
   // /api/v1/auth/google.
   const [googleReady, setGoogleReady] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
@@ -58,7 +59,6 @@ export default function AccountPage() {
   // Profile-step fields - only asked of a genuinely first-time customer
   // (see handleVerify: existingShopper comes back null).
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [category, setCategory] = useState<Category | "">("");
   const [pincode, setPincode] = useState("");
   const [city, setCity] = useState("");
@@ -93,7 +93,7 @@ export default function AccountPage() {
   // whole section simply never renders - same graceful-degradation shape as
   // RESEND_API_KEY elsewhere in this app.
   useEffect(() => {
-    if (!googleReady || session || (step !== "phone" && step !== "google-phone")) return;
+    if (!googleReady || session || (step !== "email" && step !== "google-phone")) return;
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     const google = (window as any).google;
     if (!clientId || !google?.accounts?.id) return;
@@ -112,31 +112,20 @@ export default function AccountPage() {
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!/^\d{10}$/.test(phone)) return setError("Enter a valid 10-digit mobile number.");
-    if (otpNeedsEmail && !/^\S+@\S+\.\S+$/.test(otpEmail.trim())) return setError("Enter a valid email address.");
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Enter a valid email address.");
     setSending(true);
     const res = await fetch("/api/v1/auth/otp/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, email: otpNeedsEmail ? otpEmail.trim() : undefined }),
+      body: JSON.stringify({ email: email.trim() }),
     });
     const result = await res.json().catch(() => null);
     setSending(false);
     if (!res.ok) {
-      if (result?.error === "email_required") {
-        // No email on file for this phone yet (new signup, or a pre-email
-        // account) - reveal the field and let them resend with one filled
-        // in, rather than erroring out.
-        setOtpNeedsEmail(true);
-      }
       setError(result?.message ?? "Couldn't send an OTP. Try again.");
       return;
     }
     setDevOtp(result.devOtp ?? "");
-    // Pre-fill the profile-step email field with whatever they just used to
-    // receive the OTP (see the step === "profile" form below) - a brand-new
-    // shopper already proved they own this address, no reason to ask twice.
-    if (otpEmail.trim()) setEmail(otpEmail.trim());
     setStep("otp");
   }
 
@@ -214,23 +203,23 @@ export default function AccountPage() {
   async function handlePasswordLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!/^\d{10}$/.test(phone)) return setError("Enter a valid 10-digit mobile number.");
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Enter a valid email address.");
     if (!loginPassword) return setError("Enter your password.");
     setPasswordLoggingIn(true);
     const res = await fetch("/api/v1/shopper/auth/password-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, password: loginPassword }),
+      body: JSON.stringify({ email: email.trim(), password: loginPassword }),
     });
     const result = await res.json().catch(() => null);
     setPasswordLoggingIn(false);
     if (!res.ok) {
-      setError(result?.message ?? "Incorrect phone or password.");
+      setError(result?.message ?? "Incorrect email or password.");
       return;
     }
     const restored: ShopperSession = {
       name: result.shopper.name,
-      phone,
+      phone: result.shopper.phone,
       email: result.shopper.email,
       preferredCategory: result.shopper.preferredCategory,
       pincode: result.shopper.pincode,
@@ -248,7 +237,7 @@ export default function AccountPage() {
     const res = await fetch("/api/v1/auth/otp/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, code: otp }),
+      body: JSON.stringify({ email: email.trim(), code: otp }),
     });
     const result = await res.json().catch(() => null);
     setVerifying(false);
@@ -257,18 +246,19 @@ export default function AccountPage() {
       return;
     }
 
-    const existing = result.existingShopper as ShopperSession & { id?: string; createdAt?: string } | null;
+    const existing = result.existingShopper as (ShopperSession & { id?: string; createdAt?: string }) | null;
     if (existing) {
       // Returning customer, even on a fresh device/browser - their profile
       // lives server-side (lib/seed-data.ts Shopper), not just this
-      // device's localStorage, so no need to ask them anything again.
-      // If they came in through "Sign up" for a number that already has an
+      // device's localStorage, so no need to ask them anything again -
+      // their phone comes back from the server too, never re-typed here.
+      // If they came in through "Sign up" for an email that already has an
       // account, log them straight in rather than erroring - just flag it
       // so the welcome screen can say so.
       setAlreadyHadAccount(mode === "signup");
       const restored: ShopperSession = {
         name: existing.name,
-        phone,
+        phone: existing.phone,
         email: existing.email,
         preferredCategory: existing.preferredCategory,
         pincode: existing.pincode,
@@ -280,8 +270,9 @@ export default function AccountPage() {
       return;
     }
 
-    // No account exists for this number yet - collect a proper profile
-    // before letting them in, whether they arrived via "Log in" or "Sign up".
+    // No account exists for this email yet - collect a proper profile
+    // (including a phone number, never asked for until now) before letting
+    // them in, whether they arrived via "Log in" or "Sign up".
     setNoAccountFound(mode === "login");
     setStep("profile");
   }
@@ -290,8 +281,8 @@ export default function AccountPage() {
     e.preventDefault();
     setError("");
     if (!name.trim()) return setError("Enter your name.");
+    if (!/^\d{10}$/.test(phone)) return setError("Enter a valid 10-digit mobile number.");
     if (!agreed) return setError("Please accept the Terms & Privacy Policy to continue.");
-    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Enter a valid email, or leave it blank.");
     if (pincode.trim() && !/^\d{6}$/.test(pincode.trim())) return setError("Pincode must be 6 digits, or leave it blank.");
     if (dateOfBirth && new Date(dateOfBirth) > new Date()) return setError("Date of birth can't be in the future.");
     if (password) {
@@ -306,7 +297,7 @@ export default function AccountPage() {
       body: JSON.stringify({
         name,
         phone,
-        email: email.trim() || undefined,
+        email: email.trim(),
         preferredCategory: category || undefined,
         pincode: pincode.trim() || undefined,
         city: city.trim() || undefined,
@@ -342,7 +333,7 @@ export default function AccountPage() {
     setSession(null);
     setJustSignedUp(false);
     setMode("login");
-    setStep("phone");
+    setStep("email");
     setNoAccountFound(false);
     setAlreadyHadAccount(false);
     setPhone("");
@@ -358,8 +349,6 @@ export default function AccountPage() {
     setMarketingOptIn(false);
     setUsePasswordLogin(false);
     setLoginPassword("");
-    setOtpEmail("");
-    setOtpNeedsEmail(false);
     setPendingGoogleCredential("");
     setPendingGoogleName("");
     setPendingGoogleEmail("");
@@ -504,27 +493,29 @@ export default function AccountPage() {
           boxShadow: "0 20px 40px rgba(22, 20, 15, 0.05)",
         }}
       >
-        {(step === "phone" || step === "google-phone") && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
-          <div style={{ marginBottom: step === "phone" ? 18 : 0 }}>
+        {step === "email" && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+          <div style={{ marginBottom: 18 }}>
             <div id="google-signin-button" style={{ display: "flex", justifyContent: "center" }} />
-            {step === "phone" && (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0" }}>
-                <div style={{ flex: 1, height: 1, background: "var(--sio-line)" }} />
-                <span style={{ fontSize: 12, color: "var(--sio-muted)" }}>or use your mobile number</span>
-                <div style={{ flex: 1, height: 1, background: "var(--sio-line)" }} />
-              </div>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0" }}>
+              <div style={{ flex: 1, height: 1, background: "var(--sio-line)" }} />
+              <span style={{ fontSize: 12, color: "var(--sio-muted)" }}>or use your email</span>
+              <div style={{ flex: 1, height: 1, background: "var(--sio-line)" }} />
+            </div>
           </div>
         )}
+        {step === "google-phone" && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+          <div id="google-signin-button" style={{ display: "flex", justifyContent: "center" }} />
+        )}
 
-        {step === "phone" && mode === "login" && usePasswordLogin && (
+        {step === "email" && mode === "login" && usePasswordLogin && (
           <form onSubmit={handlePasswordLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
-              <label style={labelStyle}>Mobile number</label>
+              <label style={labelStyle}>Email address</label>
               <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                placeholder="10-digit mobile number"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                type="email"
                 style={inputStyle}
                 autoFocus
               />
@@ -565,38 +556,24 @@ export default function AccountPage() {
           </form>
         )}
 
-        {step === "phone" && !(mode === "login" && usePasswordLogin) && (
+        {step === "email" && !(mode === "login" && usePasswordLogin) && (
           <form onSubmit={handleSendOtp} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
-              <label style={labelStyle}>Mobile number</label>
+              <label style={labelStyle}>Email address</label>
               <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                placeholder="10-digit mobile number"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                type="email"
                 style={inputStyle}
                 autoFocus
               />
               {mode === "signup" && (
                 <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>
-                  We'll set up your account right after you verify this number.
+                  We'll set up your account right after you verify this email - we'll ask for your mobile number next.
                 </p>
               )}
             </div>
-            {otpNeedsEmail && (
-              <div>
-                <label style={labelStyle}>Email address</label>
-                <input
-                  value={otpEmail}
-                  onChange={(e) => setOtpEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  type="email"
-                  style={inputStyle}
-                />
-                <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>
-                  We don't have an email on file for this number yet - we'll send your OTP here and remember it for next time.
-                </p>
-              </div>
-            )}
             {error && <ErrorBanner text={error} />}
             <button type="submit" disabled={sending} className="sio-btn-primary sio-shine-btn" style={{ ...buttonStyle, opacity: sending ? 0.7 : 1 }}>
               {sending ? "Sending…" : "Send OTP"}
@@ -653,7 +630,7 @@ export default function AccountPage() {
         {step === "otp" && (
           <form onSubmit={handleVerify} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <p style={{ fontSize: 13.5, color: "var(--sio-muted)", textAlign: "center" }}>
-              {otpEmail ? `OTP sent to ${otpEmail}.` : "OTP sent to the email on file for this number."}
+              OTP sent to {email}.
               {devOtp && (
                 <>
                   {" "}
@@ -675,16 +652,14 @@ export default function AccountPage() {
             <button
               type="button"
               onClick={() => {
-                setStep("phone");
+                setStep("email");
                 setOtp("");
                 setDevOtp("");
                 setError("");
-                setOtpNeedsEmail(false);
-                setOtpEmail("");
               }}
               style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 13, cursor: "pointer", padding: 4 }}
             >
-              ← Change number
+              ← Change email
             </button>
           </form>
         )}
@@ -718,7 +693,7 @@ export default function AccountPage() {
             <button
               type="button"
               onClick={() => {
-                setStep("phone");
+                setStep("email");
                 setError("");
                 setPhone("");
                 setGoogleAgreed(false);
@@ -735,22 +710,42 @@ export default function AccountPage() {
           <form onSubmit={handleCompleteProfile} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <p style={{ fontSize: 13, color: "var(--sio-muted)", textAlign: "center", marginTop: -4 }}>
               {noAccountFound
-                ? "We couldn't find an account for that number. Let's create one — tell us a little about you."
-                : "🎉 Number verified. Tell us a little about you to finish setting up your account."}
+                ? "We couldn't find an account for that email. Let's create one — tell us a little about you."
+                : "🎉 Email verified. Tell us a little about you to finish setting up your account."}
             </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 13,
+                color: "var(--sio-muted)",
+                background: "var(--sio-cream)",
+                border: "1px solid var(--sio-line)",
+                borderRadius: 10,
+                padding: "10px 12px",
+              }}
+            >
+              <span style={{ color: "#16a34a", fontWeight: 700 }}>✓</span>
+              <span>
+                <strong style={{ color: "var(--sio-ink)" }}>{email}</strong> verified
+              </span>
+            </div>
             <div>
               <label style={labelStyle}>Full name *</label>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Priya Sharma" style={inputStyle} autoFocus />
             </div>
             <div>
-              <label style={labelStyle}>Email (optional)</label>
+              <label style={labelStyle}>Mobile number *</label>
               <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                type="email"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                placeholder="10-digit mobile number"
                 style={inputStyle}
               />
+              <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>
+                Used for reservation pickups and seller notifications — never shared publicly.
+              </p>
             </div>
             <div>
               <label style={labelStyle}>What do you shop for most? (optional)</label>
@@ -848,7 +843,7 @@ export default function AccountPage() {
 }
 
 function StepIndicator({ step }: { step: Step }) {
-  // "google-phone" is a side path off "phone", not a fourth stage - shown at
+  // "google-phone" is a side path off "email", not a fourth stage - shown at
   // the same position as "profile" (the other "just need one more thing"
   // step) rather than adding a dot that would apply to every other flow too.
   const current = STEP_ORDER.indexOf(step === "google-phone" ? "profile" : step);

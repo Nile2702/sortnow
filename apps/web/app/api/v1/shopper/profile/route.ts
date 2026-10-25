@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { upsertShopper } from "../../../../../lib/seed-data";
+import { upsertShopper, findShopperByPhone } from "../../../../../lib/seed-data";
 import { validatePassword } from "../../../../../lib/validate-password";
-import { consumePhoneVerification } from "../../../../../lib/otp";
+import { consumeEmailVerification } from "../../../../../lib/otp";
 
 const VALID_CATEGORIES = new Set(["men", "women", "kids"]);
+const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 // Saves the profile a first-time customer fills in right after OTP
-// verification (name, optional email, preferred category, home pincode),
-// or updates it on a later sign-in. Called once per sign-in, right after
-// /api/v1/auth/otp/verify succeeds.
+// verification (name, phone, preferred category, home pincode), or updates
+// it on a later sign-in. Called once per sign-in, right after
+// /api/v1/auth/otp/verify succeeds with no existingShopper for this email.
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body || typeof body.name !== "string" || !body.name.trim()) {
@@ -17,8 +18,8 @@ export async function POST(req: NextRequest) {
   if (typeof body.phone !== "string" || !/^\d{10}$/.test(body.phone)) {
     return NextResponse.json({ error: "invalid_request", message: "A valid 10-digit phone is required." }, { status: 400 });
   }
-  if (body.email !== undefined && body.email !== null && body.email !== "" && typeof body.email !== "string") {
-    return NextResponse.json({ error: "invalid_request", message: "email must be a string." }, { status: 400 });
+  if (typeof body.email !== "string" || !EMAIL_RE.test(body.email)) {
+    return NextResponse.json({ error: "invalid_request", message: "A valid email is required." }, { status: 400 });
   }
   if (body.preferredCategory !== undefined && body.preferredCategory !== null && body.preferredCategory !== "" && !VALID_CATEGORIES.has(body.preferredCategory)) {
     return NextResponse.json({ error: "invalid_request", message: "preferredCategory must be men, women, or kids." }, { status: 400 });
@@ -43,15 +44,31 @@ export async function POST(req: NextRequest) {
     if (errors.length > 0) return NextResponse.json({ error: "invalid_request", message: errors.join(" ") }, { status: 400 });
   }
 
-  // Proof the caller actually just verified an OTP for this exact phone -
-  // without this, anyone could POST any phone number here and rewrite that
+  // Proof the caller actually just verified an OTP for this exact email -
+  // without this, anyone could POST any email here and rewrite that
   // shopper's name or set a login password for their account, since
   // upsertShopper trusts whatever phone the request claims. Single-use,
   // consumed here, same lifetime as the OTP verification it rides on.
-  if (!consumePhoneVerification(body.phone)) {
+  if (!consumeEmailVerification(body.email)) {
     return NextResponse.json(
-      { error: "not_verified", message: "Verify your phone with an OTP before saving a profile." },
+      { error: "not_verified", message: "Verify your email with an OTP before saving a profile." },
       { status: 401 }
+    );
+  }
+
+  // The phone number itself was never proven here - only the email was, via
+  // OTP above. If it already belongs to a different account, upsertShopper's
+  // "existing phone" branch would otherwise silently rename that account and
+  // hand back a live session for it with zero proof of ownership - same risk
+  // /api/v1/auth/google already guards against for its own phone-collection
+  // step. A phone that belongs to THIS same verified email is fine (e.g.
+  // re-submitting after a network hiccup) - that's just this shopper's own
+  // existing record.
+  const phoneOwner = await findShopperByPhone(body.phone);
+  if (phoneOwner && phoneOwner.email?.toLowerCase() !== body.email.toLowerCase()) {
+    return NextResponse.json(
+      { error: "phone_taken", message: "This number already has an account. Log in with that account's email instead." },
+      { status: 409 }
     );
   }
 

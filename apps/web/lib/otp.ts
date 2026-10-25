@@ -1,12 +1,14 @@
-// Real, working OTP generation/verification, shared by both seller login
-// and shopper login. Delivery is by email (via lib/email.ts's Resend call)
-// rather than SMS - this pilot deliberately avoids the SMS/DLT registration
-// required in India for transactional SMS, so email is the one channel
-// available without that paperwork. The OTP itself is genuinely random per
-// phone number (phone stays the account identifier; email is purely the
-// delivery address), single-use, time-limited, and attempt-limited - none
-// of that changed when delivery moved from the old sendSms() console.log
-// stub to sendOtpEmail() below.
+// Real, working OTP generation/verification, shared by seller login (phone)
+// and shopper login (email). Delivery is by email (via lib/email.ts's Resend
+// call) rather than SMS - this pilot deliberately avoids the SMS/DLT
+// registration required in India for transactional SMS, so email is the one
+// channel available without that paperwork. The seller side keys its OTP by
+// phone number (phone is the seller account identifier; email is purely the
+// delivery address) via requestOtp/verifyOtp; the shopper side keys its OTP
+// by email directly via requestEmailOtp/verifyEmailOtp below, since email is
+// both the shopper account identifier and the delivery address there. Either
+// way the code itself is genuinely random, single-use, time-limited, and
+// attempt-limited.
 import { rateLimit } from "./rate-limit.ts";
 import { isEmailDeliveryConfigured, sendOtpEmail } from "./email.ts";
 
@@ -26,32 +28,37 @@ const otps = globalThis.__sioOtps ?? (globalThis.__sioOtps = new Map());
 const OTP_TTL_MS = 5 * 60 * 1000;
 const MAX_VERIFY_ATTEMPTS = 5;
 
-// A verified-OTP grant, consumed once by /api/v1/shopper/profile right
-// after a successful verify - without this, that endpoint had no proof the
-// caller actually owns the phone number it was given. It used to accept any
-// {name, phone, password} and overwrite an EXISTING shopper's name and set
-// a login password for them, since upsertShopper's "existing" branch just
-// trusts whatever phone is in the request body - anyone could take over any
-// shopper account by phone number alone. Short-lived (just long enough to
-// complete the profile step right after verifying) and single-use, same
-// reasoning as the OTP code itself.
-declare global {
-  // eslint-disable-next-line no-var
-  var __sioVerifiedPhones: Map<string, number> | undefined;
-}
-const verifiedPhones = globalThis.__sioVerifiedPhones ?? (globalThis.__sioVerifiedPhones = new Map());
-const PHONE_VERIFICATION_TTL_MS = 10 * 60 * 1000;
-
-/** Consumes a recent OTP-verification grant for this phone - true only once per verify. */
-export function consumePhoneVerification(phone: string): boolean {
-  const key = normalizePhone(phone);
-  const expiresAt = verifiedPhones.get(key);
-  verifiedPhones.delete(key);
-  return !!expiresAt && Date.now() <= expiresAt;
-}
-
 export function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, "").slice(-10);
+}
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+// A verified-OTP grant, consumed once by /api/v1/shopper/profile right
+// after a successful verify - without this, that endpoint had no proof the
+// caller actually owns the email it was given. Short-lived (just long enough
+// to complete the profile step right after verifying) and single-use, same
+// reasoning as the OTP code itself. Keyed by email rather than phone - the
+// shopper login page verifies an email first now (see requestEmailOtp/
+// verifyEmailOtp below) and only asks for a phone number afterwards, on the
+// profile step, which is never itself proven by OTP; /api/v1/shopper/profile
+// additionally checks that phone isn't already someone else's account before
+// trusting it, the same way /api/v1/auth/google already has to.
+declare global {
+  // eslint-disable-next-line no-var
+  var __sioVerifiedEmails: Map<string, number> | undefined;
+}
+const verifiedEmails = globalThis.__sioVerifiedEmails ?? (globalThis.__sioVerifiedEmails = new Map());
+const EMAIL_VERIFICATION_TTL_MS = 10 * 60 * 1000;
+
+/** Consumes a recent OTP-verification grant for this email - true only once per verify. */
+export function consumeEmailVerification(email: string): boolean {
+  const key = normalizeEmail(email);
+  const expiresAt = verifiedEmails.get(key);
+  verifiedEmails.delete(key);
+  return !!expiresAt && Date.now() <= expiresAt;
 }
 
 export type RequestOtpResult = { ok: true; devOtp?: string } | { ok: false; error: string };
@@ -117,6 +124,56 @@ export function verifyOtp(phone: string, code: string): boolean {
   }
   if (record.code !== code.trim()) return false;
   otps.delete(key); // single-use - a verified code can't be replayed
-  verifiedPhones.set(key, Date.now() + PHONE_VERIFICATION_TTL_MS);
+  return true;
+}
+
+// Email counterpart of requestOtp/verifyOtp above, for the shopper login
+// page's email-first flow (see app/account/page.tsx) - email is both the
+// account identifier here and the delivery address, so there's no separate
+// "resolve where to send it" step the phone version needs.
+export function requestEmailOtp(email: string): RequestOtpResult {
+  const trimmedEmail = normalizeEmail(email);
+  if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+    return { ok: false, error: "Enter a valid email address." };
+  }
+
+  const key = `email:${trimmedEmail}`;
+  const { ok, retryAfterMs } = rateLimit(`otp-request:${key}`, 5, 10 * 60 * 1000);
+  if (!ok) {
+    return { ok: false, error: `Too many OTP requests. Try again in ${Math.ceil(retryAfterMs / 60000)} minute(s).` };
+  }
+
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  otps.set(key, { code, expiresAt: Date.now() + OTP_TTL_MS, attempts: 0 });
+
+  void sendOtpEmail(trimmedEmail, code).then((result) => {
+    if (!result.delivered && result.reason !== "not_configured") {
+      console.error(`[otp] Failed to email OTP to ${trimmedEmail}: ${result.reason}`);
+    }
+  });
+
+  if (isEmailDeliveryConfigured()) {
+    return { ok: true };
+  }
+  return { ok: true, devOtp: code };
+}
+
+export function verifyEmailOtp(email: string, code: string): boolean {
+  const normalized = normalizeEmail(email);
+  const key = `email:${normalized}`;
+  const record = otps.get(key);
+  if (!record) return false;
+  if (Date.now() > record.expiresAt) {
+    otps.delete(key);
+    return false;
+  }
+  record.attempts++;
+  if (record.attempts > MAX_VERIFY_ATTEMPTS) {
+    otps.delete(key);
+    return false;
+  }
+  if (record.code !== code.trim()) return false;
+  otps.delete(key); // single-use - a verified code can't be replayed
+  verifiedEmails.set(normalized, Date.now() + EMAIL_VERIFICATION_TTL_MS);
   return true;
 }
