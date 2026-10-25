@@ -263,6 +263,36 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
     const foreground = new Uint8Array(pixelCount);
     for (let i = 0; i < pixelCount; i++) foreground[i] = alpha[i] >= ALPHA_THRESHOLD ? 1 : 0;
 
+    // The model's confidence map almost always carries a scatter of small,
+    // disconnected false-positive blobs near the garment - anything from a
+    // handful of noise pixels to a few hundred (a drop shadow the model
+    // partially mistook for fabric), all well below ALPHA_THRESHOLD's own
+    // intent but still >= it. Left in, the *next* step (closing, to bridge a
+    // real neckline/armpit gap) dilates every one of these by its own large
+    // radius too - which routinely reaches far enough to weld them onto the
+    // garment's actual edge, since a blob only has to be within 2x that
+    // radius of the real silhouette to fuse onto it. That fusion is exactly
+    // what used to turn a clean, smooth cutout into a ragged, bitten-looking
+    // edge (confirmed on real seller photos by comparing the mask before and
+    // after closing - the raw per-pixel confidence was already clean; the
+    // damage appeared only once closing ran on top of it).
+    //
+    // Two passes, because the two failure shapes need different fixes: a
+    // single-pixel speck disappears under a small opening (erode then
+    // dilate, radius 2 - the same radius already trusted elsewhere in this
+    // function to break a thread-thin bridge without touching real content),
+    // but a shadow blob can be dozens of pixels across - too wide for a
+    // 2px erosion to touch, yet still negligible (low hundreds of pixels)
+    // next to an actual garment silhouette (tens of thousands of pixels).
+    // dropSmallComponents catches that second shape by size alone rather
+    // than width, with a threshold generous enough to never touch a real,
+    // substantial, genuinely-disconnected garment part (a separated sleeve
+    // or collar is a large fraction of the garment's own area, not a sliver
+    // of it) - that real case is left for the closing step below to bridge,
+    // same as before this fix.
+    const opened = boxMorph(boxMorph(foreground, width, height, 2, false), width, height, 2, true);
+    const denoised = dropSmallComponents(opened, width, height, 0.02);
+
     // A photo actually uploaded through the site can be far more detailed
     // than a small test copy - real fabric weave/texture visible at full
     // resolution gives the model more to be uncertain about than a heavily
@@ -274,7 +304,7 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
     // opening's width at this resolution, so a real hole still isn't
     // wrongly filled in.
     const radius = Math.min(30, Math.max(6, Math.round(Math.max(width, height) / 80)));
-    let closed = boxMorph(boxMorph(foreground, width, height, radius, true), width, height, radius, false);
+    let closed = boxMorph(boxMorph(denoised, width, height, radius, true), width, height, radius, false);
 
     // A real photo (run through actual phone/WhatsApp compression, not a
     // pre-shrunk test copy) reproduced a false-positive gap 90+ pixels wide
@@ -584,6 +614,61 @@ function drawToCanvas(img: HTMLImageElement, width: number, height: number): Can
   if (!ctx) throw new Error("Canvas not supported");
   ctx.drawImage(img, 0, 0, width, height);
   return ctx;
+}
+
+// Drops every connected component of `mask` except the largest one and any
+// other component that's still at least `minFraction` of the largest one's
+// size - a lower bar than the "keep only the single largest" filter this
+// function's own caller runs much later (after closing has already had a
+// chance to merge real pieces back together), so a real but still-separate
+// garment part survives this early pass untouched, while a small stray blob
+// (image noise, a partial drop-shadow) gets zeroed out before it can be
+// welded onto the main silhouette by the closing step right after this runs.
+function dropSmallComponents(mask: Uint8Array, width: number, height: number, minFraction: number): Uint8Array {
+  const pixelCount = width * height;
+  const componentId = new Int32Array(pixelCount).fill(-1);
+  const componentSizes: number[] = [];
+  const stack: number[] = [];
+  for (let start = 0; start < pixelCount; start++) {
+    if (mask[start] !== 1 || componentId[start] !== -1) continue;
+    const id = componentSizes.length;
+    let size = 0;
+    stack.length = 0;
+    stack.push(start);
+    componentId[start] = id;
+    while (stack.length) {
+      const i = stack.pop() as number;
+      size++;
+      const x = i % width;
+      const y = (i / width) | 0;
+      if (x > 0 && mask[i - 1] === 1 && componentId[i - 1] === -1) {
+        componentId[i - 1] = id;
+        stack.push(i - 1);
+      }
+      if (x < width - 1 && mask[i + 1] === 1 && componentId[i + 1] === -1) {
+        componentId[i + 1] = id;
+        stack.push(i + 1);
+      }
+      if (y > 0 && mask[i - width] === 1 && componentId[i - width] === -1) {
+        componentId[i - width] = id;
+        stack.push(i - width);
+      }
+      if (y < height - 1 && mask[i + width] === 1 && componentId[i + width] === -1) {
+        componentId[i + width] = id;
+        stack.push(i + width);
+      }
+    }
+    componentSizes.push(size);
+  }
+  if (componentSizes.length <= 1) return mask;
+
+  const largestSize = Math.max(...componentSizes);
+  const minSize = largestSize * minFraction;
+  const result = mask.slice();
+  for (let i = 0; i < pixelCount; i++) {
+    if (result[i] === 1 && componentSizes[componentId[i]] < minSize) result[i] = 0;
+  }
+  return result;
 }
 
 // Separable box-filter approximation of dilate (isMax) / erode (!isMax) on a
