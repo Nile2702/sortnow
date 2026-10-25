@@ -306,6 +306,20 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
     const radius = Math.min(30, Math.max(6, Math.round(Math.max(width, height) / 80)));
     let closed = boxMorph(boxMorph(denoised, width, height, radius, true), width, height, radius, false);
 
+    // The same closing radius that bridges a real neckline/armpit gap also
+    // bridges a real gap between two limbs (most often between the legs in
+    // a full-body on-model photo) whenever it happens to be narrower than
+    // that radius too - closing has no way to tell the two apart by width
+    // alone, so a photo with the model's legs close together came out with
+    // the gap between them solidly painted in, not transparent. Undone here
+    // by comparing `closed` back against the pre-closing mask to find
+    // exactly the pixels closing added, then checking each such patch
+    // against the same "is this actually a limb gap" test the enclosed-
+    // pocket pass below applies to a gap closing *didn't* manage to bridge -
+    // this just has to run first, since once closing fully seals a gap
+    // there's no separate hole left for that later pass to even find.
+    closed = undoLimbGapBridges(denoised, closed, originalData, width, height);
+
     // A real photo (run through actual phone/WhatsApp compression, not a
     // pre-shrunk test copy) reproduced a false-positive gap 90+ pixels wide
     // - a light/white stripe the model misjudged as background, roughly the
@@ -387,11 +401,19 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
         const component = [start];
         const borderPixels: number[] = [];
         let belowNeckZone = false;
+        let bboxMinX = width;
+        let bboxMaxX = 0;
+        let bboxMinY = height;
+        let bboxMaxY = 0;
         while (stack.length) {
           const i = stack.pop() as number;
           const x = i % width;
           const y = (i / width) | 0;
           if (y > neckZoneBottom) belowNeckZone = true;
+          if (x < bboxMinX) bboxMinX = x;
+          if (x > bboxMaxX) bboxMaxX = x;
+          if (y < bboxMinY) bboxMinY = y;
+          if (y > bboxMaxY) bboxMaxY = y;
           const neighbors = [
             [x - 1, y],
             [x + 1, y],
@@ -423,7 +445,16 @@ export function cutoutFromMask(originalDataUrl: string, maskDataUrl: string): Pr
           const o = b * 4;
           if (isSkinTone(originalData[o], originalData[o + 1], originalData[o + 2])) skinCount++;
         }
-        const looksLikeLimbGap = borderPixels.length > 0 && skinCount / borderPixels.length > 0.3;
+        // The skin-tone test alone can miss a real leg gap outright - a
+        // shadowed leg edge reads too dark, and a gap this long also borders
+        // a stretch of the garment's own hem above the legs, which dilutes
+        // the ratio even when every skin pixel is read correctly (see
+        // undoLimbGapBridges' own comment for the real-photo numbers that
+        // motivated this). Shape is the fallback signal: a real limb gap
+        // runs tall and narrow for its own length, which a neckline or
+        // armpit opening never does.
+        const looksLikeLimbGapShape = bboxMaxY - bboxMinY + 1 > (bboxMaxX - bboxMinX + 1) * 2;
+        const looksLikeLimbGap = (borderPixels.length > 0 && skinCount / borderPixels.length > 0.3) || looksLikeLimbGapShape;
         if (!looksLikeLimbGap) {
           for (const i of component) patched[i] = 1;
         }
@@ -667,6 +698,101 @@ function dropSmallComponents(mask: Uint8Array, width: number, height: number, mi
   const result = mask.slice();
   for (let i = 0; i < pixelCount; i++) {
     if (result[i] === 1 && componentSizes[componentId[i]] < minSize) result[i] = 0;
+  }
+  return result;
+}
+
+// Finds every pixel the closing step just added (present in `closed` but not
+// in the pre-closing `denoised` mask), groups them into connected patches,
+// and un-fills any patch that looks like a real gap between two limbs rather
+// than a neckline/armpit opening closing was written to bridge - using the
+// same two-signal test (skin-toned border, or a tall-and-narrow shape) the
+// enclosed-pocket pass just below this applies to a gap closing *didn't*
+// manage to fully bridge. Both signals matter here for the same reason they
+// matter there: on a real seller photo of a full-body on-model shot, a
+// shadowed or back-lit leg can read too dark to pass a per-pixel skin-tone
+// test on its own (confirmed on a real photo - one border was 20% skin by
+// that test alone, under the 30% bar, because much of the rest of the
+// border was either deep shadow on the leg's far edge or the garment's own
+// hem just above the legs), while the gap itself is still unmistakably tall
+// and narrow and sitting in the lower half of the figure.
+function undoLimbGapBridges(
+  denoised: Uint8Array,
+  closed: Uint8Array,
+  originalData: Uint8ClampedArray,
+  width: number,
+  height: number
+): Uint8Array {
+  const pixelCount = width * height;
+  const bridged = new Uint8Array(pixelCount);
+  for (let i = 0; i < pixelCount; i++) bridged[i] = denoised[i] === 0 && closed[i] === 1 ? 1 : 0;
+
+  let minY = height;
+  let maxY = 0;
+  for (let i = 0; i < pixelCount; i++) {
+    if (closed[i] !== 1) continue;
+    const y = (i / width) | 0;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  const lowerZoneTop = minY + (maxY - minY) * 0.33;
+
+  const isSkinTone = (r: number, g: number, b: number) =>
+    r > 95 && g > 40 && b > 20 && Math.max(r, g, b) - Math.min(r, g, b) > 15 && r - g > 15 && r > b;
+
+  const componentId = new Int32Array(pixelCount).fill(-1);
+  const stack: number[] = [];
+  const result = closed.slice();
+  for (let start = 0; start < pixelCount; start++) {
+    if (!bridged[start] || componentId[start] !== -1) continue;
+    const id = start;
+    const component = [start];
+    const borderPixels: number[] = [];
+    let bboxMinX = width;
+    let bboxMaxX = 0;
+    let bboxMinY = height;
+    let bboxMaxY = 0;
+    stack.length = 0;
+    stack.push(start);
+    componentId[start] = id;
+    while (stack.length) {
+      const i = stack.pop() as number;
+      const x = i % width;
+      const y = (i / width) | 0;
+      if (x < bboxMinX) bboxMinX = x;
+      if (x > bboxMaxX) bboxMaxX = x;
+      if (y < bboxMinY) bboxMinY = y;
+      if (y > bboxMaxY) bboxMaxY = y;
+      const neighbors = [
+        [x - 1, y],
+        [x + 1, y],
+        [x, y - 1],
+        [x, y + 1],
+      ];
+      for (const [nx, ny] of neighbors) {
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+        const ni = ny * width + nx;
+        if (bridged[ni] && componentId[ni] === -1) {
+          componentId[ni] = id;
+          stack.push(ni);
+          component.push(ni);
+        } else if (!bridged[ni] && closed[ni] === 1) {
+          borderPixels.push(ni);
+        }
+      }
+    }
+
+    let skinCount = 0;
+    for (const b of borderPixels) {
+      const o = b * 4;
+      if (isSkinTone(originalData[o], originalData[o + 1], originalData[o + 2])) skinCount++;
+    }
+    const skinRatio = borderPixels.length > 0 ? skinCount / borderPixels.length : 0;
+    const looksLikeLimbGapShape = bboxMaxY - bboxMinY + 1 > (bboxMaxX - bboxMinX + 1) * 2 && bboxMinY > lowerZoneTop;
+
+    if (skinRatio > 0.3 || looksLikeLimbGapShape) {
+      for (const i of component) result[i] = 0;
+    }
   }
   return result;
 }
