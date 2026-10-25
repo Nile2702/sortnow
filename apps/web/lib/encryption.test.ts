@@ -39,3 +39,27 @@ test("throws a clear error when DATA_ENCRYPTION_KEY is missing", async () => {
     process.env.DATA_ENCRYPTION_KEY = saved;
   }
 });
+
+test("decryptField never throws when DATA_ENCRYPTION_KEY is missing - returns a placeholder instead", () => {
+  const saved = process.env.DATA_ENCRYPTION_KEY;
+  const encrypted = encryptField("27AAAAA0000A1Z5");
+  delete process.env.DATA_ENCRYPTION_KEY;
+  try {
+    assert.doesNotThrow(() => decryptField(encrypted));
+    assert.notEqual(decryptField(encrypted), "27AAAAA0000A1Z5");
+  } finally {
+    process.env.DATA_ENCRYPTION_KEY = saved;
+  }
+});
+
+test("decryptField never throws on a value encrypted with a different key", () => {
+  const encrypted = encryptField("27AAAAA0000A1Z5");
+  const saved = process.env.DATA_ENCRYPTION_KEY;
+  process.env.DATA_ENCRYPTION_KEY = Buffer.alloc(32, 9).toString("base64");
+  try {
+    assert.doesNotThrow(() => decryptField(encrypted));
+    assert.notEqual(decryptField(encrypted), "27AAAAA0000A1Z5");
+  } finally {
+    process.env.DATA_ENCRYPTION_KEY = saved;
+  }
+});

@@ -47,6 +47,13 @@ export function encryptField(plaintext: string): string {
   return `${PREFIX}${iv.toString("base64")}:${authTag.toString("base64")}:${ciphertext.toString("base64")}`;
 }
 
+// Returned in place of a value this function can't actually decrypt right
+// now (see the catch below) - a clear, recognizable placeholder rather than
+// silently showing an empty field, so a seller or admin looking at it can
+// tell "this exists but isn't readable right now" apart from "this was
+// never set".
+const DECRYPT_UNAVAILABLE = "[unavailable - encryption key issue]";
+
 // Passes through anything that isn't actually one of this module's own
 // encrypted values - a legacy plaintext GSTIN/PAN/UPI VPA/Gemini key from
 // before the migration, or simply null/undefined, rather than throwing.
@@ -54,8 +61,22 @@ export function decryptField<T extends string | null | undefined>(value: T): T {
   if (value == null || !value.startsWith(PREFIX)) return value;
   const [ivB64, authTagB64, ciphertextB64] = value.slice(PREFIX.length).split(":");
   if (!ivB64 || !authTagB64 || !ciphertextB64) return value; // malformed - fail safe by returning as-is, not crashing a page load
-  const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), Buffer.from(ivB64, "base64"));
-  decipher.setAuthTag(Buffer.from(authTagB64, "base64"));
-  const plaintext = Buffer.concat([decipher.update(Buffer.from(ciphertextB64, "base64")), decipher.final()]);
-  return plaintext.toString("utf8") as T;
+  // rowToStore (lib/seed-data.ts) calls this unconditionally for every store
+  // row it reads - including from fully public code paths (the homepage's
+  // store search, /shops, /store/[slug], and app/sitemap.ts, which runs at
+  // *build* time as a statically-generated route) that never even go on to
+  // use the decrypted value. A missing or wrong DATA_ENCRYPTION_KEY must
+  // never be allowed to throw out of here, or one seller's encrypted GSTIN
+  // takes down every store-reading page on the site - including, concretely,
+  // failing the production build itself when the sitemap route hits it
+  // without the key configured in that environment.
+  try {
+    const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), Buffer.from(ivB64, "base64"));
+    decipher.setAuthTag(Buffer.from(authTagB64, "base64"));
+    const plaintext = Buffer.concat([decipher.update(Buffer.from(ciphertextB64, "base64")), decipher.final()]);
+    return plaintext.toString("utf8") as T;
+  } catch (err) {
+    console.error("[encryption] decryptField failed - DATA_ENCRYPTION_KEY may be unset/wrong, or the stored value corrupted:", err);
+    return DECRYPT_UNAVAILABLE as T;
+  }
 }
