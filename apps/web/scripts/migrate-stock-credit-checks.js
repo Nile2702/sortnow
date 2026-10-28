@@ -18,6 +18,13 @@
 // is wrapped in a DO block that swallows "already exists" (duplicate_object),
 // the same re-run-safety pattern migrate-admin-moderation.js already uses
 // for its CREATE TYPE statement.
+//
+// The photo_credits constraint this originally also added here was removed
+// (not just skipped) after scripts/migrate-gemini-byok.js dropped that whole
+// table - re-running this script today would otherwise fail on "relation
+// photo_credits does not exist" (duplicate_object only swallows an
+// already-exists error, not a missing-table one). The constraint itself is
+// moot now anyway: there's no photo_credits.credits column left to protect.
 const fs = require("fs");
 const path = require("path");
 const { Client } = require("pg");
@@ -31,11 +38,6 @@ const connectionString = match[1].trim();
 const statements = [
   `DO $$ BEGIN
      ALTER TABLE products ADD CONSTRAINT products_stock_remaining_check CHECK (stock_remaining >= 0);
-   EXCEPTION
-     WHEN duplicate_object THEN null;
-   END $$`,
-  `DO $$ BEGIN
-     ALTER TABLE photo_credits ADD CONSTRAINT photo_credits_credits_check CHECK (credits >= 0);
    EXCEPTION
      WHEN duplicate_object THEN null;
    END $$`,

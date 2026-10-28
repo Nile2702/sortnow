@@ -1300,11 +1300,11 @@ export async function createReservation(input: {
   const reservedUntil = new Date(now.getTime() + input.durationMinutes * 60_000).toISOString();
 
   // The stock-sufficiency check and the reservation insert used to be two
-  // separate round trips (a plain SELECT-derived count in
-  // getProductReservedQuantity, then an unconditional INSERT here) - two
-  // concurrent requests for the last unit of the same product could both
-  // read "1 available" before either had inserted, and both insert,
-  // overbooking it. Locking the relevant product rows with
+  // separate round trips (a plain SELECT-derived held-quantity count, then
+  // an unconditional INSERT here) - two concurrent requests for the last
+  // unit of the same product could both read "1 available" before either
+  // had inserted, and both insert, overbooking it. Locking the relevant
+  // product rows with
   // `SELECT ... FOR UPDATE` *inside* the same transaction as both the
   // held-quantity recount and the INSERT forces a second concurrent call
   // for the same product to block until this transaction commits (or rolls
@@ -1328,12 +1328,10 @@ export async function createReservation(input: {
       const statusById = new Map<string, string>(lockedRows.map((r: any) => [r.id, r.status]));
 
       // Held quantity is recomputed from inside this same transaction
-      // (not via the exported getProductReservedQuantity, which uses the
-      // plain pooled `query` helper on a different connection with no
-      // lock) - only "pending" reservations whose window hasn't passed yet
-      // count, mirroring getProductReservedQuantity/flipIfExpired's own
-      // write-on-read expiry logic without needing to perform that write
-      // here too.
+      // (not via the plain pooled `query` helper on a different connection
+      // with no lock) - only "pending" reservations whose window hasn't
+      // passed yet count, mirroring flipIfExpired's own write-on-read
+      // expiry logic without needing to perform that write here too.
       const heldById = new Map<string, number>();
       const claimedById = new Map<string, number>();
       const surviving: ReservationItem[] = [];
@@ -1591,7 +1589,7 @@ export async function getPlatformCustomerStats(): Promise<PlatformCustomerStats>
 // flipped to "expired" in the DB the first time anything reads it, rather
 // than only computing that fact ephemerally for display (which would leave
 // the stored status "pending" forever and let it keep counting as held
-// stock - see getProductReservedQuantity below). No scheduled job does this
+// stock against a product's remaining inventory). No scheduled job does this
 // instead, deliberately: Vercel's Hobby plan only runs a cron once a day,
 // far too infrequent for a hold window measured in tens of minutes to a few
 // hours, so correctness can't depend on anything running on a schedule.
@@ -1601,26 +1599,6 @@ async function flipIfExpired(r: Reservation): Promise<Reservation> {
   if (!isPastReservationWindow(r.status, r.reservedUntil)) return r;
   const row = await queryOne<any>(`UPDATE reservations SET status = 'expired' WHERE id = $1 AND status = 'pending' RETURNING *`, [r.id]);
   return row ? rowToReservation(row) : r;
-}
-
-// How many units of a product are currently held by *other* active
-// (pending, non-expired) reservations at this store - what a NEW
-// reservation's stock check needs to subtract from Product.stockRemaining
-// on top of whatever stock-tracking a seller's in-store billing already
-// does (see createBill). Goes through getStoreReservations so every
-// candidate reservation gets the same write-on-read expiry flip first -
-// otherwise a pending-but-actually-expired reservation nobody has viewed
-// yet would keep "holding" stock indefinitely.
-export async function getProductReservedQuantity(storeId: string, productId: string): Promise<number> {
-  const reservations = await getStoreReservations(storeId);
-  let held = 0;
-  for (const r of reservations) {
-    if (r.status !== "pending") continue;
-    for (const item of r.items) {
-      if (item.productId === productId) held += item.quantity;
-    }
-  }
-  return held;
 }
 
 // `AND status = 'pending'` guards against two concurrent transitions of the

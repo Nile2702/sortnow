@@ -64,9 +64,9 @@ export async function POST(req: NextRequest) {
   const products = await getAllProducts();
   const byStoreSlug = new Map<string, ReservationItem[]>();
   // Stock sufficiency is NOT (re-)checked here - it used to be, against a
-  // plain snapshot read (getProductReservedQuantity) taken well before any
-  // insert, which let two concurrent requests for the last unit of the same
-  // product both pass this check and both insert, overbooking it. That
+  // plain snapshot read taken well before any insert, which let two
+  // concurrent requests for the last unit of the same product both pass
+  // this check and both insert, overbooking it. That
   // check now happens exactly once, authoritatively, inside
   // createReservation's own transaction - which locks the relevant product
   // rows (`SELECT ... FOR UPDATE`) and recounts held quantity against them

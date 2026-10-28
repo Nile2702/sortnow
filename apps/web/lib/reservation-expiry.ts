@@ -13,9 +13,9 @@
 // is actually read or when stock availability is checked - see
 // lib/seed-data.ts's getReservation/getStoreReservations (which flip a
 // stale "pending" row to "expired" in the DB the first time anything reads
-// it past its window) and getProductReservedQuantity (which must apply this
-// same check so an expired-but-not-yet-flipped reservation never holds
-// stock hostage).
+// it past its window) and createReservation's own held-quantity recount
+// (which must apply this same check so an expired-but-not-yet-flipped
+// reservation never holds stock hostage).
 export function isPastReservationWindow(status: string, reservedUntil: string | Date, now: number = Date.now()): boolean {
   return status === "pending" && new Date(reservedUntil).getTime() < now;
 }

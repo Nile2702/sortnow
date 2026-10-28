@@ -315,7 +315,8 @@ CREATE TABLE shoppers (
     password_hash       TEXT,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     referral_code       TEXT UNIQUE,
-    referred_by         TEXT REFERENCES shoppers(id)
+    referred_by         TEXT REFERENCES shoppers(id),
+    google_id           TEXT UNIQUE -- added via scripts/migrate-shopper-google-id.js; nullable (Postgres allows multiple NULLs under UNIQUE), backs "Continue with Google"
 );
 CREATE INDEX idx_shoppers_referred_by ON shoppers (referred_by) WHERE referred_by IS NOT NULL;
 
