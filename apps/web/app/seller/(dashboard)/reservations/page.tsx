@@ -62,13 +62,20 @@ export default function SellerReservationsPage() {
   const { store, loading } = useSellerStore();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [, forceTick] = useState(0);
 
   function load() {
     if (!store) return;
+    setLoadError(false);
     fetch(`/api/v1/seller/stores/${store.id}/reservations`)
-      .then((r) => r.json())
-      .then(setReservations);
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(setReservations)
+      // A failed/expired-session response used to be stored as-is (an
+      // {error, message} object, not an array) and crash every render below
+      // that assumes `reservations` is a list (computeNoShowStats' filters,
+      // `pending`/`past`). Now it just shows a retryable error instead.
+      .catch(() => setLoadError(true));
   }
 
   useEffect(load, [store]);
@@ -80,18 +87,42 @@ export default function SellerReservationsPage() {
 
   async function updateStatus(id: string, status: "fulfilled" | "cancelled") {
     setUpdating(id);
-    await fetch(`/api/v1/seller/reservations/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    load();
-    setUpdating(null);
-    showToast(status === "fulfilled" ? "Marked as picked up" : "Reservation cancelled", status === "fulfilled" ? "success" : "default");
+    try {
+      const res = await fetch(`/api/v1/seller/reservations/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const result = await res.json().catch(() => null);
+        showToast(result?.message ?? "Couldn't update this reservation. Try again.", "error");
+        return;
+      }
+      load();
+      showToast(status === "fulfilled" ? "Marked as picked up" : "Reservation cancelled", status === "fulfilled" ? "success" : "default");
+    } catch {
+      showToast("Couldn't reach the server. Check your connection and try again.", "error");
+    } finally {
+      setUpdating(null);
+    }
   }
 
   if (loading || !store) {
     return <LoadingScreen maxWidth={1440} />;
+  }
+
+  if (loadError) {
+    return (
+      <main style={{ maxWidth: 1440, margin: "0 auto", padding: 40, textAlign: "center" }}>
+        <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load your reservations.</p>
+        <button
+          onClick={load}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+        >
+          Retry
+        </button>
+      </main>
+    );
   }
 
   const pending = reservations.filter((r) => r.status === "pending");

@@ -1288,6 +1288,14 @@ export async function createReservation(input: {
   const storeRow = await queryOne<any>(`SELECT * FROM stores WHERE id = $1`, [input.storeId]);
   if (!storeRow) return null;
   const store = rowToStore(storeRow);
+  // A suspended/draft store's listings are already excluded from
+  // search/browse, and /api/v1/reservations pre-filters on this too - but
+  // this function is the one place that actually inserts a reservation, so
+  // it shouldn't depend on every caller remembering to re-check it. A
+  // shopper's own cart (localStorage) can go stale and still reference a
+  // store that's since been suspended between adding to cart and checking
+  // out.
+  if (store.status !== "active") return null;
   const now = new Date();
   const reservedUntil = new Date(now.getTime() + input.durationMinutes * 60_000).toISOString();
 
@@ -1310,9 +1318,14 @@ export async function createReservation(input: {
     reservation = await withTransaction(async (client) => {
       const productIds = Array.from(new Set(input.items.map((i) => i.productId))).sort();
       const lockedRows = productIds.length
-        ? (await client.query(`SELECT id, stock_remaining FROM products WHERE id = ANY($1::text[]) FOR UPDATE`, [productIds])).rows
+        ? (await client.query(`SELECT id, stock_remaining, status FROM products WHERE id = ANY($1::text[]) FOR UPDATE`, [productIds])).rows
         : [];
       const stockById = new Map<string, number | null>(lockedRows.map((r: any) => [r.id, r.stock_remaining]));
+      // Same staleness reasoning as the store-active check above, applied
+      // per-item: a listing can go on hold between a shopper adding it to
+      // their cart and checking out. Re-checked here, inside the lock, as
+      // the one authoritative place rather than trusting every caller.
+      const statusById = new Map<string, string>(lockedRows.map((r: any) => [r.id, r.status]));
 
       // Held quantity is recomputed from inside this same transaction
       // (not via the exported getProductReservedQuantity, which uses the
@@ -1325,6 +1338,7 @@ export async function createReservation(input: {
       const claimedById = new Map<string, number>();
       const surviving: ReservationItem[] = [];
       for (const item of input.items) {
+        if (statusById.get(item.productId) === "on_hold") continue;
         const stock = stockById.get(item.productId);
         if (stock != null) {
           if (!heldById.has(item.productId)) {

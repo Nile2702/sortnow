@@ -21,8 +21,8 @@ export async function POST(req: NextRequest, { params }: { params: { productId: 
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   const rating = Number(body.rating);
-  if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-    return NextResponse.json({ error: "invalid_input", message: "rating must be a number from 1 to 5" }, { status: 400 });
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return NextResponse.json({ error: "invalid_input", message: "rating must be a whole number from 1 to 5" }, { status: 400 });
   }
   if (typeof body.comment !== "string" || !body.comment.trim() || body.comment.length > 2000) {
     return NextResponse.json({ error: "invalid_input", message: "comment must be a non-empty string up to 2000 characters" }, { status: 400 });

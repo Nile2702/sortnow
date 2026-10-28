@@ -7,6 +7,25 @@ import { CartItem, getCart, cartTotal } from "../../lib/cart";
 import { addMyReservationId } from "../../lib/reservations";
 import { getShopperSession } from "../../lib/shopper-session";
 
+// Maps /api/v1/reservations' {error} codes to a message a shopper can
+// actually act on - the API itself only returns a bare code for most
+// rejections (see that route's own validation order).
+function reservationErrorMessage(code: string | undefined): string {
+  switch (code) {
+    case "rate_limited":
+      return "Too many attempts. Please wait a few minutes and try again.";
+    case "invalid_contact":
+      return "Enter a valid name and 10-digit phone number.";
+    case "empty_sort":
+      return "Your cart is empty.";
+    case "invalid_items":
+    case "no_valid_stores":
+      return "Some items in your cart are no longer available - please review your cart and try again.";
+    default:
+      return "Couldn't complete your reservation. Try again.";
+  }
+}
+
 const DURATIONS = [
   { minutes: 30, label: "30 minutes" },
   { minutes: 60, label: "1 hour" },
@@ -21,6 +40,7 @@ export default function ReservePage() {
   const [shopperPhone, setShopperPhone] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [reserving, setReserving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const cart = getCart();
@@ -40,27 +60,43 @@ export default function ReservePage() {
   async function handleReserve(e: React.FormEvent) {
     e.preventDefault();
     if (!isValid) return;
+    setError("");
     setReserving(true);
 
-    const res = await fetch("/api/v1/reservations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: items.map((i) => ({
-          productId: i.productId,
-          title: i.title,
-          storeSlug: i.storeSlug,
-          size: i.size,
-          price: i.price,
-          quantity: i.quantity,
-          imageUrl: i.imageUrl,
-        })),
-        shopperName,
-        shopperPhone,
-        durationMinutes,
-      }),
-    });
-    const created: { id: string }[] = await res.json();
+    let res: Response;
+    try {
+      res = await fetch("/api/v1/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({
+            productId: i.productId,
+            title: i.title,
+            storeSlug: i.storeSlug,
+            size: i.size,
+            price: i.price,
+            quantity: i.quantity,
+            imageUrl: i.imageUrl,
+          })),
+          shopperName,
+          shopperPhone,
+          durationMinutes,
+        }),
+      });
+    } catch {
+      setReserving(false);
+      setError("Couldn't reach the server. Check your connection and try again.");
+      return;
+    }
+
+    const result = await res.json().catch(() => null);
+    if (!res.ok || !Array.isArray(result)) {
+      setReserving(false);
+      setError(reservationErrorMessage(result?.error));
+      return;
+    }
+
+    const created = result as { id: string }[];
     created.forEach((r) => addMyReservationId(r.id));
 
     window.localStorage.setItem("sio:cart", "[]");
@@ -126,6 +162,21 @@ export default function ReservePage() {
             ))}
           </div>
 
+          {error && (
+            <p
+              style={{
+                marginTop: 16,
+                fontSize: 13,
+                color: "#b91c1c",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: 10,
+                padding: "10px 12px",
+              }}
+            >
+              {error}
+            </p>
+          )}
           <button
             type="submit"
             disabled={!isValid || reserving}
