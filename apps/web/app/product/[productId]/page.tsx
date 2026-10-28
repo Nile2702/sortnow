@@ -162,18 +162,23 @@ export default function ProductDetailPage() {
     if (!waitlistName.trim()) return setWaitlistError("Enter your name.");
     if (!/^\d{10}$/.test(waitlistPhone)) return setWaitlistError("Enter a valid 10-digit mobile number.");
     setWaitlistSubmitting(true);
-    const res = await fetch(`/api/v1/products/${product.id}/waitlist`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ shopperName: waitlistName, shopperPhone: waitlistPhone }),
-    });
-    const result = await res.json().catch(() => null);
-    setWaitlistSubmitting(false);
-    if (!res.ok) {
-      setWaitlistError(result?.message ?? "Couldn't join the waitlist. Try again.");
-      return;
+    try {
+      const res = await fetch(`/api/v1/products/${product.id}/waitlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopperName: waitlistName, shopperPhone: waitlistPhone }),
+      });
+      const result = await res.json().catch(() => null);
+      if (!res.ok) {
+        setWaitlistError(result?.message ?? "Couldn't join the waitlist. Try again.");
+        return;
+      }
+      setWaitlistJoined(true);
+    } catch {
+      setWaitlistError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setWaitlistSubmitting(false);
     }
-    setWaitlistJoined(true);
   }
 
   useEffect(() => {
@@ -369,46 +374,56 @@ export default function ProductDetailPage() {
       return;
     }
     setCheckingDistance(true);
-    const res = await fetch(`/api/v1/stores/${product.storeSlug}/distance?pincode=${checkPincode}`);
-    const result = await res.json();
-    setCheckingDistance(false);
-    if (!res.ok) {
-      setDeliveryMsg(result?.message ?? "Couldn't check that PIN code. Try again.");
-      return;
+    try {
+      const res = await fetch(`/api/v1/stores/${product.storeSlug}/distance?pincode=${checkPincode}`);
+      const result = await res.json().catch(() => null);
+      if (!res.ok) {
+        setDeliveryMsg(result?.message ?? "Couldn't check that PIN code. Try again.");
+        return;
+      }
+      setDeliveryMsg(`${product.store.name} is about ${result.distanceKm} km from PIN ${checkPincode}.`);
+    } catch {
+      setDeliveryMsg("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setCheckingDistance(false);
     }
-    setDeliveryMsg(`${product.store.name} is about ${result.distanceKm} km from PIN ${checkPincode}.`);
   }
 
   async function handleSubmitReview(e: React.FormEvent) {
     e.preventDefault();
     setSubmittingReview(true);
     setReviewError("");
-    const res = await fetch(`/api/v1/products/${productId}/reviews`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(reviewForm),
-    });
-    const body = await res.json().catch(() => null);
-    setSubmittingReview(false);
-    // A rejected review (blank comment, rate-limited) used to get pushed
-    // into the list and averaged in anyway - the response in that case is
-    // an error object with no `rating`, which silently turned the running
-    // average into NaN and inflated the review count for a review that was
-    // never actually saved.
-    if (!res.ok) {
-      setReviewError(body?.message ?? "Couldn't submit your review. Try again.");
-      return;
+    try {
+      const res = await fetch(`/api/v1/products/${productId}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reviewForm),
+      });
+      const body = await res.json().catch(() => null);
+      // A rejected review (blank comment, rate-limited) used to get pushed
+      // into the list and averaged in anyway - the response in that case is
+      // an error object with no `rating`, which silently turned the running
+      // average into NaN and inflated the review count for a review that was
+      // never actually saved.
+      if (!res.ok) {
+        setReviewError(body?.message ?? "Couldn't submit your review. Try again.");
+        return;
+      }
+      const newReview = body;
+      setReviews((r) => [newReview, ...r]);
+      setSummary((s) => ({
+        average: Math.round((((s.average * s.count) + newReview.rating) / (s.count + 1)) * 10) / 10,
+        count: s.count + 1,
+        breakdown: s.breakdown.map((b) => (b.star === newReview.rating ? { ...b, count: b.count + 1 } : b)),
+      }));
+      setReviewForm({ authorName: "", rating: 5, title: "", comment: "" });
+      setReviewSubmitted(true);
+      setTimeout(() => setReviewSubmitted(false), 3000);
+    } catch {
+      setReviewError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setSubmittingReview(false);
     }
-    const newReview = body;
-    setReviews((r) => [newReview, ...r]);
-    setSummary((s) => ({
-      average: Math.round((((s.average * s.count) + newReview.rating) / (s.count + 1)) * 10) / 10,
-      count: s.count + 1,
-      breakdown: s.breakdown.map((b) => (b.star === newReview.rating ? { ...b, count: b.count + 1 } : b)),
-    }));
-    setReviewForm({ authorName: "", rating: 5, title: "", comment: "" });
-    setReviewSubmitted(true);
-    setTimeout(() => setReviewSubmitted(false), 3000);
   }
 
   const discountPct = product.compareAtPrice ? Math.round(((product.compareAtPrice - product.basePrice) / product.compareAtPrice) * 100) : 0;

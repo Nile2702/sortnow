@@ -12,6 +12,26 @@ type Mode = "login" | "signup";
 
 const STEP_ORDER: Step[] = ["email", "otp", "profile"];
 
+// Every handler below POSTs JSON and reads a JSON response - this just
+// shares the one bit each used to skip: a genuine network failure (offline,
+// DNS, a dropped mobile connection) throwing out of a bare `await fetch(...)`
+// instead of being caught, which left whatever button triggered it stuck in
+// its "...ing" state forever with no error shown. Returns null on any
+// network-level failure instead of throwing; a non-2xx HTTP response is NOT
+// treated as a failure here, it's returned normally so each caller can still
+// read its own {error, message} shape exactly as before.
+async function postJson(url: string, body: unknown): Promise<{ res: Response; data: any } | null> {
+  try {
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => null);
+    return { res, data };
+  } catch {
+    return null;
+  }
+}
+
+const NETWORK_ERROR_MESSAGE = "Couldn't reach the server. Check your connection and try again.";
+
 export default function AccountPage() {
   const [session, setSession] = useState<ShopperSession | null>(null);
   const [ready, setReady] = useState(false);
@@ -114,18 +134,15 @@ export default function AccountPage() {
     setError("");
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Enter a valid email address.");
     setSending(true);
-    const res = await fetch("/api/v1/auth/otp/request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim() }),
-    });
-    const result = await res.json().catch(() => null);
+    const outcome = await postJson("/api/v1/auth/otp/request", { email: email.trim() });
     setSending(false);
+    if (!outcome) return setError(NETWORK_ERROR_MESSAGE);
+    const { res, data } = outcome;
     if (!res.ok) {
-      setError(result?.message ?? "Couldn't send an OTP. Try again.");
+      setError(data?.message ?? "Couldn't send an OTP. Try again.");
       return;
     }
-    setDevOtp(result.devOtp ?? "");
+    setDevOtp(data.devOtp ?? "");
     setStep("otp");
   }
 
@@ -135,27 +152,24 @@ export default function AccountPage() {
   async function handleGoogleCredential(credential: string) {
     setError("");
     setGoogleBusy(true);
-    const res = await fetch("/api/v1/auth/google", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ credential }),
-    });
-    const result = await res.json().catch(() => null);
+    const outcome = await postJson("/api/v1/auth/google", { credential });
     setGoogleBusy(false);
+    if (!outcome) return setError(NETWORK_ERROR_MESSAGE);
+    const { res, data } = outcome;
     if (!res.ok) {
-      setError(result?.message ?? "Couldn't sign in with Google. Try again.");
+      setError(data?.message ?? "Couldn't sign in with Google. Try again.");
       return;
     }
-    if (result.shopper) {
+    if (data.shopper) {
       setAlreadyHadAccount(mode === "signup");
       const restored: ShopperSession = {
-        name: result.shopper.name,
-        phone: result.shopper.phone,
-        email: result.shopper.email,
-        preferredCategory: result.shopper.preferredCategory,
-        pincode: result.shopper.pincode,
-        city: result.shopper.city,
-        dateOfBirth: result.shopper.dateOfBirth,
+        name: data.shopper.name,
+        phone: data.shopper.phone,
+        email: data.shopper.email,
+        preferredCategory: data.shopper.preferredCategory,
+        pincode: data.shopper.pincode,
+        city: data.shopper.city,
+        dateOfBirth: data.shopper.dateOfBirth,
       };
       setShopperSession(restored);
       setSession(restored);
@@ -164,8 +178,8 @@ export default function AccountPage() {
     // Verified identity, but no account yet - one more step to get a phone
     // number before there's anywhere to put a session.
     setPendingGoogleCredential(credential);
-    setPendingGoogleName(result.googleName ?? "");
-    setPendingGoogleEmail(result.googleEmail ?? "");
+    setPendingGoogleName(data.googleName ?? "");
+    setPendingGoogleEmail(data.googleEmail ?? "");
     setStep("google-phone");
   }
 
@@ -175,25 +189,22 @@ export default function AccountPage() {
     if (!/^\d{10}$/.test(phone)) return setError("Enter a valid 10-digit mobile number.");
     if (!googleAgreed) return setError("Please accept the Terms & Privacy Policy to continue.");
     setGoogleBusy(true);
-    const res = await fetch("/api/v1/auth/google", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ credential: pendingGoogleCredential, phone, agreed: true }),
-    });
-    const result = await res.json().catch(() => null);
+    const outcome = await postJson("/api/v1/auth/google", { credential: pendingGoogleCredential, phone, agreed: true });
     setGoogleBusy(false);
+    if (!outcome) return setError(NETWORK_ERROR_MESSAGE);
+    const { res, data } = outcome;
     if (!res.ok) {
-      setError(result?.message ?? "Couldn't finish setting up your account. Try again.");
+      setError(data?.message ?? "Couldn't finish setting up your account. Try again.");
       return;
     }
     const newSession: ShopperSession = {
-      name: result.shopper.name,
+      name: data.shopper.name,
       phone,
-      email: result.shopper.email,
-      preferredCategory: result.shopper.preferredCategory,
-      pincode: result.shopper.pincode,
-      city: result.shopper.city,
-      dateOfBirth: result.shopper.dateOfBirth,
+      email: data.shopper.email,
+      preferredCategory: data.shopper.preferredCategory,
+      pincode: data.shopper.pincode,
+      city: data.shopper.city,
+      dateOfBirth: data.shopper.dateOfBirth,
     };
     setShopperSession(newSession);
     setJustSignedUp(true);
@@ -206,25 +217,22 @@ export default function AccountPage() {
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Enter a valid email address.");
     if (!loginPassword) return setError("Enter your password.");
     setPasswordLoggingIn(true);
-    const res = await fetch("/api/v1/shopper/auth/password-login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), password: loginPassword }),
-    });
-    const result = await res.json().catch(() => null);
+    const outcome = await postJson("/api/v1/shopper/auth/password-login", { email: email.trim(), password: loginPassword });
     setPasswordLoggingIn(false);
+    if (!outcome) return setError(NETWORK_ERROR_MESSAGE);
+    const { res, data } = outcome;
     if (!res.ok) {
-      setError(result?.message ?? "Incorrect email or password.");
+      setError(data?.message ?? "Incorrect email or password.");
       return;
     }
     const restored: ShopperSession = {
-      name: result.shopper.name,
-      phone: result.shopper.phone,
-      email: result.shopper.email,
-      preferredCategory: result.shopper.preferredCategory,
-      pincode: result.shopper.pincode,
-      city: result.shopper.city,
-      dateOfBirth: result.shopper.dateOfBirth,
+      name: data.shopper.name,
+      phone: data.shopper.phone,
+      email: data.shopper.email,
+      preferredCategory: data.shopper.preferredCategory,
+      pincode: data.shopper.pincode,
+      city: data.shopper.city,
+      dateOfBirth: data.shopper.dateOfBirth,
     };
     setShopperSession(restored);
     setSession(restored);
@@ -234,19 +242,16 @@ export default function AccountPage() {
     e.preventDefault();
     setError("");
     setVerifying(true);
-    const res = await fetch("/api/v1/auth/otp/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), code: otp }),
-    });
-    const result = await res.json().catch(() => null);
+    const outcome = await postJson("/api/v1/auth/otp/verify", { email: email.trim(), code: otp });
     setVerifying(false);
+    if (!outcome) return setError(NETWORK_ERROR_MESSAGE);
+    const { res, data } = outcome;
     if (!res.ok) {
-      setError(result?.message ?? "Incorrect or expired OTP.");
+      setError(data?.message ?? "Incorrect or expired OTP.");
       return;
     }
 
-    const existing = result.existingShopper as (ShopperSession & { id?: string; createdAt?: string }) | null;
+    const existing = data.existingShopper as (ShopperSession & { id?: string; createdAt?: string }) | null;
     if (existing) {
       // Returning customer, even on a fresh device/browser - their profile
       // lives server-side (lib/seed-data.ts Shopper), not just this
@@ -291,37 +296,34 @@ export default function AccountPage() {
     }
 
     setSavingProfile(true);
-    const res = await fetch("/api/v1/shopper/profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        phone,
-        email: email.trim(),
-        preferredCategory: category || undefined,
-        pincode: pincode.trim() || undefined,
-        city: city.trim() || undefined,
-        dateOfBirth: dateOfBirth || undefined,
-        marketingOptIn,
-        password: password || undefined,
-        referredByCode: referredByCode || undefined,
-      }),
+    const outcome = await postJson("/api/v1/shopper/profile", {
+      name,
+      phone,
+      email: email.trim(),
+      preferredCategory: category || undefined,
+      pincode: pincode.trim() || undefined,
+      city: city.trim() || undefined,
+      dateOfBirth: dateOfBirth || undefined,
+      marketingOptIn,
+      password: password || undefined,
+      referredByCode: referredByCode || undefined,
     });
-    const result = await res.json().catch(() => null);
     setSavingProfile(false);
+    if (!outcome) return setError(NETWORK_ERROR_MESSAGE);
+    const { res, data } = outcome;
     if (!res.ok) {
-      setError(result?.message ?? "Couldn't save your profile. Try again.");
+      setError(data?.message ?? "Couldn't save your profile. Try again.");
       return;
     }
 
     const newSession: ShopperSession = {
-      name: result.shopper.name,
+      name: data.shopper.name,
       phone,
-      email: result.shopper.email,
-      preferredCategory: result.shopper.preferredCategory,
-      pincode: result.shopper.pincode,
-      city: result.shopper.city,
-      dateOfBirth: result.shopper.dateOfBirth,
+      email: data.shopper.email,
+      preferredCategory: data.shopper.preferredCategory,
+      pincode: data.shopper.pincode,
+      city: data.shopper.city,
+      dateOfBirth: data.shopper.dateOfBirth,
     };
     setShopperSession(newSession);
     setJustSignedUp(true);

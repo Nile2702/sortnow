@@ -133,19 +133,24 @@ export default function SellerSalesPage() {
     if (!store) return;
     setSavingSettings(true);
     setSettingsError("");
-    const res = await fetch(`/api/v1/seller/stores/${store.id}/bill-settings`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: settingsMode, gstin: settingsMode === "gst" ? gstin : undefined, taxRatePercent, invoiceNote }),
-    });
-    const result = await res.json().catch(() => null);
-    setSavingSettings(false);
-    if (!res.ok) {
-      setSettingsError(result?.errors?.join(", ") ?? result?.message ?? "Couldn't save billing settings.");
-      return;
+    try {
+      const res = await fetch(`/api/v1/seller/stores/${store.id}/bill-settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: settingsMode, gstin: settingsMode === "gst" ? gstin : undefined, taxRatePercent, invoiceNote }),
+      });
+      const result = await res.json().catch(() => null);
+      if (!res.ok) {
+        setSettingsError(result?.errors?.join(", ") ?? result?.message ?? "Couldn't save billing settings.");
+        return;
+      }
+      setSettings(result);
+      showToast("Billing settings saved", "success");
+    } catch {
+      setSettingsError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setSavingSettings(false);
     }
-    setSettings(result);
-    showToast("Billing settings saved", "success");
   }
 
   function addToCart() {
@@ -187,45 +192,55 @@ export default function SellerSalesPage() {
     if (!store || cart.length === 0) return;
     setSubmitting(true);
     setCartError("");
-    const res = await fetch(`/api/v1/seller/stores/${store.id}/bills`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity, size: l.size })),
-        paymentMode,
-        customerName: customerName.trim() || undefined,
-        customerPhone: customerPhone.trim() || undefined,
-        discountPercent: discountPct || undefined,
-      }),
-    });
-    const result = await res.json().catch(() => null);
-    if (!res.ok) {
+    try {
+      const res = await fetch(`/api/v1/seller/stores/${store.id}/bills`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity, size: l.size })),
+          paymentMode,
+          customerName: customerName.trim() || undefined,
+          customerPhone: customerPhone.trim() || undefined,
+          discountPercent: discountPct || undefined,
+        }),
+      });
+      const result = await res.json().catch(() => null);
+      if (!res.ok) {
+        setCartError(result?.errors?.join(", ") ?? result?.message ?? "Couldn't create this bill.");
+        return;
+      }
+      showToast(`Bill ${result.invoiceNumber} created`, "success");
+      // Straight to the printable bill - a seller mid-sale wants the receipt
+      // in front of them immediately, not a reset form they have to navigate
+      // away from.
+      router.push(`/seller/sales/${result.id}`);
+    } catch {
+      setCartError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
       setSubmitting(false);
-      setCartError(result?.errors?.join(", ") ?? result?.message ?? "Couldn't create this bill.");
-      return;
     }
-    showToast(`Bill ${result.invoiceNumber} created`, "success");
-    // Straight to the printable bill - a seller mid-sale wants the receipt
-    // in front of them immediately, not a reset form they have to navigate
-    // away from.
-    router.push(`/seller/sales/${result.id}`);
   }
 
   async function handleVoid(billId: string) {
     const reason = window.prompt("Reason for voiding this bill? (stock will be restored)");
     if (!reason || !reason.trim() || !store) return;
-    const res = await fetch(`/api/v1/seller/stores/${store.id}/bills/${billId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "void", reason: reason.trim() }),
-    });
-    if (!res.ok) {
-      showToast("Couldn't void this bill.", "default");
-      return;
+    try {
+      const res = await fetch(`/api/v1/seller/stores/${store.id}/bills/${billId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "void", reason: reason.trim() }),
+      });
+      if (!res.ok) {
+        const result = await res.json().catch(() => null);
+        showToast(result?.message ?? "Couldn't void this bill.", "default");
+        return;
+      }
+      loadProducts();
+      loadBills();
+      showToast("Bill voided — stock restored", "success");
+    } catch {
+      showToast("Couldn't reach the server. Check your connection and try again.", "default");
     }
-    loadProducts();
-    loadBills();
-    showToast("Bill voided — stock restored", "success");
   }
 
   if (loadError) {

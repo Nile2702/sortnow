@@ -19,6 +19,7 @@ export default function BulkImportPage() {
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [importError, setImportError] = useState("");
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -42,13 +43,24 @@ export default function BulkImportPage() {
   async function handleImport() {
     if (!store || rows.length === 0) return;
     setImporting(true);
-    const res = await fetch(`/api/v1/seller/stores/${store.id}/products/bulk`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rows }),
-    });
-    setResult(await res.json());
-    setImporting(false);
+    setImportError("");
+    try {
+      const res = await fetch(`/api/v1/seller/stores/${store.id}/products/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setImportError(body?.message ?? "Couldn't import these rows. Try again.");
+        return;
+      }
+      setResult(await res.json());
+    } catch {
+      setImportError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setImporting(false);
+    }
   }
 
   if (storeLoading || !store) {
@@ -141,6 +153,11 @@ export default function BulkImportPage() {
           >
             {importing ? "Importing…" : `Import ${rows.length} product(s)`}
           </button>
+          {importError && (
+            <p style={{ marginTop: 12, fontSize: 13, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 12px" }}>
+              {importError}
+            </p>
+          )}
         </div>
       )}
 

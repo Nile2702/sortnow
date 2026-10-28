@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
+import { showToast } from "../../../../lib/toast";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -73,14 +74,24 @@ function SellerProductsPageInner() {
       return;
     }
     setSavingStockId(id);
-    const res = await fetch(`/api/v1/seller/products/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stockRemaining: Math.floor(value) }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setProducts((ps) => ps.map((p) => (p.id === id ? { ...p, stockRemaining: updated.stockRemaining } : p)));
+    try {
+      const res = await fetch(`/api/v1/seller/products/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stockRemaining: Math.floor(value) }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProducts((ps) => ps.map((p) => (p.id === id ? { ...p, stockRemaining: updated.stockRemaining } : p)));
+      } else {
+        // Previously silent - a rejected stock edit (e.g. a session that
+        // expired mid-edit) looked identical to a successful one, since the
+        // draft was cleared either way with nothing shown.
+        const result = await res.json().catch(() => null);
+        showToast(result?.message ?? "Couldn't update stock. Try again.", "error");
+      }
+    } catch {
+      showToast("Couldn't reach the server. Check your connection and try again.", "error");
     }
     setStockDrafts((d) => {
       const { [id]: _omit, ...rest } = d;
@@ -114,14 +125,19 @@ function SellerProductsPageInner() {
   async function handleDelete(id: string) {
     setDeletingId(id);
     setDeleteError("");
-    const res = await fetch(`/api/v1/seller/products/${id}`, { method: "DELETE" });
-    setDeletingId(null);
-    setConfirmingId(null);
-    if (!res.ok) {
-      setDeleteError("Couldn't delete this product. Try again.");
-      return;
+    try {
+      const res = await fetch(`/api/v1/seller/products/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setDeleteError("Couldn't delete this product. Try again.");
+        return;
+      }
+      if (store) load(store.id);
+    } catch {
+      setDeleteError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setDeletingId(null);
+      setConfirmingId(null);
     }
-    if (store) load(store.id);
   }
 
   if (storeLoading || !store) {
