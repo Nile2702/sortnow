@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { rateLimit } from "./rate-limit";
 
 // Minimal shared-secret gate for the pilot's one-person admin tool
@@ -29,5 +30,14 @@ export function isValidAdminKey(key: string | null | undefined, ip: string): boo
   const limit = rateLimit(`admin-key:${ip}`, 90, 10 * 60_000);
   if (!limit.ok) return false;
 
-  return key === expected;
+  // Constant-time comparison - a plain `===` short-circuits on the first
+  // mismatched byte, which leaks (admittedly faint, over a real network)
+  // timing information about how many leading characters of a guess are
+  // correct. Same reasoning and pattern as lib/auth/session.ts's signature
+  // check. Lengths are compared first since timingSafeEqual itself requires
+  // equal-length buffers; a length mismatch alone can't meaningfully narrow
+  // down the secret's content the way a byte-by-byte leak could.
+  const a = Buffer.from(key ?? "");
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }

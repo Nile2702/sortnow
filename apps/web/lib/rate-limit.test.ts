@@ -37,9 +37,18 @@ test("tracks separate keys independently", () => {
   assert.equal(rateLimit(keyB, 1, 60_000).ok, true);
 });
 
-test("clientIp reads the first entry of x-forwarded-for", () => {
+test("clientIp reads the last entry of x-forwarded-for, not the attacker-controlled first one", () => {
   const req = new Request("http://localhost", { headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" } });
-  assert.equal(clientIp(req), "1.2.3.4");
+  assert.equal(clientIp(req), "5.6.7.8");
+});
+
+test("clientIp is stable across a spoofed first entry - the real IP (last hop) stays the rate-limit key", () => {
+  const real = new Request("http://localhost", { headers: { "x-forwarded-for": "9.9.9.9" } });
+  const spoofed1 = new Request("http://localhost", { headers: { "x-forwarded-for": "1.1.1.1, 9.9.9.9" } });
+  const spoofed2 = new Request("http://localhost", { headers: { "x-forwarded-for": "2.2.2.2, 9.9.9.9" } });
+  assert.equal(clientIp(real), "9.9.9.9");
+  assert.equal(clientIp(spoofed1), clientIp(real));
+  assert.equal(clientIp(spoofed2), clientIp(real));
 });
 
 test("clientIp falls back to x-real-ip, then unknown", () => {

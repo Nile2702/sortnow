@@ -25,8 +25,23 @@ export function rateLimit(key: string, limit: number, windowMs: number): { ok: b
   return { ok: true, retryAfterMs: 0 };
 }
 
+// The LAST entry in x-forwarded-for, not the first. Every hop a request
+// passes through is supposed to APPEND the address it saw to this header,
+// so the first entry is whatever the original client claimed about itself -
+// trivially forgeable by just sending a different value on every request,
+// which is exactly how an attacker would defeat every rate limit keyed off
+// this function (admin-secret brute force, seller/shopper login, OTP
+// verify - see the callers of rateLimit()). The LAST entry is the one
+// *this app's own* edge network appended from the actual TCP connection it
+// saw, which the client never gets to write - Vercel's own docs confirm
+// this explicitly ("the last IP in the list represents the address that
+// connected to Vercel's network"), and it holds for any standard
+// reverse-proxy deployment, not just Vercel.
 export function clientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
+  if (forwarded) {
+    const parts = forwarded.split(",");
+    return parts[parts.length - 1].trim();
+  }
   return req.headers.get("x-real-ip") ?? "unknown";
 }
