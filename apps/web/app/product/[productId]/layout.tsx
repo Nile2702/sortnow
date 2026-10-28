@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { getAllProducts, getAllStores } from "../../../lib/seed-data";
+import { SITE_URL } from "../../../lib/site-url";
 
 // The product page itself is a client component (fetches its data via
 // useEffect), so generateMetadata can't live there - Next.js only reads it
@@ -24,6 +25,11 @@ export async function generateMetadata({ params }: { params: { productId: string
     title,
     description,
     openGraph: { title, description, images: product.images?.[0]?.url ? [product.images[0].url] : undefined },
+    // Same duplicate-content reasoning as /store/[slug]'s own canonical tag -
+    // a product page is reachable through whichever host its store's own
+    // subdomain/custom domain rewrites to, in addition to sortnow.in
+    // directly. Always point search engines at the sortnow.in path-based URL.
+    alternates: { canonical: `${SITE_URL}/product/${product.id}` },
   };
 }
 

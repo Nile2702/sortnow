@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getStoreBySlug, getLiveTheme, themeToCssVariables } from "../../../lib/theme";
+import { SITE_URL } from "../../../lib/site-url";
 import { getStoreRatingSummary, getAllCategories } from "../../../lib/seed-data";
 import { HeroCarousel } from "../../../components/HeroCarousel";
 import { ProductGrid } from "../../../components/ProductGrid";
@@ -134,5 +135,13 @@ export async function generateMetadata({ params }: Props) {
   return {
     title: store.name,
     icons: { icon: "/api/store-favicon/" + store.slug },
+    // middleware.ts rewrites a seller's own subdomain (and any verified
+    // custom domain) to this exact page, so the same storefront is reachable
+    // from several different hosts - with nothing telling search engines
+    // which one is authoritative, that's duplicate content across hosts.
+    // Always pointing the canonical tag at the sortnow.in path-based URL,
+    // regardless of which host actually served this request, picks one
+    // answer consistently.
+    alternates: { canonical: `${SITE_URL}/store/${store.slug}` },
   };
 }

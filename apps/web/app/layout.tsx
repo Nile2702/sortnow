@@ -29,10 +29,26 @@ export const metadata = {
   title: "SORT NOW — Find fashion near you",
   description: SITE_DESCRIPTION,
   metadataBase: new URL(SITE_URL),
+  // No canonical/authoritative-host concern on the homepage itself - every
+  // tenant-subdomain/custom-domain rewrite in middleware.ts still resolves
+  // to this exact root path, so metadataBase alone already makes "/" always
+  // point at the real sortnow.in domain, no explicit `alternates` needed
+  // here (unlike /store/[slug] and /product/[productId], which a seller's
+  // own subdomain also serves - see those pages' own canonical tags).
   openGraph: {
     title: "SORT NOW — Find fashion near you",
     description: SITE_DESCRIPTION,
     type: "website",
+  },
+  // No image is configured here (opengraph-image/twitter-image convention
+  // files don't exist in this app yet - a real branded share image is a
+  // design task, not something to invent here) - "summary" degrades to a
+  // clean text-only card instead of "summary_large_image" silently
+  // rendering as a broken/empty image block on X/Twitter.
+  twitter: {
+    card: "summary",
+    title: "SORT NOW — Find fashion near you",
+    description: SITE_DESCRIPTION,
   },
 };
 
