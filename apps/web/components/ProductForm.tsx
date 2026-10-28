@@ -186,7 +186,18 @@ export function ProductForm({
     setForm((f) => ({ ...f, sizes: f.sizes.includes(size) ? f.sizes.filter((s) => s !== size) : [...f.sizes, size] }));
   }
 
+  // Multi-select (list every color at once as separate products) only
+  // makes sense on create - handleSubmit's edit branch only ever sends
+  // selectedColors[0], so picking a second color here used to silently
+  // replace nothing and just get dropped on save with zero feedback.
+  // Edit mode is a true single-select toggle instead: picking a color
+  // replaces whichever was selected, and re-picking the same one clears it
+  // (a product can still have no color set).
   function toggleColor(name: string) {
+    if (mode === "edit") {
+      setSelectedColors((c) => (c.includes(name) ? [] : [name]));
+      return;
+    }
     setSelectedColors((c) => (c.includes(name) ? c.filter((x) => x !== name) : [...c, name]));
   }
 
@@ -543,8 +554,21 @@ export function ProductForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setSaveError("");
+
+    // Checked here too (not just server-side in validate-product.ts) so a
+    // seller who picked a subCategory with real size options but selected
+    // zero sizes - the common way this happens is re-picking subCategory,
+    // which filters the size options down to whatever's valid for the new
+    // one and can silently empty out a selection that was fine for the
+    // old one - finds out before sitting through a full photo upload, not
+    // after it, from a server error.
+    if (sizeOptions.length > 0 && form.sizes.length === 0) {
+      setSaveError("Select at least one size for this category.");
+      return;
+    }
+
+    setSaving(true);
 
     const mainImage = uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor);
     const [resizedMainImage, resizedAdditionalImages] = await Promise.all([

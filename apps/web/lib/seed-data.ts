@@ -1869,8 +1869,22 @@ export async function getShopperById(id: string): Promise<Shopper | null> {
 
 export async function findShopperByPhone(phone: string): Promise<Shopper | null> {
   const normalized = phone.replace(/\D/g, "").slice(-10);
-  const rows = await query<any>(`SELECT * FROM shoppers`);
-  const row = rows.find((r) => r.phone.replace(/\D/g, "").slice(-10) === normalized);
+  // Every write path validates phone as exactly 10 digits before it ever
+  // reaches an INSERT (see upsertShopper's callers), and shoppers.phone has
+  // a UNIQUE constraint - which Postgres already backs with an index - so
+  // this exact-match lookup is both correct for the overwhelming common
+  // case and fast, unlike the full `SELECT * FROM shoppers` this replaced
+  // (a real cost on every OTP verify/login/profile check, more so as the
+  // table grows, since that full-table-scan ran on literally every call).
+  // Falls back to the old scan-and-normalize-in-JS approach only if the
+  // fast path finds nothing, purely as a safety net for a legacy row stored
+  // with different formatting (a leading +91, a dash) from before that
+  // validation existed - never the common path, so its cost is rare.
+  let row = await queryOne<any>(`SELECT * FROM shoppers WHERE phone = $1`, [normalized]);
+  if (!row) {
+    const rows = await query<any>(`SELECT * FROM shoppers`);
+    row = rows.find((r) => r.phone.replace(/\D/g, "").slice(-10) === normalized) ?? null;
+  }
   if (!row) return null;
   const shopper = rowToShopper(row);
   // Self-healing backfill for a shopper who signed up before the referral

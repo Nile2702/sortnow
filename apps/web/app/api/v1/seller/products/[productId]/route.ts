@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { productId:
 
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-  const { errors, data } = validateProductInput(body, false);
+  const { errors, data } = validateProductInput(body, false, existing.basePrice, existing.subCategory);
   if (errors.length > 0) {
     return NextResponse.json({ error: "invalid_input", errors }, { status: 400 });
   }

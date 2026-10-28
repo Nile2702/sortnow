@@ -5,6 +5,7 @@
 // multi-megabyte "title" string, a non-numeric stockRemaining) would
 // silently corrupt the catalog instead of getting rejected.
 import { moderateText } from "./content-moderation.ts";
+import { getSizeOptionsFor } from "./catalog-constants.ts";
 
 const GENDERS = ["men", "women", "kids"] as const;
 const MAX_TEXT = 300;
@@ -63,9 +64,19 @@ export interface ValidatedProductInput {
  * Validates a product create/update payload. `requireCore` demands
  * title/basePrice be present (for creates); update requests can omit
  * fields they're not changing. Every field that IS present is still
- * validated regardless of `requireCore`.
+ * validated regardless of `requireCore`. `existingBasePrice`/
+ * `existingSubCategory` are only needed for an update that changes
+ * compareAtPrice/sizes without also resending basePrice/subCategory - see
+ * the MRP-vs-selling-price and sizes-required checks below, which
+ * otherwise have no way to know what the final value would actually end
+ * up being.
  */
-export function validateProductInput(input: ProductInput, requireCore: boolean): { errors: string[]; data: ValidatedProductInput } {
+export function validateProductInput(
+  input: ProductInput,
+  requireCore: boolean,
+  existingBasePrice?: number,
+  existingSubCategory?: string
+): { errors: string[]; data: ValidatedProductInput } {
   const errors: string[] = [];
   const data: ValidatedProductInput = {};
 
@@ -107,7 +118,20 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
     if (!Number.isFinite(compareAt) || compareAt <= 0 || compareAt > MAX_PRICE) {
       errors.push(`compareAtPrice must be a number greater than 0 and at most ${MAX_PRICE}`);
     } else {
-      data.compareAtPrice = compareAt;
+      // MRP (compareAtPrice) only means anything as a "was X, now Y"
+      // discount if it's actually higher than the selling price - nothing
+      // previously stopped a seller from saving MRP <= selling price, which
+      // ProductCardInfo.tsx would still render as a struck-through "MRP"
+      // underneath an equal or higher "sale" price, a nonsensical discount
+      // sign a shopper has no way to make sense of. effectiveBasePrice
+      // falls back to existingBasePrice for the update case where this
+      // request only touches compareAtPrice, not basePrice itself.
+      const effectiveBasePrice = data.basePrice ?? existingBasePrice;
+      if (effectiveBasePrice !== undefined && compareAt <= effectiveBasePrice) {
+        errors.push("compareAtPrice (MRP) must be greater than basePrice (selling price) to show a discount");
+      } else {
+        data.compareAtPrice = compareAt;
+      }
     }
   }
 
@@ -217,14 +241,30 @@ export function validateProductInput(input: ProductInput, requireCore: boolean):
     }
   }
 
+  // A listing with zero sizes is one a shopper can't actually select
+  // anything for - nothing previously stopped this, including the common
+  // way it happens by accident: re-picking subCategory client-side filters
+  // the size options down to whatever's valid for the new one, which can
+  // silently empty out a selection that was valid for the old subCategory.
+  // Only enforced when the (possibly-existing, for an update that doesn't
+  // resend subCategory) subCategory is actually known and its size group
+  // isn't "none" (bangles, earrings, bags - genuinely sizeless) - an
+  // unresolvable subCategory skips this rather than guessing.
+  const effectiveSubCategory = data.subCategory ?? existingSubCategory;
+  const sizesRequired = !!effectiveSubCategory && getSizeOptionsFor(effectiveSubCategory).length > 0;
+
   if (input.sizes !== undefined) {
     if (!Array.isArray(input.sizes) || input.sizes.some((s) => typeof s !== "string" || !s.trim())) {
       errors.push("sizes must be an array of non-empty strings");
     } else if (input.sizes.length > MAX_SIZES) {
       errors.push(`sizes must have at most ${MAX_SIZES} entries`);
+    } else if (input.sizes.length === 0 && sizesRequired) {
+      errors.push("sizes must include at least one size for this category");
     } else {
       data.sizes = input.sizes as string[];
     }
+  } else if (requireCore && sizesRequired) {
+    errors.push("sizes is required for this category");
   }
 
   if (input.images !== undefined) {

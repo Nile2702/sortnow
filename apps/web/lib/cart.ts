@@ -54,7 +54,13 @@ export function removeFromCart(productId: string, size: string) {
 export function updateQuantity(productId: string, size: string, quantity: number) {
   const items = getCart();
   const item = items.find((i) => i.productId === productId && i.size === size);
-  if (item) item.quantity = Math.max(1, quantity);
+  // A non-finite quantity (NaN from a pasted non-numeric value surviving a
+  // type="number" input on some mobile keyboards, or Infinity) used to pass
+  // straight through Math.max(1, NaN) as NaN, which JSON.stringify then
+  // silently serializes as null - corrupting that cart line (cartTotal
+  // would read its quantity as 0 forever after). Falls back to 1, the same
+  // floor an invalid-but-finite value already gets.
+  if (item) item.quantity = Number.isFinite(quantity) ? Math.max(1, quantity) : 1;
   writeCart(items);
 }
 

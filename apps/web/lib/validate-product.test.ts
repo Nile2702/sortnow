@@ -91,6 +91,32 @@ test("accepts a valid sizes array", () => {
   assert.deepEqual(data.sizes, ["S", "M", "L"]);
 });
 
+// A sizeless listing (zero sizes) is one a shopper can't actually select
+// anything for - only an issue when the subCategory actually has real size
+// options (a shirt), not a genuinely sizeless one (a handbag).
+test("rejects an empty sizes array for a subCategory that has real size options", () => {
+  const onCreate = validateProductInput({ ...MINIMAL_CREATE, basePrice: 500, subCategory: "Shirts", sizes: [] }, true);
+  assert.ok(onCreate.errors.some((e) => e.includes("sizes")));
+  const onUpdate = validateProductInput({ sizes: [] }, false, undefined, "Shirts");
+  assert.ok(onUpdate.errors.some((e) => e.includes("sizes")));
+});
+
+test("requires sizes on create for a subCategory that has real size options, even if omitted entirely", () => {
+  const { errors } = validateProductInput({ ...MINIMAL_CREATE, basePrice: 500, subCategory: "Shirts" }, true);
+  assert.ok(errors.some((e) => e.includes("sizes")));
+});
+
+test("accepts an empty sizes array for a genuinely sizeless subCategory", () => {
+  const { errors, data } = validateProductInput({ ...MINIMAL_CREATE, basePrice: 500, subCategory: "Handbags", sizes: [] }, true);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(data.sizes, []);
+});
+
+test("doesn't require sizes when subCategory is unresolvable (unknown either way)", () => {
+  const { errors } = validateProductInput({ ...MINIMAL_CREATE, basePrice: 500 }, true);
+  assert.deepEqual(errors, []);
+});
+
 test("rejects images missing a url", () => {
   const { errors } = validateProductInput({ images: [{ url: "" }] }, false);
   assert.ok(errors.length > 0);
@@ -162,4 +188,41 @@ test("omitting compareAtPrice, costPrice, brand, and productCode leaves them unt
   assert.ok(!("costPrice" in data));
   assert.ok(!("brand" in data));
   assert.ok(!("productCode" in data));
+});
+
+// MRP (compareAtPrice) only means a real discount if it's above the selling
+// price - otherwise a shopper sees a struck-through "MRP" that's equal to or
+// below the price they'd actually pay, a nonsensical discount sign.
+const MINIMAL_CREATE = { title: "T", description: "D", fabric: "Cotton" };
+
+test("rejects compareAtPrice at or below basePrice on create", () => {
+  const atPrice = validateProductInput({ ...MINIMAL_CREATE, basePrice: 500, compareAtPrice: 500 }, true);
+  assert.ok(atPrice.errors.some((e) => e.includes("compareAtPrice")));
+  const belowPrice = validateProductInput({ ...MINIMAL_CREATE, basePrice: 500, compareAtPrice: 400 }, true);
+  assert.ok(belowPrice.errors.some((e) => e.includes("compareAtPrice")));
+});
+
+test("accepts compareAtPrice above basePrice on create", () => {
+  const { errors, data } = validateProductInput({ ...MINIMAL_CREATE, basePrice: 500, compareAtPrice: 700 }, true);
+  assert.deepEqual(errors, []);
+  assert.equal(data.compareAtPrice, 700);
+});
+
+test("rejects a new compareAtPrice against the existing basePrice when basePrice isn't resent on update", () => {
+  const { errors } = validateProductInput({ compareAtPrice: 400 }, false, 500);
+  assert.ok(errors.some((e) => e.includes("compareAtPrice")));
+});
+
+test("accepts a new compareAtPrice validated against the existing basePrice on update", () => {
+  const { errors, data } = validateProductInput({ compareAtPrice: 600 }, false, 500);
+  assert.deepEqual(errors, []);
+  assert.equal(data.compareAtPrice, 600);
+});
+
+test("validates compareAtPrice against a basePrice also being changed in the same update, not the stale existing one", () => {
+  // Raising basePrice to 800 in the same request as compareAtPrice: 700
+  // should be rejected against the NEW basePrice, even though 700 would
+  // have been valid against the old (lower) existingBasePrice.
+  const { errors } = validateProductInput({ basePrice: 800, compareAtPrice: 700 }, false, 500);
+  assert.ok(errors.some((e) => e.includes("compareAtPrice")));
 });

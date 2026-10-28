@@ -357,8 +357,19 @@ export default function BulkPhotoUploadPage() {
     if (files.length === 0) return;
 
     const newDrafts: Draft[] = [];
+    // A rejected file (wrong type, over 3MB) used to just vanish - a seller
+    // who selected 10 photos and got 8 drafts had no way to tell 2 were
+    // skipped apart from 2 never having been picked in the first place.
+    const skipped: string[] = [];
     for (const file of files) {
-      if (!file.type.startsWith("image/") || file.size > 3 * 1024 * 1024) continue;
+      if (!file.type.startsWith("image/")) {
+        skipped.push(`${file.name} (not an image)`);
+        continue;
+      }
+      if (file.size > 3 * 1024 * 1024) {
+        skipped.push(`${file.name} (over 3MB)`);
+        continue;
+      }
       const dataUrl = await fileToDataUrl(file);
       newDrafts.push({
         localId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -394,6 +405,10 @@ export default function BulkPhotoUploadPage() {
       });
     }
     setDrafts((ds) => [...ds, ...newDrafts]);
+    if (skipped.length > 0) {
+      const preview = skipped.slice(0, 3).join(", ") + (skipped.length > 3 ? `, +${skipped.length - 3} more` : "");
+      showToast(`Skipped ${skipped.length} file${skipped.length === 1 ? "" : "s"}: ${preview}`, "error");
+    }
   }
 
   function removeDraft(localId: string) {

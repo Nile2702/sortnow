@@ -145,6 +145,25 @@ function CategoryPageInner() {
 
   const headingSuffix = subCategories.length === 1 ? subCategories[0] : subCategories.length > 1 ? `${subCategories.length} categories` : "";
 
+  // An unrecognized gender segment (a mistyped or stale shared link, e.g.
+  // /category/xyz) used to fall through silently - genderLabel became the
+  // raw "xyz", subCats stayed an empty array, and the page rendered a
+  // confusing blank "xyz" heading with no products and no filters rather
+  // than telling the visitor the page doesn't exist. Checked after every
+  // hook above (not before), same reasoning as this file's own `use client`
+  // sibling pages that do the same (e.g. the product page's own notFound
+  // state) - Hooks must run unconditionally on every render.
+  if (!(gender in GENDER_LABELS)) {
+    return (
+      <main style={{ maxWidth: 600, margin: "80px auto", padding: 24, textAlign: "center" }}>
+        <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>This category doesn't exist.</p>
+        <Link href="/" style={{ color: "var(--sio-ink)", fontWeight: 600 }}>
+          Back to Home
+        </Link>
+      </main>
+    );
+  }
+
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "24px 16px 48px" }}>
       <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>
