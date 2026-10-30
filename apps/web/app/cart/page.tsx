@@ -40,7 +40,7 @@ export default function CartPage() {
               <div
                 key={`${item.productId}-${item.size}`}
                 className="sio-card"
-                style={{ display: "flex", flexWrap: "wrap", gap: 16, background: "#fff", padding: 16, borderRadius: 14, alignItems: "center", border: "1px solid var(--sio-cream)" }}
+                style={{ display: "flex", flexWrap: "wrap", gap: 16, background: "#fff", padding: 16, borderRadius: 16, alignItems: "center", border: "1px solid var(--sio-cream)" }}
               >
                 <img src={item.imageUrl} alt={item.title} style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10, flexShrink: 0 }} />
                 {/* minWidth: 0 lets this shrink/wrap normally within the flex
@@ -66,7 +66,7 @@ export default function CartPage() {
                         updateQuantity(item.productId, item.size, Math.min(MAX_MULTIPLE_QUANTITY, Number(e.target.value)));
                         refresh();
                       }}
-                      style={{ width: 56, padding: 6, borderRadius: 6, border: "1px solid var(--sio-line)" }}
+                      style={{ width: 56, padding: 6, borderRadius: 10, border: "1px solid var(--sio-line)" }}
                     />
                   ) : (
                     <span style={{ fontSize: 13, color: "var(--sio-muted)" }}>Qty 1</span>

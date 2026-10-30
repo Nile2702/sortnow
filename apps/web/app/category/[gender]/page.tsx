@@ -25,7 +25,7 @@ interface Product {
 }
 
 function SkeletonCard() {
-  return <div className="sio-skeleton" style={{ borderRadius: 14, height: 260 }} />;
+  return <div className="sio-skeleton" style={{ borderRadius: 16, height: 260 }} />;
 }
 
 function csv(value: string | null): string[] {

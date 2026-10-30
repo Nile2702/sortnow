@@ -196,7 +196,7 @@ export default function ReservationDetailPage() {
             style={{
               background: isUrgent ? "var(--sio-error-bg)" : "var(--sio-pending-bg)",
               color: isUrgent ? "var(--sio-error)" : "var(--sio-pending)",
-              borderRadius: 14,
+              borderRadius: 16,
               padding: 16,
               textAlign: "center",
               marginBottom: 16,
@@ -214,7 +214,7 @@ export default function ReservationDetailPage() {
           <div
             style={{
               background: "#fff",
-              borderRadius: 14,
+              borderRadius: 16,
               border: "1px solid var(--sio-cream)",
               padding: 20,
               marginBottom: 16,
@@ -233,7 +233,7 @@ export default function ReservationDetailPage() {
           <div
             style={{
               background: "#fff",
-              borderRadius: 14,
+              borderRadius: 16,
               border: "1px solid var(--sio-cream)",
               padding: 16,
               marginBottom: 16,
@@ -299,10 +299,10 @@ export default function ReservationDetailPage() {
         </>
       )}
 
-      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 16 }}>
         {reservation.items.map((item) => (
           <div key={`${item.productId}-${item.size}`} style={{ display: "flex", gap: 14, padding: "12px 0", borderBottom: "1px solid var(--sio-cream)" }}>
-            <img src={item.imageUrl} alt={item.title} style={{ width: 60, height: 76, objectFit: "cover", borderRadius: 8 }} />
+            <img src={item.imageUrl} alt={item.title} style={{ width: 60, height: 76, objectFit: "cover", borderRadius: 10 }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: 14 }}>{item.title}</div>
               <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>
@@ -319,7 +319,7 @@ export default function ReservationDetailPage() {
       </div>
 
       {store && (
-        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16, marginTop: 16 }}>
+        <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 16, marginTop: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "var(--sio-muted)" }}>VISIT THE STORE</div>
           <div style={{ fontSize: 14, color: "var(--sio-muted)", marginBottom: store.phone || directionsUrl ? 12 : 0 }}>{storeAddress}</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -367,7 +367,7 @@ export default function ReservationDetailPage() {
         </div>
       )}
 
-      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16, marginTop: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 16, marginTop: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "var(--sio-muted)" }}>RESERVED UNDER</div>
         <div style={{ fontSize: 14, fontWeight: 600 }}>{reservation.shopperName}</div>
         <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>Phone: {reservation.shopperPhone}</div>

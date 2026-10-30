@@ -304,7 +304,7 @@ export function SiteHeader() {
                 right: 0,
                 background: "var(--sio-paper)",
                 border: "1px solid var(--sio-line)",
-                borderRadius: 14,
+                borderRadius: 16,
                 boxShadow: "0 16px 32px rgba(22,20,15,0.12)",
                 padding: 6,
                 zIndex: 30,
@@ -345,7 +345,7 @@ export function SiteHeader() {
                       <img
                         src={s.images?.[0]?.url}
                         alt=""
-                        style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, background: "var(--sio-cream)" }}
+                        style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover", flexShrink: 0, background: "var(--sio-cream)" }}
                       />
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -605,7 +605,7 @@ function CategoryMenu({ gender, label, subCategories }: { gender: string; label:
             left: 0,
             background: "var(--sio-paper)",
             border: "1px solid var(--sio-line)",
-            borderRadius: 14,
+            borderRadius: 16,
             boxShadow: "0 16px 32px rgba(22,20,15,0.1)",
             padding: 8,
             minWidth: 190,
@@ -637,7 +637,7 @@ function dropdownLinkStyle(bold: boolean): React.CSSProperties {
   return {
     display: "block",
     padding: "8px 10px",
-    borderRadius: 8,
+    borderRadius: 10,
     color: bold ? "var(--sio-ink)" : "var(--sio-ink-soft)",
     fontWeight: bold ? 600 : 400,
     textDecoration: "none",

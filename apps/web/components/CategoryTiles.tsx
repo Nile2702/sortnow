@@ -85,7 +85,7 @@ export function CategoryTiles() {
                     position: "relative",
                     display: "block",
                     aspectRatio: "3 / 4",
-                    borderRadius: 20,
+                    borderRadius: 16,
                     overflow: "hidden",
                     textDecoration: "none",
                     background: tileColor(tile.label),

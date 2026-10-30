@@ -179,7 +179,7 @@ export default function SellerSignupPage() {
           />
 
           {error && (
-            <div style={{ background: "var(--sio-error-bg)", border: "1px solid var(--sio-error-border)", color: "var(--sio-error)", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginTop: 14 }}>
+            <div style={{ background: "var(--sio-error-bg)", border: "1px solid var(--sio-error-border)", color: "var(--sio-error)", borderRadius: 10, padding: "10px 12px", fontSize: 13, marginTop: 14 }}>
               {error}
             </div>
           )}

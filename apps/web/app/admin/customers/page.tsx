@@ -74,7 +74,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
                     width: "100%",
                     height: Math.max(2, (d.count / maxDaily) * 90),
                     background: d.count > 0 ? "var(--sio-ink)" : "var(--sio-cream)",
-                    borderRadius: 3,
+                    borderRadius: 4,
                   }}
                 />
                 <span style={{ fontSize: 9, color: "var(--sio-muted)" }}>{d.date.slice(5)}</span>
@@ -138,14 +138,14 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
         <Link
           href={`/admin/customers/list?${keyQS}`}
           className="sio-card"
-          style={{ flex: 1, textAlign: "center", padding: "16px", borderRadius: 14, border: "1px solid var(--sio-cream)", background: "#fff", color: "var(--sio-ink)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
+          style={{ flex: 1, textAlign: "center", padding: "16px", borderRadius: 16, border: "1px solid var(--sio-cream)", background: "#fff", color: "var(--sio-ink)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
         >
           View all customers →
         </Link>
         <Link
           href={`/admin/customers/activity?${keyQS}`}
           className="sio-card"
-          style={{ flex: 1, textAlign: "center", padding: "16px", borderRadius: 14, border: "1px solid var(--sio-cream)", background: "#fff", color: "var(--sio-ink)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
+          style={{ flex: 1, textAlign: "center", padding: "16px", borderRadius: 16, border: "1px solid var(--sio-cream)", background: "#fff", color: "var(--sio-ink)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
         >
           View all activity →
         </Link>
@@ -156,7 +156,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
 
 function StatTile({ value, label, sub, href }: { value: string | number; label: string; sub?: string; href: string }) {
   return (
-    <Link href={href} className="sio-card" style={{ display: "block", background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 18, textDecoration: "none" }}>
+    <Link href={href} className="sio-card" style={{ display: "block", background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 18, textDecoration: "none" }}>
       <div style={{ fontSize: 22, fontWeight: 700, color: "var(--sio-ink)" }}>{value}</div>
       <div style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 2 }}>{label}</div>
       {sub && <div style={{ fontSize: 10.5, color: "var(--sio-muted)", marginTop: 2 }}>{sub}</div>}

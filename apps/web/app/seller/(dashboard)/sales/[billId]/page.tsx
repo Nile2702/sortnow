@@ -115,9 +115,9 @@ export default function SellerBillDetailPage() {
         </button>
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid var(--sio-line)", borderRadius: 12, padding: 32 }}>
+      <div style={{ background: "#fff", border: "1px solid var(--sio-line)", borderRadius: 10, padding: 32 }}>
         {bill.status === "void" && (
-          <div style={{ background: "var(--sio-error-bg)", color: "var(--sio-error)", padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, marginBottom: 20, textAlign: "center" }}>
+          <div style={{ background: "var(--sio-error-bg)", color: "var(--sio-error)", padding: "8px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700, marginBottom: 20, textAlign: "center" }}>
             VOID{bill.voidReason ? ` — ${bill.voidReason}` : ""}
           </div>
         )}

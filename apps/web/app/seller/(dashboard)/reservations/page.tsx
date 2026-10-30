@@ -138,7 +138,7 @@ export default function SellerReservationsPage() {
       {(() => {
         const stats = computeNoShowStats(reservations);
         return (
-          <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, marginBottom: 28 }}>
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20, marginBottom: 28 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--sio-muted)", marginBottom: 4 }}>Last 30 Days</div>
             {stats.resolved === 0 ? (
               <p style={{ color: "var(--sio-muted)", fontSize: 13, margin: 0 }}>
@@ -174,7 +174,7 @@ export default function SellerReservationsPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
           {pending.map((r) => (
-            <div key={r.id} className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-pending-border)", padding: 16 }}>
+            <div key={r.id} className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-pending-border)", padding: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                 <div>
                   <div style={{ fontWeight: 700 }}>{r.shopperName}</div>

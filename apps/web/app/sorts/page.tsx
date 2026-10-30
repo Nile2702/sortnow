@@ -43,7 +43,7 @@ export default function MySortsPage() {
                 alignItems: "center",
                 background: "#fff",
                 padding: 16,
-                borderRadius: 12,
+                borderRadius: 10,
               }}
             >
               <div>
@@ -61,13 +61,13 @@ export default function MySortsPage() {
                 <button
                   onClick={() => apply(s)}
                   className="sio-btn-primary"
-                  style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--sio-bronze)", color: "#fff", cursor: "pointer" }}
+                  style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "var(--sio-bronze)", color: "#fff", cursor: "pointer" }}
                 >
                   Shop this sort
                 </button>
                 <button
                   onClick={() => remove(s.id)}
-                  style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", background: "#fff", cursor: "pointer" }}
+                  style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", background: "#fff", cursor: "pointer" }}
                 >
                   Delete
                 </button>

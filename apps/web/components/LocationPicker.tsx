@@ -134,7 +134,7 @@ export function LocationPicker() {
             top: "calc(100% + 6px)",
             left: 0,
             zIndex: 30,
-            borderRadius: 12,
+            borderRadius: 10,
             padding: 10,
             minWidth: 260,
             boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
@@ -149,7 +149,7 @@ export function LocationPicker() {
               width: "100%",
               textAlign: "left",
               padding: "9px 10px",
-              borderRadius: 8,
+              borderRadius: 10,
               border: "none",
               background: "var(--sio-cream)",
               color: "var(--sio-ink)",
@@ -184,7 +184,7 @@ export function LocationPicker() {
                 width: "100%",
                 textAlign: "left",
                 padding: "7px 10px",
-                borderRadius: 8,
+                borderRadius: 10,
                 border: "none",
                 background: "pincode" in location && m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
                 color: "var(--sio-ink)",
@@ -202,11 +202,11 @@ export function LocationPicker() {
               onChange={(e) => setPincodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="Enter PIN code"
               maxLength={6}
-              style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
+              style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}
             />
             <button
               type="submit"
-              style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: "var(--sio-ink)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
             >
               Go
             </button>

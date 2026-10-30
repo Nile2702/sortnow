@@ -59,7 +59,7 @@ export default async function AdminCustomerDetailPage({ params, searchParams }: 
             {reservations.map((r) => {
               const style = STATUS_STYLE[r.status] ?? STATUS_STYLE.cancelled;
               return (
-                <div key={r.id} style={{ border: "1px solid var(--sio-cream)", borderRadius: 12, padding: 14 }}>
+                <div key={r.id} style={{ border: "1px solid var(--sio-cream)", borderRadius: 10, padding: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
                     <div>
                       <Link href={`/admin/sellers/${r.storeId}?${keyQS}`} style={{ fontWeight: 700, fontSize: 14, color: "var(--sio-ink)", textDecoration: "none" }}>
@@ -102,7 +102,7 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function StatTile({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 18 }}>
+    <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 18 }}>
       <div style={{ fontSize: 20, fontWeight: 700, color: "var(--sio-ink)" }}>{value}</div>
       <div style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 2 }}>{label}</div>
     </div>

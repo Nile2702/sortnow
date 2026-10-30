@@ -57,7 +57,7 @@ const PAYMENT_MODES: { value: string; label: string }[] = [
 ];
 
 function inputStyle(): React.CSSProperties {
-  return { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 };
+  return { width: "100%", padding: "9px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 };
 }
 
 export default function SellerSalesPage() {
@@ -419,7 +419,7 @@ export default function SellerSalesPage() {
             disabled={!selectedProductId}
             style={{
               padding: "0 18px",
-              borderRadius: 8,
+              borderRadius: 10,
               border: "none",
               background: !selectedProductId ? "var(--sio-muted)" : "var(--sio-ink)",
               color: "#fff",
@@ -466,7 +466,7 @@ export default function SellerSalesPage() {
                 value={discountPercent}
                 onChange={(e) => setDiscountPercent(e.target.value)}
                 placeholder="0"
-                style={{ width: 70, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--sio-line)", fontSize: 13 }}
+                style={{ width: 70, padding: "6px 8px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}
               />
               <span style={{ fontSize: 12, color: "var(--sio-muted)" }}>%</span>
             </div>

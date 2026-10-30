@@ -58,7 +58,7 @@ export default function WishlistPage() {
                   setItems(getWishlist());
                   showToast("Removed from Wishlist");
                 }}
-                style={{ marginTop: 8, padding: "8px 0", borderRadius: 8, border: "1px solid var(--sio-line)", background: "#fff", cursor: "pointer", fontSize: 13 }}
+                style={{ marginTop: 8, padding: "8px 0", borderRadius: 10, border: "1px solid var(--sio-line)", background: "#fff", cursor: "pointer", fontSize: 13 }}
               >
                 Remove from Wishlist
               </button>

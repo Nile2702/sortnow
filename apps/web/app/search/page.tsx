@@ -27,7 +27,7 @@ const SORT_TABS = [
 ];
 
 function SkeletonCard() {
-  return <div className="sio-skeleton" style={{ borderRadius: 14, height: 260 }} />;
+  return <div className="sio-skeleton" style={{ borderRadius: 16, height: 260 }} />;
 }
 
 
@@ -142,7 +142,7 @@ function SearchPageInner() {
       <div className="sio-search-layout" style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 28, alignItems: "start" }}>
         <aside
           className="sio-card"
-          style={{ background: "#fff", borderRadius: 14, padding: 18, border: "1px solid var(--sio-cream)", position: "sticky", top: 88 }}
+          style={{ background: "#fff", borderRadius: 16, padding: 18, border: "1px solid var(--sio-cream)", position: "sticky", top: 88 }}
         >
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Filters</div>
 
@@ -188,7 +188,7 @@ function SearchPageInner() {
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
                 onBlur={() => updateUrl({ minPrice })}
-                style={{ width: "50%", padding: "7px 8px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
+                style={{ width: "50%", padding: "7px 8px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}
               />
               <input
                 type="number"
@@ -196,7 +196,7 @@ function SearchPageInner() {
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
                 onBlur={() => updateUrl({ maxPrice })}
-                style={{ width: "50%", padding: "7px 8px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
+                style={{ width: "50%", padding: "7px 8px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}
               />
             </div>
           </div>
@@ -212,7 +212,7 @@ function SearchPageInner() {
                   onClick={() => updateUrl({ size: size === sz ? "" : sz })}
                   style={{
                     padding: "5px 10px",
-                    borderRadius: 7,
+                    borderRadius: 10,
                     border: size === sz ? "1px solid var(--sio-ink)" : "1px solid var(--sio-line)",
                     background: size === sz ? "var(--sio-ink)" : "#fff",
                     color: size === sz ? "#fff" : "var(--sio-ink-soft)",

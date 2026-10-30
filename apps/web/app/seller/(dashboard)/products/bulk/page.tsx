@@ -110,7 +110,7 @@ export default function BulkImportPage() {
       {rows.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Preview — {rows.length} row(s)</h2>
-          <div style={{ overflowX: "auto", background: "#fff", borderRadius: 12, border: "1px solid var(--sio-cream)" }}>
+          <div style={{ overflowX: "auto", background: "#fff", borderRadius: 10, border: "1px solid var(--sio-cream)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead>
                 <tr>
@@ -167,7 +167,7 @@ export default function BulkImportPage() {
           style={{
             background: result.errorCount > 0 ? "var(--sio-pending-bg)" : "var(--sio-success-bg)",
             border: `1px solid ${result.errorCount > 0 ? "var(--sio-pending-border)" : "var(--sio-success-border)"}`,
-            borderRadius: 12,
+            borderRadius: 10,
             padding: 18,
           }}
         >

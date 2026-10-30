@@ -43,7 +43,7 @@ export default function QrMarketingPage() {
       <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }}>Links to</label>
-          <code style={{ display: "block", fontSize: 12, background: "var(--sio-cream)", padding: "10px 12px", borderRadius: 8, wordBreak: "break-all", marginBottom: 20 }}>
+          <code style={{ display: "block", fontSize: 12, background: "var(--sio-cream)", padding: "10px 12px", borderRadius: 10, wordBreak: "break-all", marginBottom: 20 }}>
             {targetUrl}
           </code>
 
@@ -54,7 +54,7 @@ export default function QrMarketingPage() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div className="sio-card" style={{ background: "#fff", borderRadius: 20, border: "1px solid var(--sio-cream)", padding: 28, textAlign: "center" }}>
+          <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 28, textAlign: "center" }}>
             {dataUrl ? <img src={dataUrl} alt="Store QR code" style={{ width: 220, height: 220 }} /> : <div style={{ width: 220, height: 220 }} />}
             <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, marginTop: 16 }}>{store.name}</div>
             <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>Scan to shop our latest collection</div>

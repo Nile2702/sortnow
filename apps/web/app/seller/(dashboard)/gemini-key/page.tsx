@@ -129,7 +129,7 @@ export default function GeminiKeyPage() {
                 value={keyInput}
                 onChange={(e) => setKeyInput(e.target.value)}
                 placeholder="Paste your Gemini API key"
-                style={{ flex: 1, minWidth: 220, padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
+                style={{ flex: 1, minWidth: 220, padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}
               />
               <button
                 type="submit"

@@ -159,7 +159,7 @@ export function QrScannerModal({ onClose }: { onClose: () => void }) {
               position: "absolute",
               inset: 24,
               border: "2px solid rgba(255,255,255,0.85)",
-              borderRadius: 12,
+              borderRadius: 10,
               pointerEvents: "none",
             }}
           />

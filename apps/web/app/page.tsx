@@ -60,7 +60,7 @@ const WHY_SHOP_WITH_US = [
 ];
 
 function SkeletonCard({ height = 220 }: { height?: number }) {
-  return <div className="sio-skeleton" style={{ borderRadius: 14, height }} />;
+  return <div className="sio-skeleton" style={{ borderRadius: 16, height }} />;
 }
 
 // Curated "collection" row - horizontal scroll rather than a wrapping grid,
@@ -419,7 +419,7 @@ function DiscoverPageInner() {
               }}
               style={{
                 padding: "6px 12px",
-                borderRadius: 8,
+                borderRadius: 10,
                 border: "1px solid var(--sio-line)",
                 background: pincode === m.pincode ? "var(--sio-cream)" : "#fff",
                 color: pincode === m.pincode ? "var(--sio-ink)" : "var(--sio-ink-soft)",
@@ -447,7 +447,7 @@ function DiscoverPageInner() {
           style={{
             background: "var(--sio-cream)",
             border: "1px dashed var(--sio-line)",
-            borderRadius: 14,
+            borderRadius: 16,
             padding: "20px 18px",
             marginBottom: 44,
           }}
@@ -495,7 +495,7 @@ function DiscoverPageInner() {
                 gap: 14,
                 alignItems: "center",
                 background: "#fff",
-                borderRadius: 14,
+                borderRadius: 16,
                 padding: 16,
                 textDecoration: "none",
                 color: "inherit",
@@ -511,7 +511,7 @@ function DiscoverPageInner() {
                 style={{
                   width: 44,
                   height: 44,
-                  borderRadius: 12,
+                  borderRadius: 10,
                   background: `hsl(${hashHue(s.name, 1)}, 60%, 92%)`,
                   color: `hsl(${hashHue(s.name, 1)}, 45%, 35%)`,
                   display: "flex",
@@ -575,7 +575,7 @@ function DiscoverPageInner() {
         </section>
       )}
 
-      <section style={{ background: "#fff", borderRadius: 18, padding: 24, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", border: "1px solid var(--sio-cream)" }}>
+      <section style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", border: "1px solid var(--sio-cream)" }}>
         <h2 style={{ fontSize: 20, marginBottom: 4, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
           <CompassIcon size={19} /> Shop in Sort
         </h2>

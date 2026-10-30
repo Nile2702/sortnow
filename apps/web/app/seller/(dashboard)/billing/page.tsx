@@ -372,7 +372,7 @@ export default function BillingPage() {
             )}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
               {boost.packages.map((pkg) => (
-                <div key={pkg.days} style={{ border: "1px solid var(--sio-cream)", borderRadius: 12, padding: 16, textAlign: "center" }}>
+                <div key={pkg.days} style={{ border: "1px solid var(--sio-cream)", borderRadius: 10, padding: 16, textAlign: "center" }}>
                   <div style={{ fontWeight: 700, fontSize: 16 }}>{pkg.label}</div>
                   <div style={{ fontSize: 20, fontWeight: 700, margin: "6px 0" }}>₹{pkg.price.toLocaleString("en-IN")}</div>
                   <button
@@ -402,12 +402,12 @@ export default function BillingPage() {
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>GST Invoices</h2>
       {freeTrial.active ? (
-        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, fontSize: 13, color: "var(--sio-muted)" }}>
+        <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20, fontSize: 13, color: "var(--sio-muted)" }}>
           Nothing to invoice yet — you're in your free {freeTrial.months}-month launch period, so there's been no billing to generate a GST
           invoice for.
         </div>
       ) : (
-      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", overflowX: "auto" }}>
+      <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", overflowX: "auto" }}>
         <div style={{ minWidth: 560 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "12px 18px", fontSize: 12, fontWeight: 700, color: "var(--sio-muted)", borderBottom: "1px solid var(--sio-cream)" }}>
             <div>Invoice</div>
@@ -459,7 +459,7 @@ export default function BillingPage() {
               Close My Store
             </button>
           ) : (
-            <div style={{ background: "var(--sio-error-bg)", border: "1px solid var(--sio-error-border)", borderRadius: 12, padding: 16 }}>
+            <div style={{ background: "var(--sio-error-bg)", border: "1px solid var(--sio-error-border)", borderRadius: 10, padding: 16 }}>
               <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
                 Are you sure you want to close {store.name}? Shoppers won't be able to find or reserve from it anymore.
               </p>

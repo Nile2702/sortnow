@@ -940,7 +940,7 @@ export function ProductForm({
                   <span style={{ fontSize: 13, fontWeight: 600, minWidth: 90 }}>{color}</span>
                   {colorImages[color] ? (
                     <>
-                      <img src={colorImages[color]} alt={color} style={{ width: 36, height: 44, objectFit: "cover", borderRadius: 6, border: "1px solid var(--sio-line)" }} />
+                      <img src={colorImages[color]} alt={color} style={{ width: 36, height: 44, objectFit: "cover", borderRadius: 10, border: "1px solid var(--sio-line)" }} />
                       <button
                         type="button"
                         onClick={() => removeColorImage(color)}
@@ -1152,7 +1152,7 @@ export function ProductForm({
                     style={{
                       width: "100%",
                       padding: "6px 10px",
-                      borderRadius: 8,
+                      borderRadius: 10,
                       border: "1px solid var(--sio-ai-accent-border)",
                       background: "var(--sio-ai-accent-bg)",
                       color: "var(--sio-ai-accent)",
@@ -1258,7 +1258,7 @@ export function ProductForm({
             {mannequinError && <p style={{ fontSize: 12, color: "var(--sio-error)", marginTop: 6 }}>{mannequinError}</p>}
 
             {uploadedImage && !uploadError && (
-              <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "var(--sio-ai-accent-bg)", border: "1px solid var(--sio-ai-accent-border)" }}>
+              <div style={{ marginTop: 14, padding: 14, borderRadius: 16, background: "var(--sio-ai-accent-bg)", border: "1px solid var(--sio-ai-accent-border)" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "var(--sio-ink)", display: "flex", alignItems: "center", gap: 6 }}>
                   <SparkleIcon size={14} /> Auto-fill from photo
                 </div>
@@ -1314,7 +1314,7 @@ export function ProductForm({
             )}
 
             {uploadedImage && !uploadError && !bgRemoveError && !enhanceError && !mannequinError && photoStage === "raw" && !enhanced && (
-              <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "var(--sio-cream)", border: "1px solid var(--sio-line)" }}>
+              <div style={{ marginTop: 14, padding: 14, borderRadius: 16, background: "var(--sio-cream)", border: "1px solid var(--sio-line)" }}>
                 <PhotoEnhanceIllustration />
                 <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 10, lineHeight: 1.6 }}>
                   <strong style={{ color: "var(--sio-ink)" }}>Enhance Photo</strong> fixes lighting, smooths fabric wrinkles, and sharpens
@@ -1353,7 +1353,7 @@ export function ProductForm({
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
             {additionalImages.map((img, i) => (
               <div key={i} style={{ position: "relative" }}>
-                <img src={img} alt={`Additional ${i + 1}`} style={{ width: 64, height: 80, objectFit: "cover", borderRadius: 8, border: "1px solid var(--sio-line)" }} />
+                <img src={img} alt={`Additional ${i + 1}`} style={{ width: 64, height: 80, objectFit: "cover", borderRadius: 10, border: "1px solid var(--sio-line)" }} />
                 <button
                   type="button"
                   onClick={() => removeAdditionalImage(i)}

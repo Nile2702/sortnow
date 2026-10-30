@@ -368,7 +368,7 @@ export default function AccountPage() {
           style={{
             background: "var(--sio-paper)",
             border: "1px solid var(--sio-line)",
-            borderRadius: 20,
+            borderRadius: 16,
             padding: "32px 28px",
             boxShadow: "0 20px 40px rgba(22, 20, 15, 0.05)",
             textAlign: "center",
@@ -419,7 +419,7 @@ export default function AccountPage() {
                 marginTop: 18,
                 textAlign: "left",
                 border: "1px solid var(--sio-line)",
-                borderRadius: 14,
+                borderRadius: 16,
                 padding: "14px 16px",
                 background: "var(--sio-cream)",
               }}
@@ -500,7 +500,7 @@ export default function AccountPage() {
         style={{
           background: "var(--sio-paper)",
           border: "1px solid var(--sio-line)",
-          borderRadius: 20,
+          borderRadius: 16,
           padding: 28,
           boxShadow: "0 20px 40px rgba(22, 20, 15, 0.05)",
         }}
@@ -898,7 +898,7 @@ function AccountLink({ href, icon, label, desc }: { href: string; icon: React.Re
         gap: 12,
         padding: "14px 16px",
         border: "1px solid var(--sio-line)",
-        borderRadius: 14,
+        borderRadius: 16,
         background: "var(--sio-cream)",
         textDecoration: "none",
         color: "inherit",

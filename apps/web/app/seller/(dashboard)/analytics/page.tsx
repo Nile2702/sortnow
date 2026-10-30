@@ -38,7 +38,7 @@ const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "S
 // doesn't invite a click that does nothing.
 function StatTile({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
   return (
-    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20 }}>
+    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20 }}>
       <div style={{ marginBottom: 8, color: "var(--sio-ink)", display: "flex" }}>{icon}</div>
       <div style={{ fontSize: 24, fontWeight: 700 }}>{value}</div>
       <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>{label}</div>
@@ -51,7 +51,7 @@ function StatTile({ icon, value, label }: { icon: React.ReactNode; value: string
 // here it's honest: something happens on click.
 function StatLink({ icon, value, label, href }: { icon: React.ReactNode; value: string | number; label: string; href: string }) {
   return (
-    <Link href={href} className="sio-card" style={{ display: "block", background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, textDecoration: "none", color: "inherit" }}>
+    <Link href={href} className="sio-card" style={{ display: "block", background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20, textDecoration: "none", color: "inherit" }}>
       <div style={{ marginBottom: 8, color: "var(--sio-ink)", display: "flex" }}>{icon}</div>
       <div style={{ fontSize: 24, fontWeight: 700 }}>{value}</div>
       <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>{label}</div>
@@ -138,7 +138,7 @@ export default function AnalyticsPage() {
         </p>
       ) : (
         <>
-          <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, marginBottom: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20, marginBottom: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "var(--sio-muted)" }}>Revenue — last 7 days</div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 120 }}>
               {sales.last7Days.map((d) => (
@@ -158,7 +158,7 @@ export default function AnalyticsPage() {
                 <select
                   value={year}
                   onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
+                  style={{ padding: "6px 10px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}
                 >
                   {availableYears.map((y) => (
                     <option key={y} value={y}>
@@ -169,7 +169,7 @@ export default function AnalyticsPage() {
               )}
             </div>
             {sales.profitAndLoss.itemsWithCostSold === 0 ? (
-              <p style={{ color: "var(--sio-muted)", fontSize: 13, background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16 }}>
+              <p style={{ color: "var(--sio-muted)", fontSize: 13, background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 16 }}>
                 No profit figures yet — set a cost price on your products (optional, on the Add/Edit Product page) to see profit here.
               </p>
             ) : (
@@ -193,7 +193,7 @@ export default function AnalyticsPage() {
                   {monthsForYear.length === 0 ? (
                     <p style={{ color: "var(--sio-muted)", fontSize: 13 }}>No costed sales in {year}.</p>
                   ) : (
-                    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", overflowX: "auto" }}>
+                    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", overflowX: "auto" }}>
                       <div style={{ minWidth: 480 }}>
                         <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1fr", padding: "8px 16px", fontSize: 11, fontWeight: 700, color: "var(--sio-muted)", textTransform: "uppercase", borderBottom: "1px solid var(--sio-cream)" }}>
                           <span>Month</span>
@@ -233,7 +233,7 @@ export default function AnalyticsPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 32 }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "var(--sio-muted)" }}>Top products by revenue</div>
-              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", overflow: "hidden" }}>
+              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", overflow: "hidden" }}>
                 {sales.topProducts.map((p) => (
                   <div key={p.title} style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid var(--sio-cream)", fontSize: 13 }}>
                     <span>
@@ -246,7 +246,7 @@ export default function AnalyticsPage() {
             </div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "var(--sio-muted)" }}>Payment modes</div>
-              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", overflow: "hidden" }}>
+              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", overflow: "hidden" }}>
                 {Object.entries(sales.byPaymentMode).map(([mode, count]) => (
                   <div key={mode} style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid var(--sio-cream)", fontSize: 13 }}>
                     <span style={{ textTransform: "uppercase" }}>{mode}</span>
@@ -267,7 +267,7 @@ export default function AnalyticsPage() {
       </div>
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Views — last 7 days</h2>
-      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, marginBottom: 32 }}>
+      <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20, marginBottom: 32 }}>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 140 }}>
           {data.last7Days.map((d) => (
             <div key={d.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -294,7 +294,7 @@ export default function AnalyticsPage() {
           No QR scans yet. Generate a standee in <a href="/seller/qr">QR Marketing</a> and scan it to see attribution here.
         </p>
       ) : (
-        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", overflow: "hidden" }}>
+        <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", overflow: "hidden" }}>
           {Object.entries(data.byPosition).map(([pos, count]) => (
             <div key={pos} style={{ display: "flex", justifyContent: "space-between", padding: "12px 18px", borderBottom: "1px solid var(--sio-cream)", fontSize: 14 }}>
               <span>{pos}</span>

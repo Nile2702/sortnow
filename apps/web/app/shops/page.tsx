@@ -42,7 +42,7 @@ function isBoosted(boostedUntil?: string | null) {
 }
 
 function SkeletonCard() {
-  return <div className="sio-skeleton" style={{ borderRadius: 14, height: 110 }} />;
+  return <div className="sio-skeleton" style={{ borderRadius: 16, height: 110 }} />;
 }
 
 export default function ShopsPage() {
@@ -263,7 +263,7 @@ export default function ShopsPage() {
                 gap: 14,
                 alignItems: "center",
                 background: "#fff",
-                borderRadius: 14,
+                borderRadius: 16,
                 padding: 16,
                 textDecoration: "none",
                 color: "inherit",
@@ -276,7 +276,7 @@ export default function ShopsPage() {
                 style={{
                   width: 48,
                   height: 48,
-                  borderRadius: 12,
+                  borderRadius: 10,
                   background: `hsl(${(s.name.charCodeAt(0) * 37) % 360}, 60%, 92%)`,
                   color: `hsl(${(s.name.charCodeAt(0) * 37) % 360}, 45%, 35%)`,
                   display: "flex",

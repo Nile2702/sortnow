@@ -105,7 +105,7 @@ export default function SellerDashboard() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
         {stats.map((s) => {
-          const cardStyle: React.CSSProperties = { background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, display: "block", textDecoration: "none", color: "inherit" };
+          const cardStyle: React.CSSProperties = { background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20, display: "block", textDecoration: "none", color: "inherit" };
           const content = (
             <>
               <div style={{ marginBottom: 8, color: "var(--sio-ink)", display: "flex" }}>{s.icon}</div>
@@ -131,7 +131,7 @@ export default function SellerDashboard() {
           It's now entirely derived from whichever Promotions campaign is
           actually running, so there's nothing to fill in or submit - only
           somewhere to see it and jump to the real control, Promotions. */}
-      <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, marginBottom: 32 }}>
+      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20, marginBottom: 32 }}>
         {saleIsActive && liveSale ? (
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
@@ -158,7 +158,7 @@ export default function SellerDashboard() {
             </p>
             <Link
               href="/seller/promotions"
-              style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "var(--sio-error)", color: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 7 }}
+              style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--sio-error)", color: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 7 }}
             >
               <StatusDot color="#fff" size={8} /> Start a sale
             </Link>
@@ -180,7 +180,7 @@ export default function SellerDashboard() {
             key={a.href}
             href={a.href}
             className="sio-card"
-            style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, textDecoration: "none", color: "inherit" }}
+            style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20, textDecoration: "none", color: "inherit" }}
           >
             <div style={{ marginBottom: 10, color: "var(--sio-ink)", display: "flex" }}>{a.icon}</div>
             <div style={{ fontWeight: 600, marginBottom: 4 }}>{a.label}</div>

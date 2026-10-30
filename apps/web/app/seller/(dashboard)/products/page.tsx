@@ -190,7 +190,7 @@ function SellerProductsPageInner() {
 
       {products.some((p) => p.status === "on_hold") && (
         <div
-          style={{ background: "var(--sio-pending-bg)", border: "1px solid var(--sio-pending-border)", color: "var(--sio-pending)", borderRadius: 12, padding: "10px 16px", fontSize: 13, marginBottom: 16 }}
+          style={{ background: "var(--sio-pending-bg)", border: "1px solid var(--sio-pending-border)", color: "var(--sio-pending)", borderRadius: 10, padding: "10px 16px", fontSize: 13, marginBottom: 16 }}
         >
           One or more of your listings below are marked <strong>On hold</strong> - SORT NOW has temporarily hidden them from shoppers (search, your store page,
           and reservations). Everything else in your catalog is unaffected. Contact support if you think this was a mistake.
@@ -200,11 +200,11 @@ function SellerProductsPageInner() {
       {products.length > 0 && (
         <>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-            <div style={{ background: "#fff", border: "1px solid var(--sio-cream)", borderRadius: 12, padding: "10px 16px" }}>
+            <div style={{ background: "#fff", border: "1px solid var(--sio-cream)", borderRadius: 10, padding: "10px 16px" }}>
               <div style={{ fontSize: 11, color: "var(--sio-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Units in stock</div>
               <div style={{ fontSize: 18, fontWeight: 700 }}>{inventoryUnits}</div>
             </div>
-            <div style={{ background: "#fff", border: "1px solid var(--sio-cream)", borderRadius: 12, padding: "10px 16px" }}>
+            <div style={{ background: "#fff", border: "1px solid var(--sio-cream)", borderRadius: 10, padding: "10px 16px" }}>
               <div style={{ fontSize: 11, color: "var(--sio-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Inventory value</div>
               <div style={{ fontSize: 18, fontWeight: 700 }}>
                 {inventoryValue > 0 ? `₹${inventoryValue.toLocaleString("en-IN")}` : "—"}
@@ -217,7 +217,7 @@ function SellerProductsPageInner() {
               style={{
                 background: lowStockOnly ? "var(--sio-error-bg)" : "#fff",
                 border: `1px solid ${lowStockOnly ? "var(--sio-error-border)" : "var(--sio-cream)"}`,
-                borderRadius: 12,
+                borderRadius: 10,
                 padding: "10px 16px",
                 cursor: "pointer",
                 textAlign: "left",
@@ -235,7 +235,7 @@ function SellerProductsPageInner() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by title or product code…"
-            style={{ width: "100%", maxWidth: 360, padding: "9px 14px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13, marginBottom: 16 }}
+            style={{ width: "100%", maxWidth: 360, padding: "9px 14px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13, marginBottom: 16 }}
           />
         </>
       )}
@@ -254,9 +254,9 @@ function SellerProductsPageInner() {
             <div
               key={p.id}
               className="sio-card"
-              style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 14 }}
+              style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 14 }}
             >
-              <img src={p.images?.[0]?.url} alt={p.title} style={{ width: 56, height: 70, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
+              <img src={p.images?.[0]?.url} alt={p.title} style={{ width: 56, height: 70, objectFit: "cover", borderRadius: 10, flexShrink: 0 }} />
               <div style={{ flex: "1 1 200px", minWidth: 180 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
                   {p.title}
@@ -299,7 +299,7 @@ function SellerProductsPageInner() {
                       style={{
                         width: 52,
                         padding: "3px 6px",
-                        borderRadius: 6,
+                        borderRadius: 10,
                         border: "1px solid var(--sio-line)",
                         fontSize: 12,
                         textAlign: "right",
@@ -316,7 +316,7 @@ function SellerProductsPageInner() {
                 <div style={{ display: "flex", gap: 8 }}>
                   <Link
                     href={`/seller/products/${p.id}`}
-                    style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--sio-line)", color: "var(--sio-ink)", textDecoration: "none", fontSize: 13 }}
+                    style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid var(--sio-line)", color: "var(--sio-ink)", textDecoration: "none", fontSize: 13 }}
                   >
                     Edit
                   </Link>
@@ -327,7 +327,7 @@ function SellerProductsPageInner() {
                         disabled={deletingId === p.id}
                         style={{
                           padding: "8px 14px",
-                          borderRadius: 8,
+                          borderRadius: 10,
                           border: "none",
                           background: deletingId === p.id ? "var(--sio-error-border)" : "var(--sio-error)",
                           color: "#fff",
@@ -341,7 +341,7 @@ function SellerProductsPageInner() {
                       <button
                         onClick={() => setConfirmingId(null)}
                         disabled={deletingId === p.id}
-                        style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--sio-line)", background: "#fff", color: "var(--sio-ink)", cursor: "pointer", fontSize: 13 }}
+                        style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid var(--sio-line)", background: "#fff", color: "var(--sio-ink)", cursor: "pointer", fontSize: 13 }}
                       >
                         Cancel
                       </button>
@@ -352,7 +352,7 @@ function SellerProductsPageInner() {
                         setConfirmingId(p.id);
                         setDeleteError("");
                       }}
-                      style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--sio-error-border)", background: "#fff", color: "var(--sio-error)", cursor: "pointer", fontSize: 13 }}
+                      style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid var(--sio-error-border)", background: "#fff", color: "var(--sio-error)", cursor: "pointer", fontSize: 13 }}
                     >
                       Delete
                     </button>

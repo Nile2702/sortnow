@@ -93,16 +93,16 @@ export default function ThemeStudioPage() {
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Primary color</label>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} style={{ width: 44, height: 36, border: "none", borderRadius: 8, cursor: "pointer" }} />
-              <input value={primary} onChange={(e) => setPrimary(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13, width: 120 }} />
+              <input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} style={{ width: 44, height: 36, border: "none", borderRadius: 10, cursor: "pointer" }} />
+              <input value={primary} onChange={(e) => setPrimary(e.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13, width: 120 }} />
             </div>
           </div>
 
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Accent color (CTA buttons, hover states)</label>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} style={{ width: 44, height: 36, border: "none", borderRadius: 8, cursor: "pointer" }} />
-              <input value={accent} onChange={(e) => setAccent(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13, width: 120 }} />
+              <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} style={{ width: 44, height: 36, border: "none", borderRadius: 10, cursor: "pointer" }} />
+              <input value={accent} onChange={(e) => setAccent(e.target.value)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13, width: 120 }} />
             </div>
           </div>
 
@@ -148,7 +148,7 @@ export default function ThemeStudioPage() {
 
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: "var(--sio-muted)" }}>LIVE PREVIEW</div>
-          <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", height: 300 }}>
+          <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", height: 300 }}>
             <div style={{ position: "absolute", inset: 0, background: `linear-gradient(140deg, #14110f 0%, ${primary} 55%, #14110f 100%)` }} />
             <div
               style={{

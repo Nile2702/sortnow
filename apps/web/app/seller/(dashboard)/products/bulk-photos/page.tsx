@@ -131,7 +131,7 @@ async function uploadProductImage(dataUrl: string): Promise<string> {
 }
 
 function inputStyle(): React.CSSProperties {
-  return { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 };
+  return { width: "100%", padding: "8px 10px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 };
 }
 
 // `fetch()` itself throws a bare "Failed to fetch" TypeError whenever the
@@ -964,7 +964,7 @@ export default function BulkPhotoUploadPage() {
             gap: 12,
             background: "var(--sio-ink)",
             color: "#fff",
-            borderRadius: 12,
+            borderRadius: 10,
             padding: "12px 18px",
             marginBottom: 16,
           }}
@@ -1010,7 +1010,7 @@ export default function BulkPhotoUploadPage() {
                 display: "flex",
                 gap: 16,
                 background: "#fff",
-                borderRadius: 14,
+                borderRadius: 16,
                 border: selectedForMerge.includes(d.localId) ? "2px solid var(--sio-ai-accent)" : "1px solid var(--sio-cream)",
                 padding: 16,
               }}
@@ -1037,7 +1037,7 @@ export default function BulkPhotoUploadPage() {
                   className="sio-draft-thumb"
                   src={d.image}
                   alt={d.fileName}
-                  style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 8, border: "1px solid var(--sio-line)" }}
+                  style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10, border: "1px solid var(--sio-line)" }}
                 />
                 {d.bgRemoved && (
                   <span
@@ -1334,7 +1334,7 @@ export default function BulkPhotoUploadPage() {
                               onClick={() => toggleDraftSize(d.localId, sz)}
                               style={{
                                 padding: "4px 10px",
-                                borderRadius: 7,
+                                borderRadius: 10,
                                 border: active ? "1px solid var(--sio-ink)" : "1px solid var(--sio-line)",
                                 background: active ? "var(--sio-ink)" : "#fff",
                                 color: active ? "#fff" : "var(--sio-ink-soft)",
@@ -1365,7 +1365,7 @@ export default function BulkPhotoUploadPage() {
                             <img
                               src={img}
                               alt={`${d.fileName} extra angle ${i + 1}`}
-                              style={{ width: 48, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--sio-line)" }}
+                              style={{ width: 48, height: 60, objectFit: "cover", borderRadius: 10, border: "1px solid var(--sio-line)" }}
                             />
                             <button
                               type="button"

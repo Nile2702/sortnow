@@ -51,7 +51,7 @@ export default async function AdminProductsPage({
       <form
         method="get"
         action="/admin/products"
-        style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20, background: "#fff", border: "1px solid var(--sio-cream)", borderRadius: 14, padding: 16 }}
+        style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20, background: "#fff", border: "1px solid var(--sio-cream)", borderRadius: 16, padding: 16 }}
       >
         <input type="hidden" name="key" value={key} />
         <input
@@ -59,16 +59,16 @@ export default async function AdminProductsPage({
           name="q"
           defaultValue={q}
           placeholder="Search by title, product code, or store name…"
-          style={{ flex: "1 1 260px", padding: "9px 14px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
+          style={{ flex: "1 1 260px", padding: "9px 14px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}
         />
-        <select name="status" defaultValue={statusFilter} style={{ padding: "9px 14px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}>
+        <select name="status" defaultValue={statusFilter} style={{ padding: "9px 14px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}>
           <option value="all">All statuses</option>
           <option value="live">Live only</option>
           <option value="on_hold">On hold only</option>
         </select>
         <button
           type="submit"
-          style={{ padding: "9px 20px", borderRadius: 8, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+          style={{ padding: "9px 20px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
         >
           Filter
         </button>
@@ -92,14 +92,14 @@ export default async function AdminProductsPage({
                   flexWrap: "wrap",
                   background: isHeld ? "var(--sio-pending-bg)" : "#fff",
                   border: `1px solid ${isHeld ? "var(--sio-pending-border)" : "var(--sio-cream)"}`,
-                  borderRadius: 14,
+                  borderRadius: 16,
                   padding: 14,
                 }}
               >
                 <img
                   src={p.images?.[0]?.url}
                   alt={p.title}
-                  style={{ width: 52, height: 66, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
+                  style={{ width: 52, height: 66, objectFit: "cover", borderRadius: 10, flexShrink: 0 }}
                 />
                 <div style={{ flex: "1 1 240px", minWidth: 200 }}>
                   <div style={{ fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
@@ -126,8 +126,8 @@ export default async function AdminProductsPage({
                     type="submit"
                     style={
                       isHeld
-                        ? { padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }
-                        : { padding: "8px 16px", borderRadius: 8, border: "1px solid var(--sio-error-border)", background: "#fff", color: "var(--sio-error)", fontWeight: 600, fontSize: 13, cursor: "pointer" }
+                        ? { padding: "8px 16px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }
+                        : { padding: "8px 16px", borderRadius: 10, border: "1px solid var(--sio-error-border)", background: "#fff", color: "var(--sio-error)", fontWeight: 600, fontSize: 13, cursor: "pointer" }
                     }
                   >
                     {isHeld ? "Unhold" : "Hold"}

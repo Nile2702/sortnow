@@ -206,7 +206,7 @@ export default function ReservePage() {
           <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20 }}>
             {items.map((item) => (
               <div key={`${item.productId}-${item.size}`} style={{ display: "flex", gap: 12, marginBottom: 14 }}>
-                <img src={item.imageUrl} alt={item.title} style={{ width: 50, height: 64, objectFit: "cover", borderRadius: 8 }} />
+                <img src={item.imageUrl} alt={item.title} style={{ width: 50, height: 64, objectFit: "cover", borderRadius: 10 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{item.title}</div>
                   <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>

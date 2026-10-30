@@ -28,7 +28,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
           <div
             key={s.id}
             className="sio-card"
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 18 }}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 18 }}
           >
             <div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>
@@ -63,7 +63,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
           <div
             key={s.id}
             className="sio-card"
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "var(--sio-error-bg)", borderRadius: 14, border: "1px solid var(--sio-error-border)", padding: 18 }}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "var(--sio-error-bg)", borderRadius: 16, border: "1px solid var(--sio-error-border)", padding: 18 }}
           >
             <div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>
@@ -100,7 +100,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
           <div
             key={s.id}
             className="sio-card"
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "var(--sio-cream)", borderRadius: 14, border: "1px solid var(--sio-line)", padding: 18 }}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "var(--sio-cream)", borderRadius: 16, border: "1px solid var(--sio-line)", padding: 18 }}
           >
             <div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>

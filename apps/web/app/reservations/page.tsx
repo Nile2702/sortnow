@@ -134,7 +134,7 @@ function ReservationRow({ reservation: r, onUpdate }: { reservation: Reservation
   }
 
   return (
-    <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16 }}>
+    <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 16 }}>
       <Link
         href={`/reservations/${r.id}`}
         style={{

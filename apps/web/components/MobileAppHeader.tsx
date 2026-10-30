@@ -149,7 +149,7 @@ function LocationDropdown({
         left: rect.left,
         right: rect.right,
         zIndex: 1000,
-        borderRadius: 12,
+        borderRadius: 10,
         padding: 8,
         minWidth: 220,
         boxShadow: "0 12px 32px rgba(0,0,0,0.14)",
@@ -166,7 +166,7 @@ function LocationDropdown({
           width: "100%",
           textAlign: "left",
           padding: "8px 10px",
-          borderRadius: 8,
+          borderRadius: 10,
           border: "none",
           background: "transparent",
           color: "var(--sio-bronze-dark)",
@@ -189,7 +189,7 @@ function LocationDropdown({
             width: "100%",
             textAlign: "left",
             padding: "8px 10px",
-            borderRadius: 8,
+            borderRadius: 10,
             border: "none",
             background: "pincode" in location && m.pincode === location.pincode ? "var(--sio-cream)" : "transparent",
             color: "var(--sio-ink)",
@@ -213,14 +213,14 @@ function LocationDropdown({
           onChange={(e) => setPincodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
           placeholder="Enter PIN code"
           inputMode="numeric"
-          style={{ flex: 1, minWidth: 0, padding: "7px 9px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
+          style={{ flex: 1, minWidth: 0, padding: "7px 9px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}
         />
         <button
           type="submit"
           disabled={!/^\d{6}$/.test(pincodeInput)}
           style={{
             padding: "7px 12px",
-            borderRadius: 8,
+            borderRadius: 10,
             border: "none",
             background: /^\d{6}$/.test(pincodeInput) ? "var(--sio-ink)" : "var(--sio-line)",
             color: "#fff",

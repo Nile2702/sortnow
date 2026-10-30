@@ -257,7 +257,7 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function StatTile({ value, label, color }: { value: React.ReactNode; label: string; color?: string }) {
   return (
-    <div style={{ background: "var(--sio-cream)", borderRadius: 12, border: "1px solid var(--sio-cream)", padding: 16 }}>
+    <div style={{ background: "var(--sio-cream)", borderRadius: 10, border: "1px solid var(--sio-cream)", padding: 16 }}>
       <div style={{ fontSize: 22, fontWeight: 700, color: color ?? "var(--sio-ink)", display: "flex", alignItems: "center", gap: 6 }}>{value}</div>
       <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>{label}</div>
     </div>

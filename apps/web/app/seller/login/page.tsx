@@ -335,7 +335,7 @@ export default function SellerLoginPage() {
 
                 {otpError && (
                   <div
-                    style={{ background: "var(--sio-error-bg)", border: "1px solid var(--sio-error-border)", color: "var(--sio-error)", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginTop: 8, marginBottom: 6 }}
+                    style={{ background: "var(--sio-error-bg)", border: "1px solid var(--sio-error-border)", color: "var(--sio-error)", borderRadius: 10, padding: "10px 12px", fontSize: 13, marginTop: 8, marginBottom: 6 }}
                   >
                     {otpError}
                   </div>
@@ -446,7 +446,7 @@ export default function SellerLoginPage() {
                     background: "var(--sio-error-bg)",
                     border: "1px solid var(--sio-error-border)",
                     color: "var(--sio-error)",
-                    borderRadius: 8,
+                    borderRadius: 10,
                     padding: "10px 12px",
                     fontSize: 13,
                     marginTop: 10,

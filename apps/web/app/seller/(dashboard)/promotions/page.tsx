@@ -180,7 +180,7 @@ export default function PromotionsPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Festive Weekend Sale"
             maxLength={120}
-            style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
+            style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 }}
           />
         </div>
 
@@ -191,7 +191,7 @@ export default function PromotionsPage() {
               <select
                 value={discountType}
                 onChange={(e) => setDiscountType(e.target.value as "percent" | "flat")}
-                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
+                style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 }}
               >
                 <option value="percent">% off</option>
                 <option value="flat">₹ off</option>
@@ -202,7 +202,7 @@ export default function PromotionsPage() {
                 max={discountType === "percent" ? 90 : undefined}
                 value={discountValue}
                 onChange={(e) => setDiscountValue(e.target.value)}
-                style={{ width: 100, padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
+                style={{ width: 100, padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 }}
               />
             </div>
           </div>
@@ -239,7 +239,7 @@ export default function PromotionsPage() {
                   setGender(g);
                   setSubCategory(CATEGORY_TREE.find((c) => c.value === g)?.subCategories[0] ?? "");
                 }}
-                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
+                style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 }}
               >
                 {CATEGORY_TREE.map((c) => (
                   <option key={c.value} value={c.value}>
@@ -250,7 +250,7 @@ export default function PromotionsPage() {
               <select
                 value={subCategory}
                 onChange={(e) => setSubCategory(e.target.value)}
-                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
+                style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 }}
               >
                 {subCategoryOptions.map((sc) => (
                   <option key={sc} value={sc}>
@@ -295,7 +295,7 @@ export default function PromotionsPage() {
                 type="datetime-local"
                 value={startsAt}
                 onChange={(e) => setStartsAt(e.target.value)}
-                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
+                style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 }}
               />
             )}
           </div>
@@ -306,7 +306,7 @@ export default function PromotionsPage() {
               value={endsAt}
               onChange={(e) => setEndsAt(e.target.value)}
               required
-              style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
+              style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 }}
             />
           </div>
         </div>
@@ -350,7 +350,7 @@ export default function PromotionsPage() {
               <div
                 key={c.id}
                 className="sio-card"
-                style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16, display: "flex", alignItems: "center", gap: 14 }}
+                style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 16, display: "flex", alignItems: "center", gap: 14 }}
               >
                 <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, background: badge.bg, color: badge.fg, flexShrink: 0 }}>
                   {badge.label}

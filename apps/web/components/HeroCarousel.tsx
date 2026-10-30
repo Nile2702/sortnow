@@ -22,7 +22,7 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
   const slide = slides[active];
 
   return (
-    <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", height: 340 }}>
+    <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", height: 340 }}>
       <div
         style={{
           position: "absolute",

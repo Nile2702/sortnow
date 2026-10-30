@@ -567,7 +567,7 @@ export default function ProductDetailPage() {
                   style={{
                     padding: 0,
                     border: i === activeImage ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
-                    borderRadius: 8,
+                    borderRadius: 10,
                     overflow: "hidden",
                     cursor: "pointer",
                     width: 64,

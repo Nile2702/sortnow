@@ -95,7 +95,7 @@ export function HeroSlider() {
         overflow: "hidden",
         marginBottom: 40,
         height: 400,
-        borderRadius: 24,
+        borderRadius: 16,
       }}
     >
       <div
