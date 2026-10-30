@@ -1,15 +1,21 @@
 "use client";
 
+import { WarningIcon } from "../components/icons";
+
 // Catches an error thrown by the root layout itself (rare - most errors are
 // caught by app/error.tsx instead) - since the root layout is what broke,
 // this can't assume globals.css or any shared component rendered, so it
-// defines its own full <html>/<body> and uses inline styles only.
+// defines its own full <html>/<body> and uses inline styles only. WarningIcon
+// is safe to use here even so - it's a self-contained SVG with no
+// globals.css dependency (currentColor, not a --sio-* custom property).
 export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <html lang="en">
       <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", background: "#fafafa", color: "#282c3f" }}>
         <main style={{ maxWidth: 500, margin: "80px auto", padding: "0 16px", textAlign: "center" }}>
-          <div style={{ fontSize: 64, marginBottom: 8 }}>⚠️</div>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+            <WarningIcon size={56} strokeWidth={1.6} />
+          </div>
           <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>SORT NOW hit a snag</h1>
           <p style={{ color: "#64748b", marginBottom: 28 }}>Something broke at the site level. Reloading usually fixes it.</p>
           <button

@@ -10,6 +10,7 @@ import { getShopperSession } from "../../../lib/shopper-session";
 import { COLOR_CATALOG, allowsMultipleQuantity, MAX_MULTIPLE_QUANTITY } from "../../../lib/catalog-constants";
 import { LogoBadge } from "../../../components/LogoBadge";
 import { ProductCard } from "../../../components/ProductCard";
+import { CheckIcon, CrossIcon, BellIcon } from "../../../components/icons";
 
 interface ColorVariant {
   id: string;
@@ -51,7 +52,7 @@ function formatCountdown(ms: number): string {
 }
 
 function colorHex(name: string | undefined): string {
-  return COLOR_CATALOG.find((c) => c.name.toLowerCase() === name?.toLowerCase())?.hex ?? "#cbd5e1";
+  return COLOR_CATALOG.find((c) => c.name.toLowerCase() === name?.toLowerCase())?.hex ?? "var(--sio-line)";
 }
 
 interface Review {
@@ -639,7 +640,7 @@ export default function ProductDetailPage() {
           <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 20 }}>Inclusive of all taxes</div>
 
           {product.stockRemaining === 0 ? (
-            <div style={{ color: "#b91c1c", fontSize: 13, fontWeight: 700, marginBottom: 20, display: "inline-block" }}>Sold Out</div>
+            <div style={{ color: "var(--sio-error)", fontSize: 13, fontWeight: 700, marginBottom: 20, display: "inline-block" }}>Sold Out</div>
           ) : (
             product.stockRemaining != null &&
             product.stockRemaining <= 5 && (
@@ -770,14 +771,17 @@ export default function ProductDetailPage() {
                   padding: "16px 24px",
                   borderRadius: 999,
                   border: "1px solid var(--sio-line)",
-                  background: waitlistJoined ? "#f0fdf4" : "#fff",
-                  color: waitlistJoined ? "#16a34a" : "var(--sio-ink)",
+                  background: waitlistJoined ? "var(--sio-success-bg)" : "#fff",
+                  color: waitlistJoined ? "var(--sio-success)" : "var(--sio-ink)",
                   fontSize: 14.5,
                   fontWeight: 600,
                   cursor: waitlistJoined ? "default" : "pointer",
                 }}
               >
-                {waitlistJoined ? "✓ We'll notify you" : "🔔 Notify me when back in stock"}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  {waitlistJoined ? <CheckIcon size={14} /> : <BellIcon size={14} />}
+                  {waitlistJoined ? "We'll notify you" : "Notify me when back in stock"}
+                </span>
               </button>
             ) : (
               <button
@@ -839,7 +843,7 @@ export default function ProductDetailPage() {
                 placeholder="10-digit mobile number"
                 style={{ padding: "10px 14px", border: "1px solid var(--sio-line)", borderRadius: 10, fontSize: 14 }}
               />
-              {waitlistError && <div style={{ color: "#b91c1c", fontSize: 12.5 }}>{waitlistError}</div>}
+              {waitlistError && <div style={{ color: "var(--sio-error)", fontSize: 12.5 }}>{waitlistError}</div>}
               <button
                 type="submit"
                 disabled={waitlistSubmitting}
@@ -1077,7 +1081,7 @@ export default function ProductDetailPage() {
                 </span>
               )}
               {reviewError && (
-                <span className="sio-fade-in" style={{ color: "#dc2626", fontSize: 13 }}>
+                <span className="sio-fade-in" style={{ color: "var(--sio-error)", fontSize: 13 }}>
                   {reviewError}
                 </span>
               )}
@@ -1136,11 +1140,13 @@ export default function ProductDetailPage() {
               border: "none",
               background: "rgba(255,255,255,0.12)",
               color: "#fff",
-              fontSize: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               cursor: "pointer",
             }}
           >
-            ✕
+            <CrossIcon size={20} />
           </button>
           <img
             src={product.images[activeImage]?.url ?? product.images[0]?.url}
@@ -1195,13 +1201,16 @@ export default function ProductDetailPage() {
           }
           className="sio-product-action-cta"
         >
-          {product.stockRemaining === 0
-            ? waitlistJoined
-              ? "✓ We'll notify you"
-              : "🔔 Notify me when back in stock"
-            : added
-            ? "Go to Sort →"
-            : `Add to Sort — ₹${product.basePrice}`}
+          {product.stockRemaining === 0 ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+              {waitlistJoined ? <CheckIcon size={14} /> : <BellIcon size={14} />}
+              {waitlistJoined ? "We'll notify you" : "Notify me when back in stock"}
+            </span>
+          ) : added ? (
+            "Go to Sort →"
+          ) : (
+            `Add to Sort — ₹${product.basePrice}`
+          )}
         </button>
       </div>
     </main>

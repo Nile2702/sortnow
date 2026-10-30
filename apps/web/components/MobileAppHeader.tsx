@@ -9,20 +9,12 @@ import { showToast } from "../lib/toast";
 import { getWishlist } from "../lib/wishlist";
 import { QrScannerModal } from "./QrScannerModal";
 import { FullLogo } from "./LogoBadge";
+import { PinIcon, MapIcon } from "./icons";
 
 function BackIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M15 18l-6-6 6-6" />
-    </svg>
-  );
-}
-
-function PinIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11z" />
-      <circle cx="12" cy="10" r="2.3" />
     </svg>
   );
 }
@@ -61,15 +53,6 @@ function QrIcon() {
       <rect x="14" y="3" width="7" height="7" />
       <rect x="3" y="14" width="7" height="7" />
       <path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20v.01" />
-    </svg>
-  );
-}
-
-function MapIcon() {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-      <path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z" />
-      <path d="M9 4v13M15 6.5v13" />
     </svg>
   );
 }
@@ -193,7 +176,7 @@ function LocationDropdown({
           opacity: locating ? 0.6 : 1,
         }}
       >
-        📍 {locating ? "Getting your location…" : "Use my current location"}
+        <PinIcon size={13} /> {locating ? "Getting your location…" : "Use my current location"}
       </button>
       <div style={{ height: 1, background: "var(--sio-line)", margin: "4px 0" }} />
       {QUICK_MARKETS.map((m) => (
@@ -573,7 +556,7 @@ export function MobileAppHeader() {
             }}
             className={`sio-tooltip${isHome ? " sio-glass" : ""}`}
           >
-            <MapIcon />
+            <MapIcon size={19} />
           </button>
 
           <button
@@ -693,7 +676,7 @@ export function MobileAppHeader() {
                 cursor: "pointer",
               }}
             >
-              <MapIcon />
+              <MapIcon size={19} />
             </button>
             <button
               type="button"

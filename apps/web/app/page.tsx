@@ -12,6 +12,7 @@ import { CategoryTiles } from "../components/CategoryTiles";
 import { ProductCard } from "../components/ProductCard";
 import { StoreRatingBadge } from "../components/StoreRatingBadge";
 import { hashHue } from "../lib/string-hue";
+import { PinIcon, MapIcon, SparkleIcon, FlameIcon, CompassIcon } from "../components/icons";
 
 interface DiscoveredStore {
   id: string;
@@ -301,7 +302,7 @@ function DiscoverPageInner() {
       >
         {geo && (
           <div style={{ width: "100%", fontSize: 12.5, color: "var(--sio-ink)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-            📍 Using your current location
+            <PinIcon size={13} /> Using your current location
             <button
               type="button"
               onClick={() => setGeo(null)}
@@ -378,7 +379,7 @@ function DiscoverPageInner() {
             whiteSpace: "nowrap",
           }}
         >
-          🗺️ View stores on map
+          <MapIcon size={15} /> View stores on map
         </Link>
 
         {activeSubCategories.length > 0 && (
@@ -405,7 +406,9 @@ function DiscoverPageInner() {
       </section>
 
       <section style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 13, color: "var(--sio-muted)", marginBottom: 8, fontWeight: 600 }}>📍 Popular markets</div>
+        <div style={{ fontSize: 13, color: "var(--sio-muted)", marginBottom: 8, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+          <PinIcon size={13} /> Popular markets
+        </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {QUICK_MARKETS.map((m) => (
             <button
@@ -470,9 +473,12 @@ function DiscoverPageInner() {
                   fontWeight: 600,
                   cursor: "pointer",
                   fontSize: 13,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
                 }}
               >
-                📍 {m.label}
+                <PinIcon size={13} /> {m.label}
               </button>
             ))}
           </div>
@@ -554,19 +560,25 @@ function DiscoverPageInner() {
       )}
 
       <section style={{ marginBottom: 44 }}>
-        <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>✨ New Arrivals</h2>
+        <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+          <SparkleIcon size={19} /> New Arrivals
+        </h2>
         <ProductRow products={newArrivals} loading={spotlightLoading} />
       </section>
 
       {(spotlightLoading || bestDeals.length > 0) && (
         <section style={{ marginBottom: 44 }}>
-          <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>🔥 Best Deals</h2>
+          <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+            <FlameIcon size={19} /> Best Deals
+          </h2>
           <ProductRow products={bestDeals} loading={spotlightLoading} />
         </section>
       )}
 
       <section style={{ background: "#fff", borderRadius: 18, padding: 24, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", border: "1px solid var(--sio-cream)" }}>
-        <h2 style={{ fontSize: 20, marginBottom: 4, fontWeight: 700 }}>🧭 Shop in Sort</h2>
+        <h2 style={{ fontSize: 20, marginBottom: 4, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+          <CompassIcon size={19} /> Shop in Sort
+        </h2>
         <p style={{ fontSize: 13, color: "var(--sio-muted)", marginBottom: 18 }}>
           Sort products across every nearby store
         </p>

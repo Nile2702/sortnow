@@ -11,6 +11,7 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { getShopperSession, onShopperSessionChange, ShopperSession } from "../lib/shopper-session";
 import { isMobileAppShellPage, isProductDetailPage } from "../lib/mobile-shell";
 import { LocationPicker } from "./LocationPicker";
+import { MapIcon } from "./icons";
 
 function HeartIcon() {
   return (
@@ -44,15 +45,6 @@ function PersonIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="12" cy="8" r="4" />
       <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" />
-    </svg>
-  );
-}
-
-function MapIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-      <path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z" />
-      <path d="M9 4v13M15 6.5v13" />
     </svg>
   );
 }
@@ -392,7 +384,7 @@ export function SiteHeader() {
 
         <nav className="sio-header-icons" style={{ display: "flex", gap: 4, alignItems: "center", whiteSpace: "nowrap" }}>
           <Link href="/shops?view=map" data-tooltip="Stores near me" className="sio-tooltip" style={{ color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="Stores near me">
-            <MapIcon />
+            <MapIcon size={20} />
           </Link>
           <Link href="/wishlist" data-tooltip="Wishlist" className="sio-tooltip" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="Wishlist">
             <HeartIcon />

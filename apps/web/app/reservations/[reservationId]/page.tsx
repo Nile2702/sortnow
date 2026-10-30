@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import QRCode from "qrcode";
 import { LoadingScreen } from "../../../components/LoadingSpinner";
+import { ClockIcon, CheckIcon, CrossIcon, WarningIcon, PhoneIcon, CompassIcon } from "../../../components/icons";
 
 interface ReservationItem {
   productId: string;
@@ -49,11 +50,11 @@ interface StoreVisitInfo {
 // same calm yellow the whole window shows.
 const URGENT_THRESHOLD_MS = 15 * 60 * 1000;
 
-const STATUS_COPY: Record<string, { title: string; icon: string; iconBg: string; iconFg: string }> = {
-  pending: { title: "Reservation confirmed", icon: "⏱", iconBg: "var(--sio-pending-bg)", iconFg: "var(--sio-pending)" },
-  fulfilled: { title: "Picked up", icon: "✓", iconBg: "var(--sio-success-bg)", iconFg: "var(--sio-success)" },
-  cancelled: { title: "Reservation cancelled", icon: "✕", iconBg: "var(--sio-cream)", iconFg: "var(--sio-muted)" },
-  expired: { title: "Reservation expired", icon: "⏳", iconBg: "var(--sio-error-bg)", iconFg: "var(--sio-error)" },
+const STATUS_COPY: Record<string, { title: string; icon: React.ReactNode; iconBg: string; iconFg: string }> = {
+  pending: { title: "Reservation confirmed", icon: <ClockIcon size={26} strokeWidth={1.8} />, iconBg: "var(--sio-pending-bg)", iconFg: "var(--sio-pending)" },
+  fulfilled: { title: "Picked up", icon: <CheckIcon size={26} strokeWidth={2.2} />, iconBg: "var(--sio-success-bg)", iconFg: "var(--sio-success)" },
+  cancelled: { title: "Reservation cancelled", icon: <CrossIcon size={26} strokeWidth={2.2} />, iconBg: "var(--sio-cream)", iconFg: "var(--sio-muted)" },
+  expired: { title: "Reservation expired", icon: <ClockIcon size={26} strokeWidth={1.8} />, iconBg: "var(--sio-error-bg)", iconFg: "var(--sio-error)" },
 };
 
 function formatCountdown(ms: number) {
@@ -178,7 +179,6 @@ export default function ReservationDetailPage() {
             alignItems: "center",
             justifyContent: "center",
             margin: "0 auto 16px",
-            fontSize: 26,
           }}
         >
           {copy.icon}
@@ -201,9 +201,13 @@ export default function ReservationDetailPage() {
               textAlign: "center",
               marginBottom: 16,
               fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
             }}
           >
-            {isUrgent ? "⚠ " : ""}
+            {isUrgent && <WarningIcon size={15} />}
             {formatCountdown(msLeft)} · walk in before {new Date(reservation.reservedUntil).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
           </div>
 
@@ -335,7 +339,7 @@ export default function ReservationDetailPage() {
                   fontWeight: 600,
                 }}
               >
-                📞 Call store
+                <PhoneIcon size={14} /> Call store
               </a>
             )}
             {directionsUrl && (
@@ -356,7 +360,7 @@ export default function ReservationDetailPage() {
                   fontWeight: 600,
                 }}
               >
-                🧭 Get directions
+                <CompassIcon size={14} /> Get directions
               </a>
             )}
           </div>

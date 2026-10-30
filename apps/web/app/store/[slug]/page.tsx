@@ -8,6 +8,7 @@ import { ProductGrid } from "../../../components/ProductGrid";
 import { CategoryNav } from "../../../components/CategoryNav";
 import { TrackPageView } from "../../../components/TrackPageView";
 import { StoreRatingBadge } from "../../../components/StoreRatingBadge";
+import { PinIcon } from "../../../components/icons";
 import { StoreReviews } from "../../../components/StoreReviews";
 
 interface Props {
@@ -73,7 +74,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
         {saleActive && store.liveSale && (
           <div
             style={{
-              background: "#dc2626",
+              background: "var(--sio-error)",
               color: "#fff",
               textAlign: "center",
               padding: "10px 16px",
@@ -101,17 +102,17 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
                   gap: "6px 14px",
                   marginTop: 14,
                   fontSize: 13,
-                  color: "#64748b",
+                  color: "var(--sio-muted)",
                 }}
               >
-                <span>
-                  📍 {store.localMarket}, {store.city} – {store.pincode}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <PinIcon size={13} /> {store.localMarket}, {store.city} – {store.pincode}
                 </span>
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: "var(--store-primary, #1f2937)", fontWeight: 600, textDecoration: "none" }}
+                  style={{ color: "var(--store-primary, var(--sio-ink))", fontWeight: 600, textDecoration: "none" }}
                 >
                   Locate on map →
                 </a>

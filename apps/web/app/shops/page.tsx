@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { StoreRatingBadge } from "../../components/StoreRatingBadge";
+import { ListIcon, MapIcon } from "../../components/icons";
 import { getLocationPref } from "../../lib/location";
 import { haversineKm } from "../../lib/geo";
 
@@ -222,11 +223,11 @@ export default function ShopsPage() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 4, marginLeft: "auto", background: "var(--sio-cream)", borderRadius: 999, padding: 3 }}>
-          <button onClick={() => setView("list")} style={toggleStyle(view === "list")}>
-            ☰ List
+          <button onClick={() => setView("list")} style={{ ...toggleStyle(view === "list"), display: "flex", alignItems: "center", gap: 5 }}>
+            <ListIcon size={13} /> List
           </button>
-          <button onClick={() => setView("map")} style={toggleStyle(view === "map")}>
-            🗺 Map
+          <button onClick={() => setView("map")} style={{ ...toggleStyle(view === "map"), display: "flex", alignItems: "center", gap: 5 }}>
+            <MapIcon size={13} /> Map
           </button>
         </div>
       </section>

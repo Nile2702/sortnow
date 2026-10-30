@@ -6,6 +6,7 @@ import Script from "next/script";
 import { getShopperSession, setShopperSession, clearShopperSession, ShopperSession } from "../../lib/shopper-session";
 import { validatePassword } from "../../lib/validate-password";
 import { ErrorBanner } from "../../components/ErrorBanner";
+import { ClockIcon, HeartIcon, CompassIcon, CheckIcon } from "../../components/icons";
 
 type Step = "email" | "otp" | "profile" | "google-phone";
 type Category = "men" | "women" | "kids";
@@ -407,9 +408,9 @@ export default function AccountPage() {
           {!justSignedUp && !alreadyHadAccount && <div style={{ marginBottom: 22 }} />}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, textAlign: "left" }}>
-            <AccountLink href="/reservations" icon="🕐" label="My Reservations" desc="Track pickup holds you've reserved at nearby stores." />
-            <AccountLink href="/wishlist" icon="🤍" label="Wishlist" desc="Items you've saved for later." />
-            <AccountLink href="/sorts" icon="🧭" label="My Sorts" desc="Saved filters across nearby stores." />
+            <AccountLink href="/reservations" icon={<ClockIcon size={20} strokeWidth={1.8} />} label="My Reservations" desc="Track pickup holds you've reserved at nearby stores." />
+            <AccountLink href="/wishlist" icon={<HeartIcon size={20} strokeWidth={1.8} />} label="Wishlist" desc="Items you've saved for later." />
+            <AccountLink href="/sorts" icon={<CompassIcon size={20} strokeWidth={1.8} />} label="My Sorts" desc="Saved filters across nearby stores." />
           </div>
 
           {referrals && (
@@ -443,9 +444,15 @@ export default function AccountPage() {
                     setInviteCopied(true);
                     setTimeout(() => setInviteCopied(false), 2000);
                   }}
-                  style={{ padding: "0 16px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+                  style={{ padding: "0 16px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontSize: 12.5, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
                 >
-                  {inviteCopied ? "Copied ✓" : "Copy"}
+                  {inviteCopied ? (
+                    <>
+                      Copied <CheckIcon size={12} />
+                    </>
+                  ) : (
+                    "Copy"
+                  )}
                 </button>
               </div>
             </div>
@@ -734,7 +741,7 @@ export default function AccountPage() {
                 padding: "10px 12px",
               }}
             >
-              <span style={{ color: "#16a34a", fontWeight: 700 }}>✓</span>
+              <span style={{ color: "var(--sio-success)", display: "flex" }}><CheckIcon size={15} strokeWidth={2.4} /></span>
               <span>
                 <strong style={{ color: "var(--sio-ink)" }}>{email}</strong> verified
               </span>
@@ -878,7 +885,7 @@ function StepIndicator({ step }: { step: Step }) {
   );
 }
 
-function AccountLink({ href, icon, label, desc }: { href: string; icon: string; label: string; desc: string }) {
+function AccountLink({ href, icon, label, desc }: { href: string; icon: React.ReactNode; label: string; desc: string }) {
   return (
     <Link
       href={href}
@@ -895,7 +902,7 @@ function AccountLink({ href, icon, label, desc }: { href: string; icon: string; 
         color: "inherit",
       }}
     >
-      <span style={{ fontSize: 20, flexShrink: 0 }}>{icon}</span>
+      <span style={{ flexShrink: 0, color: "var(--sio-ink)" }}>{icon}</span>
       <div>
         <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{label}</div>
         <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>{desc}</div>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { setLocationPref, hasSeenLocationPrompt, markLocationPromptSeen, resolveAreaLabel, QUICK_MARKETS } from "../lib/location";
 import { isMobileAppShellPage } from "../lib/mobile-shell";
+import { PinIcon } from "./icons";
 
 // Asks a first-time visitor for their location (GPS, or a typed PIN code)
 // so "stores/products near you" actually means something from the very
@@ -171,7 +172,7 @@ export function LocationGate() {
           boxShadow: "0 -8px 30px rgba(0,0,0,0.2)",
         }}
       >
-        <div style={{ fontSize: 30, marginBottom: 8 }}>📍</div>
+        <div style={{ marginBottom: 8, color: "var(--sio-ink)" }}><PinIcon size={30} strokeWidth={1.5} /></div>
         <h2 id={headingId} style={{ fontSize: 18, fontWeight: 700, marginBottom: 6, color: "var(--sio-ink)" }}>Find shops and products near you</h2>
         <p style={{ fontSize: 13.5, color: "var(--sio-muted)", marginBottom: 18, lineHeight: 1.5 }}>
           SORT NOW shows you real boutiques and listings from sellers close to you. Allow location access, or enter your PIN code
@@ -195,7 +196,13 @@ export function LocationGate() {
                 opacity: locating ? 0.7 : 1,
               }}
             >
-              {locating ? "Getting your location…" : "📍 Allow Location Access"}
+              {locating ? (
+                "Getting your location…"
+              ) : (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <PinIcon size={14} /> Allow Location Access
+                </span>
+              )}
             </button>
             <button
               onClick={() => setMode("manual")}

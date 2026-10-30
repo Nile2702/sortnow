@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { MapIcon } from "./icons";
 
 // Sends the shopper to /shops in Map view, scoped to only the stores behind
 // whatever product list is currently on screen (search results, a category
@@ -31,7 +32,7 @@ export function ExploreOnMapButton({ products }: { products: { storeSlug: string
         whiteSpace: "nowrap",
       }}
     >
-      🗺 Explore on Map
+      <MapIcon size={15} /> Explore on Map
     </button>
   );
 }

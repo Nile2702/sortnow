@@ -102,8 +102,10 @@ export function StoreMap({
 
     shops.forEach((shop) => {
       const el = document.createElement("div");
-      el.textContent = "📍";
-      el.style.fontSize = "26px";
+      el.innerHTML =
+        '<svg width="26" height="26" viewBox="0 0 24 24" fill="var(--sio-ink)" stroke="#fff" stroke-width="1.5">' +
+        '<path d="M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11z" />' +
+        '<circle cx="12" cy="10" r="2.3" fill="#fff" stroke="none" /></svg>';
       el.style.cursor = "pointer";
       el.style.lineHeight = "1";
       el.title = shop.name;

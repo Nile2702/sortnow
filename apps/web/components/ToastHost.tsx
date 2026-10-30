@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { onToast, ToastOptions } from "../lib/toast";
+import { SparkleIcon, CheckIcon, CrossIcon } from "./icons";
 
 interface Toast extends ToastOptions {
   id: number;
@@ -10,10 +11,10 @@ interface Toast extends ToastOptions {
 
 let nextId = 1;
 
-const TONE_STYLE: Record<NonNullable<ToastOptions["tone"]>, { border: string; icon: string }> = {
-  default: { border: "var(--sio-glass-border)", icon: "✦" },
-  success: { border: "rgba(34,197,94,0.5)", icon: "✓" },
-  error: { border: "rgba(239,68,68,0.5)", icon: "✕" },
+const TONE_STYLE: Record<NonNullable<ToastOptions["tone"]>, { border: string; icon: React.ReactNode }> = {
+  default: { border: "var(--sio-glass-border)", icon: <SparkleIcon size={13} /> },
+  success: { border: "rgba(34,197,94,0.5)", icon: <CheckIcon size={13} strokeWidth={2.4} /> },
+  error: { border: "rgba(239,68,68,0.5)", icon: <CrossIcon size={13} strokeWidth={2.4} /> },
 };
 
 export function ToastHost() {
@@ -69,7 +70,7 @@ export function ToastHost() {
               pointerEvents: "auto",
             }}
           >
-            <span style={{ fontSize: 12.5 }}>{tone.icon}</span>
+            <span style={{ display: "flex", flexShrink: 0 }}>{tone.icon}</span>
             {t.message}
             {t.action && (
               <Link

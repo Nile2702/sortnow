@@ -10,15 +10,7 @@ import {
   LOCATION_CHANGED_EVENT,
   type LocationPref,
 } from "../lib/location";
-
-function PinIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11z" />
-      <circle cx="12" cy="10" r="2.3" />
-    </svg>
-  );
-}
+import { PinIcon } from "./icons";
 
 function ChevronDown() {
   return (
@@ -127,7 +119,7 @@ export function LocationPicker() {
           maxWidth: 190,
         }}
       >
-        <PinIcon />
+        <PinIcon size={15} />
         <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {location.label}
         </span>
@@ -165,9 +157,18 @@ export function LocationPicker() {
               fontWeight: 600,
               cursor: locating ? "default" : "pointer",
               marginBottom: 8,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
             }}
           >
-            {locating ? "Getting your location…" : "📍 Use my current location"}
+            {locating ? (
+              "Getting your location…"
+            ) : (
+              <>
+                <PinIcon size={13} /> Use my current location
+              </>
+            )}
           </button>
 
           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--sio-muted)", textTransform: "uppercase", letterSpacing: "0.04em", margin: "4px 0 4px 4px" }}>

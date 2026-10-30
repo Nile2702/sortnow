@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toggleWishlist, isWishlisted } from "../lib/wishlist";
+import { PinIcon } from "./icons";
 
 // A rough walk-time estimate from distance alone (average walking speed
 // ~5 km/h, i.e. 12 min/km) - not routed, just enough to make "near you"
@@ -219,8 +220,8 @@ export function ProductCard({
               a given product happened to need. */}
           <div style={{ marginTop: "auto", paddingTop: 4 }}>
             {product.distanceKm != null && (
-              <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--sio-ink)" }}>
-                📍 {product.distanceKm} km away • Try on in {walkingMinutes(product.distanceKm)} mins
+              <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--sio-ink)", display: "flex", alignItems: "center", gap: 3 }}>
+                <PinIcon size={10} /> {product.distanceKm} km away • Try on in {walkingMinutes(product.distanceKm)} mins
               </div>
             )}
             {lowStock && <div style={{ fontSize: 10.5, color: "var(--sio-error)", fontWeight: 600, marginTop: 3 }}>Only {product.stockRemaining} left</div>}
