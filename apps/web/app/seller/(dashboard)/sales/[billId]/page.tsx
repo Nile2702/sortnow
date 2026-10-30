@@ -156,7 +156,8 @@ export default function SellerBillDetailPage() {
           )}
         </div>
 
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 20 }}>
+        <div style={{ overflowX: "auto", marginBottom: 20 }}>
+        <table style={{ width: "100%", minWidth: 420, borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid var(--sio-ink)" }}>
               <th style={{ textAlign: "left", padding: "6px 4px" }}>Item</th>
@@ -187,6 +188,7 @@ export default function SellerBillDetailPage() {
             </tr>
           </tfoot>
         </table>
+        </div>
 
         <div style={{ marginLeft: "auto", width: 220, fontSize: 13 }}>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>

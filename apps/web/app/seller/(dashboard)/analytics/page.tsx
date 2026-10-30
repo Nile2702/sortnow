@@ -192,33 +192,35 @@ export default function AnalyticsPage() {
                   {monthsForYear.length === 0 ? (
                     <p style={{ color: "var(--sio-muted)", fontSize: 13 }}>No costed sales in {year}.</p>
                   ) : (
-                    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", overflow: "hidden" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1fr", padding: "8px 16px", fontSize: 11, fontWeight: 700, color: "var(--sio-muted)", textTransform: "uppercase", borderBottom: "1px solid var(--sio-cream)" }}>
-                        <span>Month</span>
-                        <span style={{ textAlign: "right" }}>Revenue</span>
-                        <span style={{ textAlign: "right" }}>Cost</span>
-                        <span style={{ textAlign: "right" }}>Profit</span>
-                      </div>
-                      {monthsForYear.map((m) => (
-                        <div
-                          key={m.month}
-                          style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1fr", padding: "10px 16px", fontSize: 13, borderBottom: "1px solid var(--sio-cream)", alignItems: "center" }}
-                        >
-                          <span>{MONTH_LABELS[Number(m.month.slice(5, 7)) - 1]}</span>
-                          <span style={{ textAlign: "right" }}>₹{m.revenue.toFixed(0)}</span>
-                          <span style={{ textAlign: "right", color: "var(--sio-muted)" }}>₹{m.cost.toFixed(0)}</span>
-                          <span style={{ textAlign: "right", fontWeight: 700, color: m.profit >= 0 ? "var(--sio-success)" : "var(--sio-error)" }}>
-                            ₹{m.profit.toFixed(0)} <span style={{ fontWeight: 400, color: "var(--sio-muted)", fontSize: 11 }}>({m.marginPercent}%)</span>
+                    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", overflowX: "auto" }}>
+                      <div style={{ minWidth: 480 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1fr", padding: "8px 16px", fontSize: 11, fontWeight: 700, color: "var(--sio-muted)", textTransform: "uppercase", borderBottom: "1px solid var(--sio-cream)" }}>
+                          <span>Month</span>
+                          <span style={{ textAlign: "right" }}>Revenue</span>
+                          <span style={{ textAlign: "right" }}>Cost</span>
+                          <span style={{ textAlign: "right" }}>Profit</span>
+                        </div>
+                        {monthsForYear.map((m) => (
+                          <div
+                            key={m.month}
+                            style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1fr", padding: "10px 16px", fontSize: 13, borderBottom: "1px solid var(--sio-cream)", alignItems: "center" }}
+                          >
+                            <span>{MONTH_LABELS[Number(m.month.slice(5, 7)) - 1]}</span>
+                            <span style={{ textAlign: "right" }}>₹{m.revenue.toFixed(0)}</span>
+                            <span style={{ textAlign: "right", color: "var(--sio-muted)" }}>₹{m.cost.toFixed(0)}</span>
+                            <span style={{ textAlign: "right", fontWeight: 700, color: m.profit >= 0 ? "var(--sio-success)" : "var(--sio-error)" }}>
+                              ₹{m.profit.toFixed(0)} <span style={{ fontWeight: 400, color: "var(--sio-muted)", fontSize: 11 }}>({m.marginPercent}%)</span>
+                            </span>
+                          </div>
+                        ))}
+                        <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1fr", padding: "10px 16px", fontSize: 13, background: "var(--sio-cream)", fontWeight: 700 }}>
+                          <span>{year} Total</span>
+                          <span style={{ textAlign: "right" }}>₹{yearTotal.revenue.toFixed(0)}</span>
+                          <span style={{ textAlign: "right", color: "var(--sio-muted)" }}>₹{yearTotal.cost.toFixed(0)}</span>
+                          <span style={{ textAlign: "right", color: yearTotal.profit >= 0 ? "var(--sio-success)" : "var(--sio-error)" }}>
+                            ₹{yearTotal.profit.toFixed(0)} <span style={{ fontWeight: 400, color: "var(--sio-muted)", fontSize: 11 }}>({yearMarginPercent}%)</span>
                           </span>
                         </div>
-                      ))}
-                      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr 1fr", padding: "10px 16px", fontSize: 13, background: "var(--sio-cream)", fontWeight: 700 }}>
-                        <span>{year} Total</span>
-                        <span style={{ textAlign: "right" }}>₹{yearTotal.revenue.toFixed(0)}</span>
-                        <span style={{ textAlign: "right", color: "var(--sio-muted)" }}>₹{yearTotal.cost.toFixed(0)}</span>
-                        <span style={{ textAlign: "right", color: yearTotal.profit >= 0 ? "var(--sio-success)" : "var(--sio-error)" }}>
-                          ₹{yearTotal.profit.toFixed(0)} <span style={{ fontWeight: 400, color: "var(--sio-muted)", fontSize: 11 }}>({yearMarginPercent}%)</span>
-                        </span>
                       </div>
                     </div>
                   )}

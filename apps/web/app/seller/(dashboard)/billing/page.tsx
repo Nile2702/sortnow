@@ -406,29 +406,31 @@ export default function BillingPage() {
           invoice for.
         </div>
       ) : (
-      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "12px 18px", fontSize: 12, fontWeight: 700, color: "var(--sio-muted)", borderBottom: "1px solid var(--sio-cream)" }}>
-          <div>Invoice</div>
-          <div>Taxable Value</div>
-          <div>Tax</div>
-          <div>Total</div>
-          <div>Date</div>
+      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", overflowX: "auto" }}>
+        <div style={{ minWidth: 560 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "12px 18px", fontSize: 12, fontWeight: 700, color: "var(--sio-muted)", borderBottom: "1px solid var(--sio-cream)" }}>
+            <div>Invoice</div>
+            <div>Taxable Value</div>
+            <div>Tax</div>
+            <div>Total</div>
+            <div>Date</div>
+          </div>
+          {data.invoices.map((inv) => {
+            const taxLabel =
+              inv.igst > 0
+                ? `IGST ₹${inv.igst.toLocaleString("en-IN")}`
+                : `CGST ₹${inv.cgst.toLocaleString("en-IN")} + SGST ₹${inv.sgst.toLocaleString("en-IN")}`;
+            return (
+              <div key={inv.id} style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "14px 18px", fontSize: 13, borderBottom: "1px solid var(--sio-cream)" }}>
+                <div style={{ fontWeight: 600 }}>{inv.id}</div>
+                <div>₹{inv.taxableValue.toLocaleString("en-IN")}</div>
+                <div>{taxLabel}</div>
+                <div style={{ fontWeight: 700 }}>₹{inv.total.toLocaleString("en-IN")}</div>
+                <div style={{ color: "var(--sio-muted)" }}>{new Date(inv.issuedAt).toLocaleDateString("en-IN")}</div>
+              </div>
+            );
+          })}
         </div>
-        {data.invoices.map((inv) => {
-          const taxLabel =
-            inv.igst > 0
-              ? `IGST ₹${inv.igst.toLocaleString("en-IN")}`
-              : `CGST ₹${inv.cgst.toLocaleString("en-IN")} + SGST ₹${inv.sgst.toLocaleString("en-IN")}`;
-          return (
-            <div key={inv.id} style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "14px 18px", fontSize: 13, borderBottom: "1px solid var(--sio-cream)" }}>
-              <div style={{ fontWeight: 600 }}>{inv.id}</div>
-              <div>₹{inv.taxableValue.toLocaleString("en-IN")}</div>
-              <div>{taxLabel}</div>
-              <div style={{ fontWeight: 700 }}>₹{inv.total.toLocaleString("en-IN")}</div>
-              <div style={{ color: "var(--sio-muted)" }}>{new Date(inv.issuedAt).toLocaleDateString("en-IN")}</div>
-            </div>
-          );
-        })}
       </div>
       )}
       <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 10 }}>
