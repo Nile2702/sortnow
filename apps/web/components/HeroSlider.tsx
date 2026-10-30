@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 interface Slide {
@@ -114,15 +115,14 @@ export function HeroSlider() {
         }}
       >
         {slide.image && (
-          <div
+          <Image
+            src={slide.image}
+            alt=""
             aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage: `url(${slide.image})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
+            fill
+            priority={index === 0}
+            unoptimized
+            style={{ objectFit: "cover" }}
           />
         )}
         {/* Darkens a real photo enough for white text to stay readable, same
