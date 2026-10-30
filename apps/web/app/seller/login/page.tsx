@@ -238,6 +238,7 @@ export default function SellerLoginPage() {
               <button
                 type="button"
                 onClick={() => setMode("password")}
+                aria-pressed={mode === "password"}
                 style={{
                   flex: 1,
                   padding: "9px 0",
@@ -255,6 +256,7 @@ export default function SellerLoginPage() {
               <button
                 type="button"
                 onClick={() => setMode("otp")}
+                aria-pressed={mode === "otp"}
                 style={{
                   flex: 1,
                   padding: "9px 0",
@@ -284,8 +286,9 @@ export default function SellerLoginPage() {
               >
                 {otpStep === "phone" ? (
                   <>
-                    <label style={labelStyle}>Registered mobile number</label>
+                    <label htmlFor="seller-otp-phone" style={labelStyle}>Registered mobile number</label>
                     <input
+                      id="seller-otp-phone"
                       value={otpPhone}
                       onChange={(e) => setOtpPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                       placeholder="10-digit mobile number"
@@ -296,8 +299,9 @@ export default function SellerLoginPage() {
                     </p>
                     {otpNeedsEmail && (
                       <>
-                        <label style={{ ...labelStyle, marginTop: 10 }}>Email address</label>
+                        <label htmlFor="seller-otp-email" style={{ ...labelStyle, marginTop: 10 }}>Email address</label>
                         <input
+                          id="seller-otp-email"
                           value={otpEmail}
                           onChange={(e) => setOtpEmail(e.target.value)}
                           placeholder="you@example.com"
@@ -312,8 +316,9 @@ export default function SellerLoginPage() {
                   </>
                 ) : (
                   <>
-                    <label style={labelStyle}>Enter the code</label>
+                    <label htmlFor="seller-otp-code" style={labelStyle}>Enter the code</label>
                     <input
+                      id="seller-otp-code"
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       placeholder="6-digit OTP"
@@ -385,8 +390,9 @@ export default function SellerLoginPage() {
                 boxShadow: "0 20px 40px rgba(22, 20, 15, 0.05)",
               }}
             >
-              <label style={labelStyle}>Store</label>
+              <label htmlFor="seller-login-store" style={labelStyle}>Store</label>
               <select
+                id="seller-login-store"
                 value={storeSlug}
                 onChange={(e) => setStoreSlug(e.target.value)}
                 required
@@ -401,9 +407,10 @@ export default function SellerLoginPage() {
                 ))}
               </select>
 
-              <label style={labelStyle}>Password</label>
+              <label htmlFor="seller-login-password" style={labelStyle}>Password</label>
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input
+                  id="seller-login-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

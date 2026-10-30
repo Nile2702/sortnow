@@ -230,7 +230,7 @@ export function SiteHeader() {
           className="sio-mobile-menu-btn"
           onClick={() => setMobileOpen((o) => !o)}
           aria-label="Menu"
-          style={{ background: "none", border: "none", color: "var(--sio-ink)", cursor: "pointer", padding: 4 }}
+          style={{ background: "none", border: "none", color: "var(--sio-ink)", cursor: "pointer", padding: 10, display: "flex" }}
         >
           {mobileOpen ? <CloseIcon /> : <MenuIcon />}
         </button>

@@ -512,8 +512,9 @@ export default function AccountPage() {
         {step === "email" && mode === "login" && usePasswordLogin && (
           <form onSubmit={handlePasswordLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
-              <label style={labelStyle}>Email address</label>
+              <label htmlFor="account-login-email" style={labelStyle}>Email address</label>
               <input
+                id="account-login-email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
@@ -523,8 +524,9 @@ export default function AccountPage() {
               />
             </div>
             <div>
-              <label style={labelStyle}>Password</label>
+              <label htmlFor="account-login-password" style={labelStyle}>Password</label>
               <input
+                id="account-login-password"
                 type="password"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
@@ -561,8 +563,9 @@ export default function AccountPage() {
         {step === "email" && !(mode === "login" && usePasswordLogin) && (
           <form onSubmit={handleSendOtp} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
-              <label style={labelStyle}>Email address</label>
+              <label htmlFor="account-email" style={labelStyle}>Email address</label>
               <input
+                id="account-email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
@@ -641,6 +644,7 @@ export default function AccountPage() {
               )}
             </p>
             <input
+              aria-label="6-digit OTP"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="6-digit OTP"
@@ -672,8 +676,9 @@ export default function AccountPage() {
               Signed in as <strong style={{ color: "var(--sio-ink)" }}>{pendingGoogleEmail}</strong>. One more thing — what's your mobile number?
             </p>
             <div>
-              <label style={labelStyle}>Mobile number</label>
+              <label htmlFor="account-google-phone" style={labelStyle}>Mobile number</label>
               <input
+                id="account-google-phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                 placeholder="10-digit mobile number"
@@ -734,12 +739,13 @@ export default function AccountPage() {
               </span>
             </div>
             <div>
-              <label style={labelStyle}>Full name *</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Priya Sharma" style={inputStyle} autoFocus />
+              <label htmlFor="account-profile-name" style={labelStyle}>Full name *</label>
+              <input id="account-profile-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Priya Sharma" style={inputStyle} autoFocus />
             </div>
             <div>
-              <label style={labelStyle}>Mobile number *</label>
+              <label htmlFor="account-profile-phone" style={labelStyle}>Mobile number *</label>
               <input
+                id="account-profile-phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                 placeholder="10-digit mobile number"
@@ -757,6 +763,7 @@ export default function AccountPage() {
                     type="button"
                     key={c}
                     onClick={() => setCategory(category === c ? "" : c)}
+                    aria-pressed={category === c}
                     style={{
                       flex: 1,
                       padding: "9px 0",
@@ -777,12 +784,13 @@ export default function AccountPage() {
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>City (optional)</label>
-                <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Mumbai" style={inputStyle} />
+                <label htmlFor="account-profile-city" style={labelStyle}>City (optional)</label>
+                <input id="account-profile-city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Mumbai" style={inputStyle} />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>Pincode (optional)</label>
+                <label htmlFor="account-profile-pincode" style={labelStyle}>Pincode (optional)</label>
                 <input
+                  id="account-profile-pincode"
                   value={pincode}
                   onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="e.g. 400050"
@@ -792,8 +800,9 @@ export default function AccountPage() {
             </div>
             <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: -8 }}>Helps us default "Stores near you" to your area.</p>
             <div>
-              <label style={labelStyle}>Date of birth (optional)</label>
+              <label htmlFor="account-profile-dob" style={labelStyle}>Date of birth (optional)</label>
               <input
+                id="account-profile-dob"
                 type="date"
                 value={dateOfBirth}
                 onChange={(e) => setDateOfBirth(e.target.value)}
@@ -803,8 +812,9 @@ export default function AccountPage() {
               <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginTop: 6 }}>So we can send you a birthday treat.</p>
             </div>
             <div>
-              <label style={labelStyle}>Set a password (optional)</label>
+              <label htmlFor="account-profile-password" style={labelStyle}>Set a password (optional)</label>
               <input
+                id="account-profile-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
