@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { showToast } from "../../../../lib/toast";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
+import { CrossIcon } from "../../../../components/icons";
 
 interface Product {
   id: string;
@@ -448,9 +449,9 @@ export default function SellerSalesPage() {
                     type="button"
                     onClick={() => removeFromCart(line.productId, line.size)}
                     aria-label="Remove"
-                    style={{ background: "none", border: "none", color: "var(--sio-muted)", cursor: "pointer", fontSize: 12 }}
+                    style={{ background: "none", border: "none", color: "var(--sio-muted)", cursor: "pointer", display: "flex" }}
                   >
-                    ✕
+                    <CrossIcon size={12} />
                   </button>
                 </span>
               </div>

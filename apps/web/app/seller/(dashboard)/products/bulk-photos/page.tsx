@@ -28,6 +28,7 @@ import {
 import { checkDataUrlSafety } from "../../../../../lib/nsfw-check";
 import { showToast } from "../../../../../lib/toast";
 import { LoadingScreen } from "../../../../../components/LoadingSpinner";
+import { SparkleIcon, ScissorsIcon, PaletteIcon, WarningIcon, CheckIcon } from "../../../../../components/icons";
 
 const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGORY_TREE.map((c) => [c.value, c.subCategories]));
 
@@ -706,7 +707,9 @@ export default function BulkPhotoUploadPage() {
         </Link>
       </div>
 
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>✨ AI Bulk Upload</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+        <SparkleIcon size={21} /> AI Bulk Upload
+      </h1>
       <p style={{ color: "var(--sio-muted)", marginBottom: 24, maxWidth: 640 }}>
         Upload several raw product photos at once for {store.name} — mix photos of different products and multiple angles of the same
         product in one go. Each photo becomes its own product by default. Remove Backgrounds centers and zooms every photo to fill the
@@ -740,7 +743,13 @@ export default function BulkPhotoUploadPage() {
                 cursor: processing || !hasEligible ? "default" : "pointer",
               }}
             >
-              {processing ? `${progressLabel || "Processing…"} (${elapsedSeconds}s)` : "✂️ Remove Backgrounds (Free)"}
+              {processing ? (
+                `${progressLabel || "Processing…"} (${elapsedSeconds}s)`
+              ) : (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <ScissorsIcon size={14} /> Remove Backgrounds (Free)
+                </span>
+              )}
             </button>
             <button
               type="button"
@@ -757,7 +766,13 @@ export default function BulkPhotoUploadPage() {
                 cursor: processing || !hasEligible ? "default" : "pointer",
               }}
             >
-              {processing ? `${progressLabel || "Processing…"} (${elapsedSeconds}s)` : "✨ Auto-fill Details (AI)"}
+              {processing ? (
+                `${progressLabel || "Processing…"} (${elapsedSeconds}s)`
+              ) : (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <SparkleIcon size={14} /> Auto-fill Details (AI)
+                </span>
+              )}
             </button>
             <button
               type="button"
@@ -1031,6 +1046,9 @@ export default function BulkPhotoUploadPage() {
                       bottom: -6,
                       left: "50%",
                       transform: "translateX(-50%)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3,
                       background: "var(--sio-ink)",
                       color: "#fff",
                       fontSize: 8,
@@ -1040,7 +1058,7 @@ export default function BulkPhotoUploadPage() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    ✂️ Background removed
+                    <ScissorsIcon size={9} /> Background removed
                   </span>
                 )}
               </div>
@@ -1059,9 +1077,12 @@ export default function BulkPhotoUploadPage() {
                           border: "1px solid var(--sio-ai-accent-border)",
                           borderRadius: 999,
                           padding: "2px 8px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 3,
                         }}
                       >
-                        🎨 Color variant — {drafts.filter((o) => o.colorGroupId === d.colorGroupId).length} linked
+                        <PaletteIcon size={11} /> Color variant — {drafts.filter((o) => o.colorGroupId === d.colorGroupId).length} linked
                       </span>
                     )}
                   </div>
@@ -1085,8 +1106,9 @@ export default function BulkPhotoUploadPage() {
                 </div>
 
                 {d.status === "ready" && missingRequiredFields(d).length > 0 && (
-                  <p style={{ fontSize: 12, color: "var(--sio-pending)", marginBottom: 8 }}>
-                    ⚠️ Won&rsquo;t publish yet - still needs {missingRequiredFields(d).join(" and ")}. Run Auto-fill Details or fill it in below.
+                  <p style={{ fontSize: 12, color: "var(--sio-pending)", marginBottom: 8, display: "flex", alignItems: "flex-start", gap: 5 }}>
+                    <WarningIcon size={13} strokeWidth={2} />
+                    <span>Won&rsquo;t publish yet - still needs {missingRequiredFields(d).join(" and ")}. Run Auto-fill Details or fill it in below.</span>
                   </p>
                 )}
                 {d.status === "queued" ? (
@@ -1098,7 +1120,9 @@ export default function BulkPhotoUploadPage() {
                 ) : d.status === "error" ? (
                   <p style={{ fontSize: 13, color: "var(--sio-error)" }}>{d.error || "Something went wrong."}</p>
                 ) : d.status === "published" ? (
-                  <p style={{ fontSize: 13, color: "var(--sio-success)" }}>✓ Published as "{d.title}"</p>
+                  <p style={{ fontSize: 13, color: "var(--sio-success)", display: "flex", alignItems: "center", gap: 5 }}>
+                    <CheckIcon size={13} strokeWidth={2.4} /> Published as "{d.title}"
+                  </p>
                 ) : (
                   <div className="sio-draft-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 8 }}>
                     {d.cutoutImage && (
@@ -1118,9 +1142,18 @@ export default function BulkPhotoUploadPage() {
                               fontSize: 11,
                               fontWeight: 600,
                               cursor: d.backgroundBusy ? "default" : "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
                             }}
                           >
-                            {d.backgroundBusy ? "Picking…" : d.autoBackgroundLabel ? `✨ Auto-picked: ${d.autoBackgroundLabel}` : "✨ Auto-pick for me"}
+                            {d.backgroundBusy ? (
+                              "Picking…"
+                            ) : (
+                              <>
+                                <SparkleIcon size={11} /> {d.autoBackgroundLabel ? `Auto-picked: ${d.autoBackgroundLabel}` : "Auto-pick for me"}
+                              </>
+                            )}
                           </button>
                           {BACKGROUND_PRESETS.map((preset) => (
                             <button

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
 import { showToast } from "../../../../lib/toast";
+import { SparkleIcon } from "../../../../components/icons";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -174,9 +175,9 @@ function SellerProductsPageInner() {
           </Link>
           <Link
             href="/seller/products/bulk-photos"
-            style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid var(--sio-ai-accent-border)", background: "var(--sio-ai-accent-bg)", color: "var(--sio-ai-accent)", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
+            style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid var(--sio-ai-accent-border)", background: "var(--sio-ai-accent-bg)", color: "var(--sio-ai-accent)", textDecoration: "none", fontWeight: 600, fontSize: 14, display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            ✨ AI Bulk Upload
+            <SparkleIcon size={15} /> AI Bulk Upload
           </Link>
           <Link
             href="/seller/products/new"

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSellerStore } from "../../../lib/use-seller-store";
 import { LoadingScreen } from "../../../components/LoadingSpinner";
+import { PackageIcon, ClockIcon, WarningIcon, StarIcon, StatusDot, PlusIcon, PaletteIcon, SmartphoneIcon, CreditCardIcon, EyeIcon } from "../../../components/icons";
 
 interface Product {
   id: string;
@@ -73,26 +74,26 @@ export default function SellerDashboard() {
   // the display label), and the icon below used to be a hardcoded green
   // circle regardless of actual status, so a suspended/pending store
   // wrongly looked "all good" at a glance.
-  const STATUS_DISPLAY: Record<string, { label: string; icon: string }> = {
-    active: { label: "Active", icon: "🟢" },
-    pending_review: { label: "Pending review", icon: "🟡" },
-    suspended: { label: "Suspended", icon: "🔴" },
-    draft: { label: "Draft", icon: "⚪" },
-    closed: { label: "Closed", icon: "⚫" },
+  const STATUS_DISPLAY: Record<string, { label: string; dotColor: string }> = {
+    active: { label: "Active", dotColor: "var(--sio-success)" },
+    pending_review: { label: "Pending review", dotColor: "var(--sio-pending)" },
+    suspended: { label: "Suspended", dotColor: "var(--sio-error)" },
+    draft: { label: "Draft", dotColor: "var(--sio-line)" },
+    closed: { label: "Closed", dotColor: "var(--sio-muted)" },
   };
-  const statusDisplay = STATUS_DISPLAY[store.status] ?? { label: store.status, icon: "⚪" };
+  const statusDisplay = STATUS_DISPLAY[store.status] ?? { label: store.status, dotColor: "var(--sio-line)" };
 
   // Styled identically to the "Quick actions" cards below (same sio-card
   // hover lift), so a stat that isn't actually clickable reads as a bug
   // ("why doesn't this do anything") rather than plain information - every
   // stat with a real destination gets one, except Store Status, which has
   // nowhere to go.
-  const stats: { label: string; value: string | number; icon: string; href?: string }[] = [
-    { label: "Total Products", value: statsLoading ? "…" : products.length, icon: "📦", href: "/seller/products" },
-    { label: "Pending Reservations", value: statsLoading ? "…" : pendingReservations, icon: "🕐", href: "/seller/reservations" },
-    { label: "Low Stock Alerts", value: statsLoading ? "…" : lowStock, icon: "⚠️", href: "/seller/products?lowStock=1" },
-    { label: "Plan", value: planName ?? "…", icon: "⭐", href: "/seller/billing" },
-    { label: "Store Status", value: statusDisplay.label, icon: statusDisplay.icon },
+  const stats: { label: string; value: string | number; icon: React.ReactNode; href?: string }[] = [
+    { label: "Total Products", value: statsLoading ? "…" : products.length, icon: <PackageIcon size={22} strokeWidth={1.6} />, href: "/seller/products" },
+    { label: "Pending Reservations", value: statsLoading ? "…" : pendingReservations, icon: <ClockIcon size={22} strokeWidth={1.6} />, href: "/seller/reservations" },
+    { label: "Low Stock Alerts", value: statsLoading ? "…" : lowStock, icon: <WarningIcon size={22} strokeWidth={1.6} />, href: "/seller/products?lowStock=1" },
+    { label: "Plan", value: planName ?? "…", icon: <StarIcon size={22} />, href: "/seller/billing" },
+    { label: "Store Status", value: statusDisplay.label, icon: <StatusDot color={statusDisplay.dotColor} size={14} /> },
   ];
 
   return (
@@ -107,7 +108,7 @@ export default function SellerDashboard() {
           const cardStyle: React.CSSProperties = { background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, display: "block", textDecoration: "none", color: "inherit" };
           const content = (
             <>
-              <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
+              <div style={{ marginBottom: 8, color: "var(--sio-ink)", display: "flex" }}>{s.icon}</div>
               <div style={{ fontSize: 22, fontWeight: 700, textTransform: "capitalize" }}>{s.value}</div>
               <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>{s.label}</div>
             </>
@@ -157,9 +158,9 @@ export default function SellerDashboard() {
             </p>
             <Link
               href="/seller/promotions"
-              style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "var(--sio-error)", color: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}
+              style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "var(--sio-error)", color: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 7 }}
             >
-              🔴 Start a sale
+              <StatusDot color="#fff" size={8} /> Start a sale
             </Link>
           </div>
         )}
@@ -168,12 +169,12 @@ export default function SellerDashboard() {
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Quick actions</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
         {[
-          { href: "/seller/products/new", label: "Add a product", desc: "List a new SKU with sizes, price, and photos.", icon: "➕" },
-          { href: "/seller/reservations", label: "View reservations", desc: "See who's coming to pick up what they've reserved.", icon: "🕐" },
-          { href: "/seller/theme", label: "Customize your storefront", desc: "Pick your brand colors and hero message.", icon: "🎨" },
-          { href: "/seller/qr", label: "Generate a QR standee", desc: "Print-ready QR linking shoppers to your catalog.", icon: "📱" },
-          { href: "/seller/billing", label: "Manage billing", desc: "Switch plans, check SKU usage, download GST invoices.", icon: "💳" },
-          { href: `/store/${store.slug}`, label: "View live storefront", desc: "See exactly what shoppers see right now.", icon: "👁️" },
+          { href: "/seller/products/new", label: "Add a product", desc: "List a new SKU with sizes, price, and photos.", icon: <PlusIcon size={20} strokeWidth={1.8} /> },
+          { href: "/seller/reservations", label: "View reservations", desc: "See who's coming to pick up what they've reserved.", icon: <ClockIcon size={20} strokeWidth={1.8} /> },
+          { href: "/seller/theme", label: "Customize your storefront", desc: "Pick your brand colors and hero message.", icon: <PaletteIcon size={20} strokeWidth={1.6} /> },
+          { href: "/seller/qr", label: "Generate a QR standee", desc: "Print-ready QR linking shoppers to your catalog.", icon: <SmartphoneIcon size={20} strokeWidth={1.6} /> },
+          { href: "/seller/billing", label: "Manage billing", desc: "Switch plans, check SKU usage, download GST invoices.", icon: <CreditCardIcon size={20} strokeWidth={1.6} /> },
+          { href: `/store/${store.slug}`, label: "View live storefront", desc: "See exactly what shoppers see right now.", icon: <EyeIcon size={20} strokeWidth={1.6} /> },
         ].map((a) => (
           <Link
             key={a.href}
@@ -181,7 +182,7 @@ export default function SellerDashboard() {
             className="sio-card"
             style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, textDecoration: "none", color: "inherit" }}
           >
-            <div style={{ fontSize: 20, marginBottom: 10 }}>{a.icon}</div>
+            <div style={{ marginBottom: 10, color: "var(--sio-ink)", display: "flex" }}>{a.icon}</div>
             <div style={{ fontWeight: 600, marginBottom: 4 }}>{a.label}</div>
             <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>{a.desc}</div>
           </Link>

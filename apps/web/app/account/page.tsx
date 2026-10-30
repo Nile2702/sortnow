@@ -6,7 +6,7 @@ import Script from "next/script";
 import { getShopperSession, setShopperSession, clearShopperSession, ShopperSession } from "../../lib/shopper-session";
 import { validatePassword } from "../../lib/validate-password";
 import { ErrorBanner } from "../../components/ErrorBanner";
-import { ClockIcon, HeartIcon, CompassIcon, CheckIcon } from "../../components/icons";
+import { ClockIcon, HeartIcon, CompassIcon, CheckIcon, GiftIcon } from "../../components/icons";
 
 type Step = "email" | "otp" | "profile" | "google-phone";
 type Category = "men" | "women" | "kids";
@@ -424,7 +424,9 @@ export default function AccountPage() {
                 background: "var(--sio-cream)",
               }}
             >
-              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>🎁 Invite friends</div>
+              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, display: "flex", alignItems: "center", gap: 6 }}>
+                <GiftIcon size={16} strokeWidth={1.8} /> Invite friends
+              </div>
               <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 10 }}>
                 {referrals.count === 0
                   ? "Share your link — friends who sign up help you both discover more nearby stores."

@@ -26,6 +26,7 @@ import {
 } from "../lib/image-enhance";
 import { checkDataUrlSafety } from "../lib/nsfw-check";
 import { PhotoEnhanceIllustration } from "./PhotoEnhanceIllustration";
+import { SparkleIcon, WandIcon, CrossIcon, CheckIcon } from "./icons";
 
 type PhotoStage = "raw" | "bg-removed" | "mannequin" | "restored";
 
@@ -1016,13 +1017,34 @@ export function ProductForm({
                       padding: "2px 8px",
                       borderRadius: 999,
                       whiteSpace: "nowrap",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3,
                     }}
                   >
-                    {photoStage === "mannequin"
-                      ? "✨ AI Mannequin"
-                      : photoStage === "restored"
-                        ? "✨ AI Restored"
-                        : [enhanced && "✨ Enhanced", photoStage === "bg-removed" && "🪄 BG Removed"].filter(Boolean).join(" · ")}
+                    {photoStage === "mannequin" ? (
+                      <>
+                        <SparkleIcon size={9} /> AI Mannequin
+                      </>
+                    ) : photoStage === "restored" ? (
+                      <>
+                        <SparkleIcon size={9} /> AI Restored
+                      </>
+                    ) : (
+                      <>
+                        {enhanced && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                            <SparkleIcon size={9} /> Enhanced
+                          </span>
+                        )}
+                        {enhanced && photoStage === "bg-removed" && <span>·</span>}
+                        {photoStage === "bg-removed" && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                            <WandIcon size={9} /> BG Removed
+                          </span>
+                        )}
+                      </>
+                    )}
                   </span>
                 )}
                 <button
@@ -1053,11 +1075,12 @@ export function ProductForm({
                     background: "var(--sio-ink)",
                     color: "#fff",
                     cursor: "pointer",
-                    fontSize: 12,
-                    lineHeight: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  ✕
+                  <CrossIcon size={12} strokeWidth={2.4} />
                 </button>
               </div>
 
@@ -1077,9 +1100,17 @@ export function ProductForm({
                   cursor: enhancing ? "default" : "pointer",
                   whiteSpace: "nowrap",
                   width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
                 }}
               >
-                {enhancing ? "Enhancing…" : "✨ Enhance Photo (Free)"}
+                {enhancing ? "Enhancing…" : (
+                  <>
+                    <SparkleIcon size={13} /> Enhance Photo (Free)
+                  </>
+                )}
               </button>
 
               <button
@@ -1098,9 +1129,17 @@ export function ProductForm({
                   cursor: bgRemoving ? "default" : "pointer",
                   whiteSpace: "nowrap",
                   width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
                 }}
               >
-                {bgRemoving ? `${bgRemoveProgress || "Removing…"} (${bgRemoveElapsedSeconds}s)` : "🪄 Remove Background (Free)"}
+                {bgRemoving ? `${bgRemoveProgress || "Removing…"} (${bgRemoveElapsedSeconds}s)` : (
+                  <>
+                    <WandIcon size={13} /> Remove Background (Free)
+                  </>
+                )}
               </button>
 
               {cutoutImage && (
@@ -1121,9 +1160,18 @@ export function ProductForm({
                       fontWeight: 600,
                       cursor: backgroundBusy ? "default" : "pointer",
                       marginBottom: 8,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
-                    {backgroundBusy ? "Picking…" : autoBackgroundLabel ? `✨ Auto-picked: ${autoBackgroundLabel}` : "✨ Auto-pick for me"}
+                    {backgroundBusy ? (
+                      "Picking…"
+                    ) : (
+                      <>
+                        <SparkleIcon size={11} /> {autoBackgroundLabel ? `Auto-picked: ${autoBackgroundLabel}` : "Auto-pick for me"}
+                      </>
+                    )}
                   </button>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {BACKGROUND_PRESETS.map((preset) => (
@@ -1165,9 +1213,19 @@ export function ProductForm({
                   cursor: mannequinApplying || hasGeminiKey === false ? "default" : "pointer",
                   whiteSpace: "nowrap",
                   width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
                 }}
               >
-                {mannequinApplying ? "Applying…" : hasGeminiKey === false ? "✨ Add Mannequin — needs a Gemini key" : "✨ Add Mannequin"}
+                {mannequinApplying ? (
+                  "Applying…"
+                ) : (
+                  <>
+                    <SparkleIcon size={13} /> {hasGeminiKey === false ? "Add Mannequin — needs a Gemini key" : "Add Mannequin"}
+                  </>
+                )}
               </button>
               {hasGeminiKey === false && (
                 <a href="/seller/gemini-key" style={{ display: "block", marginTop: 6, textAlign: "center", fontSize: 11, color: "var(--sio-ai-accent)" }}>
@@ -1201,7 +1259,9 @@ export function ProductForm({
 
             {uploadedImage && !uploadError && (
               <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "var(--sio-ai-accent-bg)", border: "1px solid var(--sio-ai-accent-border)" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "var(--sio-ink)" }}>✨ Auto-fill from photo</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "var(--sio-ink)", display: "flex", alignItems: "center", gap: 6 }}>
+                  <SparkleIcon size={14} /> Auto-fill from photo
+                </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <input
                     value={autofillHint}
@@ -1223,15 +1283,27 @@ export function ProductForm({
                       fontWeight: 600,
                       cursor: autofilling || autofilled ? "default" : "pointer",
                       whiteSpace: "nowrap",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
                     }}
                   >
-                    {autofilled ? "✓ Auto-filled" : autofilling ? "Thinking…" : "Auto-fill"}
+                    {autofilled ? (
+                      <>
+                        <CheckIcon size={13} strokeWidth={2.4} /> Auto-filled
+                      </>
+                    ) : autofilling ? (
+                      "Thinking…"
+                    ) : (
+                      "Auto-fill"
+                    )}
                   </button>
                 </div>
                 {autofillError && <p style={{ fontSize: 12, color: "var(--sio-error)", marginTop: 8 }}>{autofillError}</p>}
                 {autofilled && !autofillError && (
-                  <p style={{ fontSize: 12, color: "var(--sio-success)", marginTop: 8 }}>
-                    ✓ Title, category, and description filled in below — review and edit as needed. Choose a different photo to auto-fill again.
+                  <p style={{ fontSize: 12, color: "var(--sio-success)", marginTop: 8, display: "flex", alignItems: "flex-start", gap: 5 }}>
+                    <CheckIcon size={13} strokeWidth={2.4} />
+                    <span>Title, category, and description filled in below — review and edit as needed. Choose a different photo to auto-fill again.</span>
                   </p>
                 )}
                 <p style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 8, lineHeight: 1.5 }}>
@@ -1297,11 +1369,12 @@ export function ProductForm({
                     background: "var(--sio-ink)",
                     color: "#fff",
                     cursor: "pointer",
-                    fontSize: 10,
-                    lineHeight: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  ✕
+                  <CrossIcon size={10} strokeWidth={2.6} />
                 </button>
               </div>
             ))}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { showToast } from "../../../lib/toast";
 import { FullLogo } from "../../../components/LogoBadge";
+import { PackageIcon, ClockIcon, LightningIcon, PaletteIcon, EyeIcon, EyeOffIcon } from "../../../components/icons";
 
 interface StoreOption {
   id: string;
@@ -15,10 +16,10 @@ interface StoreOption {
 }
 
 const FEATURES = [
-  { icon: "📦", title: "Manage your catalog", desc: "List products, bulk-import a spreadsheet, and track live stock in one place." },
-  { icon: "🕐", title: "Handle reservations", desc: "See who's coming to pick up what they've sorted, in real time." },
-  { icon: "🔴", title: "Run flash sales", desc: "Flag a live sale and shoppers see it instantly on your storefront and nearby-store results." },
-  { icon: "🎨", title: "Customize your storefront", desc: "Theme Studio lets you set brand colors, hero message, and QR standees." },
+  { icon: <PackageIcon size={18} strokeWidth={1.8} />, title: "Manage your catalog", desc: "List products, bulk-import a spreadsheet, and track live stock in one place." },
+  { icon: <ClockIcon size={18} strokeWidth={1.8} />, title: "Handle reservations", desc: "See who's coming to pick up what they've sorted, in real time." },
+  { icon: <LightningIcon size={18} strokeWidth={1.8} />, title: "Run flash sales", desc: "Flag a live sale and shoppers see it instantly on your storefront and nearby-store results." },
+  { icon: <PaletteIcon size={18} strokeWidth={1.6} />, title: "Customize your storefront", desc: "Theme Studio lets you set brand colors, hero message, and QR standees." },
 ];
 
 type LoginMode = "password" | "otp";
@@ -210,7 +211,6 @@ export default function SellerLoginPage() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: 16,
                       flexShrink: 0,
                     }}
                   >
@@ -431,12 +431,12 @@ export default function SellerLoginPage() {
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    fontSize: 16,
                     padding: 8,
                     color: "var(--sio-muted)",
+                    display: "flex",
                   }}
                 >
-                  {showPassword ? "🙈" : "👁️"}
+                  {showPassword ? <EyeOffIcon size={16} strokeWidth={1.8} /> : <EyeIcon size={16} strokeWidth={1.8} />}
                 </button>
               </div>
 

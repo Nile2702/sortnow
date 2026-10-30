@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
 import { showToast } from "../../../../lib/toast";
+import { LightningIcon } from "../../../../components/icons";
 
 // Hidden for the pilot - paid storefront ranking isn't something to sell
 // sellers on yet at this stage. The feature itself (API routes, DB column,
@@ -185,8 +186,8 @@ export default function BillingPage() {
             color: "#fff",
           }}
         >
-          <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", opacity: 0.85, marginBottom: 6 }}>
-            🎉 Launch offer — free for your first {freeTrial.months} months
+          <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", opacity: 0.85, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+            <LightningIcon size={13} /> Launch offer — free for your first {freeTrial.months} months
           </div>
           <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>You're saving ₹{freeTrialValue.toLocaleString("en-IN")}</div>
           <div style={{ fontSize: 13, opacity: 0.9 }}>
@@ -359,8 +360,8 @@ export default function BillingPage() {
           >
             {boostActive ? (
               <div style={{ marginBottom: 16 }}>
-                <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "var(--sio-pending-bg)", color: "var(--sio-pending)" }}>
-                  ⚡ Featured
+                <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "var(--sio-pending-bg)", color: "var(--sio-pending)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <LightningIcon size={11} /> Featured
                 </span>
                 <span style={{ marginLeft: 10, fontSize: 13, color: "var(--sio-muted)" }}>
                   Active until {new Date(boost.boostedUntil!).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}

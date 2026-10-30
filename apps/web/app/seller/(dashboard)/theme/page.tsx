@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
+import { CheckIcon } from "../../../../components/icons";
 
 interface Theme {
   brand: { colors: { primary: string; accent: string } };
@@ -137,7 +138,11 @@ export default function ThemeStudioPage() {
           >
             {saving ? "Publishing…" : "Publish Changes"}
           </button>
-          {saved && <span style={{ color: "var(--sio-success)", fontSize: 13 }}>✓ Published — your live storefront is updated.</span>}
+          {saved && (
+            <span style={{ color: "var(--sio-success)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <CheckIcon size={13} strokeWidth={2.4} /> Published — your live storefront is updated.
+            </span>
+          )}
           {error && <span style={{ color: "var(--sio-error)", fontSize: 13 }}>{error}</span>}
         </div>
 

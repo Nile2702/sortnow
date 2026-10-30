@@ -15,6 +15,7 @@ import {
   estimateMonthlyCost,
   PLANS,
 } from "../../../../lib/seed-data";
+import { CheckIcon, StarIcon, ArrowUpIcon, ArrowDownIcon, ArrowRightIcon } from "../../../../components/icons";
 
 // Consolidated read-only seller detail view - the site owner, looking at
 // /admin/sellers/active, wanted to click a store and see its plan, product
@@ -78,7 +79,7 @@ export default async function AdminSellerDetailPage({
   const olderSum = last7.slice(0, 3).reduce((sum, d) => sum + d.count, 0);
   const recentSum = last7.slice(4, 7).reduce((sum, d) => sum + d.count, 0);
   const trend = recentSum > olderSum * 1.1 ? "Up" : recentSum < olderSum * 0.9 ? "Down" : "Flat";
-  const trendArrow = trend === "Up" ? "↑" : trend === "Down" ? "↓" : "→";
+  const TrendArrow = trend === "Up" ? ArrowUpIcon : trend === "Down" ? ArrowDownIcon : ArrowRightIcon;
   const trendColor = trend === "Up" ? "var(--sio-success)" : trend === "Down" ? "var(--sio-error)" : "var(--sio-muted)";
 
   const keyQS = `?key=${encodeURIComponent(key)}`;
@@ -136,7 +137,13 @@ export default async function AdminSellerDetailPage({
           <StatTile value={productCounts.onHold} label="On hold" color={productCounts.onHold > 0 ? "var(--sio-pending)" : undefined} />
           <StatTile value={boosted ? "Active" : "None"} label="Store boost" color={boosted ? "var(--sio-pending)" : undefined} />
           <StatTile
-            value={geminiKey ? `✓ ••••${geminiKey.slice(-4)}` : "Not set"}
+            value={geminiKey ? (
+              <>
+                <CheckIcon size={17} strokeWidth={2.4} /> ••••{geminiKey.slice(-4)}
+              </>
+            ) : (
+              "Not set"
+            )}
             label="Gemini API key (seller's own)"
             color={geminiKey ? "var(--sio-success)" : undefined}
           />
@@ -177,7 +184,16 @@ export default async function AdminSellerDetailPage({
       <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24, marginBottom: 20 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Rating &amp; recent activity</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
-          <StatTile value={rating.count > 0 ? `★ ${rating.average.toFixed(1)}` : "no reviews"} label={`${rating.count} review${rating.count === 1 ? "" : "s"}`} />
+          <StatTile
+            value={rating.count > 0 ? (
+              <>
+                <StarIcon size={17} /> {rating.average.toFixed(1)}
+              </>
+            ) : (
+              "no reviews"
+            )}
+            label={`${rating.count} review${rating.count === 1 ? "" : "s"}`}
+          />
           <Field
             label="Last reservation"
             value={lastReservation ? new Date(lastReservation.createdAt).toLocaleString("en-IN") : "none yet"}
@@ -198,7 +214,15 @@ export default async function AdminSellerDetailPage({
           <StatTile value={analytics.totalPageViews} label="Total page views" />
           <StatTile value={analytics.totalQrScans} label="Total QR scans" />
           <StatTile value={analytics.onlineViews} label="Online discovery" />
-          <StatTile value={`${trendArrow} ${trend}`} label="7-day trend" color={trendColor} />
+          <StatTile
+            value={
+              <>
+                <TrendArrow size={17} strokeWidth={2.4} /> {trend}
+              </>
+            }
+            label="7-day trend"
+            color={trendColor}
+          />
         </div>
         {Object.keys(analytics.byPosition).length > 0 && (
           <>
@@ -231,10 +255,10 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatTile({ value, label, color }: { value: string | number; label: string; color?: string }) {
+function StatTile({ value, label, color }: { value: React.ReactNode; label: string; color?: string }) {
   return (
     <div style={{ background: "var(--sio-cream)", borderRadius: 12, border: "1px solid var(--sio-cream)", padding: 16 }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color: color ?? "var(--sio-ink)" }}>{value}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: color ?? "var(--sio-ink)", display: "flex", alignItems: "center", gap: 6 }}>{value}</div>
       <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>{label}</div>
     </div>
   );

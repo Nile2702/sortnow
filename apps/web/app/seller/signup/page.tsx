@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { showToast } from "../../../lib/toast";
 import { validatePassword } from "../../../lib/validate-password";
 import { FullLogo } from "../../../components/LogoBadge";
+import { EyeIcon, EyeOffIcon } from "../../../components/icons";
 
 const CATEGORIES = [
   { value: "apparel", label: "All Types of Apparel" },
@@ -160,9 +161,9 @@ export default function SellerSignupPage() {
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 8, color: "var(--sio-muted)" }}
+              style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 8, color: "var(--sio-muted)", display: "flex" }}
             >
-              {showPassword ? "🙈" : "👁️"}
+              {showPassword ? <EyeOffIcon size={16} strokeWidth={1.8} /> : <EyeIcon size={16} strokeWidth={1.8} />}
             </button>
           </div>
 

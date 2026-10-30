@@ -5,7 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { StoreRatingBadge } from "../../components/StoreRatingBadge";
-import { ListIcon, MapIcon } from "../../components/icons";
+import { ListIcon, MapIcon, LightningIcon } from "../../components/icons";
 import { getLocationPref } from "../../lib/location";
 import { haversineKm } from "../../lib/geo";
 
@@ -294,9 +294,9 @@ export default function ShopsPage() {
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{s.name}</h3>
                   {isBoosted(s.boostedUntil) && (
                     <span
-                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "var(--sio-pending)", border: "1px solid var(--sio-pending)", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
+                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "var(--sio-pending)", border: "1px solid var(--sio-pending)", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 3 }}
                     >
-                      ⚡ Featured
+                      <LightningIcon size={9} /> Featured
                     </span>
                   )}
                   {isSaleActive(s.liveSale) && (

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { showToast } from "../../../../lib/toast";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
+import { CheckIcon } from "../../../../components/icons";
 
 interface GeminiKeyData {
   hasKey: boolean;
@@ -106,8 +107,8 @@ export default function GeminiKeyPage() {
         {data.hasKey ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "var(--sio-success-bg)", color: "var(--sio-success)" }}>
-                ✓ Connected
+              <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "var(--sio-success-bg)", color: "var(--sio-success)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <CheckIcon size={11} strokeWidth={2.6} /> Connected
               </span>
               <span style={{ fontSize: 13, color: "var(--sio-muted)", fontFamily: "monospace" }}>{data.keyPreview}</span>
             </div>

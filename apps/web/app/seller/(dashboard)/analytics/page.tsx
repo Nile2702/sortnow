@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
+import { MoneyIcon, ReceiptIcon, ShirtIcon, RepeatIcon, PackageIcon, TrendingUpIcon, TargetIcon, EyeIcon, SearchIcon, SmartphoneIcon } from "../../../../components/icons";
 
 interface Analytics {
   totalPageViews: number;
@@ -35,10 +36,10 @@ const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "S
 
 // A plain stat tile with nowhere to navigate to - no hover lift, so it
 // doesn't invite a click that does nothing.
-function StatTile({ icon, value, label }: { icon: string; value: string | number; label: string }) {
+function StatTile({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
   return (
     <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20 }}>
-      <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
+      <div style={{ marginBottom: 8, color: "var(--sio-ink)", display: "flex" }}>{icon}</div>
       <div style={{ fontSize: 24, fontWeight: 700 }}>{value}</div>
       <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>{label}</div>
     </div>
@@ -48,10 +49,10 @@ function StatTile({ icon, value, label }: { icon: string; value: string | number
 // Same tile, but a real link - for stats that have an actual page behind
 // them (the bills, the QR standees) - keeps the sio-card hover lift, since
 // here it's honest: something happens on click.
-function StatLink({ icon, value, label, href }: { icon: string; value: string | number; label: string; href: string }) {
+function StatLink({ icon, value, label, href }: { icon: React.ReactNode; value: string | number; label: string; href: string }) {
   return (
     <Link href={href} className="sio-card" style={{ display: "block", background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, textDecoration: "none", color: "inherit" }}>
-      <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
+      <div style={{ marginBottom: 8, color: "var(--sio-ink)", display: "flex" }}>{icon}</div>
       <div style={{ fontSize: 24, fontWeight: 700 }}>{value}</div>
       <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>{label}</div>
     </Link>
@@ -125,10 +126,10 @@ export default function AnalyticsPage() {
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Sales — from your in-store bills</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 20 }}>
-        <StatLink icon="💰" value={`₹${sales.totalRevenue.toFixed(0)}`} label="Total Revenue" href="/seller/sales" />
-        <StatLink icon="🧾" value={sales.totalBills} label="Bills Issued" href="/seller/sales" />
-        <StatLink icon="👕" value={sales.totalItemsSold} label="Items Sold" href="/seller/sales" />
-        <StatTile icon="🔁" value={sales.repeatCustomers} label="Repeat Customers" />
+        <StatLink icon={<MoneyIcon size={22} strokeWidth={1.6} />} value={`₹${sales.totalRevenue.toFixed(0)}`} label="Total Revenue" href="/seller/sales" />
+        <StatLink icon={<ReceiptIcon size={22} strokeWidth={1.6} />} value={sales.totalBills} label="Bills Issued" href="/seller/sales" />
+        <StatLink icon={<ShirtIcon size={22} strokeWidth={1.6} />} value={sales.totalItemsSold} label="Items Sold" href="/seller/sales" />
+        <StatTile icon={<RepeatIcon size={22} strokeWidth={1.6} />} value={sales.repeatCustomers} label="Repeat Customers" />
       </div>
 
       {sales.totalBills === 0 ? (
@@ -174,9 +175,9 @@ export default function AnalyticsPage() {
             ) : (
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
-                  <StatTile icon="📦" value={`₹${yearTotal.cost.toFixed(0)}`} label={`${year} Cost`} />
-                  <StatTile icon="📈" value={`₹${yearTotal.profit.toFixed(0)}`} label={`${year} Profit`} />
-                  <StatTile icon="🎯" value={`${yearMarginPercent}%`} label={`${year} Margin`} />
+                  <StatTile icon={<PackageIcon size={22} strokeWidth={1.6} />} value={`₹${yearTotal.cost.toFixed(0)}`} label={`${year} Cost`} />
+                  <StatTile icon={<TrendingUpIcon size={22} strokeWidth={1.6} />} value={`₹${yearTotal.profit.toFixed(0)}`} label={`${year} Profit`} />
+                  <StatTile icon={<TargetIcon size={22} strokeWidth={1.6} />} value={`${yearMarginPercent}%`} label={`${year} Margin`} />
                 </div>
                 {sales.profitAndLoss.itemsWithCostSold < sales.profitAndLoss.totalItemsSold && (
                   <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 8 }}>
@@ -260,9 +261,9 @@ export default function AnalyticsPage() {
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Footfall — online discovery and QR standees</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 32 }}>
-        <StatTile icon="👁️" value={data.totalPageViews} label="Total Page Views" />
-        <StatTile icon="🔍" value={data.onlineViews} label="Online Discovery" />
-        <StatLink icon="📱" value={data.totalQrScans} label="QR Scans" href="/seller/qr" />
+        <StatTile icon={<EyeIcon size={22} strokeWidth={1.6} />} value={data.totalPageViews} label="Total Page Views" />
+        <StatTile icon={<SearchIcon size={22} strokeWidth={1.6} />} value={data.onlineViews} label="Online Discovery" />
+        <StatLink icon={<SmartphoneIcon size={22} strokeWidth={1.6} />} value={data.totalQrScans} label="QR Scans" href="/seller/qr" />
       </div>
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Views — last 7 days</h2>

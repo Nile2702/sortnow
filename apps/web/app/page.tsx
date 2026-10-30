@@ -12,7 +12,7 @@ import { CategoryTiles } from "../components/CategoryTiles";
 import { ProductCard } from "../components/ProductCard";
 import { StoreRatingBadge } from "../components/StoreRatingBadge";
 import { hashHue } from "../lib/string-hue";
-import { PinIcon, MapIcon, SparkleIcon, FlameIcon, CompassIcon } from "../components/icons";
+import { PinIcon, MapIcon, SparkleIcon, FlameIcon, CompassIcon, StoreIcon, ShirtIcon, CreditCardIcon, WalkIcon, LightningIcon } from "../components/icons";
 
 interface DiscoveredStore {
   id: string;
@@ -53,10 +53,10 @@ interface SearchProduct {
 // rather than assuming a first-time visitor infers it from the product
 // page's trust line alone.
 const WHY_SHOP_WITH_US = [
-  { icon: "🏬", title: "Real Local Stores", body: "Every listing comes from a verified boutique near you, not an anonymous warehouse." },
-  { icon: "👗", title: "Try Before You Buy", body: "Reserve online, then try it on in person at the store before you commit." },
-  { icon: "💳", title: "No Online Payment", body: "Nothing to pay upfront - you pay the store directly if and when you buy." },
-  { icon: "🚶", title: "Walk In, Walk Out", body: "No shipping, no waiting for delivery. Pick up your reservation the same day." },
+  { icon: <StoreIcon size={28} strokeWidth={1.6} />, title: "Real Local Stores", body: "Every listing comes from a verified boutique near you, not an anonymous warehouse." },
+  { icon: <ShirtIcon size={28} strokeWidth={1.6} />, title: "Try Before You Buy", body: "Reserve online, then try it on in person at the store before you commit." },
+  { icon: <CreditCardIcon size={28} strokeWidth={1.6} />, title: "No Online Payment", body: "Nothing to pay upfront - you pay the store directly if and when you buy." },
+  { icon: <WalkIcon size={28} strokeWidth={1.6} />, title: "Walk In, Walk Out", body: "No shipping, no waiting for delivery. Pick up your reservation the same day." },
 ];
 
 function SkeletonCard({ height = 220 }: { height?: number }) {
@@ -529,9 +529,9 @@ function DiscoverPageInner() {
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{s.name}</h3>
                   {isBoosted(s.boostedUntil) && (
                     <span
-                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "var(--sio-pending)", border: "1px solid var(--sio-pending)", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
+                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "var(--sio-pending)", border: "1px solid var(--sio-pending)", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 3 }}
                     >
-                      ⚡ Featured
+                      <LightningIcon size={9} /> Featured
                     </span>
                   )}
                   {isSaleActive(s.liveSale) && (
@@ -665,7 +665,7 @@ function DiscoverPageInner() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
           {WHY_SHOP_WITH_US.map((item) => (
             <div key={item.title} className="sio-card" style={{ background: "#fff", borderRadius: 16, padding: 22, border: "1px solid var(--sio-cream)", textAlign: "center" }}>
-              <div style={{ fontSize: 28, marginBottom: 10 }}>{item.icon}</div>
+              <div style={{ marginBottom: 10, color: "var(--sio-ink)", display: "flex", justifyContent: "center" }}>{item.icon}</div>
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{item.title}</div>
               <p style={{ fontSize: 13, color: "var(--sio-muted)", lineHeight: 1.6, margin: 0 }}>{item.body}</p>
             </div>

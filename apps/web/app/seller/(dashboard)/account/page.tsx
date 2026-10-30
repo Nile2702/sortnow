@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSellerStore } from "../../../../lib/use-seller-store";
 import { showToast } from "../../../../lib/toast";
 import { LoadingScreen } from "../../../../components/LoadingSpinner";
+import { ClipboardIcon } from "../../../../components/icons";
 
 const STEPS = ["Business Details", "GSTIN", "PAN", "Bank/UPI Payout", "Done"];
 
@@ -140,7 +141,9 @@ function OnboardingWizard({ storeId }: { storeId: string }) {
 
         {step === 4 && (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12, color: "var(--sio-ink)" }}>
+              <ClipboardIcon size={40} strokeWidth={1.5} />
+            </div>
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Your details are submitted</h2>
             <p style={{ color: "var(--sio-muted)", fontSize: 14, marginBottom: 20 }}>
               We'll review your GSTIN/PAN/UPI details and activate your store shortly - you'll be notified once it's live. In the meantime
