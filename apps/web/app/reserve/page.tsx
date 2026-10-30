@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CartItem, getCart, cartTotal } from "../../lib/cart";
 import { addMyReservationId } from "../../lib/reservations";
 import { getShopperSession } from "../../lib/shopper-session";
+import { ErrorBanner } from "../../components/ErrorBanner";
 
 // Maps /api/v1/reservations' {error} codes to a message a shopper can
 // actually act on - the API itself only returns a bare code for most
@@ -175,22 +176,7 @@ export default function ReservePage() {
             ))}
           </div>
 
-          {error && (
-            <p
-              role="alert"
-              style={{
-                marginTop: 16,
-                fontSize: 13,
-                color: "var(--sio-error)",
-                background: "var(--sio-error-bg)",
-                border: "1px solid var(--sio-error-border)",
-                borderRadius: 10,
-                padding: "10px 12px",
-              }}
-            >
-              {error}
-            </p>
-          )}
+          {error && <ErrorBanner text={error} style={{ marginTop: 16 }} />}
           <button
             type="submit"
             disabled={!isValid || reserving}

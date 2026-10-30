@@ -121,11 +121,11 @@ export function validateProductInput(
       // MRP (compareAtPrice) only means anything as a "was X, now Y"
       // discount if it's actually higher than the selling price - nothing
       // previously stopped a seller from saving MRP <= selling price, which
-      // ProductCardInfo.tsx would still render as a struck-through "MRP"
-      // underneath an equal or higher "sale" price, a nonsensical discount
-      // sign a shopper has no way to make sense of. effectiveBasePrice
-      // falls back to existingBasePrice for the update case where this
-      // request only touches compareAtPrice, not basePrice itself.
+      // would render as a struck-through "MRP" underneath an equal or
+      // higher "sale" price, a nonsensical discount sign a shopper has no
+      // way to make sense of. effectiveBasePrice falls back to
+      // existingBasePrice for the update case where this request only
+      // touches compareAtPrice, not basePrice itself.
       const effectiveBasePrice = data.basePrice ?? existingBasePrice;
       if (effectiveBasePrice !== undefined && compareAt <= effectiveBasePrice) {
         errors.push("compareAtPrice (MRP) must be greater than basePrice (selling price) to show a discount");

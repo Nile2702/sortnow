@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TiltCard } from "./TiltCard";
+import { hashHue } from "../lib/string-hue";
 
 interface SubTile {
   label: string;
@@ -17,8 +18,7 @@ interface SubTile {
 // across reloads. Used only as a fallback background for a tile with
 // neither a curated photo below nor a live product photo from the API.
 function tileColor(label: string) {
-  const hue = (label.charCodeAt(0) * 37 + (label.charCodeAt(1) ?? 0) * 11) % 360;
-  return `hsl(${hue}, 45%, 28%)`;
+  return `hsl(${hashHue(label)}, 45%, 28%)`;
 }
 
 // Curated stock photography, one per tile, supplied directly by the user -

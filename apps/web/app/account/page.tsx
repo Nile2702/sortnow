@@ -5,6 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { getShopperSession, setShopperSession, clearShopperSession, ShopperSession } from "../../lib/shopper-session";
 import { validatePassword } from "../../lib/validate-password";
+import { ErrorBanner } from "../../components/ErrorBanner";
 
 type Step = "email" | "otp" | "profile" | "google-phone";
 type Category = "men" | "women" | "kids";
@@ -873,23 +874,6 @@ function StepIndicator({ step }: { step: Step }) {
           }}
         />
       ))}
-    </div>
-  );
-}
-
-function ErrorBanner({ text }: { text: string }) {
-  return (
-    <div
-      style={{
-        background: "#fef2f2",
-        border: "1px solid #fecaca",
-        color: "#b91c1c",
-        borderRadius: 10,
-        padding: "10px 12px",
-        fontSize: 13,
-      }}
-    >
-      {text}
     </div>
   );
 }

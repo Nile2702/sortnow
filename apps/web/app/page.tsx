@@ -11,6 +11,7 @@ import { HeroSlider } from "../components/HeroSlider";
 import { CategoryTiles } from "../components/CategoryTiles";
 import { ProductCard } from "../components/ProductCard";
 import { StoreRatingBadge } from "../components/StoreRatingBadge";
+import { hashHue } from "../lib/string-hue";
 
 interface DiscoveredStore {
   id: string;
@@ -505,8 +506,8 @@ function DiscoverPageInner() {
                   width: 44,
                   height: 44,
                   borderRadius: 12,
-                  background: `hsl(${(s.name.charCodeAt(0) * 37) % 360}, 60%, 92%)`,
-                  color: `hsl(${(s.name.charCodeAt(0) * 37) % 360}, 45%, 35%)`,
+                  background: `hsl(${hashHue(s.name, 1)}, 60%, 92%)`,
+                  color: `hsl(${hashHue(s.name, 1)}, 45%, 35%)`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
