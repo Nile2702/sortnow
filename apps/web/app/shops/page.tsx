@@ -157,7 +157,7 @@ export default function ShopsPage() {
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "24px 16px 48px" }}>
       <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 6 }}>Explore All Shops</h1>
-      <p style={{ color: "#64748b", marginBottom: storeFilter ? 12 : 24 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: storeFilter ? 12 : 24 }}>
         Every boutique and store listed on SORT NOW — {shops.length > 0 ? `${shops.length} and counting` : "browse and pick one to shop"}.
       </p>
 
@@ -167,8 +167,8 @@ export default function ShopsPage() {
             display: "flex",
             alignItems: "center",
             gap: 10,
-            background: "#1e3a8a",
-            border: "1px solid #1e3a8a",
+            background: "var(--sio-ink)",
+            border: "1px solid var(--sio-ink)",
             color: "#fff",
             borderRadius: 10,
             padding: "10px 14px",
@@ -200,7 +200,7 @@ export default function ShopsPage() {
           background: "#fff",
           padding: 16,
           borderRadius: 16,
-          border: "1px solid #f1f5f9",
+          border: "1px solid var(--sio-cream)",
           boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
           marginBottom: 28,
         }}
@@ -209,7 +209,7 @@ export default function ShopsPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search shops, cities, or pincodes…"
-          style={{ flex: "1 1 220px", padding: "10px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14 }}
+          style={{ flex: "1 1 220px", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 }}
         />
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <button onClick={() => setCategory("all")} style={pillStyle(category === "all")}>
@@ -221,7 +221,7 @@ export default function ShopsPage() {
             </button>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 4, marginLeft: "auto", background: "#f1f5f9", borderRadius: 999, padding: 3 }}>
+        <div style={{ display: "flex", gap: 4, marginLeft: "auto", background: "var(--sio-cream)", borderRadius: 999, padding: 3 }}>
           <button onClick={() => setView("list")} style={toggleStyle(view === "list")}>
             ☰ List
           </button>
@@ -238,7 +238,7 @@ export default function ShopsPage() {
             userLocation={userLocation}
             onSelect={(shop) => router.push(`/store/${shop.slug}`)}
           />
-          <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>Tap a pin to open that store.</p>
+          <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 8 }}>Tap a pin to open that store.</p>
         </div>
       )}
 
@@ -249,7 +249,7 @@ export default function ShopsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <p style={{ color: "#64748b" }}>No shops match your search.</p>
+        <p style={{ color: "var(--sio-muted)" }}>No shops match your search.</p>
       ) : view === "map" ? null : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
           {filtered.map((s, i) => (
@@ -266,7 +266,7 @@ export default function ShopsPage() {
                 padding: 16,
                 textDecoration: "none",
                 color: "inherit",
-                border: "1px solid #f1f5f9",
+                border: "1px solid var(--sio-cream)",
                 boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
                 animationDelay: `${i * 40}ms`,
               }}
@@ -293,7 +293,7 @@ export default function ShopsPage() {
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{s.name}</h3>
                   {isBoosted(s.boostedUntil) && (
                     <span
-                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "#b45309", border: "1px solid #d97706", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
+                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "var(--sio-pending)", border: "1px solid var(--sio-pending)", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
                     >
                       ⚡ Featured
                     </span>
@@ -301,23 +301,23 @@ export default function ShopsPage() {
                   {isSaleActive(s.liveSale) && (
                     <span
                       className="sio-breathe"
-                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "#dc2626", border: "1px solid #dc2626", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
+                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "var(--sio-error)", border: "1px solid var(--sio-error)", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
                     >
                       ● Live
                     </span>
                   )}
                 </div>
-                <div style={{ color: "#64748b", fontSize: 13, marginTop: 2 }}>
+                <div style={{ color: "var(--sio-muted)", fontSize: 13, marginTop: 2 }}>
                   {s.localMarket}, {s.city}
                 </div>
-                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4, textTransform: "capitalize" }}>
+                <div style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 4, textTransform: "capitalize" }}>
                   {s.category} · {s.productCount} products
                 </div>
                 <div style={{ marginTop: 6 }}>
                   <StoreRatingBadge average={s.rating.average} count={s.rating.count} />
                 </div>
                 {isSaleActive(s.liveSale) && (
-                  <div style={{ fontSize: 12, color: "#dc2626", marginTop: 4, fontWeight: 600 }}>{s.liveSale!.discountLabel}</div>
+                  <div style={{ fontSize: 12, color: "var(--sio-error)", marginTop: 4, fontWeight: 600 }}>{s.liveSale!.discountLabel}</div>
                 )}
               </div>
             </Link>
@@ -334,7 +334,7 @@ function toggleStyle(active: boolean): React.CSSProperties {
     borderRadius: 999,
     border: "none",
     background: active ? "#fff" : "transparent",
-    color: active ? "#0f172a" : "#64748b",
+    color: active ? "var(--sio-ink)" : "var(--sio-muted)",
     boxShadow: active ? "0 1px 2px rgba(15,23,42,0.1)" : "none",
     cursor: "pointer",
     fontSize: 13,
@@ -346,9 +346,9 @@ function pillStyle(active: boolean): React.CSSProperties {
   return {
     padding: "8px 16px",
     borderRadius: 999,
-    border: active ? "1px solid #0f172a" : "1px solid #e2e8f0",
-    background: active ? "#0f172a" : "#fff",
-    color: active ? "#fff" : "#0f172a",
+    border: active ? "1px solid var(--sio-ink)" : "1px solid var(--sio-line)",
+    background: active ? "var(--sio-ink)" : "#fff",
+    color: active ? "#fff" : "var(--sio-ink)",
     cursor: "pointer",
     fontSize: 13,
     fontWeight: 500,

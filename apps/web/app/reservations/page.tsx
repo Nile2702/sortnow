@@ -17,10 +17,10 @@ interface Reservation {
 }
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }> = {
-  pending: { bg: "#fef9c3", fg: "#854d0e", label: "Pending Pickup" },
-  fulfilled: { bg: "#dcfce7", fg: "#166534", label: "Picked Up" },
-  cancelled: { bg: "#f1f5f9", fg: "#64748b", label: "Cancelled" },
-  expired: { bg: "#fee2e2", fg: "#991b1b", label: "Expired" },
+  pending: { bg: "var(--sio-pending-bg)", fg: "var(--sio-pending)", label: "Pending Pickup" },
+  fulfilled: { bg: "var(--sio-success-bg)", fg: "var(--sio-success)", label: "Picked Up" },
+  cancelled: { bg: "var(--sio-cream)", fg: "var(--sio-muted)", label: "Cancelled" },
+  expired: { bg: "var(--sio-error-bg)", fg: "var(--sio-error)", label: "Expired" },
 };
 
 // Same 15-minute urgency cutoff as the reservation detail page.
@@ -76,9 +76,9 @@ export default function ReservationsPage() {
           <LoadingSpinner />
         </div>
       ) : reservations.length === 0 ? (
-        <p style={{ color: "#64748b" }}>
+        <p style={{ color: "var(--sio-muted)" }}>
           No reservations yet.{" "}
-          <Link href="/" style={{ color: "#1e3a8a" }}>
+          <Link href="/" style={{ color: "var(--sio-ink)" }}>
             Start sorting
           </Link>
           .
@@ -134,7 +134,7 @@ function ReservationRow({ reservation: r, onUpdate }: { reservation: Reservation
   }
 
   return (
-    <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}>
+    <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16 }}>
       <Link
         href={`/reservations/${r.id}`}
         style={{
@@ -154,14 +154,14 @@ function ReservationRow({ reservation: r, onUpdate }: { reservation: Reservation
                 fontWeight: 700,
                 padding: "2px 8px",
                 borderRadius: 999,
-                background: isUrgent ? "#fee2e2" : s.bg,
-                color: isUrgent ? "#991b1b" : s.fg,
+                background: isUrgent ? "var(--sio-error-bg)" : s.bg,
+                color: isUrgent ? "var(--sio-error)" : s.fg,
               }}
             >
               {r.status === "pending" ? formatMinutesLeft(r.reservedUntil) : s.label}
             </span>
           </div>
-          <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
+          <div style={{ fontSize: 13, color: "var(--sio-muted)", marginTop: 2 }}>
             {r.items.length} item{r.items.length > 1 ? "s" : ""} · {new Date(r.createdAt).toLocaleDateString("en-IN")}
           </div>
         </div>
@@ -169,11 +169,11 @@ function ReservationRow({ reservation: r, onUpdate }: { reservation: Reservation
       </Link>
 
       {cancellable && (
-        <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #f8fafc" }}>
-          {error && <p style={{ color: "#991b1b", fontSize: 12.5, margin: "0 0 8px" }}>{error}</p>}
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--sio-cream)" }}>
+          {error && <p style={{ color: "var(--sio-error)", fontSize: 12.5, margin: "0 0 8px" }}>{error}</p>}
           {confirming ? (
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 600 }}>Cancel this reservation?</span>
+              <span style={{ fontSize: 12.5, color: "var(--sio-ink-soft)", fontWeight: 600 }}>Cancel this reservation?</span>
               <button
                 onClick={handleCancel}
                 disabled={cancelling}
@@ -181,7 +181,7 @@ function ReservationRow({ reservation: r, onUpdate }: { reservation: Reservation
                   padding: "6px 14px",
                   borderRadius: 999,
                   border: "none",
-                  background: "#991b1b",
+                  background: "var(--sio-error)",
                   color: "#fff",
                   fontSize: 12,
                   fontWeight: 700,
@@ -197,9 +197,9 @@ function ReservationRow({ reservation: r, onUpdate }: { reservation: Reservation
                 style={{
                   padding: "6px 14px",
                   borderRadius: 999,
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid var(--sio-line)",
                   background: "#fff",
-                  color: "#0f172a",
+                  color: "var(--sio-ink)",
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -214,9 +214,9 @@ function ReservationRow({ reservation: r, onUpdate }: { reservation: Reservation
               style={{
                 padding: "6px 14px",
                 borderRadius: 999,
-                border: "1px solid #fecaca",
+                border: "1px solid var(--sio-error-border)",
                 background: "#fff",
-                color: "#991b1b",
+                color: "var(--sio-error)",
                 fontSize: 12,
                 fontWeight: 700,
                 cursor: "pointer",

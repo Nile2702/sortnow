@@ -24,12 +24,12 @@ export default function MySortsPage() {
   return (
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "8px 16px 40px" }}>
       <h1 style={{ fontSize: 24, marginBottom: 4 }}>My Sorts</h1>
-      <p style={{ color: "#64748b", marginBottom: 24 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 24 }}>
         Saved filters — apply one any time to shop the exact same sort again, wherever you are.
       </p>
 
       {sorts.length === 0 ? (
-        <p style={{ color: "#64748b" }}>
+        <p style={{ color: "var(--sio-muted)" }}>
           No saved sorts yet. Go to the homepage, set up a filter under "Shop in Sort", and save it.
         </p>
       ) : (
@@ -48,7 +48,7 @@ export default function MySortsPage() {
             >
               <div>
                 <div style={{ fontWeight: 600 }}>{s.name}</div>
-                <div style={{ fontSize: 13, color: "#64748b" }}>
+                <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>
                   {s.filters.gender !== "all" ? s.filters.gender : "All"}
                   {s.filters.subCategory ? ` · ${s.filters.subCategory}` : ""} · PIN {s.filters.pincode} · {s.filters.radiusKm} km
                   {s.filters.minPrice != null || s.filters.maxPrice != null
@@ -67,7 +67,7 @@ export default function MySortsPage() {
                 </button>
                 <button
                   onClick={() => remove(s.id)}
-                  style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer" }}
+                  style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", background: "#fff", cursor: "pointer" }}
                 >
                   Delete
                 </button>

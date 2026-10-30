@@ -16,7 +16,22 @@ export function QrScannerModal({ onClose }: { onClose: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef<number>(0);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
+
+  // No dialog semantics, no focus moved in, and no Escape-to-close
+  // previously existed here - the product-zoom modal elsewhere in the app
+  // already supports Escape, this one didn't, despite being a full-screen
+  // takeover of the camera.
+  useEffect(() => {
+    dialogRef.current?.focus();
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +126,11 @@ export function QrScannerModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="qr-scanner-heading"
+      tabIndex={-1}
       style={{
         position: "fixed",
         inset: 0,
@@ -123,10 +143,14 @@ export function QrScannerModal({ onClose }: { onClose: () => void }) {
         padding: 20,
       }}
     >
-      <div style={{ color: "#fff", fontWeight: 600, marginBottom: 16, fontSize: 15 }}>Scan a store or product QR code</div>
+      <div id="qr-scanner-heading" style={{ color: "#fff", fontWeight: 600, marginBottom: 16, fontSize: 15 }}>
+        Scan a store or product QR code
+      </div>
 
       {error ? (
-        <p style={{ color: "#fca5a5", fontSize: 14, textAlign: "center", maxWidth: 280, marginBottom: 20 }}>{error}</p>
+        <p role="alert" style={{ color: "#fca5a5", fontSize: 14, textAlign: "center", maxWidth: 280, marginBottom: 20 }}>
+          {error}
+        </p>
       ) : (
         <div style={{ position: "relative", width: "min(320px, 90vw)", aspectRatio: "1", borderRadius: 16, overflow: "hidden", background: "#000" }}>
           <video ref={videoRef} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />

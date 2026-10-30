@@ -99,6 +99,7 @@ export function MobileBottomNav() {
             <Link
               key={tab.href}
               href={tab.href}
+              aria-current={active ? "page" : undefined}
               style={{
                 flex: 1,
                 display: "flex",

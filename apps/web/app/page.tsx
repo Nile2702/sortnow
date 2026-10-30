@@ -243,7 +243,7 @@ function DiscoverPageInner() {
       {liveSaleStores.length > 0 && (
         <section style={{ marginBottom: 28 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-            <span className="sio-breathe" style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626", display: "inline-block" }} />
+            <span className="sio-breathe" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sio-error)", display: "inline-block" }} />
             <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Live Sales Near You</h2>
           </div>
           <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 6 }}>
@@ -258,7 +258,7 @@ function DiscoverPageInner() {
                   textDecoration: "none",
                   borderRadius: 16,
                   padding: 18,
-                  background: "linear-gradient(135deg, #dc2626, #7c2d12)",
+                  background: "linear-gradient(135deg, var(--sio-error), #7c2d12)",
                   color: "#fff",
                   boxShadow: "0 4px 14px rgba(220,38,38,0.25)",
                 }}
@@ -278,7 +278,7 @@ function DiscoverPageInner() {
       )}
 
       {q && (
-        <div style={{ marginBottom: 16, fontSize: 14, color: "#475569" }}>
+        <div style={{ marginBottom: 16, fontSize: 14, color: "var(--sio-muted)" }}>
           Showing results for <strong>&ldquo;{q}&rdquo;</strong>
         </div>
       )}
@@ -294,17 +294,17 @@ function DiscoverPageInner() {
           padding: 18,
           borderRadius: 16,
           boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
-          border: "1px solid #f1f5f9",
+          border: "1px solid var(--sio-cream)",
           marginBottom: 20,
         }}
       >
         {geo && (
-          <div style={{ width: "100%", fontSize: 12.5, color: "#1e3a8a", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: "100%", fontSize: 12.5, color: "var(--sio-ink)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
             📍 Using your current location
             <button
               type="button"
               onClick={() => setGeo(null)}
-              style={{ background: "none", border: "none", color: "#64748b", fontSize: 12, textDecoration: "underline", cursor: "pointer", padding: 0 }}
+              style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 12, textDecoration: "underline", cursor: "pointer", padding: 0 }}
             >
               switch to a PIN code
             </button>
@@ -318,7 +318,7 @@ function DiscoverPageInner() {
           }}
           placeholder="Enter 6-digit PIN code"
           maxLength={6}
-          style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 16, width: 200 }}
+          style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 16, width: 200 }}
         />
 
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
@@ -326,7 +326,7 @@ function DiscoverPageInner() {
           <select
             value={radius}
             onChange={(e) => setRadius(Number(e.target.value))}
-            style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}
+            style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid var(--sio-line)" }}
           >
             {[1, 3, 5, 10, 15, 25].map((r) => (
               <option key={r} value={r}>
@@ -369,8 +369,8 @@ function DiscoverPageInner() {
             gap: 6,
             padding: "8px 14px",
             borderRadius: 999,
-            border: "1px solid #e2e8f0",
-            color: "#1e3a8a",
+            border: "1px solid var(--sio-line)",
+            color: "var(--sio-ink)",
             fontWeight: 600,
             fontSize: 13,
             textDecoration: "none",
@@ -389,9 +389,9 @@ function DiscoverPageInner() {
                 style={{
                   padding: "6px 12px",
                   borderRadius: 999,
-                  border: "1px solid #e2e8f0",
-                  background: subCategory === sc ? "#e0e7ff" : "#f8fafc",
-                  color: subCategory === sc ? "#1e3a8a" : "#475569",
+                  border: subCategory === sc ? "1px solid var(--sio-ink)" : "1px solid var(--sio-line)",
+                  background: subCategory === sc ? "var(--sio-ink)" : "var(--sio-cream)",
+                  color: subCategory === sc ? "#fff" : "var(--sio-muted)",
                   cursor: "pointer",
                   fontSize: 13,
                 }}
@@ -404,7 +404,7 @@ function DiscoverPageInner() {
       </section>
 
       <section style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 8, fontWeight: 600 }}>📍 Popular markets</div>
+        <div style={{ fontSize: 13, color: "var(--sio-muted)", marginBottom: 8, fontWeight: 600 }}>📍 Popular markets</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {QUICK_MARKETS.map((m) => (
             <button
@@ -416,9 +416,9 @@ function DiscoverPageInner() {
               style={{
                 padding: "6px 12px",
                 borderRadius: 8,
-                border: "1px solid #e2e8f0",
-                background: pincode === m.pincode ? "#e0e7ff" : "#fff",
-                color: pincode === m.pincode ? "#1e3a8a" : "#334155",
+                border: "1px solid var(--sio-line)",
+                background: pincode === m.pincode ? "var(--sio-cream)" : "#fff",
+                color: pincode === m.pincode ? "var(--sio-ink)" : "var(--sio-ink-soft)",
                 cursor: "pointer",
                 fontSize: 13,
               }}
@@ -441,14 +441,14 @@ function DiscoverPageInner() {
       ) : stores.length === 0 ? (
         <div
           style={{
-            background: "#f8fafc",
-            border: "1px dashed #e2e8f0",
+            background: "var(--sio-cream)",
+            border: "1px dashed var(--sio-line)",
             borderRadius: 14,
             padding: "20px 18px",
             marginBottom: 44,
           }}
         >
-          <p style={{ color: "#475569", marginBottom: 12 }}>
+          <p style={{ color: "var(--sio-muted)", marginBottom: 12 }}>
             No stores found matching these filters here yet. Try widening the radius, clearing a filter, or jump to one of these
             markets instead:
           </p>
@@ -463,9 +463,9 @@ function DiscoverPageInner() {
                 style={{
                   padding: "7px 14px",
                   borderRadius: 999,
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid var(--sio-line)",
                   background: "#fff",
-                  color: "#1e3a8a",
+                  color: "var(--sio-ink)",
                   fontWeight: 600,
                   cursor: "pointer",
                   fontSize: 13,
@@ -492,7 +492,7 @@ function DiscoverPageInner() {
                 padding: 16,
                 textDecoration: "none",
                 color: "inherit",
-                border: "1px solid #f1f5f9",
+                border: "1px solid var(--sio-cream)",
                 boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
                 animationDelay: `${i * 60}ms`,
                 minWidth: 260,
@@ -522,7 +522,7 @@ function DiscoverPageInner() {
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{s.name}</h3>
                   {isBoosted(s.boostedUntil) && (
                     <span
-                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "#b45309", border: "1px solid #d97706", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
+                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "var(--sio-pending)", border: "1px solid var(--sio-pending)", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
                     >
                       ⚡ Featured
                     </span>
@@ -530,21 +530,21 @@ function DiscoverPageInner() {
                   {isSaleActive(s.liveSale) && (
                     <span
                       className="sio-breathe"
-                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "#dc2626", border: "1px solid #dc2626", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
+                      style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "var(--sio-error)", border: "1px solid var(--sio-error)", borderRadius: 999, padding: "1px 7px", textTransform: "uppercase" }}
                     >
                       ● Live
                     </span>
                   )}
                 </div>
-                <div style={{ color: "#64748b", fontSize: 13, marginTop: 2 }}>
+                <div style={{ color: "var(--sio-muted)", fontSize: 13, marginTop: 2 }}>
                   {s.localMarket}, {s.city}
                 </div>
-                {s.distanceKm != null && <div style={{ fontSize: 12, marginTop: 4, color: "#1e3a8a", fontWeight: 600 }}>{s.distanceKm} km away</div>}
+                {s.distanceKm != null && <div style={{ fontSize: 12, marginTop: 4, color: "var(--sio-ink)", fontWeight: 600 }}>{s.distanceKm} km away</div>}
                 <div style={{ marginTop: 6 }}>
                   <StoreRatingBadge average={s.rating.average} count={s.rating.count} />
                 </div>
                 {isSaleActive(s.liveSale) && (
-                  <div style={{ fontSize: 12, color: "#dc2626", marginTop: 4, fontWeight: 600 }}>{s.liveSale!.discountLabel}</div>
+                  <div style={{ fontSize: 12, color: "var(--sio-error)", marginTop: 4, fontWeight: 600 }}>{s.liveSale!.discountLabel}</div>
                 )}
               </div>
             </Link>
@@ -564,9 +564,9 @@ function DiscoverPageInner() {
         </section>
       )}
 
-      <section style={{ background: "#fff", borderRadius: 18, padding: 24, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", border: "1px solid #f1f5f9" }}>
+      <section style={{ background: "#fff", borderRadius: 18, padding: 24, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", border: "1px solid var(--sio-cream)" }}>
         <h2 style={{ fontSize: 20, marginBottom: 4, fontWeight: 700 }}>🧭 Shop in Sort</h2>
-        <p style={{ fontSize: 13, color: "#64748b", marginBottom: 18 }}>
+        <p style={{ fontSize: 13, color: "var(--sio-muted)", marginBottom: 18 }}>
           Sort products across every nearby store
         </p>
 
@@ -576,16 +576,16 @@ function DiscoverPageInner() {
             placeholder="Min ₹"
             value={minPrice}
             onChange={(e) => setMinPrice(e.target.value)}
-            style={{ width: 100, padding: "9px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}
+            style={{ width: 100, padding: "9px 10px", borderRadius: 10, border: "1px solid var(--sio-line)" }}
           />
           <input
             type="number"
             placeholder="Max ₹"
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
-            style={{ width: 100, padding: "9px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}
+            style={{ width: 100, padding: "9px 10px", borderRadius: 10, border: "1px solid var(--sio-line)" }}
           />
-          <select value={size} onChange={(e) => setSize(e.target.value)} style={{ padding: "9px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+          <select value={size} onChange={(e) => setSize(e.target.value)} style={{ padding: "9px 10px", borderRadius: 10, border: "1px solid var(--sio-line)" }}>
             <option value="">Any size</option>
             {ALL_SIZES.map((sz) => (
               <option key={sz} value={sz}>
@@ -593,7 +593,7 @@ function DiscoverPageInner() {
               </option>
             ))}
           </select>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ padding: "9px 10px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ padding: "9px 10px", borderRadius: 10, border: "1px solid var(--sio-line)" }}>
             <option value="distance">Nearest first</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
@@ -606,7 +606,7 @@ function DiscoverPageInner() {
             placeholder="Name this sort, e.g. 'Cotton kurtis under 1500 near home'"
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
-            style={{ flex: 1, padding: "9px 12px", borderRadius: 10, border: "1px solid #e2e8f0", minWidth: 220 }}
+            style={{ flex: 1, padding: "9px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", minWidth: 220 }}
           />
           <button
             onClick={handleSaveSort}
@@ -615,7 +615,7 @@ function DiscoverPageInner() {
               padding: "9px 18px",
               borderRadius: 10,
               border: "none",
-              background: saveName.trim() ? "#0f172a" : "#e2e8f0",
+              background: saveName.trim() ? "var(--sio-ink)" : "var(--sio-line)",
               color: "#fff",
               cursor: saveName.trim() ? "pointer" : "not-allowed",
               fontWeight: 600,
@@ -624,7 +624,7 @@ function DiscoverPageInner() {
             Save this Sort
           </button>
           {savedMsg && (
-            <span className="sio-fade-in" style={{ fontSize: 13, color: "#16a34a" }}>
+            <span className="sio-fade-in" style={{ fontSize: 13, color: "var(--sio-success)" }}>
               {savedMsg}
             </span>
           )}
@@ -637,7 +637,7 @@ function DiscoverPageInner() {
             ))}
           </div>
         ) : sortedProducts.length === 0 ? (
-          <p style={{ color: "#64748b" }}>No products match this sort yet.</p>
+          <p style={{ color: "var(--sio-muted)" }}>No products match this sort yet.</p>
         ) : (
           <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
             {sortedProducts.map((p, i) => (
@@ -651,10 +651,10 @@ function DiscoverPageInner() {
         <h2 style={{ fontSize: 20, marginBottom: 18, fontWeight: 700, textAlign: "center" }}>Why Shop With Us</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
           {WHY_SHOP_WITH_US.map((item) => (
-            <div key={item.title} className="sio-card" style={{ background: "#fff", borderRadius: 16, padding: 22, border: "1px solid #f1f5f9", textAlign: "center" }}>
+            <div key={item.title} className="sio-card" style={{ background: "#fff", borderRadius: 16, padding: 22, border: "1px solid var(--sio-cream)", textAlign: "center" }}>
               <div style={{ fontSize: 28, marginBottom: 10 }}>{item.icon}</div>
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{item.title}</div>
-              <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, margin: 0 }}>{item.body}</p>
+              <p style={{ fontSize: 13, color: "var(--sio-muted)", lineHeight: 1.6, margin: 0 }}>{item.body}</p>
             </div>
           ))}
         </div>
@@ -667,9 +667,9 @@ function pillStyle(active: boolean): React.CSSProperties {
   return {
     padding: "8px 16px",
     borderRadius: 999,
-    border: active ? "1px solid #0f172a" : "1px solid #e2e8f0",
-    background: active ? "#0f172a" : "#fff",
-    color: active ? "#fff" : "#0f172a",
+    border: active ? "1px solid var(--sio-ink)" : "1px solid var(--sio-line)",
+    background: active ? "var(--sio-ink)" : "#fff",
+    color: active ? "#fff" : "var(--sio-ink)",
     cursor: "pointer",
     fontSize: 14,
     fontWeight: 500,

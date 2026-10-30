@@ -475,8 +475,17 @@ export default function ProductDetailPage() {
       <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 56 }}>
         <div className="sio-fade-in" style={{ position: "relative" }}>
           <div
+            role="button"
+            tabIndex={0}
+            aria-label="Zoom into product photo"
             style={{ position: "relative", cursor: "zoom-in", overflow: "hidden" }}
             onClick={() => setZoomOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setZoomOpen(true);
+              }
+            }}
             onMouseMove={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const x = Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100));

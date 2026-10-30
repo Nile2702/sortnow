@@ -26,12 +26,12 @@ function MapUnavailable() {
       style={{
         height: 420,
         borderRadius: 16,
-        border: "1px dashed #e2e8f0",
-        background: "#f8fafc",
+        border: "1px dashed var(--sio-line)",
+        background: "var(--sio-cream)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "#94a3b8",
+        color: "var(--sio-muted)",
         fontSize: 13,
         textAlign: "center",
         padding: 20,
@@ -93,9 +93,9 @@ export function StoreMap({
       el.style.width = "16px";
       el.style.height = "16px";
       el.style.borderRadius = "50%";
-      el.style.background = "#1e3a8a";
+      el.style.background = "var(--sio-ink)";
       el.style.border = "3px solid #fff";
-      el.style.boxShadow = "0 0 0 2px #1e3a8a";
+      el.style.boxShadow = "0 0 0 2px var(--sio-ink)";
       new mapboxgl.Marker({ element: el }).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
       bounds.extend([userLocation.lng, userLocation.lat]);
     }
@@ -111,7 +111,7 @@ export function StoreMap({
       const popup = new mapboxgl.Popup({ offset: 20, closeButton: false }).setHTML(
         `<div style="font-family:inherit;font-size:13px;min-width:140px">
            <strong>${escapeHtml(shop.name)}</strong><br/>
-           <span style="color:#64748b">${escapeHtml(shop.localMarket)}</span>
+           <span style="color:var(--sio-muted)">${escapeHtml(shop.localMarket)}</span>
          </div>`
       );
 
@@ -128,7 +128,7 @@ export function StoreMap({
 
   if (!TOKEN) return <MapUnavailable />;
 
-  return <div ref={containerRef} style={{ height: 420, borderRadius: 16, overflow: "hidden", border: "1px solid #f1f5f9" }} />;
+  return <div ref={containerRef} style={{ height: 420, borderRadius: 16, overflow: "hidden", border: "1px solid var(--sio-cream)" }} />;
 }
 
 function escapeHtml(s: string) {

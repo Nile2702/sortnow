@@ -44,7 +44,7 @@ export function CategoryFilterSidebar({
 }: Props) {
   if (!facets) {
     return (
-      <div className="sio-card" style={{ background: "#fff", padding: 16, borderRadius: 16, border: "1px solid #f1f5f9" }}>
+      <div className="sio-card" style={{ background: "#fff", padding: 16, borderRadius: 16, border: "1px solid var(--sio-cream)" }}>
         <div className="sio-skeleton" style={{ height: 300, borderRadius: 10 }} />
       </div>
     );
@@ -54,8 +54,8 @@ export function CategoryFilterSidebar({
   const [lo, hi] = priceRange ?? [bounds.min, bounds.max];
 
   return (
-    <div className="sio-card" style={{ background: "#fff", padding: 16, borderRadius: 16, border: "1px solid #f1f5f9" }}>
-      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "#94a3b8" }}>Filters</div>
+    <div className="sio-card" style={{ background: "#fff", padding: 16, borderRadius: 16, border: "1px solid var(--sio-cream)" }}>
+      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--sio-muted)" }}>Filters</div>
 
       <FacetSection title="Category">
         <CheckboxList
@@ -77,7 +77,7 @@ export function CategoryFilterSidebar({
         {bounds.max > bounds.min ? (
           <PriceRangeSlider bounds={bounds} value={[lo, hi]} onChange={(range) => onPriceRangeChange(range)} />
         ) : (
-          <p style={{ fontSize: 12.5, color: "#94a3b8" }}>No price range to filter.</p>
+          <p style={{ fontSize: 12.5, color: "var(--sio-muted)" }}>No price range to filter.</p>
         )}
       </FacetSection>
 
@@ -95,7 +95,7 @@ export function CategoryFilterSidebar({
             <button
               type="button"
               onClick={() => onMinDiscountChange(undefined)}
-              style={{ background: "none", border: "none", color: "#ec4899", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textAlign: "left", padding: "6px 10px" }}
+              style={{ background: "none", border: "none", color: "var(--sio-filter-accent)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textAlign: "left", padding: "6px 10px" }}
             >
               Clear
             </button>
@@ -105,7 +105,7 @@ export function CategoryFilterSidebar({
             .map((t) => (
               <label
                 key={t.minDiscount}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", fontSize: 13.5, cursor: "pointer", color: "#1f2937" }}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", fontSize: 13.5, cursor: "pointer", color: "var(--sio-ink)" }}
               >
                 <input
                   type="radio"
@@ -114,7 +114,7 @@ export function CategoryFilterSidebar({
                   onChange={() => onMinDiscountChange(t.minDiscount)}
                 />
                 {t.minDiscount}% and above
-                <span style={{ color: "#94a3b8", fontSize: 12 }}>({t.count})</span>
+                <span style={{ color: "var(--sio-muted)", fontSize: 12 }}>({t.count})</span>
               </label>
             ))}
         </div>
@@ -125,8 +125,8 @@ export function CategoryFilterSidebar({
 
 function FacetSection({ title, children, last = false }: { title: string; children: React.ReactNode; last?: boolean }) {
   return (
-    <div style={{ borderBottom: last ? "none" : "1px solid #f1f5f9", padding: "14px 0" }}>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{title}</div>
+    <div style={{ borderBottom: last ? "none" : "1px solid var(--sio-cream)", padding: "14px 0" }}>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--sio-ink)", marginBottom: 8 }}>{title}</div>
       {children}
     </div>
   );
@@ -142,27 +142,27 @@ function CheckboxList({
   onToggle: (value: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  if (options.length === 0) return <p style={{ fontSize: 12.5, color: "#94a3b8" }}>No options available.</p>;
+  if (options.length === 0) return <p style={{ fontSize: 12.5, color: "var(--sio-muted)" }}>No options available.</p>;
   const visible = expanded ? options : options.slice(0, VISIBLE_COUNT);
   const remaining = options.length - visible.length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {visible.map((opt) => (
-        <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", fontSize: 13.5, cursor: "pointer", color: "#1f2937" }}>
+        <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", fontSize: 13.5, cursor: "pointer", color: "var(--sio-ink)" }}>
           <input type="checkbox" checked={selected.includes(opt.value)} onChange={() => onToggle(opt.value)} />
           {opt.swatch && (
-            <span style={{ width: 16, height: 16, borderRadius: "50%", background: opt.swatch, border: "1px solid #e5e7eb", flexShrink: 0 }} />
+            <span style={{ width: 16, height: 16, borderRadius: "50%", background: opt.swatch, border: "1px solid var(--sio-line)", flexShrink: 0 }} />
           )}
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{opt.label}</span>
-          <span style={{ color: "#94a3b8", fontSize: 12, marginLeft: "auto", paddingLeft: 6 }}>({opt.count})</span>
+          <span style={{ color: "var(--sio-muted)", fontSize: 12, marginLeft: "auto", paddingLeft: 6 }}>({opt.count})</span>
         </label>
       ))}
       {remaining > 0 && (
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          style={{ background: "none", border: "none", color: "#ec4899", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textAlign: "left", padding: "6px 10px" }}
+          style={{ background: "none", border: "none", color: "var(--sio-filter-accent)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textAlign: "left", padding: "6px 10px" }}
         >
           + {remaining} more
         </button>
@@ -171,7 +171,7 @@ function CheckboxList({
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textAlign: "left", padding: "6px 10px" }}
+          style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textAlign: "left", padding: "6px 10px" }}
         >
           Show less
         </button>
@@ -202,20 +202,21 @@ function PriceRangeSlider({
   return (
     <div style={{ padding: "4px 6px 0" }}>
       <div style={{ position: "relative", height: 32 }}>
-        <div style={{ position: "absolute", top: 14, left: 0, right: 0, height: 4, borderRadius: 999, background: "#e5e7eb" }} />
+        <div style={{ position: "absolute", top: 14, left: 0, right: 0, height: 4, borderRadius: 999, background: "var(--sio-line)" }} />
         <div
           style={{
             position: "absolute",
             top: 14,
             height: 4,
             borderRadius: 999,
-            background: "#ec4899",
+            background: "var(--sio-filter-accent)",
             left: `${pct(lo)}%`,
             right: `${100 - pct(hi)}%`,
           }}
         />
         <input
           type="range"
+          aria-label="Minimum price"
           min={bounds.min}
           max={bounds.max}
           step={step}
@@ -226,6 +227,7 @@ function PriceRangeSlider({
         />
         <input
           type="range"
+          aria-label="Maximum price"
           min={bounds.min}
           max={bounds.max}
           step={step}
@@ -235,7 +237,7 @@ function PriceRangeSlider({
           style={{ position: "absolute", top: 0, left: 0, right: 0, width: "100%", margin: 0, background: "none", pointerEvents: "none" }}
         />
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, color: "#1f2937", marginTop: 2 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, color: "var(--sio-ink)", marginTop: 2 }}>
         <span>₹{lo.toLocaleString("en-IN")}</span>
         <span>
           ₹{hi.toLocaleString("en-IN")}

@@ -112,18 +112,30 @@ export default function ReservePage() {
       <h1 style={{ fontSize: 24, marginBottom: 20, fontWeight: 700 }}>Reserve for Pickup</h1>
 
       <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 28 }}>
-        <form onSubmit={handleReserve} className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24 }}>
+        <form onSubmit={handleReserve} className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Your Details</h2>
-          <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>The seller uses this to know who's coming and confirm the hold.</p>
+          <p style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 16 }}>The seller uses this to know who's coming and confirm the hold.</p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
-              <label style={labelStyle}>Full name</label>
-              <input required value={shopperName} onChange={(e) => setShopperName(e.target.value)} style={fieldStyle} placeholder="e.g. Priya Sharma" />
+              <label htmlFor="reserve-name" style={labelStyle}>
+                Full name
+              </label>
+              <input
+                id="reserve-name"
+                required
+                value={shopperName}
+                onChange={(e) => setShopperName(e.target.value)}
+                style={fieldStyle}
+                placeholder="e.g. Priya Sharma"
+              />
             </div>
             <div>
-              <label style={labelStyle}>Phone number</label>
+              <label htmlFor="reserve-phone" style={labelStyle}>
+                Phone number
+              </label>
               <input
+                id="reserve-phone"
                 required
                 value={shopperPhone}
                 onChange={(e) => setShopperPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
@@ -135,7 +147,7 @@ export default function ReservePage() {
           </div>
 
           <h2 style={{ fontSize: 16, fontWeight: 700, margin: "24px 0 4px" }}>Hold Duration</h2>
-          <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12 }}>
+          <p style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 12 }}>
             {storeCount > 1
               ? `Applies to each of the ${storeCount} stores' reservations.`
               : "How long should the store hold this for you?"}
@@ -146,12 +158,13 @@ export default function ReservePage() {
                 type="button"
                 key={d.minutes}
                 onClick={() => setDurationMinutes(d.minutes)}
+                aria-pressed={durationMinutes === d.minutes}
                 style={{
                   padding: "8px 16px",
                   borderRadius: 999,
-                  border: durationMinutes === d.minutes ? "2px solid #0f172a" : "1px solid #e2e8f0",
-                  background: durationMinutes === d.minutes ? "#0f172a" : "#fff",
-                  color: durationMinutes === d.minutes ? "#fff" : "#0f172a",
+                  border: durationMinutes === d.minutes ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
+                  background: durationMinutes === d.minutes ? "var(--sio-ink)" : "#fff",
+                  color: durationMinutes === d.minutes ? "#fff" : "var(--sio-ink)",
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -164,12 +177,13 @@ export default function ReservePage() {
 
           {error && (
             <p
+              role="alert"
               style={{
                 marginTop: 16,
                 fontSize: 13,
-                color: "#b91c1c",
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
+                color: "var(--sio-error)",
+                background: "var(--sio-error-bg)",
+                border: "1px solid var(--sio-error-border)",
                 borderRadius: 10,
                 padding: "10px 12px",
               }}
@@ -187,7 +201,7 @@ export default function ReservePage() {
               padding: "14px",
               borderRadius: 999,
               border: "none",
-              background: !isValid || reserving ? "#cbd5e1" : "var(--sio-bronze)",
+              background: !isValid || reserving ? "var(--sio-line)" : "var(--sio-bronze)",
               color: "#fff",
               fontWeight: 600,
               fontSize: 15,
@@ -196,32 +210,32 @@ export default function ReservePage() {
           >
             {reserving ? "Reserving…" : "Confirm Reservation"}
           </button>
-          <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 10, textAlign: "center" }}>
+          <p style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 10, textAlign: "center" }}>
             No payment is taken now — pay at store if purchased.
           </p>
         </form>
 
         <div>
           <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Sort Summary</h2>
-          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 20 }}>
             {items.map((item) => (
               <div key={`${item.productId}-${item.size}`} style={{ display: "flex", gap: 12, marginBottom: 14 }}>
                 <img src={item.imageUrl} alt={item.title} style={{ width: 50, height: 64, objectFit: "cover", borderRadius: 8 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{item.title}</div>
-                  <div style={{ fontSize: 12, color: "#64748b" }}>
+                  <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>
                     {item.storeName} · Size {item.size} · Qty {item.quantity}
                   </div>
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 13 }}>₹{(item.price * item.quantity).toLocaleString("en-IN")}</div>
               </div>
             ))}
-            <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 12, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 16 }}>
+            <div style={{ borderTop: "1px solid var(--sio-cream)", paddingTop: 12, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 16 }}>
               <span>Total</span>
               <span>₹{cartTotal(items).toLocaleString("en-IN")}</span>
             </div>
           </div>
-          <Link href="/cart" style={{ display: "inline-block", marginTop: 14, fontSize: 13, color: "#64748b" }}>
+          <Link href="/cart" style={{ display: "inline-block", marginTop: 14, fontSize: 13, color: "var(--sio-muted)" }}>
             ← Back to your sort
           </Link>
         </div>
@@ -230,5 +244,5 @@ export default function ReservePage() {
   );
 }
 
-const fieldStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14 };
+const fieldStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 };
 const labelStyle: React.CSSProperties = { fontSize: 13, fontWeight: 600, marginBottom: 6, display: "block" };

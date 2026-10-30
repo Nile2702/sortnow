@@ -26,7 +26,17 @@
      every call site already using them. */
   --sio-bronze: #000000;
   --sio-bronze-dark: #2b2b2b;
-  --sio-muted: #7e818c;
+  /* Darkened from the original #7e818c (~3.9:1 on white/cream - fails the
+     4.5:1 WCAG AA minimum for normal text) after a site-wide design audit
+     found it used well beyond decorative metadata - phone-privacy notes,
+     password hints, and the reserve/checkout flow's own "no payment taken
+     now" line all relied on it. #5e616b keeps the same cool-gray hue but
+     clears AA comfortably (~6.2:1) on both --sio-cream and --sio-paper. The
+     same audit found several raw hex "muted gray" values scattered outside
+     this variable entirely (#64748b, #94a3b8, #475569 - the last of those
+     failing AA far worse, ~2.6:1) which have been repointed at this one
+     token rather than left as a second, uncoordinated gray. */
+  --sio-muted: #5e616b;
   /* Wishlist "saved" state specifically - kept independent of --sio-bronze
      (which is the general brand/button color, currently black) because a
      filled heart reads as "saved" far faster in red, the near-universal
@@ -40,6 +50,43 @@
   --sio-glow-2: #ff7f50;
   --sio-glass-bg: rgba(255, 255, 255, 0.85);
   --sio-glass-border: var(--sio-line);
+
+  /* Added by the same design audit - every one of these existed already as
+     a raw, undocumented hex value repeated across many files (sometimes
+     several DIFFERENT hex values for what was clearly meant to be the same
+     color), never as a shared token. Consolidating them here first, before
+     sweeping call sites over to reference them, so there's one definition
+     to adjust later instead of a repeat of the same drift. */
+  /* Error/destructive text and borders - previously 4 different reds
+     (#e11d48, #dc2626, #b91c1c, #991b1b) used interchangeably for the same
+     meaning across seller/shopper forms and status badges. */
+  --sio-error: #b91c1c;
+  --sio-error-bg: #fef2f2;
+  --sio-error-border: #fecaca;
+  /* "Success" equivalent of the above - two different greens (#16a34a,
+     #166534) were used for the identical "fulfilled/picked up" status
+     across two different reservation pages. */
+  --sio-success: #166534;
+  --sio-success-bg: #f0fdf4;
+  --sio-success-border: #bbf7d0;
+  /* "Pending" status color (reservation awaiting pickup, "Featured" store
+     badge) - reservations/page.tsx and reservations/[reservationId]/page.tsx
+     each reinvented this amber independently (#854d0e/#fef9c3 vs. slightly
+     different shades); now one shared pair. */
+  --sio-pending: #854d0e;
+  --sio-pending-bg: #fef9c3;
+  /* The AI-photo-enhancement features' own accent (Gemini key save button,
+     AI Bulk Upload link) - previously an undocumented purple (#7c3aed)
+     that looked like a second, inconsistent primary-button color next to
+     the standard brand black. Kept as its own distinct, intentional accent
+     (reserved ONLY for AI-labeled actions) rather than folded into
+     --sio-ink, but now named and documented as that deliberate exception. */
+  --sio-ai-accent: #7c3aed;
+  /* The price-range filter slider's thumb/track accent (previously a bare
+     #ec4899) - a fourth brand color with no prior token or explanation.
+     Kept as-is (changing it is a real design call, not a bug) but now
+     named so it reads as an intentional choice instead of a stray value. */
+  --sio-filter-accent: #ec4899;
 }
 
 html,
@@ -60,6 +107,34 @@ html {
 
 html {
   scroll-behavior: smooth;
+}
+
+/* A design/accessibility audit found several inputs and the header search
+   explicitly set `outline: none` inline with no replacement focus style at
+   all - a keyboard user tabbing through login, signup, or site search had
+   no visible indication of where focus was. Rather than hunt down and patch
+   every individual inline `outline: "none"` (inline styles set the
+   `outline` property unconditionally, not scoped to any state, so this
+   still needs `!important` to win against them specifically when the
+   element DOES have focus-visible), one rule here covers every current and
+   future occurrence. `:focus-visible` (not plain `:focus`) so a mouse click
+   still doesn't show a ring, only real keyboard/assistive-tech focus does -
+   the same distinction browsers make by default. */
+/* A plain solid outline in one color would disappear against either this
+   site's black header/nav bars or its white forms, depending which one a
+   given focused control happens to sit on - a white ring touching the
+   element plus a dark ring just outside it means at least one of the two
+   always contrasts against the actual background, light or dark. */
+.sio-scroll-row:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #fff !important;
+  outline-offset: 1px !important;
+  box-shadow: 0 0 0 4px var(--sio-ink) !important;
 }
 
 /* Horizontal "collection" row (Package I - Conversion-Optimized DTC): a
@@ -487,7 +562,7 @@ body {
   height: 16px;
   border-radius: 50%;
   background: #fff;
-  border: 2px solid #ec4899;
+  border: 2px solid var(--sio-filter-accent);
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
@@ -497,7 +572,7 @@ body {
   height: 16px;
   border-radius: 50%;
   background: #fff;
-  border: 2px solid #ec4899;
+  border: 2px solid var(--sio-filter-accent);
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
@@ -798,6 +873,27 @@ body {
     left: 50% !important;
     top: 58% !important;
     transform: translate(-50%, 0) !important;
+  }
+  /* This list used to stop here, which meant anyone who'd actually turned
+     on "reduce motion" still got every one of these - a continuous
+     infinite opacity pulse used on every low-stock/live notice site-wide
+     (.sio-breathe), the page-transition fade/slide-in used on nearly every
+     route including login/account (.sio-fade-in/.sio-slide-in), and
+     smooth-scroll on every anchor/programmatic scroll (html's own
+     scroll-behavior). Motion-sensitive visitors had no working way to turn
+     any of it off. */
+  .sio-breathe {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .sio-fade-in,
+  .sio-slide-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }
 

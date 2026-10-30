@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { setLocationPref, hasSeenLocationPrompt, markLocationPromptSeen, resolveAreaLabel, QUICK_MARKETS } from "../lib/location";
 import { isMobileAppShellPage } from "../lib/mobile-shell";
@@ -19,10 +19,46 @@ export function LocationGate() {
   const [pincode, setPincodeInput] = useState("");
   const [error, setError] = useState("");
   const [locating, setLocating] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const headingId = "location-gate-heading";
 
   useEffect(() => {
     if (isMobileAppShellPage(pathname) && !hasSeenLocationPrompt()) setOpen(true);
   }, [pathname]);
+
+  // This is the very first interaction a new shopper has with the site -
+  // previously a bare <div> with no dialog semantics, no focus moved into
+  // it on open (a keyboard/screen-reader user had no idea anything had
+  // appeared), and nothing closing it but the two explicit buttons. Moving
+  // focus to the dialog itself on open, trapping Tab within it, and
+  // supporting Escape all match standard native-dialog behavior a keyboard
+  // user already expects from literally any other modal on the web.
+  useEffect(() => {
+    if (!open) return;
+    dialogRef.current?.focus();
+  }, [open]);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      finish();
+      return;
+    }
+    if (e.key !== "Tab" || !dialogRef.current) return;
+    const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
 
   function finish() {
     markLocationPromptSeen();
@@ -119,6 +155,12 @@ export function LocationGate() {
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={headingId}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
         className="sio-fade-in"
         style={{
           width: "100%",
@@ -130,7 +172,7 @@ export function LocationGate() {
         }}
       >
         <div style={{ fontSize: 30, marginBottom: 8 }}>📍</div>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6, color: "var(--sio-ink)" }}>Find shops and products near you</h2>
+        <h2 id={headingId} style={{ fontSize: 18, fontWeight: 700, marginBottom: 6, color: "var(--sio-ink)" }}>Find shops and products near you</h2>
         <p style={{ fontSize: 13.5, color: "var(--sio-muted)", marginBottom: 18, lineHeight: 1.5 }}>
           SORT NOW shows you real boutiques and listings from sellers close to you. Allow location access, or enter your PIN code
           instead.
@@ -170,7 +212,11 @@ export function LocationGate() {
             >
               Enter PIN code manually
             </button>
-            {error && <p style={{ color: "#b91c1c", fontSize: 12.5, margin: 0 }}>{error}</p>}
+            {error && (
+              <p role="alert" style={{ color: "var(--sio-error)", fontSize: 12.5, margin: 0 }}>
+                {error}
+              </p>
+            )}
             <button
               onClick={finish}
               style={{ background: "none", border: "none", color: "var(--sio-muted)", fontSize: 13, cursor: "pointer", padding: 6 }}
@@ -180,15 +226,24 @@ export function LocationGate() {
           </div>
         ) : (
           <form onSubmit={handleManualSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <label htmlFor="location-gate-pincode" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}>
+              6-digit PIN code
+            </label>
             <input
+              id="location-gate-pincode"
               value={pincode}
               onChange={(e) => setPincodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="6-digit PIN code"
               maxLength={6}
               autoFocus
+              aria-invalid={!!error}
               style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 16 }}
             />
-            {error && <p style={{ color: "#b91c1c", fontSize: 12.5, margin: 0 }}>{error}</p>}
+            {error && (
+              <p role="alert" style={{ color: "var(--sio-error)", fontSize: 12.5, margin: 0 }}>
+                {error}
+              </p>
+            )}
             <button
               type="submit"
               className="sio-btn-primary"

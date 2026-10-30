@@ -21,14 +21,14 @@ export default function CartPage() {
   return (
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "8px 16px 40px" }}>
       <h1 style={{ fontSize: 24, marginBottom: 4, fontWeight: 700 }}>Your Sort</h1>
-      <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>
+      <p style={{ color: "var(--sio-muted)", fontSize: 13, marginBottom: 20 }}>
         Pick out what you want, then reserve it at the store for a set time so it's held for you to walk in and try on or buy.
       </p>
 
       {items.length === 0 ? (
         <p>
           Your sort is empty.{" "}
-          <Link href="/" style={{ color: "#1e3a8a" }}>
+          <Link href="/" style={{ color: "var(--sio-ink)" }}>
             Go find something nearby
           </Link>
           .
@@ -40,7 +40,7 @@ export default function CartPage() {
               <div
                 key={`${item.productId}-${item.size}`}
                 className="sio-card"
-                style={{ display: "flex", flexWrap: "wrap", gap: 16, background: "#fff", padding: 16, borderRadius: 14, alignItems: "center", border: "1px solid #f1f5f9" }}
+                style={{ display: "flex", flexWrap: "wrap", gap: 16, background: "#fff", padding: 16, borderRadius: 14, alignItems: "center", border: "1px solid var(--sio-cream)" }}
               >
                 <img src={item.imageUrl} alt={item.title} style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10, flexShrink: 0 }} />
                 {/* minWidth: 0 lets this shrink/wrap normally within the flex
@@ -49,7 +49,7 @@ export default function CartPage() {
                     of using the space actually available. */}
                 <div style={{ flex: "1 1 160px", minWidth: 0 }}>
                   <div style={{ fontWeight: 600 }}>{item.title}</div>
-                  <div style={{ color: "#64748b", fontSize: 13 }}>
+                  <div style={{ color: "var(--sio-muted)", fontSize: 13 }}>
                     {item.storeName} · Size {item.size}
                   </div>
                   <div style={{ marginTop: 6, fontWeight: 700 }}>₹{item.price.toLocaleString("en-IN")}</div>
@@ -58,6 +58,7 @@ export default function CartPage() {
                   {allowsMultipleQuantity(item.subCategory) ? (
                     <input
                       type="number"
+                      aria-label={`Quantity for ${item.title}, size ${item.size}`}
                       min={1}
                       max={MAX_MULTIPLE_QUANTITY}
                       value={item.quantity}
@@ -65,17 +66,17 @@ export default function CartPage() {
                         updateQuantity(item.productId, item.size, Math.min(MAX_MULTIPLE_QUANTITY, Number(e.target.value)));
                         refresh();
                       }}
-                      style={{ width: 56, padding: 6, borderRadius: 6, border: "1px solid #cbd5e1" }}
+                      style={{ width: 56, padding: 6, borderRadius: 6, border: "1px solid var(--sio-line)" }}
                     />
                   ) : (
-                    <span style={{ fontSize: 13, color: "#64748b" }}>Qty 1</span>
+                    <span style={{ fontSize: 13, color: "var(--sio-muted)" }}>Qty 1</span>
                   )}
                   <button
                     onClick={() => {
                       removeFromCart(item.productId, item.size);
                       refresh();
                     }}
-                    style={{ border: "none", background: "none", color: "#e11d48", cursor: "pointer", whiteSpace: "nowrap" }}
+                    style={{ border: "none", background: "none", color: "var(--sio-error)", cursor: "pointer", whiteSpace: "nowrap" }}
                   >
                     Remove
                   </button>
@@ -85,7 +86,7 @@ export default function CartPage() {
           </div>
 
           {new Set(items.map((i) => i.storeSlug)).size > 1 && (
-            <p style={{ fontSize: 12, color: "#b45309", marginTop: 16 }}>
+            <p style={{ fontSize: 12, color: "var(--sio-pending)", marginTop: 16 }}>
               These items are from {new Set(items.map((i) => i.storeSlug)).size} different stores — reserving will create a separate reservation at
               each store, since you'll need to visit each in person.
             </p>

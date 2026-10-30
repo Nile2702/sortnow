@@ -102,13 +102,13 @@ export function Footer() {
   const columns = isSeller ? SELLER_COLUMNS : COLUMNS;
 
   return (
-    <footer className="sio-print-hide" style={{ background: "var(--sio-ink)", color: "#cbd5e1", marginTop: isSeller ? 0 : 48 }}>
+    <footer className="sio-print-hide" style={{ background: "var(--sio-ink)", color: "var(--sio-line)", marginTop: isSeller ? 0 : 48 }}>
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "48px 16px 28px", display: "flex", flexWrap: "wrap", gap: 40 }}>
         <div style={{ flex: "1 1 220px" }}>
           <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
             <FullLogo height={46} chip />
           </div>
-          <p style={{ fontSize: 13, lineHeight: 1.7, color: "#94a3b8", maxWidth: 260 }}>
+          <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--sio-muted)", maxWidth: 260 }}>
             {isSeller
               ? "Seller Portal — list your catalog, take reservations and bring nearby shoppers into your store."
               : "Find apparel near you, sort it online and walk into the store."}
@@ -122,7 +122,7 @@ export function Footer() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {col.links.map((l) => (
-                <Link key={l.href} href={l.href} style={{ fontSize: 13, color: "#94a3b8", textDecoration: "none" }}>
+                <Link key={l.href} href={l.href} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
                   {/* data-nosnippet: visible and clickable as normal, just
                       excluded from what Google pulls into a search result
                       snippet - keeps the support phone number genuinely
@@ -144,7 +144,7 @@ export function Footer() {
           padding: "18px",
           textAlign: "center",
           fontSize: 12,
-          color: "#64748b",
+          color: "var(--sio-muted)",
         }}
       >
         © {new Date().getFullYear()} SORT NOW — find apparel near you, sort it online and walk into the store.

@@ -34,6 +34,8 @@ export function ToastHost() {
 
   return (
     <div
+      role="status"
+      aria-live="polite"
       style={{
         position: "fixed",
         bottom: 20,

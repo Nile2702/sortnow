@@ -90,8 +90,8 @@ function SearchPageInner() {
 
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "20px 16px 48px" }}>
-      <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 10 }}>
-        <Link href="/" style={{ color: "#94a3b8" }}>
+      <div style={{ fontSize: 13, color: "var(--sio-muted)", marginBottom: 10 }}>
+        <Link href="/" style={{ color: "var(--sio-muted)" }}>
           Home
         </Link>{" "}
         / Search results
@@ -109,7 +109,7 @@ function SearchPageInner() {
         style={{
           display: "flex",
           gap: 4,
-          borderBottom: "1px solid #e2e8f0",
+          borderBottom: "1px solid var(--sio-line)",
           marginTop: 14,
           marginBottom: 24,
           flexWrap: "wrap",
@@ -126,9 +126,9 @@ function SearchPageInner() {
             style={{
               padding: "10px 16px",
               border: "none",
-              borderBottom: sort === tab.value ? "2px solid #0f172a" : "2px solid transparent",
+              borderBottom: sort === tab.value ? "2px solid var(--sio-ink)" : "2px solid transparent",
               background: "none",
-              color: sort === tab.value ? "#0f172a" : "#64748b",
+              color: sort === tab.value ? "var(--sio-ink)" : "var(--sio-muted)",
               fontWeight: sort === tab.value ? 700 : 500,
               fontSize: 13.5,
               cursor: "pointer",
@@ -142,12 +142,12 @@ function SearchPageInner() {
       <div className="sio-search-layout" style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 28, alignItems: "start" }}>
         <aside
           className="sio-card"
-          style={{ background: "#fff", borderRadius: 14, padding: 18, border: "1px solid #f1f5f9", position: "sticky", top: 88 }}
+          style={{ background: "#fff", borderRadius: 14, padding: 18, border: "1px solid var(--sio-cream)", position: "sticky", top: 88 }}
         >
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Filters</div>
 
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: "#94a3b8", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--sio-muted)", marginBottom: 8 }}>
               Category
             </div>
             {["all", "men", "women", "kids"].map((g) => (
@@ -165,7 +165,7 @@ function SearchPageInner() {
 
           {activeSubCategories.length > 0 && (
             <div className="sio-fade-in" style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: "#94a3b8", marginBottom: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--sio-muted)", marginBottom: 8 }}>
                 Type
               </div>
               {activeSubCategories.map((sc) => (
@@ -178,7 +178,7 @@ function SearchPageInner() {
           )}
 
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: "#94a3b8", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--sio-muted)", marginBottom: 8 }}>
               Price
             </div>
             <div style={{ display: "flex", gap: 6 }}>
@@ -188,7 +188,7 @@ function SearchPageInner() {
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
                 onBlur={() => updateUrl({ minPrice })}
-                style={{ width: "50%", padding: "7px 8px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}
+                style={{ width: "50%", padding: "7px 8px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
               />
               <input
                 type="number"
@@ -196,13 +196,13 @@ function SearchPageInner() {
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
                 onBlur={() => updateUrl({ maxPrice })}
-                style={{ width: "50%", padding: "7px 8px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}
+                style={{ width: "50%", padding: "7px 8px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
               />
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: "#94a3b8", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--sio-muted)", marginBottom: 8 }}>
               Size
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -213,9 +213,9 @@ function SearchPageInner() {
                   style={{
                     padding: "5px 10px",
                     borderRadius: 7,
-                    border: size === sz ? "1px solid #0f172a" : "1px solid #e2e8f0",
-                    background: size === sz ? "#0f172a" : "#fff",
-                    color: size === sz ? "#fff" : "#334155",
+                    border: size === sz ? "1px solid var(--sio-ink)" : "1px solid var(--sio-line)",
+                    background: size === sz ? "var(--sio-ink)" : "#fff",
+                    color: size === sz ? "#fff" : "var(--sio-ink-soft)",
                     fontSize: 12,
                     cursor: "pointer",
                   }}
@@ -235,9 +235,9 @@ function SearchPageInner() {
               ))}
             </div>
           ) : products.length === 0 ? (
-            <p style={{ color: "#64748b" }}>
+            <p style={{ color: "var(--sio-muted)" }}>
               No products found for &ldquo;{q}&rdquo;. Try a different search or{" "}
-              <Link href="/shops" style={{ color: "#1e3a8a" }}>
+              <Link href="/shops" style={{ color: "var(--sio-ink)" }}>
                 browse all shops
               </Link>{" "}
               instead.
@@ -260,7 +260,7 @@ const filterRowStyle: React.CSSProperties = {
   alignItems: "center",
   gap: 8,
   fontSize: 13.5,
-  color: "#334155",
+  color: "var(--sio-ink-soft)",
   padding: "5px 0",
   cursor: "pointer",
 };

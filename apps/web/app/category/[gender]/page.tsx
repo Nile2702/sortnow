@@ -166,8 +166,8 @@ function CategoryPageInner() {
 
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "24px 16px 48px" }}>
-      <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>
-        <Link href="/" style={{ color: "#94a3b8" }}>
+      <div style={{ fontSize: 13, color: "var(--sio-muted)", marginBottom: 8 }}>
+        <Link href="/" style={{ color: "var(--sio-muted)" }}>
           Home
         </Link>{" "}
         / {genderLabel}
@@ -187,7 +187,7 @@ function CategoryPageInner() {
           background: "#fff",
           padding: 16,
           borderRadius: 16,
-          border: "1px solid #f1f5f9",
+          border: "1px solid var(--sio-cream)",
           marginBottom: 24,
           position: "sticky",
           top: 88,
@@ -206,7 +206,7 @@ function CategoryPageInner() {
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
           {!loading && <ExploreOnMapButton products={products} />}
-          <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}>
+          <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}>
             <option value="newest">Newest first</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
@@ -240,7 +240,7 @@ function CategoryPageInner() {
         <div className="sio-listing-main">
           <div className="sio-listing-main-topbar" style={{ justifyContent: "flex-end", gap: 10, alignItems: "center", marginBottom: 16 }}>
             {!loading && <ExploreOnMapButton products={products} />}
-            <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}>
+            <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}>
               <option value="newest">Newest first</option>
               <option value="price_asc">Price: Low to High</option>
               <option value="price_desc">Price: High to Low</option>
@@ -254,9 +254,9 @@ function CategoryPageInner() {
               ))}
             </div>
           ) : products.length === 0 ? (
-            <p style={{ color: "#64748b" }}>
+            <p style={{ color: "var(--sio-muted)" }}>
               No products match these filters yet.{" "}
-              <Link href="/shops" style={{ color: "#1e3a8a" }}>
+              <Link href="/shops" style={{ color: "var(--sio-ink)" }}>
                 Browse all shops
               </Link>{" "}
               instead.
@@ -286,9 +286,9 @@ function pillStyle(active: boolean): React.CSSProperties {
   return {
     padding: "8px 16px",
     borderRadius: 999,
-    border: active ? "1px solid #0f172a" : "1px solid #e2e8f0",
-    background: active ? "#0f172a" : "#fff",
-    color: active ? "#fff" : "#0f172a",
+    border: active ? "1px solid var(--sio-ink)" : "1px solid var(--sio-line)",
+    background: active ? "var(--sio-ink)" : "#fff",
+    color: active ? "#fff" : "var(--sio-ink)",
     cursor: "pointer",
     fontSize: 13,
     fontWeight: 500,

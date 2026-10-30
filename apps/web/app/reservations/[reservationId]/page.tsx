@@ -50,10 +50,10 @@ interface StoreVisitInfo {
 const URGENT_THRESHOLD_MS = 15 * 60 * 1000;
 
 const STATUS_COPY: Record<string, { title: string; icon: string; iconBg: string; iconFg: string }> = {
-  pending: { title: "Reservation confirmed", icon: "⏱", iconBg: "#fef9c3", iconFg: "#854d0e" },
-  fulfilled: { title: "Picked up", icon: "✓", iconBg: "#dcfce7", iconFg: "#16a34a" },
-  cancelled: { title: "Reservation cancelled", icon: "✕", iconBg: "#f1f5f9", iconFg: "#64748b" },
-  expired: { title: "Reservation expired", icon: "⏳", iconBg: "#fee2e2", iconFg: "#991b1b" },
+  pending: { title: "Reservation confirmed", icon: "⏱", iconBg: "var(--sio-pending-bg)", iconFg: "var(--sio-pending)" },
+  fulfilled: { title: "Picked up", icon: "✓", iconBg: "var(--sio-success-bg)", iconFg: "var(--sio-success)" },
+  cancelled: { title: "Reservation cancelled", icon: "✕", iconBg: "var(--sio-cream)", iconFg: "var(--sio-muted)" },
+  expired: { title: "Reservation expired", icon: "⏳", iconBg: "var(--sio-error-bg)", iconFg: "var(--sio-error)" },
 };
 
 function formatCountdown(ms: number) {
@@ -111,7 +111,7 @@ export default function ReservationDetailPage() {
   // uses, same pattern.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    QRCode.toDataURL(window.location.href, { width: 220, margin: 1, color: { dark: "#0f172a", light: "#ffffff" } })
+    QRCode.toDataURL(window.location.href, { width: 220, margin: 1, color: { dark: "var(--sio-ink)", light: "#ffffff" } })
       .then(setQrDataUrl)
       .catch(() => {});
   }, [reservationId]);
@@ -147,7 +147,7 @@ export default function ReservationDetailPage() {
     return (
       <main style={{ maxWidth: 600, margin: "60px auto", padding: 16, textAlign: "center" }}>
         <p>Reservation not found. Double-check the link, or it may have expired or been cancelled.</p>
-        <Link href="/reservations" style={{ color: "#1e3a8a" }}>
+        <Link href="/reservations" style={{ color: "var(--sio-ink)" }}>
           View my reservations
         </Link>
       </main>
@@ -184,7 +184,7 @@ export default function ReservationDetailPage() {
           {copy.icon}
         </div>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>{copy.title}</h1>
-        <p style={{ color: "#64748b", fontSize: 14 }}>
+        <p style={{ color: "var(--sio-muted)", fontSize: 14 }}>
           Reservation <strong>{reservation.id}</strong> at <strong>{reservation.storeName}</strong>
         </p>
       </div>
@@ -194,8 +194,8 @@ export default function ReservationDetailPage() {
           <div
             className="sio-breathe"
             style={{
-              background: isUrgent ? "#fee2e2" : "#fef9c3",
-              color: isUrgent ? "#991b1b" : "#854d0e",
+              background: isUrgent ? "var(--sio-error-bg)" : "var(--sio-pending-bg)",
+              color: isUrgent ? "var(--sio-error)" : "var(--sio-pending)",
               borderRadius: 14,
               padding: 16,
               textAlign: "center",
@@ -211,35 +211,35 @@ export default function ReservationDetailPage() {
             style={{
               background: "#fff",
               borderRadius: 14,
-              border: "1px solid #f1f5f9",
+              border: "1px solid var(--sio-cream)",
               padding: 20,
               marginBottom: 16,
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", color: "#64748b", marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", color: "var(--sio-muted)", marginBottom: 12 }}>
               SHOW THIS AT THE STORE
             </div>
             {qrDataUrl && (
               <img src={qrDataUrl} alt="Reservation QR pass" width={180} height={180} style={{ margin: "0 auto", display: "block" }} />
             )}
-            <div style={{ fontSize: 13, color: "#64748b", marginTop: 10 }}>{reservation.id}</div>
+            <div style={{ fontSize: 13, color: "var(--sio-muted)", marginTop: 10 }}>{reservation.id}</div>
           </div>
 
           <div
             style={{
               background: "#fff",
               borderRadius: 14,
-              border: "1px solid #f1f5f9",
+              border: "1px solid var(--sio-cream)",
               padding: 16,
               marginBottom: 16,
               textAlign: "center",
             }}
           >
-            {cancelError && <p style={{ color: "#991b1b", fontSize: 13, marginTop: 0, marginBottom: 10 }}>{cancelError}</p>}
+            {cancelError && <p style={{ color: "var(--sio-error)", fontSize: 13, marginTop: 0, marginBottom: 10 }}>{cancelError}</p>}
             {confirmingCancel ? (
               <div style={{ display: "flex", gap: 10, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
-                <span style={{ fontSize: 13.5, color: "#334155", fontWeight: 600 }}>Cancel this reservation? This can't be undone.</span>
+                <span style={{ fontSize: 13.5, color: "var(--sio-ink-soft)", fontWeight: 600 }}>Cancel this reservation? This can't be undone.</span>
                 <button
                   onClick={handleCancel}
                   disabled={cancelling}
@@ -247,7 +247,7 @@ export default function ReservationDetailPage() {
                     padding: "9px 18px",
                     borderRadius: 999,
                     border: "none",
-                    background: "#991b1b",
+                    background: "var(--sio-error)",
                     color: "#fff",
                     fontSize: 13,
                     fontWeight: 700,
@@ -263,9 +263,9 @@ export default function ReservationDetailPage() {
                   style={{
                     padding: "9px 18px",
                     borderRadius: 999,
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid var(--sio-line)",
                     background: "#fff",
-                    color: "#0f172a",
+                    color: "var(--sio-ink)",
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: "pointer",
@@ -280,9 +280,9 @@ export default function ReservationDetailPage() {
                 style={{
                   padding: "9px 20px",
                   borderRadius: 999,
-                  border: "1px solid #fecaca",
+                  border: "1px solid var(--sio-error-border)",
                   background: "#fff",
-                  color: "#991b1b",
+                  color: "var(--sio-error)",
                   fontSize: 13.5,
                   fontWeight: 700,
                   cursor: "pointer",
@@ -295,13 +295,13 @@ export default function ReservationDetailPage() {
         </>
       )}
 
-      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16 }}>
         {reservation.items.map((item) => (
-          <div key={`${item.productId}-${item.size}`} style={{ display: "flex", gap: 14, padding: "12px 0", borderBottom: "1px solid #f8fafc" }}>
+          <div key={`${item.productId}-${item.size}`} style={{ display: "flex", gap: 14, padding: "12px 0", borderBottom: "1px solid var(--sio-cream)" }}>
             <img src={item.imageUrl} alt={item.title} style={{ width: 60, height: 76, objectFit: "cover", borderRadius: 8 }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: 14 }}>{item.title}</div>
-              <div style={{ fontSize: 12, color: "#64748b" }}>
+              <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>
                 Size {item.size} · Qty {item.quantity}
               </div>
             </div>
@@ -315,9 +315,9 @@ export default function ReservationDetailPage() {
       </div>
 
       {store && (
-        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16, marginTop: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#64748b" }}>VISIT THE STORE</div>
-          <div style={{ fontSize: 14, color: "#475569", marginBottom: store.phone || directionsUrl ? 12 : 0 }}>{storeAddress}</div>
+        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16, marginTop: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "var(--sio-muted)" }}>VISIT THE STORE</div>
+          <div style={{ fontSize: 14, color: "var(--sio-muted)", marginBottom: store.phone || directionsUrl ? 12 : 0 }}>{storeAddress}</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {store.phone && (
               <a
@@ -328,8 +328,8 @@ export default function ReservationDetailPage() {
                   gap: 6,
                   padding: "8px 14px",
                   borderRadius: 999,
-                  border: "1px solid #e2e8f0",
-                  color: "#0f172a",
+                  border: "1px solid var(--sio-line)",
+                  color: "var(--sio-ink)",
                   textDecoration: "none",
                   fontSize: 13,
                   fontWeight: 600,
@@ -349,8 +349,8 @@ export default function ReservationDetailPage() {
                   gap: 6,
                   padding: "8px 14px",
                   borderRadius: 999,
-                  border: "1px solid #e2e8f0",
-                  color: "#0f172a",
+                  border: "1px solid var(--sio-line)",
+                  color: "var(--sio-ink)",
                   textDecoration: "none",
                   fontSize: 13,
                   fontWeight: 600,
@@ -363,25 +363,25 @@ export default function ReservationDetailPage() {
         </div>
       )}
 
-      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16, marginTop: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#64748b" }}>RESERVED UNDER</div>
+      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16, marginTop: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "var(--sio-muted)" }}>RESERVED UNDER</div>
         <div style={{ fontSize: 14, fontWeight: 600 }}>{reservation.shopperName}</div>
-        <div style={{ fontSize: 13, color: "#475569" }}>Phone: {reservation.shopperPhone}</div>
+        <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>Phone: {reservation.shopperPhone}</div>
       </div>
 
       <div style={{ display: "flex", gap: 12, marginTop: 24, justifyContent: "center", flexWrap: "wrap" }}>
         <Link
           href={`/store/${reservation.storeSlug}`}
-          style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid #e2e8f0", color: "#0f172a", textDecoration: "none", fontSize: 14 }}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid var(--sio-line)", color: "var(--sio-ink)", textDecoration: "none", fontSize: 14 }}
         >
           View store
         </Link>
-        <Link href="/reservations" style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid #e2e8f0", color: "#0f172a", textDecoration: "none", fontSize: 14 }}>
+        <Link href="/reservations" style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid var(--sio-line)", color: "var(--sio-ink)", textDecoration: "none", fontSize: 14 }}>
           My reservations
         </Link>
         <Link
           href="/"
-          style={{ padding: "10px 20px", borderRadius: 999, background: "#0f172a", color: "#fff", textDecoration: "none", fontSize: 14, fontWeight: 600 }}
+          style={{ padding: "10px 20px", borderRadius: 999, background: "var(--sio-ink)", color: "#fff", textDecoration: "none", fontSize: 14, fontWeight: 600 }}
         >
           Continue browsing
         </Link>

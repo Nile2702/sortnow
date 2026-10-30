@@ -156,13 +156,13 @@ export function ProductCard({
               width: 28,
               height: 28,
               borderRadius: "50%",
-              border: "1px solid #eee",
+              border: "1px solid var(--sio-line)",
               background: "#fff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               cursor: "pointer",
-              color: wishlisted ? "var(--sio-wishlist-active)" : "#bbb",
+              color: wishlisted ? "var(--sio-wishlist-active)" : "var(--sio-muted)",
             }}
           >
             <svg width={14} height={14} viewBox="0 0 24 24" fill={wishlisted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
@@ -219,11 +219,11 @@ export function ProductCard({
               a given product happened to need. */}
           <div style={{ marginTop: "auto", paddingTop: 4 }}>
             {product.distanceKm != null && (
-              <div style={{ fontSize: 10.5, fontWeight: 600, color: "#1e3a8a" }}>
+              <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--sio-ink)" }}>
                 📍 {product.distanceKm} km away • Try on in {walkingMinutes(product.distanceKm)} mins
               </div>
             )}
-            {lowStock && <div style={{ fontSize: 10.5, color: "#dc2626", fontWeight: 600, marginTop: 3 }}>Only {product.stockRemaining} left</div>}
+            {lowStock && <div style={{ fontSize: 10.5, color: "var(--sio-error)", fontWeight: 600, marginTop: 3 }}>Only {product.stockRemaining} left</div>}
           </div>
         </div>
       </Link>

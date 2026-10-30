@@ -35,8 +35,8 @@ export async function CategoryNav({ storeId, activeCategoryId }: { storeId: stri
             style={{
               whiteSpace: "nowrap",
               textDecoration: "none",
-              color: active ? "#fff" : "#334155",
-              background: active ? "var(--store-accent, #1f2937)" : "#f1f5f9",
+              color: active ? "#fff" : "var(--sio-ink-soft)",
+              background: active ? "var(--store-accent, var(--sio-ink))" : "var(--sio-cream)",
               padding: "8px 16px",
               borderRadius: 999,
               fontSize: 13,
