@@ -52,7 +52,7 @@ const GENDER_SUBCATEGORIES: Record<string, string[]> = Object.fromEntries(CATEGO
 const SWATCHES = ["#7c2d12", "#1e3a8a", "#9f1239", "#166534", "#7a1f3d", "#0f172a", "#b45309", "#4c1d95"];
 
 function inputStyle(): React.CSSProperties {
-  return { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14 };
+  return { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 };
 }
 
 function labelStyle(): React.CSSProperties {
@@ -762,7 +762,7 @@ export function ProductForm({
             style={inputStyle()}
             placeholder="Optional"
           />
-          <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+          <p style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 4 }}>
             Set higher than Selling Price to show a discount to shoppers.
           </p>
         </div>
@@ -776,7 +776,7 @@ export function ProductForm({
             style={inputStyle()}
             placeholder="Optional"
           />
-          <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+          <p style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 4 }}>
             {form.costPrice != null && form.costPrice > 0
               ? `Profit: ₹${(Number(form.basePrice) - form.costPrice).toFixed(2)} (${
                   form.basePrice > 0 ? Math.round(((Number(form.basePrice) - form.costPrice) / Number(form.basePrice)) * 100) : 0
@@ -848,7 +848,7 @@ export function ProductForm({
           style={inputStyle()}
           placeholder="e.g. UV-042"
         />
-        <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+        <p style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 4 }}>
           Shown to shoppers online so they can quote it when they reach your shop — useful for fast lookup at the counter.
         </p>
       </div>
@@ -889,7 +889,7 @@ export function ProductForm({
 
       <div>
         <label style={labelStyle()}>
-          Colors {mode === "create" && <span style={{ fontWeight: 400, color: "#94a3b8" }}>(pick more than one to list every color at once)</span>}
+          Colors {mode === "create" && <span style={{ fontWeight: 400, color: "var(--sio-muted)" }}>(pick more than one to list every color at once)</span>}
         </label>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {COLOR_CATALOG.map((c) => {
@@ -906,8 +906,8 @@ export function ProductForm({
                   gap: 6,
                   padding: "5px 10px 5px 5px",
                   borderRadius: 999,
-                  border: active ? "2px solid #0f172a" : "1px solid #e2e8f0",
-                  background: active ? "#f1f5f9" : "#fff",
+                  border: active ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
+                  background: active ? "var(--sio-cream)" : "#fff",
                   cursor: "pointer",
                   fontSize: 12,
                 }}
@@ -929,21 +929,21 @@ export function ProductForm({
         </div>
         {selectedColors.length > 1 && mode === "create" && (
           <>
-            <p style={{ fontSize: 12, color: "#7c3aed", marginTop: 8 }}>
+            <p style={{ fontSize: 12, color: "var(--sio-ai-accent)", marginTop: 8 }}>
               Publishing will create {selectedColors.length} separate products — one per color, sharing this title and price. Upload a
               photo of that colorway below, or leave blank to reuse the main photo above.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
               {selectedColors.map((color) => (
-                <div key={color} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                <div key={color} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, background: "var(--sio-cream)", border: "1px solid var(--sio-line)" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, minWidth: 90 }}>{color}</span>
                   {colorImages[color] ? (
                     <>
-                      <img src={colorImages[color]} alt={color} style={{ width: 36, height: 44, objectFit: "cover", borderRadius: 6, border: "1px solid #e2e8f0" }} />
+                      <img src={colorImages[color]} alt={color} style={{ width: 36, height: 44, objectFit: "cover", borderRadius: 6, border: "1px solid var(--sio-line)" }} />
                       <button
                         type="button"
                         onClick={() => removeColorImage(color)}
-                        style={{ fontSize: 12, color: "#e11d48", background: "none", border: "none", cursor: "pointer" }}
+                        style={{ fontSize: 12, color: "var(--sio-error)", background: "none", border: "none", cursor: "pointer" }}
                       >
                         Remove photo
                       </button>
@@ -957,10 +957,10 @@ export function ProductForm({
                         className="sio-file-input"
                         style={{ fontSize: 12, flex: 1, minWidth: 0 }}
                       />
-                      <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>Optional — reuses main photo if blank</span>
+                      <span style={{ fontSize: 11, color: "var(--sio-muted)", whiteSpace: "nowrap" }}>Optional — reuses main photo if blank</span>
                     </>
                   )}
-                  {colorImageErrors[color] && <span style={{ fontSize: 11, color: "#e11d48" }}>{colorImageErrors[color]}</span>}
+                  {colorImageErrors[color] && <span style={{ fontSize: 11, color: "var(--sio-error)" }}>{colorImageErrors[color]}</span>}
                 </div>
               ))}
             </div>
@@ -971,7 +971,7 @@ export function ProductForm({
       <div>
         <label style={labelStyle()}>Sizes</label>
         {sizeOptions.length === 0 ? (
-          <p style={{ fontSize: 13, color: "#94a3b8" }}>This category doesn't use sizes.</p>
+          <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>This category doesn't use sizes.</p>
         ) : (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {sizeOptions.map((sz) => (
@@ -982,7 +982,7 @@ export function ProductForm({
                 style={{
                   padding: "6px 12px",
                   borderRadius: 999,
-                  border: form.sizes.includes(sz) ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                  border: form.sizes.includes(sz) ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
                   background: "#fff",
                   cursor: "pointer",
                   fontSize: 13,
@@ -1001,7 +1001,7 @@ export function ProductForm({
           {uploadedImage && (
             <div>
               <div style={{ position: "relative" }}>
-                <img src={uploadedImage} alt="Preview" style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10, border: "1px solid #e2e8f0" }} />
+                <img src={uploadedImage} alt="Preview" style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 10, border: "1px solid var(--sio-line)" }} />
                 {(photoStage !== "raw" || enhanced) && (
                   <span
                     style={{
@@ -1009,7 +1009,7 @@ export function ProductForm({
                       bottom: -6,
                       left: "50%",
                       transform: "translateX(-50%)",
-                      background: photoStage === "mannequin" || photoStage === "restored" ? "#7c3aed" : "#0f172a",
+                      background: photoStage === "mannequin" || photoStage === "restored" ? "var(--sio-ai-accent)" : "var(--sio-ink)",
                       color: "#fff",
                       fontSize: 9,
                       fontWeight: 700,
@@ -1050,7 +1050,7 @@ export function ProductForm({
                     height: 22,
                     borderRadius: "50%",
                     border: "none",
-                    background: "#0f172a",
+                    background: "var(--sio-ink)",
                     color: "#fff",
                     cursor: "pointer",
                     fontSize: 12,
@@ -1070,7 +1070,7 @@ export function ProductForm({
                   padding: "7px 12px",
                   borderRadius: 999,
                   border: "none",
-                  background: enhancing ? "#94a3b8" : "#0f172a",
+                  background: enhancing ? "var(--sio-muted)" : "var(--sio-ink)",
                   color: "#fff",
                   fontSize: 12,
                   fontWeight: 600,
@@ -1091,7 +1091,7 @@ export function ProductForm({
                   padding: "7px 12px",
                   borderRadius: 999,
                   border: "none",
-                  background: bgRemoving ? "#94a3b8" : "#0f172a",
+                  background: bgRemoving ? "var(--sio-muted)" : "var(--sio-ink)",
                   color: "#fff",
                   fontSize: 12,
                   fontWeight: 600,
@@ -1105,7 +1105,7 @@ export function ProductForm({
 
               {cutoutImage && (
                 <div style={{ marginTop: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Background</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--sio-muted)", marginBottom: 6 }}>Background</div>
                   <button
                     type="button"
                     onClick={handleAutoBackground}
@@ -1114,9 +1114,9 @@ export function ProductForm({
                       width: "100%",
                       padding: "6px 10px",
                       borderRadius: 8,
-                      border: "1px solid #c4b5fd",
-                      background: "#faf5ff",
-                      color: "#7c3aed",
+                      border: "1px solid var(--sio-ai-accent-border)",
+                      background: "var(--sio-ai-accent-bg)",
+                      color: "var(--sio-ai-accent)",
                       fontSize: 11,
                       fontWeight: 600,
                       cursor: backgroundBusy ? "default" : "pointer",
@@ -1139,7 +1139,7 @@ export function ProductForm({
                           height: 26,
                           borderRadius: "50%",
                           background: preset.swatch,
-                          border: selectedBackground === preset.key ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                          border: selectedBackground === preset.key ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
                           cursor: backgroundBusy ? "default" : "pointer",
                           flexShrink: 0,
                         }}
@@ -1158,7 +1158,7 @@ export function ProductForm({
                   padding: "7px 12px",
                   borderRadius: 999,
                   border: "none",
-                  background: mannequinApplying || hasGeminiKey === false ? "#94a3b8" : "#7c3aed",
+                  background: mannequinApplying || hasGeminiKey === false ? "var(--sio-muted)" : "var(--sio-ai-accent)",
                   color: "#fff",
                   fontSize: 12,
                   fontWeight: 600,
@@ -1170,7 +1170,7 @@ export function ProductForm({
                 {mannequinApplying ? "Applying…" : hasGeminiKey === false ? "✨ Add Mannequin — needs a Gemini key" : "✨ Add Mannequin"}
               </button>
               {hasGeminiKey === false && (
-                <a href="/seller/gemini-key" style={{ display: "block", marginTop: 6, textAlign: "center", fontSize: 11, color: "#7c3aed" }}>
+                <a href="/seller/gemini-key" style={{ display: "block", marginTop: 6, textAlign: "center", fontSize: 11, color: "var(--sio-ai-accent)" }}>
                   Add your free Gemini API key →
                 </a>
               )}
@@ -1179,7 +1179,7 @@ export function ProductForm({
                 <button
                   type="button"
                   onClick={handleRevertToOriginal}
-                  style={{ marginTop: 6, background: "none", border: "none", color: "#64748b", fontSize: 11, cursor: "pointer", width: "100%", textDecoration: "underline" }}
+                  style={{ marginTop: 6, background: "none", border: "none", color: "var(--sio-muted)", fontSize: 11, cursor: "pointer", width: "100%", textDecoration: "underline" }}
                 >
                   Revert to original
                 </button>
@@ -1194,14 +1194,14 @@ export function ProductForm({
               className="sio-file-input"
               style={{ fontSize: 13, width: "100%", maxWidth: "100%" }}
             />
-            {uploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{uploadError}</p>}
-            {bgRemoveError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{bgRemoveError}</p>}
-            {enhanceError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{enhanceError}</p>}
-            {mannequinError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{mannequinError}</p>}
+            {uploadError && <p style={{ fontSize: 12, color: "var(--sio-error)", marginTop: 6 }}>{uploadError}</p>}
+            {bgRemoveError && <p style={{ fontSize: 12, color: "var(--sio-error)", marginTop: 6 }}>{bgRemoveError}</p>}
+            {enhanceError && <p style={{ fontSize: 12, color: "var(--sio-error)", marginTop: 6 }}>{enhanceError}</p>}
+            {mannequinError && <p style={{ fontSize: 12, color: "var(--sio-error)", marginTop: 6 }}>{mannequinError}</p>}
 
             {uploadedImage && !uploadError && (
-              <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "#faf5ff", border: "1px solid #e9d5ff" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#0f172a" }}>✨ Auto-fill from photo</div>
+              <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "var(--sio-ai-accent-bg)", border: "1px solid var(--sio-ai-accent-border)" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "var(--sio-ink)" }}>✨ Auto-fill from photo</div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <input
                     value={autofillHint}
@@ -1217,7 +1217,7 @@ export function ProductForm({
                       padding: "0 16px",
                       borderRadius: 10,
                       border: "none",
-                      background: autofilled ? "#16a34a" : autofilling ? "#94a3b8" : "#7c3aed",
+                      background: autofilled ? "var(--sio-success)" : autofilling ? "var(--sio-muted)" : "var(--sio-ai-accent)",
                       color: "#fff",
                       fontSize: 13,
                       fontWeight: 600,
@@ -1228,13 +1228,13 @@ export function ProductForm({
                     {autofilled ? "✓ Auto-filled" : autofilling ? "Thinking…" : "Auto-fill"}
                   </button>
                 </div>
-                {autofillError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 8 }}>{autofillError}</p>}
+                {autofillError && <p style={{ fontSize: 12, color: "var(--sio-error)", marginTop: 8 }}>{autofillError}</p>}
                 {autofilled && !autofillError && (
-                  <p style={{ fontSize: 12, color: "#16a34a", marginTop: 8 }}>
+                  <p style={{ fontSize: 12, color: "var(--sio-success)", marginTop: 8 }}>
                     ✓ Title, category, and description filled in below — review and edit as needed. Choose a different photo to auto-fill again.
                   </p>
                 )}
-                <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 8, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 8, lineHeight: 1.5 }}>
                   Gemini looks at the photo (and your hint, if given) to suggest a title, category, and description. Price, stock, and sizes are
                   yours to set. Works once per photo.
                 </p>
@@ -1255,7 +1255,7 @@ export function ProductForm({
                   {hasGeminiKey === false && (
                     <>
                       {" "}
-                      (<a href="/seller/gemini-key" style={{ color: "#7c3aed" }}>add one</a> to use this)
+                      (<a href="/seller/gemini-key" style={{ color: "var(--sio-ai-accent)" }}>add one</a> to use this)
                     </>
                   )}
                   .
@@ -1265,7 +1265,7 @@ export function ProductForm({
 
           </div>
         </div>
-        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>
+        <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 10 }}>
           Photos are uploaded to Cloudinary when you publish or save, after any background removal, enhancement, or AI mannequin step
           above has run.
         </p>
@@ -1274,14 +1274,14 @@ export function ProductForm({
       {uploadedImage && (
         <div>
           <label style={labelStyle()}>Additional photos (optional)</label>
-          <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 10 }}>
+          <p style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 10 }}>
             Extra angles or close-ups shoppers can browse alongside your main photo. These don't go through background removal, AI
             mannequin, or auto-fill — only your main photo above does.
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
             {additionalImages.map((img, i) => (
               <div key={i} style={{ position: "relative" }}>
-                <img src={img} alt={`Additional ${i + 1}`} style={{ width: 64, height: 80, objectFit: "cover", borderRadius: 8, border: "1px solid #e2e8f0" }} />
+                <img src={img} alt={`Additional ${i + 1}`} style={{ width: 64, height: 80, objectFit: "cover", borderRadius: 8, border: "1px solid var(--sio-line)" }} />
                 <button
                   type="button"
                   onClick={() => removeAdditionalImage(i)}
@@ -1294,7 +1294,7 @@ export function ProductForm({
                     height: 18,
                     borderRadius: "50%",
                     border: "none",
-                    background: "#0f172a",
+                    background: "var(--sio-ink)",
                     color: "#fff",
                     cursor: "pointer",
                     fontSize: 10,
@@ -1316,13 +1316,13 @@ export function ProductForm({
               style={{ fontSize: 13, width: "100%", maxWidth: "100%" }}
             />
           )}
-          {additionalUploadError && <p style={{ fontSize: 12, color: "#e11d48", marginTop: 6 }}>{additionalUploadError}</p>}
+          {additionalUploadError && <p style={{ fontSize: 12, color: "var(--sio-error)", marginTop: 6 }}>{additionalUploadError}</p>}
         </div>
       )}
 
       {saveError && (
         <div
-          style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: 10, padding: "10px 12px", fontSize: 13 }}
+          style={{ background: "var(--sio-error-bg)", border: "1px solid var(--sio-error-border)", color: "var(--sio-error)", borderRadius: 10, padding: "10px 12px", fontSize: 13 }}
         >
           {saveError}
         </div>
@@ -1335,7 +1335,7 @@ export function ProductForm({
           padding: "13px 24px",
           borderRadius: 999,
           border: "none",
-          background: saving ? "#94a3b8" : "#0f172a",
+          background: saving ? "var(--sio-muted)" : "var(--sio-ink)",
           color: "#fff",
           fontWeight: 600,
           fontSize: 15,

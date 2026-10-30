@@ -25,7 +25,7 @@ export default function QrMarketingPage() {
 
   useEffect(() => {
     if (!targetUrl) return;
-    QRCode.toDataURL(targetUrl, { width: 400, margin: 2, color: { dark: "#0f172a", light: "#ffffff" } }).then(setDataUrl);
+    QRCode.toDataURL(targetUrl, { width: 400, margin: 2, color: { dark: "var(--sio-ink)", light: "#ffffff" } }).then(setDataUrl);
   }, [targetUrl]);
 
   if (loading || !store) {
@@ -35,7 +35,7 @@ export default function QrMarketingPage() {
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>QR Marketing Hub</h1>
-      <p style={{ color: "#64748b", marginBottom: 28 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 28 }}>
         Generate a QR standee for {store.name} — scanning it takes shoppers straight to your live catalog with real-time stock, turning
         foot traffic in your store into online discovery.
       </p>
@@ -43,21 +43,21 @@ export default function QrMarketingPage() {
       <div className="sio-two-col-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }}>Links to</label>
-          <code style={{ display: "block", fontSize: 12, background: "#f1f5f9", padding: "10px 12px", borderRadius: 8, wordBreak: "break-all", marginBottom: 20 }}>
+          <code style={{ display: "block", fontSize: 12, background: "var(--sio-cream)", padding: "10px 12px", borderRadius: 8, wordBreak: "break-all", marginBottom: 20 }}>
             {targetUrl}
           </code>
 
-          <p style={{ fontSize: 13, color: "#64748b" }}>
+          <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>
             Print as many copies as you need — shop window, billing counter, trial room, wherever gets looked at. Every scan is tagged with{" "}
             <code>src=qr</code> so your Analytics &amp; Reports tab can tell QR-driven visits apart from online discovery.
           </p>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div className="sio-card" style={{ background: "#fff", borderRadius: 20, border: "1px solid #f1f5f9", padding: 28, textAlign: "center" }}>
+          <div className="sio-card" style={{ background: "#fff", borderRadius: 20, border: "1px solid var(--sio-cream)", padding: 28, textAlign: "center" }}>
             {dataUrl ? <img src={dataUrl} alt="Store QR code" style={{ width: 220, height: 220 }} /> : <div style={{ width: 220, height: 220 }} />}
             <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 700, marginTop: 16 }}>{store.name}</div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>Scan to shop our latest collection</div>
+            <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>Scan to shop our latest collection</div>
           </div>
 
           {dataUrl && (
@@ -68,7 +68,7 @@ export default function QrMarketingPage() {
                 marginTop: 16,
                 padding: "10px 22px",
                 borderRadius: 999,
-                background: "#0f172a",
+                background: "var(--sio-ink)",
                 color: "#fff",
                 textDecoration: "none",
                 fontSize: 14,

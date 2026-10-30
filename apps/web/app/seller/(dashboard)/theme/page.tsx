@@ -67,7 +67,7 @@ export default function ThemeStudioPage() {
         <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load Theme Studio.</p>
         <button
           onClick={() => store && load(store.id)}
-          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, cursor: "pointer" }}
         >
           Retry
         </button>
@@ -82,7 +82,7 @@ export default function ThemeStudioPage() {
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Theme Studio</h1>
-      <p style={{ color: "#64748b", marginBottom: 28 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 28 }}>
         No-code storefront customization for {store.name}. Fonts, spacing, and layout stay uniform across the platform — you control your
         brand color and hero message.
       </p>
@@ -93,7 +93,7 @@ export default function ThemeStudioPage() {
             <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Primary color</label>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} style={{ width: 44, height: 36, border: "none", borderRadius: 8, cursor: "pointer" }} />
-              <input value={primary} onChange={(e) => setPrimary(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, width: 120 }} />
+              <input value={primary} onChange={(e) => setPrimary(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13, width: 120 }} />
             </div>
           </div>
 
@@ -101,13 +101,13 @@ export default function ThemeStudioPage() {
             <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Accent color (CTA buttons, hover states)</label>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} style={{ width: 44, height: 36, border: "none", borderRadius: 8, cursor: "pointer" }} />
-              <input value={accent} onChange={(e) => setAccent(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, width: 120 }} />
+              <input value={accent} onChange={(e) => setAccent(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13, width: 120 }} />
             </div>
           </div>
 
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Hero title</label>
-            <input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14 }} />
+            <input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 }} />
           </div>
 
           <div>
@@ -116,7 +116,7 @@ export default function ThemeStudioPage() {
               value={heroSubtitle}
               onChange={(e) => setHeroSubtitle(e.target.value)}
               rows={2}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14, resize: "vertical" }}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14, resize: "vertical" }}
             />
           </div>
 
@@ -127,7 +127,7 @@ export default function ThemeStudioPage() {
               padding: "13px 24px",
               borderRadius: 999,
               border: "none",
-              background: saving ? "#94a3b8" : "#0f172a",
+              background: saving ? "var(--sio-muted)" : "var(--sio-ink)",
               color: "#fff",
               fontWeight: 600,
               fontSize: 15,
@@ -137,12 +137,12 @@ export default function ThemeStudioPage() {
           >
             {saving ? "Publishing…" : "Publish Changes"}
           </button>
-          {saved && <span style={{ color: "#16a34a", fontSize: 13 }}>✓ Published — your live storefront is updated.</span>}
-          {error && <span style={{ color: "#dc2626", fontSize: 13 }}>{error}</span>}
+          {saved && <span style={{ color: "var(--sio-success)", fontSize: 13 }}>✓ Published — your live storefront is updated.</span>}
+          {error && <span style={{ color: "var(--sio-error)", fontSize: 13 }}>{error}</span>}
         </div>
 
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: "#64748b" }}>LIVE PREVIEW</div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: "var(--sio-muted)" }}>LIVE PREVIEW</div>
           <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", height: 300 }}>
             <div style={{ position: "absolute", inset: 0, background: `linear-gradient(140deg, #14110f 0%, ${primary} 55%, #14110f 100%)` }} />
             <div

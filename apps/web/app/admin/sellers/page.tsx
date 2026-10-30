@@ -15,25 +15,25 @@ export default async function AdminSellersPage({ searchParams }: { searchParams:
   return (
     <main style={{ maxWidth: 920, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Seller review queue</h1>
-      <p style={{ color: "#64748b", marginBottom: 24, fontSize: 14 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 24, fontSize: 14 }}>
         {stores.length === 0 ? "No stores waiting on review." : `${stores.length} store${stores.length === 1 ? "" : "s"} waiting on review.`}
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {stores.map((s) => (
-          <div key={s.id} className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24 }}>
+          <div key={s.id} className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
               <div>
                 <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 2 }}>
-                  <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a", textDecoration: "none" }}>
+                  <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
                     {s.name}
                   </a>
                 </h2>
-                <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+                <p style={{ fontSize: 13, color: "var(--sio-muted)", margin: 0 }}>
                   {s.city} &middot; {s.localMarket} &middot; {s.pincode}
                 </p>
               </div>
-              <div style={{ fontSize: 12, color: "#94a3b8", textAlign: "right" }}>
+              <div style={{ fontSize: 12, color: "var(--sio-muted)", textAlign: "right" }}>
                 <div>Signed up: {s.createdAt ? new Date(s.createdAt).toLocaleString("en-IN") : "unknown"}</div>
                 <div>Submitted: {s.submittedForReviewAt ? new Date(s.submittedForReviewAt).toLocaleString("en-IN") : "unknown"}</div>
               </div>
@@ -50,7 +50,7 @@ export default async function AdminSellersPage({ searchParams }: { searchParams:
               <form action={`/api/v1/admin/sellers/${s.id}/approve?key=${encodeURIComponent(key)}&redirect=1`} method="post">
                 <button
                   type="submit"
-                  style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+                  style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
                 >
                   Approve &amp; activate
                 </button>
@@ -58,7 +58,7 @@ export default async function AdminSellersPage({ searchParams }: { searchParams:
               <form action={`/api/v1/admin/sellers/${s.id}/reject?key=${encodeURIComponent(key)}&redirect=1`} method="post">
                 <button
                   type="submit"
-                  style={{ padding: "10px 20px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+                  style={{ padding: "10px 20px", borderRadius: 10, border: "1px solid var(--sio-line)", background: "#fff", color: "var(--sio-muted)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
                 >
                   Reject (back to draft)
                 </button>
@@ -74,7 +74,7 @@ export default async function AdminSellersPage({ searchParams }: { searchParams:
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt style={{ color: "#94a3b8", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{label}</dt>
+      <dt style={{ color: "var(--sio-muted)", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{label}</dt>
       <dd style={{ margin: 0, fontWeight: 600 }}>{value}</dd>
     </div>
   );

@@ -33,7 +33,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Customers &amp; Footfall</h1>
-      <p style={{ color: "#64748b", marginBottom: 24, fontSize: 14 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 24, fontSize: 14 }}>
         Every shopper who's signed up, and how many of them actually walked into a store (a reservation picked up, not just booked). Click any number below for the full list.
       </p>
 
@@ -60,10 +60,10 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
         />
       </div>
 
-      <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 24 }}>
+      <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24, marginBottom: 24 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Store visits, last 14 days</h2>
         {stats.fulfilled === 0 ? (
-          <p style={{ fontSize: 13, color: "#94a3b8" }}>No reservations have been picked up yet.</p>
+          <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>No reservations have been picked up yet.</p>
         ) : (
           <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 120 }}>
             {stats.dailyFootfall.map((d) => (
@@ -73,11 +73,11 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
                   style={{
                     width: "100%",
                     height: Math.max(2, (d.count / maxDaily) * 90),
-                    background: d.count > 0 ? "#0f172a" : "#f1f5f9",
+                    background: d.count > 0 ? "var(--sio-ink)" : "var(--sio-cream)",
                     borderRadius: 3,
                   }}
                 />
-                <span style={{ fontSize: 9, color: "#94a3b8" }}>{d.date.slice(5)}</span>
+                <span style={{ fontSize: 9, color: "var(--sio-muted)" }}>{d.date.slice(5)}</span>
               </div>
             ))}
           </div>
@@ -85,22 +85,22 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
       </section>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
-        <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24 }}>
+        <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>
           <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top stores by footfall</h2>
           {stats.topStoresByFootfall.length === 0 ? (
-            <p style={{ fontSize: 13, color: "#94a3b8" }}>No store visits yet.</p>
+            <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>No store visits yet.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {stats.topStoresByFootfall.map((s) => (
                 <div key={s.storeId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <Link
                     href={`/admin/sellers/${s.storeId}?${keyQS}`}
-                    style={{ fontSize: 13, width: 140, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#0f172a", fontWeight: 600, textDecoration: "none" }}
+                    style={{ fontSize: 13, width: 140, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--sio-ink)", fontWeight: 600, textDecoration: "none" }}
                   >
                     {s.storeName}
                   </Link>
-                  <div style={{ flex: 1, background: "#f1f5f9", borderRadius: 999, height: 10, overflow: "hidden" }}>
-                    <div style={{ width: `${(s.count / maxStoreFootfall) * 100}%`, height: "100%", background: "#0f172a" }} />
+                  <div style={{ flex: 1, background: "var(--sio-cream)", borderRadius: 999, height: 10, overflow: "hidden" }}>
+                    <div style={{ width: `${(s.count / maxStoreFootfall) * 100}%`, height: "100%", background: "var(--sio-ink)" }} />
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 600, width: 24, textAlign: "right" }}>{s.count}</span>
                 </div>
@@ -109,22 +109,22 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
           )}
         </section>
 
-        <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24 }}>
+        <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>
           <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Customers by city</h2>
           {stats.topCities.length === 0 ? (
-            <p style={{ fontSize: 13, color: "#94a3b8" }}>No city on file for any customer yet.</p>
+            <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>No city on file for any customer yet.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {stats.topCities.map((c) => (
                 <div key={c.city} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <Link
                     href={`/admin/customers/list?${keyQS}&q=${encodeURIComponent(c.city)}`}
-                    style={{ fontSize: 13, width: 140, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#0f172a", textDecoration: "none" }}
+                    style={{ fontSize: 13, width: 140, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--sio-ink)", textDecoration: "none" }}
                   >
                     {c.city}
                   </Link>
-                  <div style={{ flex: 1, background: "#f1f5f9", borderRadius: 999, height: 10, overflow: "hidden" }}>
-                    <div style={{ width: `${(c.count / maxCity) * 100}%`, height: "100%", background: "#0f172a" }} />
+                  <div style={{ flex: 1, background: "var(--sio-cream)", borderRadius: 999, height: 10, overflow: "hidden" }}>
+                    <div style={{ width: `${(c.count / maxCity) * 100}%`, height: "100%", background: "var(--sio-ink)" }} />
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 600, width: 24, textAlign: "right" }}>{c.count}</span>
                 </div>
@@ -138,14 +138,14 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
         <Link
           href={`/admin/customers/list?${keyQS}`}
           className="sio-card"
-          style={{ flex: 1, textAlign: "center", padding: "16px", borderRadius: 14, border: "1px solid #f1f5f9", background: "#fff", color: "#0f172a", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
+          style={{ flex: 1, textAlign: "center", padding: "16px", borderRadius: 14, border: "1px solid var(--sio-cream)", background: "#fff", color: "var(--sio-ink)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
         >
           View all customers →
         </Link>
         <Link
           href={`/admin/customers/activity?${keyQS}`}
           className="sio-card"
-          style={{ flex: 1, textAlign: "center", padding: "16px", borderRadius: 14, border: "1px solid #f1f5f9", background: "#fff", color: "#0f172a", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
+          style={{ flex: 1, textAlign: "center", padding: "16px", borderRadius: 14, border: "1px solid var(--sio-cream)", background: "#fff", color: "var(--sio-ink)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
         >
           View all activity →
         </Link>
@@ -156,10 +156,10 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
 
 function StatTile({ value, label, sub, href }: { value: string | number; label: string; sub?: string; href: string }) {
   return (
-    <Link href={href} className="sio-card" style={{ display: "block", background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 18, textDecoration: "none" }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color: "#0f172a" }}>{value}</div>
-      <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{label}</div>
-      {sub && <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 2 }}>{sub}</div>}
+    <Link href={href} className="sio-card" style={{ display: "block", background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 18, textDecoration: "none" }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color: "var(--sio-ink)" }}>{value}</div>
+      <div style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 2 }}>{label}</div>
+      {sub && <div style={{ fontSize: 10.5, color: "var(--sio-muted)", marginTop: 2 }}>{sub}</div>}
     </Link>
   );
 }

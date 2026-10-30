@@ -150,7 +150,7 @@ function SellerProductsPageInner() {
         <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load your products.</p>
         <button
           onClick={() => load(store.id)}
-          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, cursor: "pointer" }}
         >
           Retry
         </button>
@@ -163,24 +163,24 @@ function SellerProductsPageInner() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 14 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 700 }}>Products</h1>
-          <p style={{ color: "#64748b", fontSize: 14 }}>{store.name} · {products.length} SKUs</p>
+          <p style={{ color: "var(--sio-muted)", fontSize: 14 }}>{store.name} · {products.length} SKUs</p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link
             href="/seller/products/bulk"
-            style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid #e2e8f0", color: "#0f172a", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
+            style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid var(--sio-line)", color: "var(--sio-ink)", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
           >
             Bulk Upload (CSV)
           </Link>
           <Link
             href="/seller/products/bulk-photos"
-            style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid #e9d5ff", background: "#faf5ff", color: "#7c3aed", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
+            style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid var(--sio-ai-accent-border)", background: "var(--sio-ai-accent-bg)", color: "var(--sio-ai-accent)", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
           >
             ✨ AI Bulk Upload
           </Link>
           <Link
             href="/seller/products/new"
-            style={{ padding: "10px 20px", borderRadius: 999, background: "#0f172a", color: "#fff", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
+            style={{ padding: "10px 20px", borderRadius: 999, background: "var(--sio-ink)", color: "#fff", textDecoration: "none", fontWeight: 600, fontSize: 14 }}
           >
             + Add Product
           </Link>
@@ -189,7 +189,7 @@ function SellerProductsPageInner() {
 
       {products.some((p) => p.status === "on_hold") && (
         <div
-          style={{ background: "#fef3c7", border: "1px solid #fde68a", color: "#92400e", borderRadius: 12, padding: "10px 16px", fontSize: 13, marginBottom: 16 }}
+          style={{ background: "var(--sio-pending-bg)", border: "1px solid var(--sio-pending-border)", color: "var(--sio-pending)", borderRadius: 12, padding: "10px 16px", fontSize: 13, marginBottom: 16 }}
         >
           One or more of your listings below are marked <strong>On hold</strong> - SORT NOW has temporarily hidden them from shoppers (search, your store page,
           and reservations). Everything else in your catalog is unaffected. Contact support if you think this was a mistake.
@@ -199,33 +199,33 @@ function SellerProductsPageInner() {
       {products.length > 0 && (
         <>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-            <div style={{ background: "#fff", border: "1px solid #f1f5f9", borderRadius: 12, padding: "10px 16px" }}>
-              <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Units in stock</div>
+            <div style={{ background: "#fff", border: "1px solid var(--sio-cream)", borderRadius: 12, padding: "10px 16px" }}>
+              <div style={{ fontSize: 11, color: "var(--sio-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Units in stock</div>
               <div style={{ fontSize: 18, fontWeight: 700 }}>{inventoryUnits}</div>
             </div>
-            <div style={{ background: "#fff", border: "1px solid #f1f5f9", borderRadius: 12, padding: "10px 16px" }}>
-              <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Inventory value</div>
+            <div style={{ background: "#fff", border: "1px solid var(--sio-cream)", borderRadius: 12, padding: "10px 16px" }}>
+              <div style={{ fontSize: 11, color: "var(--sio-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Inventory value</div>
               <div style={{ fontSize: 18, fontWeight: 700 }}>
                 {inventoryValue > 0 ? `₹${inventoryValue.toLocaleString("en-IN")}` : "—"}
               </div>
-              {inventoryValue === 0 && <div style={{ fontSize: 10, color: "#94a3b8" }}>Set cost price on products to see this</div>}
+              {inventoryValue === 0 && <div style={{ fontSize: 10, color: "var(--sio-muted)" }}>Set cost price on products to see this</div>}
             </div>
             <button
               type="button"
               onClick={() => setLowStockOnly((v) => !v)}
               style={{
-                background: lowStockOnly ? "#fef2f2" : "#fff",
-                border: `1px solid ${lowStockOnly ? "#fecdd3" : "#f1f5f9"}`,
+                background: lowStockOnly ? "var(--sio-error-bg)" : "#fff",
+                border: `1px solid ${lowStockOnly ? "var(--sio-error-border)" : "var(--sio-cream)"}`,
                 borderRadius: 12,
                 padding: "10px 16px",
                 cursor: "pointer",
                 textAlign: "left",
               }}
             >
-              <div style={{ fontSize: 11, color: lowStockOnly ? "#e11d48" : "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              <div style={{ fontSize: 11, color: lowStockOnly ? "var(--sio-error)" : "var(--sio-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
                 Low stock (≤{LOW_STOCK_THRESHOLD})
               </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: lowStockOnly ? "#e11d48" : "#0f172a" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: lowStockOnly ? "var(--sio-error)" : "var(--sio-ink)" }}>
                 {lowStockCount} {lowStockOnly ? "· showing" : "· tap to filter"}
               </div>
             </button>
@@ -234,17 +234,17 @@ function SellerProductsPageInner() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by title or product code…"
-            style={{ width: "100%", maxWidth: 360, padding: "9px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, marginBottom: 16 }}
+            style={{ width: "100%", maxWidth: 360, padding: "9px 14px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13, marginBottom: 16 }}
           />
         </>
       )}
 
       {loading ? (
-        <p style={{ color: "#64748b" }}>Loading products…</p>
+        <p style={{ color: "var(--sio-muted)" }}>Loading products…</p>
       ) : products.length === 0 ? (
-        <p style={{ color: "#64748b" }}>No products yet. Add your first one to go live.</p>
+        <p style={{ color: "var(--sio-muted)" }}>No products yet. Add your first one to go live.</p>
       ) : filteredProducts.length === 0 ? (
-        <p style={{ color: "#64748b" }}>
+        <p style={{ color: "var(--sio-muted)" }}>
           {lowStockOnly && !search.trim() ? "No products are low on stock right now." : `No products match "${search}".`}
         </p>
       ) : (
@@ -253,7 +253,7 @@ function SellerProductsPageInner() {
             <div
               key={p.id}
               className="sio-card"
-              style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 14 }}
+              style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 14 }}
             >
               <img src={p.images?.[0]?.url} alt={p.title} style={{ width: 56, height: 70, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
               <div style={{ flex: "1 1 200px", minWidth: 180 }}>
@@ -262,20 +262,20 @@ function SellerProductsPageInner() {
                   {p.status === "on_hold" && (
                     <span
                       title="Hidden from shoppers by SORT NOW - this listing was put on hold. Contact support if you think this is a mistake."
-                      style={{ fontFamily: "inherit", fontSize: 11, fontWeight: 700, color: "#b45309", background: "#fef3c7", padding: "2px 8px", borderRadius: 999, textTransform: "uppercase", letterSpacing: "0.03em" }}
+                      style={{ fontFamily: "inherit", fontSize: 11, fontWeight: 700, color: "var(--sio-pending)", background: "var(--sio-pending-bg)", padding: "2px 8px", borderRadius: 999, textTransform: "uppercase", letterSpacing: "0.03em" }}
                     >
                       On hold
                     </span>
                   )}
                   {p.productCode && (
                     <span
-                      style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 600, color: "#0f172a", background: "#f1f5f9", padding: "2px 6px", borderRadius: 4 }}
+                      style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 600, color: "var(--sio-ink)", background: "var(--sio-cream)", padding: "2px 6px", borderRadius: 4 }}
                     >
                       {p.productCode}
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 12, color: "#64748b" }}>
+                <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>
                   {p.gender} · {p.subCategory}
                   {p.color ? ` · ${p.color}` : ""} · {p.sizes.join(", ")}
                 </div>
@@ -299,13 +299,13 @@ function SellerProductsPageInner() {
                         width: 52,
                         padding: "3px 6px",
                         borderRadius: 6,
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid var(--sio-line)",
                         fontSize: 12,
                         textAlign: "right",
-                        color: p.stockRemaining <= LOW_STOCK_THRESHOLD ? "#e11d48" : "#0f172a",
+                        color: p.stockRemaining <= LOW_STOCK_THRESHOLD ? "var(--sio-error)" : "var(--sio-ink)",
                       }}
                     />
-                    <span style={{ fontSize: 12, color: p.stockRemaining <= LOW_STOCK_THRESHOLD ? "#e11d48" : "#64748b" }}>
+                    <span style={{ fontSize: 12, color: p.stockRemaining <= LOW_STOCK_THRESHOLD ? "var(--sio-error)" : "var(--sio-muted)" }}>
                       {savingStockId === p.id ? "saving…" : "in stock"}
                     </span>
                   </div>
@@ -315,7 +315,7 @@ function SellerProductsPageInner() {
                 <div style={{ display: "flex", gap: 8 }}>
                   <Link
                     href={`/seller/products/${p.id}`}
-                    style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", color: "#0f172a", textDecoration: "none", fontSize: 13 }}
+                    style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--sio-line)", color: "var(--sio-ink)", textDecoration: "none", fontSize: 13 }}
                   >
                     Edit
                   </Link>
@@ -328,7 +328,7 @@ function SellerProductsPageInner() {
                           padding: "8px 14px",
                           borderRadius: 8,
                           border: "none",
-                          background: deletingId === p.id ? "#fca5a5" : "#e11d48",
+                          background: deletingId === p.id ? "var(--sio-error-border)" : "var(--sio-error)",
                           color: "#fff",
                           cursor: deletingId === p.id ? "default" : "pointer",
                           fontSize: 13,
@@ -340,7 +340,7 @@ function SellerProductsPageInner() {
                       <button
                         onClick={() => setConfirmingId(null)}
                         disabled={deletingId === p.id}
-                        style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", cursor: "pointer", fontSize: 13 }}
+                        style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--sio-line)", background: "#fff", color: "var(--sio-ink)", cursor: "pointer", fontSize: 13 }}
                       >
                         Cancel
                       </button>
@@ -351,17 +351,17 @@ function SellerProductsPageInner() {
                         setConfirmingId(p.id);
                         setDeleteError("");
                       }}
-                      style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #fecdd3", background: "#fff", color: "#e11d48", cursor: "pointer", fontSize: 13 }}
+                      style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--sio-error-border)", background: "#fff", color: "var(--sio-error)", cursor: "pointer", fontSize: 13 }}
                     >
                       Delete
                     </button>
                   )}
                 </div>
                 {confirmingId === p.id && (
-                  <span style={{ fontSize: 11, color: "#e11d48" }}>This can&rsquo;t be undone.</span>
+                  <span style={{ fontSize: 11, color: "var(--sio-error)" }}>This can&rsquo;t be undone.</span>
                 )}
                 {deleteError && confirmingId === null && deletingId === null && (
-                  <span style={{ fontSize: 11, color: "#e11d48" }}>{deleteError}</span>
+                  <span style={{ fontSize: 11, color: "var(--sio-error)" }}>{deleteError}</span>
                 )}
               </div>
             </div>

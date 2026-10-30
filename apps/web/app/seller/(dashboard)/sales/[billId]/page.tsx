@@ -103,41 +103,41 @@ export default function SellerBillDetailPage() {
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: "28px 20px 60px" }}>
       <div className="sio-print-hide" style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Link href="/seller/sales" style={{ fontSize: 13, color: "#64748b", textDecoration: "none" }}>
+        <Link href="/seller/sales" style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
           ← Back to Sales
         </Link>
         <button
           type="button"
           onClick={() => window.print()}
-          style={{ padding: "9px 18px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          style={{ padding: "9px 18px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
         >
           Print
         </button>
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 32 }}>
+      <div style={{ background: "#fff", border: "1px solid var(--sio-line)", borderRadius: 12, padding: 32 }}>
         {bill.status === "void" && (
-          <div style={{ background: "#fee2e2", color: "#991b1b", padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, marginBottom: 20, textAlign: "center" }}>
+          <div style={{ background: "var(--sio-error-bg)", color: "var(--sio-error)", padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, marginBottom: 20, textAlign: "center" }}>
             VOID{bill.voidReason ? ` — ${bill.voidReason}` : ""}
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, borderBottom: "2px solid #0f172a", paddingBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, borderBottom: "2px solid var(--sio-ink)", paddingBottom: 16 }}>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{bill.storeName}</h1>
-            {bill.storeAddress && <p style={{ fontSize: 12, color: "#64748b", margin: "4px 0 0" }}>{bill.storeAddress}</p>}
-            {bill.mode === "gst" && bill.gstin && <p style={{ fontSize: 12, color: "#64748b", margin: "2px 0 0" }}>GSTIN: {bill.gstin}</p>}
+            {bill.storeAddress && <p style={{ fontSize: 12, color: "var(--sio-muted)", margin: "4px 0 0" }}>{bill.storeAddress}</p>}
+            {bill.mode === "gst" && bill.gstin && <p style={{ fontSize: 12, color: "var(--sio-muted)", margin: "2px 0 0" }}>GSTIN: {bill.gstin}</p>}
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{bill.mode === "gst" ? "Tax Invoice" : "Receipt"}</div>
-            <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Invoice No.</div>
+            <div style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 4 }}>Invoice No.</div>
             <div style={{ fontWeight: 700 }}>{bill.invoiceNumber}</div>
-            <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{new Date(bill.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</div>
+            <div style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 4 }}>{new Date(bill.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</div>
           </div>
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, marginBottom: 20 }}>
-          <div style={{ fontSize: 13, color: "#334155" }}>
+          <div style={{ fontSize: 13, color: "var(--sio-ink-soft)" }}>
             <div style={{ fontWeight: 600, marginBottom: 2 }}>Billed to</div>
             {bill.customerName || bill.customerPhone ? (
               <>
@@ -145,11 +145,11 @@ export default function SellerBillDetailPage() {
                 {bill.customerPhone && <div>{bill.customerPhone}</div>}
               </>
             ) : (
-              <div style={{ color: "#94a3b8" }}>Walk-in customer</div>
+              <div style={{ color: "var(--sio-muted)" }}>Walk-in customer</div>
             )}
           </div>
           {bill.mode === "gst" && (
-            <div style={{ fontSize: 13, color: "#334155", textAlign: "right" }}>
+            <div style={{ fontSize: 13, color: "var(--sio-ink-soft)", textAlign: "right" }}>
               <div style={{ fontWeight: 600, marginBottom: 2 }}>Place of Supply</div>
               <div>{bill.storeAddress?.split(",").pop()?.replace(/\s*-\s*\d{6}$/, "").trim() || "—"}</div>
             </div>
@@ -158,7 +158,7 @@ export default function SellerBillDetailPage() {
 
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 20 }}>
           <thead>
-            <tr style={{ borderBottom: "2px solid #0f172a" }}>
+            <tr style={{ borderBottom: "2px solid var(--sio-ink)" }}>
               <th style={{ textAlign: "left", padding: "6px 4px" }}>Item</th>
               <th style={{ textAlign: "right", padding: "6px 4px" }}>Qty</th>
               <th style={{ textAlign: "right", padding: "6px 4px" }}>Rate</th>
@@ -167,7 +167,7 @@ export default function SellerBillDetailPage() {
           </thead>
           <tbody>
             {bill.items.map((item, i) => (
-              <tr key={`${item.productId}-${item.size ?? ""}-${i}`} style={{ borderBottom: "1px solid #f1f5f9" }}>
+              <tr key={`${item.productId}-${item.size ?? ""}-${i}`} style={{ borderBottom: "1px solid var(--sio-cream)" }}>
                 <td style={{ padding: "6px 4px" }}>
                   {item.title}
                   {item.size ? ` (${item.size})` : ""}
@@ -180,7 +180,7 @@ export default function SellerBillDetailPage() {
           </tbody>
           <tfoot>
             <tr>
-              <td style={{ padding: "6px 4px", fontSize: 12, color: "#64748b" }}>
+              <td style={{ padding: "6px 4px", fontSize: 12, color: "var(--sio-muted)" }}>
                 {bill.items.length} line{bill.items.length > 1 ? "s" : ""} · {bill.totalQuantity} item{bill.totalQuantity > 1 ? "s" : ""} total
               </td>
               <td colSpan={3}></td>
@@ -194,50 +194,50 @@ export default function SellerBillDetailPage() {
             <span>₹{bill.subtotal.toFixed(2)}</span>
           </div>
           {!!bill.discountAmount && (
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: "#16a34a" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: "var(--sio-success)" }}>
               <span>Discount ({bill.discountPercent}%)</span>
               <span>-₹{bill.discountAmount.toFixed(2)}</span>
             </div>
           )}
           {bill.mode === "gst" && (
             <>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: "#64748b" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: "var(--sio-muted)" }}>
                 <span>CGST ({(bill.taxRatePercent / 2).toFixed(1)}%)</span>
                 <span>₹{bill.cgst.toFixed(2)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: "#64748b" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: "var(--sio-muted)" }}>
                 <span>SGST ({(bill.taxRatePercent / 2).toFixed(1)}%)</span>
                 <span>₹{bill.sgst.toFixed(2)}</span>
               </div>
             </>
           )}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0 0", fontWeight: 700, fontSize: 16, borderTop: "1px solid #e2e8f0", marginTop: 4 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0 0", fontWeight: 700, fontSize: 16, borderTop: "1px solid var(--sio-line)", marginTop: 4 }}>
             <span>Total</span>
             <span>₹{bill.grandTotal.toFixed(2)}</span>
           </div>
         </div>
 
-        <p style={{ fontSize: 12, color: "#334155", marginTop: 16, fontStyle: "italic" }}>
+        <p style={{ fontSize: 12, color: "var(--sio-ink-soft)", marginTop: 16, fontStyle: "italic" }}>
           <strong>In words:</strong> {amountInWords(bill.grandTotal)}
         </p>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 32 }}>
-          <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>
+          <p style={{ fontSize: 11, color: "var(--sio-muted)", margin: 0 }}>
             E. &amp; O.E. · This is a computer-generated {bill.mode === "gst" ? "tax invoice" : "receipt"}.
           </p>
           {bill.mode === "gst" && (
             <div style={{ textAlign: "center", fontSize: 12 }}>
               <div style={{ marginBottom: 36 }}>For {bill.storeName}</div>
-              <div style={{ borderTop: "1px solid #94a3b8", paddingTop: 4, color: "#64748b" }}>Authorized Signatory</div>
+              <div style={{ borderTop: "1px solid var(--sio-muted)", paddingTop: 4, color: "var(--sio-muted)" }}>Authorized Signatory</div>
             </div>
           )}
         </div>
 
         {bill.invoiceNote && (
-          <p style={{ fontSize: 12, color: "#64748b", marginTop: 16, borderTop: "1px dashed #e2e8f0", paddingTop: 12 }}>{bill.invoiceNote}</p>
+          <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 16, borderTop: "1px dashed var(--sio-line)", paddingTop: 12 }}>{bill.invoiceNote}</p>
         )}
 
-        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 16, textAlign: "center" }}>
+        <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 16, textAlign: "center" }}>
           Paid via {bill.paymentMode.toUpperCase()} · Thank you for shopping with {bill.storeName}
         </p>
       </div>

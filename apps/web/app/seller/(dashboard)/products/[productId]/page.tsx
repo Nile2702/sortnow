@@ -57,7 +57,7 @@ export default function EditProductPage() {
               .then(setProduct)
               .catch(() => setLoadFailed(true));
           }}
-          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, cursor: "pointer" }}
         >
           Retry
         </button>
@@ -72,7 +72,7 @@ export default function EditProductPage() {
   return (
     <main style={{ maxWidth: 700, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Edit Product</h1>
-      <p style={{ color: "#64748b", marginBottom: 24 }}>{store.name}</p>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 24 }}>{store.name}</p>
       <ProductForm
         storeId={store.id}
         mode="edit"

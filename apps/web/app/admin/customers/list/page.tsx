@@ -44,15 +44,15 @@ export default async function AdminCustomerListPage({
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
-      <Link href={`/admin/customers?${keyQS}`} style={{ fontSize: 13, color: "#64748b", textDecoration: "none" }}>
+      <Link href={`/admin/customers?${keyQS}`} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
         ← Customers &amp; Footfall
       </Link>
       <h1 style={{ fontSize: 24, fontWeight: 700, margin: "8px 0 4px" }}>Customers{filterLabel ? ` — ${filterLabel}` : ""}</h1>
-      <p style={{ color: "#64748b", marginBottom: 24, fontSize: 14 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 24, fontSize: 14 }}>
         {filterActive ? `${filtered.length} of ${shoppers.length} customers` : `${shoppers.length} customer${shoppers.length === 1 ? "" : "s"}`}
       </p>
 
-      <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24 }}>
+      <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
           <form method="get" style={{ display: "flex", gap: 8 }}>
             <input type="hidden" name="key" value={key} />
@@ -61,21 +61,21 @@ export default async function AdminCustomerListPage({
               name="q"
               defaultValue={searchParams.q ?? ""}
               placeholder="Search name, phone, email, or city"
-              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13, width: 260 }}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13, width: 260 }}
             />
-            <button type="submit" style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            <button type="submit" style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
               Search
             </button>
           </form>
           {filterActive && (
-            <Link href={`/admin/customers/list?${keyQS}`} style={{ fontSize: 13, color: "#64748b", textDecoration: "none" }}>
+            <Link href={`/admin/customers/list?${keyQS}`} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
               Clear all filters
             </Link>
           )}
         </div>
 
         {filtered.length === 0 ? (
-          <p style={{ fontSize: 13, color: "#94a3b8" }}>No customers match these filters.</p>
+          <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>No customers match these filters.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div
@@ -87,8 +87,8 @@ export default async function AdminCustomerListPage({
                 fontSize: 11,
                 textTransform: "uppercase",
                 letterSpacing: 0.4,
-                color: "#94a3b8",
-                borderBottom: "1px solid #f1f5f9",
+                color: "var(--sio-muted)",
+                borderBottom: "1px solid var(--sio-cream)",
               }}
             >
               <span>Name</span>
@@ -110,18 +110,18 @@ export default async function AdminCustomerListPage({
                   gap: 12,
                   padding: "12px 4px",
                   fontSize: 13,
-                  borderBottom: "1px solid #f8fafc",
+                  borderBottom: "1px solid var(--sio-cream)",
                   textDecoration: "none",
-                  color: "#0f172a",
+                  color: "var(--sio-ink)",
                 }}
               >
                 <span style={{ fontWeight: 600 }}>{s.name}</span>
                 <span>{s.phone}</span>
-                <span style={{ color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.email || "—"}</span>
-                <span style={{ color: "#64748b" }}>{s.city || "—"}</span>
-                <span style={{ color: "#64748b" }}>{new Date(s.createdAt).toLocaleDateString("en-IN")}</span>
-                <span style={{ color: "#64748b" }}>{reservationCountByPhone.get(s.phone) ?? 0}</span>
-                <span style={{ color: (visitCountByPhone.get(s.phone) ?? 0) > 0 ? "#16a34a" : "#64748b", fontWeight: 600 }}>{visitCountByPhone.get(s.phone) ?? 0}</span>
+                <span style={{ color: "var(--sio-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.email || "—"}</span>
+                <span style={{ color: "var(--sio-muted)" }}>{s.city || "—"}</span>
+                <span style={{ color: "var(--sio-muted)" }}>{new Date(s.createdAt).toLocaleDateString("en-IN")}</span>
+                <span style={{ color: "var(--sio-muted)" }}>{reservationCountByPhone.get(s.phone) ?? 0}</span>
+                <span style={{ color: (visitCountByPhone.get(s.phone) ?? 0) > 0 ? "var(--sio-success)" : "var(--sio-muted)", fontWeight: 600 }}>{visitCountByPhone.get(s.phone) ?? 0}</span>
               </Link>
             ))}
           </div>

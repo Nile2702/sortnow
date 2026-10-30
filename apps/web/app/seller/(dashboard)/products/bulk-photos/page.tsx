@@ -130,7 +130,7 @@ async function uploadProductImage(dataUrl: string): Promise<string> {
 }
 
 function inputStyle(): React.CSSProperties {
-  return { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 };
+  return { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 };
 }
 
 // `fetch()` itself throws a bare "Failed to fetch" TypeError whenever the
@@ -701,13 +701,13 @@ export default function BulkPhotoUploadPage() {
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 20px 60px" }}>
       <div style={{ marginBottom: 20 }}>
-        <Link href="/seller/products" style={{ fontSize: 13, color: "#64748b" }}>
+        <Link href="/seller/products" style={{ fontSize: 13, color: "var(--sio-muted)" }}>
           ← Back to Products
         </Link>
       </div>
 
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>✨ AI Bulk Upload</h1>
-      <p style={{ color: "#64748b", marginBottom: 24, maxWidth: 640 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 24, maxWidth: 640 }}>
         Upload several raw product photos at once for {store.name} — mix photos of different products and multiple angles of the same
         product in one go. Each photo becomes its own product by default. Remove Backgrounds centers and zooms every photo to fill the
         frame with its background removed (free); Auto-fill Details asks AI for a title, category, and description - run either one,
@@ -717,11 +717,11 @@ export default function BulkPhotoUploadPage() {
 
       <div
         className="sio-card"
-        style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 24 }}
+        style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24, marginBottom: 24 }}
       >
         <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 10 }}>Select photos</label>
         <input type="file" accept="image/*" multiple onChange={handleFilesSelected} style={{ fontSize: 13, width: "100%", maxWidth: "100%" }} />
-        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>Up to 3MB per photo. Add more photos any time before processing.</p>
+        <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 8 }}>Up to 3MB per photo. Add more photos any time before processing.</p>
 
         {drafts.length > 0 && (
           <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
@@ -733,7 +733,7 @@ export default function BulkPhotoUploadPage() {
                 padding: "10px 20px",
                 borderRadius: 999,
                 border: "none",
-                background: processing || !hasEligible ? "#94a3b8" : "#0891b2",
+                background: processing || !hasEligible ? "var(--sio-muted)" : "var(--sio-ai-accent)",
                 color: "#fff",
                 fontWeight: 600,
                 fontSize: 13,
@@ -750,7 +750,7 @@ export default function BulkPhotoUploadPage() {
                 padding: "10px 20px",
                 borderRadius: 999,
                 border: "none",
-                background: processing || !hasEligible ? "#94a3b8" : "#7c3aed",
+                background: processing || !hasEligible ? "var(--sio-muted)" : "var(--sio-ai-accent)",
                 color: "#fff",
                 fontWeight: 600,
                 fontSize: 13,
@@ -767,7 +767,7 @@ export default function BulkPhotoUploadPage() {
                 padding: "10px 20px",
                 borderRadius: 999,
                 border: "none",
-                background: publishing || readyCount === 0 ? "#94a3b8" : "#0f172a",
+                background: publishing || readyCount === 0 ? "var(--sio-muted)" : "var(--sio-ink)",
                 color: "#fff",
                 fontWeight: 600,
                 fontSize: 13,
@@ -783,10 +783,10 @@ export default function BulkPhotoUploadPage() {
       {readyCount > 0 && (
         <div
           className="sio-card"
-          style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 24 }}
+          style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24, marginBottom: 24 }}
         >
           <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>Apply to all</label>
-          <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12 }}>
+          <p style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 12 }}>
             Set any field here and apply it to every ready draft at once — leave a field blank to leave that field untouched on each
             draft. Handy when a whole batch is the same category, price, or fabric.
           </p>
@@ -919,8 +919,8 @@ export default function BulkPhotoUploadPage() {
               border: "none",
               background:
                 !bulkGender && !bulkFabric && !bulkBrand && bulkBasePrice === "" && bulkCompareAtPrice === "" && bulkCostPrice === "" && bulkStockRemaining === ""
-                  ? "#94a3b8"
-                  : "#0f172a",
+                  ? "var(--sio-muted)"
+                  : "var(--sio-ink)",
               color: "#fff",
               fontWeight: 600,
               fontSize: 13,
@@ -947,7 +947,7 @@ export default function BulkPhotoUploadPage() {
             alignItems: "center",
             justifyContent: "space-between",
             gap: 12,
-            background: "#0f172a",
+            background: "var(--sio-ink)",
             color: "#fff",
             borderRadius: 12,
             padding: "12px 18px",
@@ -975,7 +975,7 @@ export default function BulkPhotoUploadPage() {
             <button
               type="button"
               onClick={handleMergeSelected}
-              style={{ background: "#7c3aed", border: "none", color: "#fff", borderRadius: 999, padding: "6px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+              style={{ background: "var(--sio-ai-accent)", border: "none", color: "#fff", borderRadius: 999, padding: "6px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
             >
               Merge into One Product
             </button>
@@ -996,7 +996,7 @@ export default function BulkPhotoUploadPage() {
                 gap: 16,
                 background: "#fff",
                 borderRadius: 14,
-                border: selectedForMerge.includes(d.localId) ? "2px solid #7c3aed" : "1px solid #f1f5f9",
+                border: selectedForMerge.includes(d.localId) ? "2px solid var(--sio-ai-accent)" : "1px solid var(--sio-cream)",
                 padding: 16,
               }}
             >
@@ -1022,7 +1022,7 @@ export default function BulkPhotoUploadPage() {
                   className="sio-draft-thumb"
                   src={d.image}
                   alt={d.fileName}
-                  style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 8, border: "1px solid #e2e8f0" }}
+                  style={{ width: 80, height: 100, objectFit: "cover", borderRadius: 8, border: "1px solid var(--sio-line)" }}
                 />
                 {d.bgRemoved && (
                   <span
@@ -1031,7 +1031,7 @@ export default function BulkPhotoUploadPage() {
                       bottom: -6,
                       left: "50%",
                       transform: "translateX(-50%)",
-                      background: "#0f172a",
+                      background: "var(--sio-ink)",
                       color: "#fff",
                       fontSize: 8,
                       fontWeight: 700,
@@ -1054,9 +1054,9 @@ export default function BulkPhotoUploadPage() {
                         style={{
                           fontSize: 10.5,
                           fontWeight: 700,
-                          color: "#7c3aed",
-                          background: "#faf5ff",
-                          border: "1px solid #e9d5ff",
+                          color: "var(--sio-ai-accent)",
+                          background: "var(--sio-ai-accent-bg)",
+                          border: "1px solid var(--sio-ai-accent-border)",
                           borderRadius: 999,
                           padding: "2px 8px",
                         }}
@@ -1078,32 +1078,32 @@ export default function BulkPhotoUploadPage() {
                     // no way out of that one draft short of reloading the
                     // whole page and losing every other draft's progress.
                     disabled={d.status === "publishing"}
-                    style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 12 }}
+                    style={{ background: "none", border: "none", color: "var(--sio-muted)", cursor: "pointer", fontSize: 12 }}
                   >
                     Remove
                   </button>
                 </div>
 
                 {d.status === "ready" && missingRequiredFields(d).length > 0 && (
-                  <p style={{ fontSize: 12, color: "#b45309", marginBottom: 8 }}>
+                  <p style={{ fontSize: 12, color: "var(--sio-pending)", marginBottom: 8 }}>
                     ⚠️ Won&rsquo;t publish yet - still needs {missingRequiredFields(d).join(" and ")}. Run Auto-fill Details or fill it in below.
                   </p>
                 )}
                 {d.status === "queued" ? (
-                  <p style={{ fontSize: 13, color: "#94a3b8" }}>{d.fileName} — waiting to be processed.</p>
+                  <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>{d.fileName} — waiting to be processed.</p>
                 ) : d.status === "removing-bg" ? (
-                  <p style={{ fontSize: 13, color: "#94a3b8" }}>Removing background… ({elapsedSeconds}s)</p>
+                  <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>Removing background… ({elapsedSeconds}s)</p>
                 ) : d.status === "autofilling" ? (
-                  <p style={{ fontSize: 13, color: "#94a3b8" }}>Asking AI for title, category, and description… ({elapsedSeconds}s)</p>
+                  <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>Asking AI for title, category, and description… ({elapsedSeconds}s)</p>
                 ) : d.status === "error" ? (
-                  <p style={{ fontSize: 13, color: "#e11d48" }}>{d.error || "Something went wrong."}</p>
+                  <p style={{ fontSize: 13, color: "var(--sio-error)" }}>{d.error || "Something went wrong."}</p>
                 ) : d.status === "published" ? (
-                  <p style={{ fontSize: 13, color: "#16a34a" }}>✓ Published as "{d.title}"</p>
+                  <p style={{ fontSize: 13, color: "var(--sio-success)" }}>✓ Published as "{d.title}"</p>
                 ) : (
                   <div className="sio-draft-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 8 }}>
                     {d.cutoutImage && (
                       <div style={{ gridColumn: "1 / -1" }}>
-                        <p style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Background</p>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--sio-muted)", marginBottom: 6 }}>Background</p>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                           <button
                             type="button"
@@ -1112,9 +1112,9 @@ export default function BulkPhotoUploadPage() {
                             style={{
                               padding: "5px 10px",
                               borderRadius: 999,
-                              border: "1px solid #c4b5fd",
-                              background: "#faf5ff",
-                              color: "#7c3aed",
+                              border: "1px solid var(--sio-ai-accent-border)",
+                              background: "var(--sio-ai-accent-bg)",
+                              color: "var(--sio-ai-accent)",
                               fontSize: 11,
                               fontWeight: 600,
                               cursor: d.backgroundBusy ? "default" : "pointer",
@@ -1135,7 +1135,7 @@ export default function BulkPhotoUploadPage() {
                                 height: 26,
                                 borderRadius: "50%",
                                 background: preset.swatch,
-                                border: d.selectedBackground === preset.key ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                                border: d.selectedBackground === preset.key ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
                                 cursor: d.backgroundBusy ? "default" : "pointer",
                                 flexShrink: 0,
                               }}
@@ -1290,7 +1290,7 @@ export default function BulkPhotoUploadPage() {
                       )}
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>
-                      <p style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Sizes</p>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--sio-muted)", marginBottom: 6 }}>Sizes</p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                         {getSizeOptionsFor(d.subCategory).map((sz) => {
                           const active = d.sizes.includes(sz);
@@ -1302,9 +1302,9 @@ export default function BulkPhotoUploadPage() {
                               style={{
                                 padding: "4px 10px",
                                 borderRadius: 7,
-                                border: active ? "1px solid #0f172a" : "1px solid #e2e8f0",
-                                background: active ? "#0f172a" : "#fff",
-                                color: active ? "#fff" : "#334155",
+                                border: active ? "1px solid var(--sio-ink)" : "1px solid var(--sio-line)",
+                                background: active ? "var(--sio-ink)" : "#fff",
+                                color: active ? "#fff" : "var(--sio-ink-soft)",
                                 fontSize: 12,
                                 cursor: "pointer",
                               }}
@@ -1323,7 +1323,7 @@ export default function BulkPhotoUploadPage() {
                       style={{ ...inputStyle(), gridColumn: "1 / -1", resize: "vertical" }}
                     />
                     <div style={{ gridColumn: "1 / -1" }}>
-                      <p style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--sio-muted)", marginBottom: 6 }}>
                         More photos of this product (back, side, close-up)
                       </p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: d.additionalImages.length > 0 ? 8 : 0 }}>
@@ -1332,7 +1332,7 @@ export default function BulkPhotoUploadPage() {
                             <img
                               src={img}
                               alt={`${d.fileName} extra angle ${i + 1}`}
-                              style={{ width: 48, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid #e2e8f0" }}
+                              style={{ width: 48, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--sio-line)" }}
                             />
                             <button
                               type="button"
@@ -1346,7 +1346,7 @@ export default function BulkPhotoUploadPage() {
                                 height: 18,
                                 borderRadius: "50%",
                                 border: "none",
-                                background: "#0f172a",
+                                background: "var(--sio-ink)",
                                 color: "#fff",
                                 fontSize: 11,
                                 lineHeight: "18px",
@@ -1384,13 +1384,13 @@ export default function BulkPhotoUploadPage() {
 
 function StatusBadge({ status }: { status: DraftStatus }) {
   const map: Record<DraftStatus, { label: string; bg: string; fg: string }> = {
-    queued: { label: "Queued", bg: "#f1f5f9", fg: "#64748b" },
-    "removing-bg": { label: "Removing background…", bg: "#e0e7ff", fg: "#3730a3" },
-    autofilling: { label: "AI thinking…", bg: "#faf5ff", fg: "#7c3aed" },
-    ready: { label: "Ready to publish", bg: "#dcfce7", fg: "#16a34a" },
-    publishing: { label: "Publishing…", bg: "#e0e7ff", fg: "#3730a3" },
-    published: { label: "Published", bg: "#dcfce7", fg: "#16a34a" },
-    error: { label: "Needs attention", bg: "#fee2e2", fg: "#dc2626" },
+    queued: { label: "Queued", bg: "var(--sio-cream)", fg: "var(--sio-muted)" },
+    "removing-bg": { label: "Removing background…", bg: "var(--sio-info-bg)", fg: "var(--sio-info)" },
+    autofilling: { label: "AI thinking…", bg: "var(--sio-ai-accent-bg)", fg: "var(--sio-ai-accent)" },
+    ready: { label: "Ready to publish", bg: "var(--sio-success-bg)", fg: "var(--sio-success)" },
+    publishing: { label: "Publishing…", bg: "var(--sio-info-bg)", fg: "var(--sio-info)" },
+    published: { label: "Published", bg: "var(--sio-success-bg)", fg: "var(--sio-success)" },
+    error: { label: "Needs attention", bg: "var(--sio-error-bg)", fg: "var(--sio-error)" },
   };
   const s = map[status];
   return (

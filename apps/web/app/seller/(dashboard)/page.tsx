@@ -98,18 +98,18 @@ export default function SellerDashboard() {
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Welcome back, {store.name}</h1>
-      <p style={{ color: "#64748b", marginBottom: 28 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 28 }}>
         {store.localMarket}, {store.city} · PIN {store.pincode}
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
         {stats.map((s) => {
-          const cardStyle: React.CSSProperties = { background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, display: "block", textDecoration: "none", color: "inherit" };
+          const cardStyle: React.CSSProperties = { background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, display: "block", textDecoration: "none", color: "inherit" };
           const content = (
             <>
               <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
               <div style={{ fontSize: 22, fontWeight: 700, textTransform: "capitalize" }}>{s.value}</div>
-              <div style={{ fontSize: 13, color: "#64748b" }}>{s.label}</div>
+              <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>{s.label}</div>
             </>
           );
           return s.href ? (
@@ -130,20 +130,20 @@ export default function SellerDashboard() {
           It's now entirely derived from whichever Promotions campaign is
           actually running, so there's nothing to fill in or submit - only
           somewhere to see it and jump to the real control, Promotions. */}
-      <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, marginBottom: 32 }}>
+      <div className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, marginBottom: 32 }}>
         {saleIsActive && liveSale ? (
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <span className="sio-breathe" style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626", display: "inline-block" }} />
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "#dc2626" }}>Live Sale Running</span>
+              <span className="sio-breathe" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sio-error)", display: "inline-block" }} />
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--sio-error)" }}>Live Sale Running</span>
             </div>
             <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 2 }}>{liveSale.headline}</div>
-            <div style={{ color: "#64748b", fontSize: 13, marginBottom: 14 }}>
+            <div style={{ color: "var(--sio-muted)", fontSize: 13, marginBottom: 14 }}>
               {liveSale.discountLabel} · ends {new Date(liveSale.endsAt).toLocaleString()}
             </div>
             <Link
               href="/seller/promotions"
-              style={{ padding: "8px 16px", borderRadius: 999, border: "1px solid #e2e8f0", background: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", color: "inherit" }}
+              style={{ padding: "8px 16px", borderRadius: 999, border: "1px solid var(--sio-line)", background: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", color: "inherit" }}
             >
               Manage in Promotions →
             </Link>
@@ -151,13 +151,13 @@ export default function SellerDashboard() {
         ) : (
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>No sale running right now</h2>
-            <p style={{ color: "#64748b", fontSize: 13, marginBottom: 14 }}>
+            <p style={{ color: "var(--sio-muted)", fontSize: 13, marginBottom: 14 }}>
               Start one in Promotions and shoppers see a live badge here, on your storefront, the shop directory, and nearby-store results — on top
               of the actual discounted prices.
             </p>
             <Link
               href="/seller/promotions"
-              style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "#dc2626", color: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}
+              style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "var(--sio-error)", color: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}
             >
               🔴 Start a sale
             </Link>
@@ -179,11 +179,11 @@ export default function SellerDashboard() {
             key={a.href}
             href={a.href}
             className="sio-card"
-            style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, textDecoration: "none", color: "inherit" }}
+            style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, textDecoration: "none", color: "inherit" }}
           >
             <div style={{ fontSize: 20, marginBottom: 10 }}>{a.icon}</div>
             <div style={{ fontWeight: 600, marginBottom: 4 }}>{a.label}</div>
-            <div style={{ fontSize: 13, color: "#64748b" }}>{a.desc}</div>
+            <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>{a.desc}</div>
           </Link>
         ))}
       </div>

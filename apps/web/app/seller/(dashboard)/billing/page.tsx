@@ -137,7 +137,7 @@ export default function BillingPage() {
         <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load billing details.</p>
         <button
           onClick={() => store && load(store.id)}
-          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, cursor: "pointer" }}
         >
           Retry
         </button>
@@ -168,8 +168,8 @@ export default function BillingPage() {
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Billing & Subscription</h1>
-      <p style={{ color: "#64748b", marginBottom: 4 }}>{store.name}</p>
-      <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 28 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 4 }}>{store.name}</p>
+      <p style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 28 }}>
         No real payment is processed yet - switching plans or boosting your store here doesn't charge a card. A real payment gateway
         (Razorpay/Cashfree) will be added before this goes live for real transactions, same as AI photo credits.
       </p>
@@ -178,7 +178,7 @@ export default function BillingPage() {
         <div
           className="sio-card"
           style={{
-            background: "linear-gradient(135deg, #16a34a, #15803d)",
+            background: "linear-gradient(135deg, var(--sio-success), #15803d)",
             borderRadius: 16,
             padding: 24,
             marginBottom: 28,
@@ -200,10 +200,10 @@ export default function BillingPage() {
         </div>
       )}
 
-      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 28 }}>
+      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24, marginBottom: 28 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 13, color: "#64748b" }}>Current Plan</div>
+            <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>Current Plan</div>
             <div style={{ fontSize: 22, fontWeight: 700 }}>{currentPlan.name}</div>
           </div>
           <div style={{ textAlign: "right" }}>
@@ -213,14 +213,14 @@ export default function BillingPage() {
                 borderRadius: 999,
                 fontSize: 12,
                 fontWeight: 600,
-                background: freeTrial.active ? "#dcfce7" : data.subscription.status === "active" ? "#dcfce7" : "#fef3c7",
-                color: freeTrial.active ? "#16a34a" : data.subscription.status === "active" ? "#16a34a" : "#b45309",
+                background: freeTrial.active ? "var(--sio-success-bg)" : data.subscription.status === "active" ? "var(--sio-success-bg)" : "var(--sio-pending-bg)",
+                color: freeTrial.active ? "var(--sio-success)" : data.subscription.status === "active" ? "var(--sio-success)" : "var(--sio-pending)",
                 textTransform: "capitalize",
               }}
             >
               {freeTrial.active ? "Free Trial" : data.subscription.status}
             </span>
-            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 4 }}>
               {freeTrial.active && freeTrial.endsAt
                 ? `Free until ${new Date(freeTrial.endsAt).toLocaleDateString("en-IN")}`
                 : `Renews ${new Date(data.subscription.currentPeriodEnd).toLocaleDateString("en-IN")}`}
@@ -230,21 +230,21 @@ export default function BillingPage() {
 
         {usagePct !== null ? (
           <>
-            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>
+            <div style={{ fontSize: 13, color: "var(--sio-muted)", marginBottom: 6 }}>
               SKU usage: {data.skuCount.toLocaleString("en-IN")} / {currentPlan.includedSkus.toLocaleString("en-IN")} included
               {overageSkus > 0 && (
-                <span style={{ color: "#b45309", fontWeight: 600 }}>
+                <span style={{ color: "var(--sio-pending)", fontWeight: 600 }}>
                   {" "}
                   (+{overageSkus.toLocaleString("en-IN")} extra at ₹{(currentPlan.overagePrice ?? 0).toFixed(2)} each)
                 </span>
               )}
             </div>
-            <div style={{ height: 8, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${usagePct}%`, background: usagePct > 90 ? "#e11d48" : "#0f172a", borderRadius: 999 }} />
+            <div style={{ height: 8, background: "var(--sio-cream)", borderRadius: 999, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${usagePct}%`, background: usagePct > 90 ? "var(--sio-error)" : "var(--sio-ink)", borderRadius: 999 }} />
             </div>
           </>
         ) : (
-          <div style={{ fontSize: 13, color: "#64748b" }}>
+          <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>
             {data.skuCount.toLocaleString("en-IN")} SKUs listed × ₹{currentPlan.perListingPrice.toFixed(2)} each — no monthly fee on this plan
           </div>
         )}
@@ -252,10 +252,10 @@ export default function BillingPage() {
         {/* Shown even during the free trial - it only waives the flat
             monthly fee, so this can be non-zero for a Max store that's
             listed past its included 2,000 SKUs. */}
-        <div style={{ fontSize: 13, fontWeight: 600, marginTop: 12, paddingTop: 12, borderTop: "1px solid #f8fafc" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--sio-cream)" }}>
           Estimated this month: ₹{data.estimatedMonthlyCost.toLocaleString("en-IN")}
           {freeTrial.active && data.estimatedMonthlyCost > 0 && (
-            <span style={{ fontWeight: 400, color: "#94a3b8" }}> (extra-listing charges only — your monthly fee is free)</span>
+            <span style={{ fontWeight: 400, color: "var(--sio-muted)" }}> (extra-listing charges only — your monthly fee is free)</span>
           )}
         </div>
       </div>
@@ -271,7 +271,7 @@ export default function BillingPage() {
               style={{
                 background: "#fff",
                 borderRadius: 16,
-                border: isCurrent ? "2px solid #0f172a" : "1px solid #f1f5f9",
+                border: isCurrent ? "2px solid var(--sio-ink)" : "1px solid var(--sio-cream)",
                 padding: 22,
               }}
             >
@@ -280,16 +280,16 @@ export default function BillingPage() {
               {plan.monthlyPrice > 0 ? (
                 // Pro/Max: a real flat monthly fee - the headline number.
                 freeTrial.active ? (
-                  <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#16a34a" }}>
+                  <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "var(--sio-success)" }}>
                     ₹0<span style={{ fontSize: 13, fontWeight: 400 }}>/mo</span>
-                    <span style={{ fontSize: 13, fontWeight: 400, color: "#94a3b8", textDecoration: "line-through", marginLeft: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 400, color: "var(--sio-muted)", textDecoration: "line-through", marginLeft: 8 }}>
                       ₹{plan.monthlyPrice.toLocaleString("en-IN")}
                     </span>
                   </div>
                 ) : (
                   <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
                     ₹{plan.monthlyPrice.toLocaleString("en-IN")}
-                    <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/mo</span>
+                    <span style={{ fontSize: 13, fontWeight: 400, color: "var(--sio-muted)" }}>/mo</span>
                   </div>
                 )
               ) : (
@@ -298,12 +298,12 @@ export default function BillingPage() {
                 // same with or without an active trial.
                 <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
                   ₹{plan.perListingPrice.toFixed(2)}
-                  <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>/listing</span>
+                  <span style={{ fontSize: 13, fontWeight: 400, color: "var(--sio-muted)" }}>/listing</span>
                 </div>
               )}
 
               {plan.monthlyPrice > 0 && (
-                <div style={{ fontSize: 12.5, color: "#94a3b8", marginBottom: 2 }}>
+                <div style={{ fontSize: 12.5, color: "var(--sio-muted)", marginBottom: 2 }}>
                   {/* perListingPrice here is always reference math only
                       ("what that works out to per SKU if fully used") -
                       never an actual charge on its own, for either plan.
@@ -318,7 +318,7 @@ export default function BillingPage() {
                   )}
                 </div>
               )}
-              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 18 }}>{plan.monthlyPrice === 0 ? `${plan.skuBand} SKUs — no monthly fee` : " "}</div>
+              <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 18 }}>{plan.monthlyPrice === 0 ? `${plan.skuBand} SKUs — no monthly fee` : " "}</div>
               <button
                 onClick={() => handleSwitch(plan.code)}
                 disabled={isCurrent || switching === plan.code}
@@ -327,8 +327,8 @@ export default function BillingPage() {
                   padding: "10px",
                   borderRadius: 999,
                   border: "none",
-                  background: isCurrent ? "#f1f5f9" : "#0f172a",
-                  color: isCurrent ? "#94a3b8" : "#fff",
+                  background: isCurrent ? "var(--sio-cream)" : "var(--sio-ink)",
+                  color: isCurrent ? "var(--sio-muted)" : "#fff",
                   fontWeight: 600,
                   fontSize: 13,
                   cursor: isCurrent ? "default" : "pointer",
@@ -344,7 +344,7 @@ export default function BillingPage() {
       {SHOW_BOOST && (
         <>
           <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Boost Your Store</h2>
-          <p style={{ color: "#64748b", fontSize: 13, marginBottom: 14 }}>
+          <p style={{ color: "var(--sio-muted)", fontSize: 13, marginBottom: 14 }}>
             Rank first in "Stores near you" and on /shops for a fixed window — the more shoppers see your store, the more that traffic is worth.
           </p>
           <div
@@ -352,26 +352,26 @@ export default function BillingPage() {
             style={{
               background: "#fff",
               borderRadius: 16,
-              border: boostActive ? "2px solid #d97706" : "1px solid #f1f5f9",
+              border: boostActive ? "2px solid var(--sio-pending)" : "1px solid var(--sio-cream)",
               padding: 22,
               marginBottom: 32,
             }}
           >
             {boostActive ? (
               <div style={{ marginBottom: 16 }}>
-                <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "#fef3c7", color: "#b45309" }}>
+                <span style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "var(--sio-pending-bg)", color: "var(--sio-pending)" }}>
                   ⚡ Featured
                 </span>
-                <span style={{ marginLeft: 10, fontSize: 13, color: "#64748b" }}>
+                <span style={{ marginLeft: 10, fontSize: 13, color: "var(--sio-muted)" }}>
                   Active until {new Date(boost.boostedUntil!).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                 </span>
               </div>
             ) : (
-              <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 16 }}>Not currently boosted.</p>
+              <p style={{ fontSize: 13, color: "var(--sio-muted)", marginBottom: 16 }}>Not currently boosted.</p>
             )}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
               {boost.packages.map((pkg) => (
-                <div key={pkg.days} style={{ border: "1px solid #f1f5f9", borderRadius: 12, padding: 16, textAlign: "center" }}>
+                <div key={pkg.days} style={{ border: "1px solid var(--sio-cream)", borderRadius: 12, padding: 16, textAlign: "center" }}>
                   <div style={{ fontWeight: 700, fontSize: 16 }}>{pkg.label}</div>
                   <div style={{ fontSize: 20, fontWeight: 700, margin: "6px 0" }}>₹{pkg.price.toLocaleString("en-IN")}</div>
                   <button
@@ -382,7 +382,7 @@ export default function BillingPage() {
                       padding: "9px",
                       borderRadius: 999,
                       border: "none",
-                      background: "#d97706",
+                      background: "var(--sio-pending)",
                       color: "#fff",
                       fontWeight: 600,
                       fontSize: 13,
@@ -401,13 +401,13 @@ export default function BillingPage() {
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>GST Invoices</h2>
       {freeTrial.active ? (
-        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 20, fontSize: 13, color: "#64748b" }}>
+        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 20, fontSize: 13, color: "var(--sio-muted)" }}>
           Nothing to invoice yet — you're in your free {freeTrial.months}-month launch period, so there's been no billing to generate a GST
           invoice for.
         </div>
       ) : (
-      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "12px 18px", fontSize: 12, fontWeight: 700, color: "#64748b", borderBottom: "1px solid #f1f5f9" }}>
+      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "12px 18px", fontSize: 12, fontWeight: 700, color: "var(--sio-muted)", borderBottom: "1px solid var(--sio-cream)" }}>
           <div>Invoice</div>
           <div>Taxable Value</div>
           <div>Tax</div>
@@ -420,18 +420,18 @@ export default function BillingPage() {
               ? `IGST ₹${inv.igst.toLocaleString("en-IN")}`
               : `CGST ₹${inv.cgst.toLocaleString("en-IN")} + SGST ₹${inv.sgst.toLocaleString("en-IN")}`;
           return (
-            <div key={inv.id} style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "14px 18px", fontSize: 13, borderBottom: "1px solid #f8fafc" }}>
+            <div key={inv.id} style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", padding: "14px 18px", fontSize: 13, borderBottom: "1px solid var(--sio-cream)" }}>
               <div style={{ fontWeight: 600 }}>{inv.id}</div>
               <div>₹{inv.taxableValue.toLocaleString("en-IN")}</div>
               <div>{taxLabel}</div>
               <div style={{ fontWeight: 700 }}>₹{inv.total.toLocaleString("en-IN")}</div>
-              <div style={{ color: "#64748b" }}>{new Date(inv.issuedAt).toLocaleDateString("en-IN")}</div>
+              <div style={{ color: "var(--sio-muted)" }}>{new Date(inv.issuedAt).toLocaleDateString("en-IN")}</div>
             </div>
           );
         })}
       </div>
       )}
-      <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>
+      <p style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 10 }}>
         Tax split follows the platform's registered state (Maharashtra, code 27) vs. the merchant's state-of-supply, per{" "}
         <code>fn_compute_gst_split()</code> in <code>database/schema.sql</code>.
       </p>
@@ -439,10 +439,10 @@ export default function BillingPage() {
       {store.status === "active" && (
         <div
           className="sio-card"
-          style={{ background: "#fff", borderRadius: 16, border: "1px solid #fecdd3", padding: 24, marginTop: 40 }}
+          style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-error-border)", padding: 24, marginTop: 40 }}
         >
-          <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: "#b91c1c" }}>Danger Zone</h2>
-          <p style={{ color: "#64748b", fontSize: 13, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: "var(--sio-error)" }}>Danger Zone</h2>
+          <p style={{ color: "var(--sio-muted)", fontSize: 13, marginBottom: 16 }}>
             Closing your store takes it down everywhere shoppers see it — search, the shop directory, and your own storefront link —
             right away. Nothing is deleted; your products and past data stay exactly as they are, just hidden. Reopening isn't
             self-service after that — you'll need to contact support.
@@ -451,21 +451,21 @@ export default function BillingPage() {
           {!confirmingClose ? (
             <button
               onClick={() => setConfirmingClose(true)}
-              style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid #fecdd3", background: "#fff", color: "#b91c1c", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+              style={{ padding: "10px 20px", borderRadius: 999, border: "1px solid var(--sio-error-border)", background: "#fff", color: "var(--sio-error)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
             >
               Close My Store
             </button>
           ) : (
-            <div style={{ background: "#fef2f2", border: "1px solid #fecdd3", borderRadius: 12, padding: 16 }}>
+            <div style={{ background: "var(--sio-error-bg)", border: "1px solid var(--sio-error-border)", borderRadius: 12, padding: 16 }}>
               <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
                 Are you sure you want to close {store.name}? Shoppers won't be able to find or reserve from it anymore.
               </p>
-              {closeError && <p style={{ fontSize: 13, color: "#b91c1c", marginBottom: 12 }}>{closeError}</p>}
+              {closeError && <p style={{ fontSize: 13, color: "var(--sio-error)", marginBottom: 12 }}>{closeError}</p>}
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   onClick={handleCloseStore}
                   disabled={closing}
-                  style={{ padding: "9px 18px", borderRadius: 999, border: "none", background: "#b91c1c", color: "#fff", fontWeight: 600, fontSize: 13, cursor: closing ? "default" : "pointer", opacity: closing ? 0.7 : 1 }}
+                  style={{ padding: "9px 18px", borderRadius: 999, border: "none", background: "var(--sio-error)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: closing ? "default" : "pointer", opacity: closing ? 0.7 : 1 }}
                 >
                   {closing ? "Closing…" : "Yes, close my store"}
                 </button>
@@ -475,7 +475,7 @@ export default function BillingPage() {
                     setCloseError("");
                   }}
                   disabled={closing}
-                  style={{ padding: "9px 18px", borderRadius: 999, border: "1px solid #e2e8f0", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+                  style={{ padding: "9px 18px", borderRadius: 999, border: "1px solid var(--sio-line)", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
                 >
                   Cancel
                 </button>

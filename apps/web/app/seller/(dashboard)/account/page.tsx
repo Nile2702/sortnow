@@ -52,7 +52,7 @@ function OnboardingWizard({ storeId }: { storeId: string }) {
   return (
     <>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Merchant Onboarding</h1>
-      <p style={{ color: "#64748b", marginBottom: 24 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 24 }}>
         We don't verify GSTIN/PAN/UPI automatically for the pilot - the site owner reviews every new seller's details by hand before the
         store goes live. See docs/05-onboarding-and-compliance.md.
       </p>
@@ -60,13 +60,13 @@ function OnboardingWizard({ storeId }: { storeId: string }) {
       <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
         {STEPS.map((s, i) => (
           <div key={s} style={{ flex: 1 }}>
-            <div style={{ height: 4, borderRadius: 999, background: i <= step ? "#0f172a" : "#e2e8f0", marginBottom: 6 }} />
-            <div style={{ fontSize: 11, color: i <= step ? "#0f172a" : "#94a3b8" }}>{s}</div>
+            <div style={{ height: 4, borderRadius: 999, background: i <= step ? "var(--sio-ink)" : "var(--sio-line)", marginBottom: 6 }} />
+            <div style={{ fontSize: 11, color: i <= step ? "var(--sio-ink)" : "var(--sio-muted)" }}>{s}</div>
           </div>
         ))}
       </div>
 
-      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 28 }}>
+      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 28 }}>
         {step === 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
@@ -88,7 +88,7 @@ function OnboardingWizard({ storeId }: { storeId: string }) {
 
         {step === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <p style={{ fontSize: 13, color: "#64748b" }}>
+            <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>
               Optional if you're under the GST registration threshold (₹40L turnover for goods) - you can still sell without a GSTIN, but
               won't be able to issue tax invoices. We don't verify this automatically; the site owner checks it by hand before approving
               your store.
@@ -104,7 +104,7 @@ function OnboardingWizard({ storeId }: { storeId: string }) {
               />
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setStep(2)} style={{ ...verifyBtnStyle(), background: "#fff", color: "#64748b", border: "1px solid #e2e8f0" }}>
+              <button onClick={() => setStep(2)} style={{ ...verifyBtnStyle(), background: "#fff", color: "var(--sio-muted)", border: "1px solid var(--sio-line)" }}>
                 Skip for now
               </button>
               <NextButton disabled={gstin.length > 0 && gstin.length !== 15} onClick={() => setStep(2)} />
@@ -114,7 +114,7 @@ function OnboardingWizard({ storeId }: { storeId: string }) {
 
         {step === 2 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <p style={{ fontSize: 13, color: "#64748b" }}>
+            <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>
               We don't verify this automatically either - just type it in and the site owner will check it against your business records
               before approving your store.
             </p>
@@ -128,12 +128,12 @@ function OnboardingWizard({ storeId }: { storeId: string }) {
 
         {step === 3 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <p style={{ fontSize: 13, color: "#64748b" }}>Where your payouts will be sent, once your store is approved and you start making sales.</p>
+            <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>Where your payouts will be sent, once your store is approved and you start making sales.</p>
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>UPI VPA for payouts</label>
               <input value={upi} onChange={(e) => setUpi(e.target.value)} style={fieldStyle()} placeholder="yourbusiness@okhdfcbank" />
             </div>
-            {submitError && <p style={{ color: "#e11d48", fontSize: 13, margin: 0 }}>{submitError}</p>}
+            {submitError && <p style={{ color: "var(--sio-error)", fontSize: 13, margin: 0 }}>{submitError}</p>}
             <NextButton disabled={!upi.includes("@") || submitting} onClick={completeOnboarding} label={submitting ? "Submitting…" : "Submit for review"} />
           </div>
         )}
@@ -142,13 +142,13 @@ function OnboardingWizard({ storeId }: { storeId: string }) {
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Your details are submitted</h2>
-            <p style={{ color: "#64748b", fontSize: 14, marginBottom: 20 }}>
+            <p style={{ color: "var(--sio-muted)", fontSize: 14, marginBottom: 20 }}>
               We'll review your GSTIN/PAN/UPI details and activate your store shortly - you'll be notified once it's live. In the meantime
               you can set up your storefront and add your first products.
             </p>
             <a
               href="/seller"
-              style={{ display: "inline-block", padding: "12px 24px", borderRadius: 999, background: "#0f172a", color: "#fff", textDecoration: "none", fontWeight: 600 }}
+              style={{ display: "inline-block", padding: "12px 24px", borderRadius: 999, background: "var(--sio-ink)", color: "#fff", textDecoration: "none", fontWeight: 600 }}
             >
               Go to Dashboard
             </a>
@@ -234,7 +234,7 @@ function AccountDetailsForm({ storeId }: { storeId: string }) {
         <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load your account details.</p>
         <button
           onClick={load}
-          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, cursor: "pointer" }}
         >
           Retry
         </button>
@@ -249,16 +249,16 @@ function AccountDetailsForm({ storeId }: { storeId: string }) {
   return (
     <>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Account</h1>
-      <p style={{ color: "#64748b", marginBottom: note ? 10 : 24 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: note ? 10 : 24 }}>
         The business, tax, and payout details you submitted during onboarding — update anything here if it's changed. None of this is
         re-verified automatically; the site owner reviews changes to GSTIN/PAN the same way as at signup.
       </p>
-      {note && <p style={{ color: "#b45309", fontSize: 13, marginBottom: 24 }}>{note}</p>}
+      {note && <p style={{ color: "var(--sio-pending)", fontSize: 13, marginBottom: 24 }}>{note}</p>}
 
       <form
         onSubmit={handleSave}
         className="sio-card"
-        style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 28, display: "flex", flexDirection: "column", gap: 16 }}
+        style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 28, display: "flex", flexDirection: "column", gap: 16 }}
       >
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Legal business name</label>
@@ -322,7 +322,7 @@ function AccountDetailsForm({ storeId }: { storeId: string }) {
         </div>
 
         {errors.length > 0 && (
-          <div style={{ fontSize: 13, color: "#e11d48" }}>
+          <div style={{ fontSize: 13, color: "var(--sio-error)" }}>
             {errors.map((e) => (
               <div key={e}>{e}</div>
             ))}
@@ -337,7 +337,7 @@ function AccountDetailsForm({ storeId }: { storeId: string }) {
             padding: "12px 24px",
             borderRadius: 999,
             border: "none",
-            background: saving ? "#94a3b8" : "#0f172a",
+            background: saving ? "var(--sio-muted)" : "var(--sio-ink)",
             color: "#fff",
             fontWeight: 600,
             fontSize: 14,
@@ -366,11 +366,11 @@ export default function AccountPage() {
 }
 
 function fieldStyle(): React.CSSProperties {
-  return { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14 };
+  return { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 14 };
 }
 
 function verifyBtnStyle(): React.CSSProperties {
-  return { padding: "10px 18px", borderRadius: 10, border: "none", background: "#0f172a", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
+  return { padding: "10px 18px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
 }
 
 function NextButton({ onClick, disabled, label = "Continue" }: { onClick: () => void; disabled?: boolean; label?: string }) {
@@ -382,8 +382,8 @@ function NextButton({ onClick, disabled, label = "Continue" }: { onClick: () => 
         padding: "12px 24px",
         borderRadius: 999,
         border: "none",
-        background: disabled ? "#e2e8f0" : "#0f172a",
-        color: disabled ? "#94a3b8" : "#fff",
+        background: disabled ? "var(--sio-line)" : "var(--sio-ink)",
+        color: disabled ? "var(--sio-muted)" : "#fff",
         fontWeight: 600,
         fontSize: 14,
         cursor: disabled ? "not-allowed" : "pointer",

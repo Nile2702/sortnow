@@ -42,7 +42,7 @@ export default async function AdminProductsPage({
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Product moderation</h1>
-      <p style={{ color: "#64748b", marginBottom: 20, fontSize: 14 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 20, fontSize: 14 }}>
         {products.length} listing{products.length === 1 ? "" : "s"} across every store
         {heldCount > 0 ? ` &middot; ${heldCount} currently on hold` : ""}. Holding a listing hides it from shoppers (search, its store page,
         reservations) immediately, while the seller still sees it (marked &ldquo;On hold&rdquo;) in their own dashboard.
@@ -51,7 +51,7 @@ export default async function AdminProductsPage({
       <form
         method="get"
         action="/admin/products"
-        style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20, background: "#fff", border: "1px solid #f1f5f9", borderRadius: 14, padding: 16 }}
+        style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20, background: "#fff", border: "1px solid var(--sio-cream)", borderRadius: 14, padding: 16 }}
       >
         <input type="hidden" name="key" value={key} />
         <input
@@ -59,23 +59,23 @@ export default async function AdminProductsPage({
           name="q"
           defaultValue={q}
           placeholder="Search by title, product code, or store name…"
-          style={{ flex: "1 1 260px", padding: "9px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}
+          style={{ flex: "1 1 260px", padding: "9px 14px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}
         />
-        <select name="status" defaultValue={statusFilter} style={{ padding: "9px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}>
+        <select name="status" defaultValue={statusFilter} style={{ padding: "9px 14px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 }}>
           <option value="all">All statuses</option>
           <option value="live">Live only</option>
           <option value="on_hold">On hold only</option>
         </select>
         <button
           type="submit"
-          style={{ padding: "9px 20px", borderRadius: 8, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+          style={{ padding: "9px 20px", borderRadius: 8, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
         >
           Filter
         </button>
       </form>
 
       {filtered.length === 0 ? (
-        <p style={{ color: "#64748b" }}>No products match this filter.</p>
+        <p style={{ color: "var(--sio-muted)" }}>No products match this filter.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filtered.map((p) => {
@@ -90,8 +90,8 @@ export default async function AdminProductsPage({
                   gap: 16,
                   alignItems: "center",
                   flexWrap: "wrap",
-                  background: isHeld ? "#fef3c7" : "#fff",
-                  border: `1px solid ${isHeld ? "#fde68a" : "#f1f5f9"}`,
+                  background: isHeld ? "var(--sio-pending-bg)" : "#fff",
+                  border: `1px solid ${isHeld ? "var(--sio-pending-border)" : "var(--sio-cream)"}`,
                   borderRadius: 14,
                   padding: 14,
                 }}
@@ -106,13 +106,13 @@ export default async function AdminProductsPage({
                     {p.title}
                     {isHeld && (
                       <span
-                        style={{ fontSize: 11, fontWeight: 700, color: "#b45309", background: "#fffbeb", border: "1px solid #fde68a", padding: "2px 8px", borderRadius: 999, textTransform: "uppercase", letterSpacing: "0.03em" }}
+                        style={{ fontSize: 11, fontWeight: 700, color: "var(--sio-pending)", background: "var(--sio-pending-bg)", border: "1px solid var(--sio-pending-border)", padding: "2px 8px", borderRadius: 999, textTransform: "uppercase", letterSpacing: "0.03em" }}
                       >
                         On hold
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 12, color: "#64748b" }}>
+                  <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>
                     {store?.name ?? "unknown store"} &middot; {p.gender} &middot; {p.subCategory}
                     {p.productCode ? ` · ${p.productCode}` : ""}
                   </div>
@@ -126,8 +126,8 @@ export default async function AdminProductsPage({
                     type="submit"
                     style={
                       isHeld
-                        ? { padding: "8px 16px", borderRadius: 8, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }
-                        : { padding: "8px 16px", borderRadius: 8, border: "1px solid #fecdd3", background: "#fff", color: "#e11d48", fontWeight: 600, fontSize: 13, cursor: "pointer" }
+                        ? { padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }
+                        : { padding: "8px 16px", borderRadius: 8, border: "1px solid var(--sio-error-border)", background: "#fff", color: "var(--sio-error)", fontWeight: 600, fontSize: 13, cursor: "pointer" }
                     }
                   >
                     {isHeld ? "Unhold" : "Hold"}

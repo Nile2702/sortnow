@@ -75,6 +75,7 @@
      different shades); now one shared pair. */
   --sio-pending: #854d0e;
   --sio-pending-bg: #fef9c3;
+  --sio-pending-border: #fde68a;
   /* The AI-photo-enhancement features' own accent (Gemini key save button,
      AI Bulk Upload link) - previously an undocumented purple (#7c3aed)
      that looked like a second, inconsistent primary-button color next to
@@ -82,6 +83,14 @@
      (reserved ONLY for AI-labeled actions) rather than folded into
      --sio-ink, but now named and documented as that deliberate exception. */
   --sio-ai-accent: #7c3aed;
+  --sio-ai-accent-bg: #faf5ff;
+  --sio-ai-accent-border: #e9d5ff;
+  /* Neutral "informational / in progress, not yet actionable" status
+     (AI bulk-photo job stages, the seller/customer notification-recipient
+     tag, a scheduled-for-later promotion) - previously three unrelated
+     indigo/blue shades (#3730a3, #2563eb, #1d4ed8) doing the same job. */
+  --sio-info: #3730a3;
+  --sio-info-bg: #e0e7ff;
   /* The price-range filter slider's thumb/track accent (previously a bare
      #ec4899) - a fourth brand color with no prior token or explanation.
      Kept as-is (changing it is a real design call, not a bug) but now

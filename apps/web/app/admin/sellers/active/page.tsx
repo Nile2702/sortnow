@@ -15,7 +15,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
   return (
     <main style={{ maxWidth: 920, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Active sellers</h1>
-      <p style={{ color: "#64748b", marginBottom: 24, fontSize: 14 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 24, fontSize: 14 }}>
         Put a store on hold to immediately pull it (and everything it lists) out of shopper-facing search, browsing, and reservations, without deleting
         anything. Reinstating it restores full visibility.
       </p>
@@ -28,25 +28,25 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
           <div
             key={s.id}
             className="sio-card"
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 18 }}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 18 }}
           >
             <div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>
-                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a", textDecoration: "none" }}>
+                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
                   {s.name}
                 </a>
               </div>
-              <div style={{ fontSize: 13, color: "#64748b" }}>
+              <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>
                 {s.city} &middot; {s.phone || "no phone on file"}
               </div>
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+              <div style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 2 }}>
                 Activated: {s.activatedAt ? new Date(s.activatedAt).toLocaleString("en-IN") : "unknown"}
               </div>
             </div>
             <form action={`/api/v1/admin/sellers/${s.id}/suspend?key=${encodeURIComponent(key)}&redirect=1`} method="post">
               <button
                 type="submit"
-                style={{ padding: "9px 18px", borderRadius: 10, border: "1px solid #fecdd3", background: "#fff", color: "#e11d48", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+                style={{ padding: "9px 18px", borderRadius: 10, border: "1px solid var(--sio-error-border)", background: "#fff", color: "var(--sio-error)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
               >
                 Put on hold
               </button>
@@ -63,23 +63,23 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
           <div
             key={s.id}
             className="sio-card"
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "#fef2f2", borderRadius: 14, border: "1px solid #fecdd3", padding: 18 }}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "var(--sio-error-bg)", borderRadius: 14, border: "1px solid var(--sio-error-border)", padding: 18 }}
           >
             <div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>
-                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a", textDecoration: "none" }}>
+                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
                   {s.name}
                 </a>
               </div>
-              <div style={{ fontSize: 13, color: "#64748b" }}>
+              <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>
                 {s.city} &middot; {s.phone || "no phone on file"}
               </div>
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>On hold - hidden from shoppers platform-wide.</div>
+              <div style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 2 }}>On hold - hidden from shoppers platform-wide.</div>
             </div>
             <form action={`/api/v1/admin/sellers/${s.id}/reinstate?key=${encodeURIComponent(key)}&redirect=1`} method="post">
               <button
                 type="submit"
-                style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+                style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
               >
                 Reinstate
               </button>
@@ -91,7 +91,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
       <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, marginTop: 32 }}>
         {closedStores.length === 0 ? "No closed stores." : `${closedStores.length} closed store${closedStores.length === 1 ? "" : "s"}`}
       </h2>
-      <p style={{ color: "#94a3b8", marginBottom: 12, fontSize: 13 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 12, fontSize: 13 }}>
         Closed by the seller themselves (Billing &gt; Danger Zone), not by a hold - reopening is a deliberate admin action, not something the
         seller can undo on their own.
       </p>
@@ -100,23 +100,23 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
           <div
             key={s.id}
             className="sio-card"
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "#f8fafc", borderRadius: 14, border: "1px solid #e2e8f0", padding: 18 }}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", background: "var(--sio-cream)", borderRadius: 14, border: "1px solid var(--sio-line)", padding: 18 }}
           >
             <div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>
-                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "#0f172a", textDecoration: "none" }}>
+                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
                   {s.name}
                 </a>
               </div>
-              <div style={{ fontSize: 13, color: "#64748b" }}>
+              <div style={{ fontSize: 13, color: "var(--sio-muted)" }}>
                 {s.city} &middot; {s.phone || "no phone on file"}
               </div>
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>Closed by the seller - hidden from shoppers platform-wide.</div>
+              <div style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 2 }}>Closed by the seller - hidden from shoppers platform-wide.</div>
             </div>
             <form action={`/api/v1/admin/sellers/${s.id}/reactivate?key=${encodeURIComponent(key)}&redirect=1`} method="post">
               <button
                 type="submit"
-                style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+                style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
               >
                 Reactivate
               </button>

@@ -187,14 +187,14 @@ export default function SellerLoginPage() {
             <Link href="/" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none", color: "#fff", marginBottom: 8 }}>
               <FullLogo height={44} chip />
             </Link>
-            <div style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 40 }}>
+            <div style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--sio-muted)", marginBottom: 40 }}>
               Seller Portal
             </div>
 
             <h1 style={{ fontSize: 30, fontWeight: 600, lineHeight: 1.25, marginBottom: 14, maxWidth: 380 }}>
               Everything your store needs, in one dashboard.
             </h1>
-            <p style={{ fontSize: 14, color: "#cbd5e1", lineHeight: 1.6, marginBottom: 40, maxWidth: 380 }}>
+            <p style={{ fontSize: 14, color: "var(--sio-line)", lineHeight: 1.6, marginBottom: 40, maxWidth: 380 }}>
               Sign in to list products, manage reservations, and put your store in front of shoppers nearby.
             </p>
 
@@ -218,7 +218,7 @@ export default function SellerLoginPage() {
                   </div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{f.title}</div>
-                    <div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.5 }}>{f.desc}</div>
+                    <div style={{ fontSize: 13, color: "var(--sio-muted)", lineHeight: 1.5 }}>{f.desc}</div>
                   </div>
                 </div>
               ))}
@@ -330,7 +330,7 @@ export default function SellerLoginPage() {
 
                 {otpError && (
                   <div
-                    style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginTop: 8, marginBottom: 6 }}
+                    style={{ background: "var(--sio-error-bg)", border: "1px solid var(--sio-error-border)", color: "var(--sio-error)", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginTop: 8, marginBottom: 6 }}
                   >
                     {otpError}
                   </div>
@@ -436,9 +436,9 @@ export default function SellerLoginPage() {
               {error && (
                 <div
                   style={{
-                    background: "#fef2f2",
-                    border: "1px solid #fecaca",
-                    color: "#b91c1c",
+                    background: "var(--sio-error-bg)",
+                    border: "1px solid var(--sio-error-border)",
+                    color: "var(--sio-error)",
                     borderRadius: 8,
                     padding: "10px 12px",
                     fontSize: 13,

@@ -163,7 +163,7 @@ export default function PromotionsPage() {
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Promotions</h1>
-      <p style={{ color: "#64748b", marginBottom: 28 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 28 }}>
         Run a real, timed discount on part of your catalog — shoppers see the cut price everywhere (search, your storefront, product
         pages) for as long as it runs, then it reverts on its own. This doesn't change your stored prices.
       </p>
@@ -171,7 +171,7 @@ export default function PromotionsPage() {
       <form
         onSubmit={handleSubmit}
         className="sio-card"
-        style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 32, display: "flex", flexDirection: "column", gap: 18 }}
+        style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24, marginBottom: 32, display: "flex", flexDirection: "column", gap: 18 }}
       >
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Name</label>
@@ -180,7 +180,7 @@ export default function PromotionsPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Festive Weekend Sale"
             maxLength={120}
-            style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}
+            style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
           />
         </div>
 
@@ -191,7 +191,7 @@ export default function PromotionsPage() {
               <select
                 value={discountType}
                 onChange={(e) => setDiscountType(e.target.value as "percent" | "flat")}
-                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}
+                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
               >
                 <option value="percent">% off</option>
                 <option value="flat">₹ off</option>
@@ -202,7 +202,7 @@ export default function PromotionsPage() {
                 max={discountType === "percent" ? 90 : undefined}
                 value={discountValue}
                 onChange={(e) => setDiscountValue(e.target.value)}
-                style={{ width: 100, padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}
+                style={{ width: 100, padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
               />
             </div>
           </div>
@@ -219,7 +219,7 @@ export default function PromotionsPage() {
                 style={{
                   padding: "8px 14px",
                   borderRadius: 999,
-                  border: scope === s ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                  border: scope === s ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
                   background: "#fff",
                   cursor: "pointer",
                   fontSize: 13,
@@ -239,7 +239,7 @@ export default function PromotionsPage() {
                   setGender(g);
                   setSubCategory(CATEGORY_TREE.find((c) => c.value === g)?.subCategories[0] ?? "");
                 }}
-                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}
+                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
               >
                 {CATEGORY_TREE.map((c) => (
                   <option key={c.value} value={c.value}>
@@ -250,7 +250,7 @@ export default function PromotionsPage() {
               <select
                 value={subCategory}
                 onChange={(e) => setSubCategory(e.target.value)}
-                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}
+                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
               >
                 {subCategoryOptions.map((sc) => (
                   <option key={sc} value={sc}>
@@ -262,21 +262,21 @@ export default function PromotionsPage() {
           )}
 
           {scope === "products" && (
-            <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid #f1f5f9", borderRadius: 10 }}>
+            <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid var(--sio-cream)", borderRadius: 10 }}>
               {products.length === 0 ? (
-                <div style={{ padding: 14, fontSize: 13, color: "#94a3b8" }}>No products yet.</div>
+                <div style={{ padding: 14, fontSize: 13, color: "var(--sio-muted)" }}>No products yet.</div>
               ) : (
                 products.map((p) => (
                   <label
                     key={p.id}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderBottom: "1px solid #f8fafc", fontSize: 13, cursor: "pointer" }}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderBottom: "1px solid var(--sio-cream)", fontSize: 13, cursor: "pointer" }}
                   >
                     <input type="checkbox" checked={selectedProductIds.has(p.id)} onChange={() => toggleProduct(p.id)} />
                     {p.images?.[0]?.url && (
                       <img src={p.images[0].url} alt="" style={{ width: 32, height: 40, objectFit: "cover", borderRadius: 4 }} />
                     )}
                     <span style={{ flex: 1 }}>{p.title}</span>
-                    <span style={{ color: "#94a3b8" }}>₹{p.basePrice.toLocaleString("en-IN")}</span>
+                    <span style={{ color: "var(--sio-muted)" }}>₹{p.basePrice.toLocaleString("en-IN")}</span>
                   </label>
                 ))
               )}
@@ -295,7 +295,7 @@ export default function PromotionsPage() {
                 type="datetime-local"
                 value={startsAt}
                 onChange={(e) => setStartsAt(e.target.value)}
-                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}
+                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
               />
             )}
           </div>
@@ -306,12 +306,12 @@ export default function PromotionsPage() {
               value={endsAt}
               onChange={(e) => setEndsAt(e.target.value)}
               required
-              style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14 }}
+              style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 14 }}
             />
           </div>
         </div>
 
-        {error && <div style={{ color: "#dc2626", fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ color: "var(--sio-error)", fontSize: 13 }}>{error}</div>}
 
         <button
           type="submit"
@@ -321,7 +321,7 @@ export default function PromotionsPage() {
             padding: "10px 22px",
             borderRadius: 999,
             border: "none",
-            background: "#0f172a",
+            background: "var(--sio-ink)",
             color: "#fff",
             fontSize: 14,
             fontWeight: 600,
@@ -335,32 +335,32 @@ export default function PromotionsPage() {
 
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Your campaigns</h2>
       {campaigns.length === 0 ? (
-        <p style={{ color: "#64748b" }}>No campaigns yet — set one up above.</p>
+        <p style={{ color: "var(--sio-muted)" }}>No campaigns yet — set one up above.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {campaigns.map((c) => {
             const status = campaignStatus(c);
             const badge =
               status === "active"
-                ? { label: "Live", bg: "#dcfce7", fg: "#16a34a" }
+                ? { label: "Live", bg: "var(--sio-success-bg)", fg: "var(--sio-success)" }
                 : status === "upcoming"
-                ? { label: "Scheduled", bg: "#dbeafe", fg: "#2563eb" }
-                : { label: "Ended", bg: "#f1f5f9", fg: "#94a3b8" };
+                ? { label: "Scheduled", bg: "var(--sio-info-bg)", fg: "var(--sio-info)" }
+                : { label: "Ended", bg: "var(--sio-cream)", fg: "var(--sio-muted)" };
             return (
               <div
                 key={c.id}
                 className="sio-card"
-                style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16, display: "flex", alignItems: "center", gap: 14 }}
+                style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16, display: "flex", alignItems: "center", gap: 14 }}
               >
                 <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, background: badge.bg, color: badge.fg, flexShrink: 0 }}>
                   {badge.label}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{c.name}</div>
-                  <div style={{ fontSize: 12.5, color: "#64748b" }}>
+                  <div style={{ fontSize: 12.5, color: "var(--sio-muted)" }}>
                     {c.discountType === "percent" ? `${c.discountValue}% off` : `₹${c.discountValue} off`} · {describeScope(c)}
                   </div>
-                  <div style={{ fontSize: 11.5, color: "#94a3b8" }}>
+                  <div style={{ fontSize: 11.5, color: "var(--sio-muted)" }}>
                     {new Date(c.startsAt).toLocaleString("en-IN")} → {new Date(c.endsAt).toLocaleString("en-IN")}
                   </div>
                 </div>
@@ -368,7 +368,7 @@ export default function PromotionsPage() {
                   <button
                     onClick={() => handleCancel(c.id)}
                     disabled={cancellingId === c.id}
-                    style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid #e2e8f0", background: "#fff", fontSize: 13, cursor: "pointer", flexShrink: 0 }}
+                    style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid var(--sio-line)", background: "#fff", fontSize: 13, cursor: "pointer", flexShrink: 0 }}
                   >
                     {cancellingId === c.id ? "Ending…" : "End now"}
                   </button>

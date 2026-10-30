@@ -56,7 +56,7 @@ const PAYMENT_MODES: { value: string; label: string }[] = [
 ];
 
 function inputStyle(): React.CSSProperties {
-  return { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 };
+  return { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--sio-line)", fontSize: 13 };
 }
 
 export default function SellerSalesPage() {
@@ -249,7 +249,7 @@ export default function SellerSalesPage() {
         <p style={{ fontWeight: 600, marginBottom: 12 }}>Couldn't load billing settings.</p>
         <button
           onClick={loadSettings}
-          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+          style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, cursor: "pointer" }}
         >
           Retry
         </button>
@@ -264,14 +264,14 @@ export default function SellerSalesPage() {
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Sales &amp; Billing</h1>
-      <p style={{ color: "#64748b", marginBottom: 28 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 28 }}>
         Record a walk-in sale from {store.name}'s own shop. Payment is collected by you directly (cash/UPI/card) — nothing moves through
         this platform. Stock updates immediately, both here and on your online listings.
       </p>
 
-      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 24 }}>
+      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24, marginBottom: 24 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Invoice type</h2>
-        <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>
+        <p style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 16 }}>
           Normal issues a plain receipt. GST Invoice adds your GSTIN and a tax breakdown — only turn this on if your shop is GST-registered.
         </p>
         <form onSubmit={saveSettings}>
@@ -284,7 +284,7 @@ export default function SellerSalesPage() {
                 gap: 8,
                 padding: "10px 14px",
                 borderRadius: 10,
-                border: settingsMode === "normal" ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                border: settingsMode === "normal" ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
                 cursor: "pointer",
                 fontSize: 13,
               }}
@@ -300,7 +300,7 @@ export default function SellerSalesPage() {
                 gap: 8,
                 padding: "10px 14px",
                 borderRadius: 10,
-                border: settingsMode === "gst" ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                border: settingsMode === "gst" ? "2px solid var(--sio-ink)" : "1px solid var(--sio-line)",
                 cursor: "pointer",
                 fontSize: 13,
               }}
@@ -347,10 +347,10 @@ export default function SellerSalesPage() {
               maxLength={300}
               style={{ ...inputStyle(), resize: "vertical" }}
             />
-            <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Printed at the bottom of every receipt/invoice - your own words, your own policy.</p>
+            <p style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 4 }}>Printed at the bottom of every receipt/invoice - your own words, your own policy.</p>
           </div>
 
-          {settingsError && <p style={{ fontSize: 12, color: "#e11d48", marginBottom: 10 }}>{settingsError}</p>}
+          {settingsError && <p style={{ fontSize: 12, color: "var(--sio-error)", marginBottom: 10 }}>{settingsError}</p>}
 
           <button
             type="submit"
@@ -359,7 +359,7 @@ export default function SellerSalesPage() {
               padding: "9px 18px",
               borderRadius: 999,
               border: "none",
-              background: savingSettings ? "#94a3b8" : "#0f172a",
+              background: savingSettings ? "var(--sio-muted)" : "var(--sio-ink)",
               color: "#fff",
               fontWeight: 600,
               fontSize: 13,
@@ -371,7 +371,7 @@ export default function SellerSalesPage() {
         </form>
       </div>
 
-      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24, marginBottom: 24 }}>
+      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24, marginBottom: 24 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>New Bill</h2>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
@@ -420,7 +420,7 @@ export default function SellerSalesPage() {
               padding: "0 18px",
               borderRadius: 8,
               border: "none",
-              background: !selectedProductId ? "#94a3b8" : "#0f172a",
+              background: !selectedProductId ? "var(--sio-muted)" : "var(--sio-ink)",
               color: "#fff",
               fontSize: 13,
               fontWeight: 600,
@@ -436,7 +436,7 @@ export default function SellerSalesPage() {
             {cart.map((line) => (
               <div
                 key={`${line.productId}-${line.size ?? ""}`}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--sio-cream)", fontSize: 13 }}
               >
                 <span>
                   {line.title}
@@ -448,7 +448,7 @@ export default function SellerSalesPage() {
                     type="button"
                     onClick={() => removeFromCart(line.productId, line.size)}
                     aria-label="Remove"
-                    style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 12 }}
+                    style={{ background: "none", border: "none", color: "var(--sio-muted)", cursor: "pointer", fontSize: 12 }}
                   >
                     ✕
                   </button>
@@ -456,7 +456,7 @@ export default function SellerSalesPage() {
               </div>
             ))}
             <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 10 }}>
-              <label style={{ fontSize: 12, color: "#64748b" }}>Discount</label>
+              <label style={{ fontSize: 12, color: "var(--sio-muted)" }}>Discount</label>
               <input
                 type="number"
                 min={0}
@@ -465,9 +465,9 @@ export default function SellerSalesPage() {
                 value={discountPercent}
                 onChange={(e) => setDiscountPercent(e.target.value)}
                 placeholder="0"
-                style={{ width: 70, padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13 }}
+                style={{ width: 70, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--sio-line)", fontSize: 13 }}
               />
-              <span style={{ fontSize: 12, color: "#64748b" }}>%</span>
+              <span style={{ fontSize: 12, color: "var(--sio-muted)" }}>%</span>
             </div>
             <div style={{ paddingTop: 6, fontSize: 13 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -475,13 +475,13 @@ export default function SellerSalesPage() {
                 <span>₹{subtotal.toFixed(2)}</span>
               </div>
               {discountAmount > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", color: "#16a34a" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", color: "var(--sio-success)" }}>
                   <span>Discount ({discountPct}%)</span>
                   <span>-₹{discountAmount.toFixed(2)}</span>
                 </div>
               )}
               {isGst && (
-                <div style={{ display: "flex", justifyContent: "space-between", color: "#64748b" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", color: "var(--sio-muted)" }}>
                   <span>Tax ({settings.taxRatePercent}%)</span>
                   <span>₹{taxAmount.toFixed(2)}</span>
                 </div>
@@ -506,7 +506,7 @@ export default function SellerSalesPage() {
           <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Phone (optional)" style={inputStyle()} />
         </div>
 
-        {cartError && <p style={{ fontSize: 12, color: "#e11d48", marginBottom: 12 }}>{cartError}</p>}
+        {cartError && <p style={{ fontSize: 12, color: "var(--sio-error)", marginBottom: 12 }}>{cartError}</p>}
 
         <button
           type="button"
@@ -516,7 +516,7 @@ export default function SellerSalesPage() {
             padding: "11px 20px",
             borderRadius: 999,
             border: "none",
-            background: cart.length === 0 || submitting ? "#94a3b8" : "#16a34a",
+            background: cart.length === 0 || submitting ? "var(--sio-muted)" : "var(--sio-success)",
             color: "#fff",
             fontWeight: 700,
             fontSize: 14,
@@ -527,10 +527,10 @@ export default function SellerSalesPage() {
         </button>
       </div>
 
-      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid #f1f5f9", padding: 24 }}>
+      <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Sales History</h2>
         {bills.length === 0 ? (
-          <p style={{ fontSize: 13, color: "#94a3b8" }}>No bills yet — create your first one above.</p>
+          <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>No bills yet — create your first one above.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {bills.map((b) => (
@@ -542,24 +542,24 @@ export default function SellerSalesPage() {
                   alignItems: "center",
                   padding: "10px 14px",
                   borderRadius: 10,
-                  border: "1px solid #f1f5f9",
+                  border: "1px solid var(--sio-cream)",
                   opacity: b.status === "void" ? 0.5 : 1,
                 }}
               >
                 <div style={{ fontSize: 13 }}>
                   <strong>{b.invoiceNumber}</strong> · {b.items.length} item{b.items.length > 1 ? "s" : ""} · ₹{b.grandTotal.toFixed(2)} ·{" "}
                   {b.paymentMode.toUpperCase()}
-                  {b.status === "void" && <span style={{ color: "#e11d48", fontWeight: 700 }}> · VOID</span>}
+                  {b.status === "void" && <span style={{ color: "var(--sio-error)", fontWeight: 700 }}> · VOID</span>}
                 </div>
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <Link href={`/seller/sales/${b.id}`} style={{ fontSize: 12, color: "#0f172a", fontWeight: 600, textDecoration: "none" }}>
+                  <Link href={`/seller/sales/${b.id}`} style={{ fontSize: 12, color: "var(--sio-ink)", fontWeight: 600, textDecoration: "none" }}>
                     View / Print
                   </Link>
                   {b.status === "issued" && (
                     <button
                       type="button"
                       onClick={() => handleVoid(b.id)}
-                      style={{ background: "none", border: "none", color: "#e11d48", fontSize: 12, cursor: "pointer" }}
+                      style={{ background: "none", border: "none", color: "var(--sio-error)", fontSize: 12, cursor: "pointer" }}
                     >
                       Void
                     </button>

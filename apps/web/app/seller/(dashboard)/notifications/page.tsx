@@ -48,7 +48,7 @@ export default function SellerNotificationsPage() {
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px 60px" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Notifications</h1>
-      <p style={{ color: "#64748b", marginBottom: 24 }}>
+      <p style={{ color: "var(--sio-muted)", marginBottom: 24 }}>
         Every SMS this platform has sent about {store.name} — to you when a reservation comes in or your store/listing status changes, and
         to shoppers when their pickup is confirmed, cancelled, or a waitlisted item comes back in stock.{" "}
         {!store.phone && (
@@ -61,11 +61,11 @@ export default function SellerNotificationsPage() {
           <LoadingSpinner />
         </div>
       ) : notifications.length === 0 ? (
-        <p style={{ color: "#94a3b8" }}>Nothing sent yet — this fills up as reservations come in and get picked up.</p>
+        <p style={{ color: "var(--sio-muted)" }}>Nothing sent yet — this fills up as reservations come in and get picked up.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {notifications.map((n) => (
-            <div key={n.id} className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", padding: 16 }}>
+            <div key={n.id} className="sio-card" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--sio-cream)", padding: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <span
                   style={{
@@ -73,16 +73,16 @@ export default function SellerNotificationsPage() {
                     fontWeight: 700,
                     padding: "3px 10px",
                     borderRadius: 999,
-                    background: n.recipient === "seller" ? "#e0e7ff" : "#dcfce7",
-                    color: n.recipient === "seller" ? "#3730a3" : "#166534",
+                    background: n.recipient === "seller" ? "var(--sio-info-bg)" : "var(--sio-success-bg)",
+                    color: n.recipient === "seller" ? "var(--sio-info)" : "var(--sio-success)",
                   }}
                 >
                   To {n.recipient === "seller" ? "you" : "shopper"} · {TRIGGER_LABEL[n.trigger] ?? n.trigger}
                 </span>
-                <span style={{ fontSize: 12, color: "#94a3b8" }}>{new Date(n.createdAt).toLocaleString("en-IN")}</span>
+                <span style={{ fontSize: 12, color: "var(--sio-muted)" }}>{new Date(n.createdAt).toLocaleString("en-IN")}</span>
               </div>
-              <p style={{ fontSize: 13.5, color: "#334155", margin: 0 }}>{n.message}</p>
-              <p style={{ fontSize: 11, color: "#cbd5e1", marginTop: 6 }}>Sent to +91 {n.phone}</p>
+              <p style={{ fontSize: 13.5, color: "var(--sio-ink-soft)", margin: 0 }}>{n.message}</p>
+              <p style={{ fontSize: 11, color: "var(--sio-line)", marginTop: 6 }}>Sent to +91 {n.phone}</p>
             </div>
           ))}
         </div>

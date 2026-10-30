@@ -42,7 +42,7 @@ export function SellerNav() {
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "#cbd5e1",
+              color: "var(--sio-line)",
               border: "1px solid rgba(255,255,255,0.2)",
               borderRadius: 999,
               padding: "3px 9px",
@@ -53,7 +53,7 @@ export function SellerNav() {
         </Link>
 
         {store && (
-          <div style={{ fontSize: 13, color: "#cbd5e1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{store.name}</div>
+          <div style={{ fontSize: 13, color: "var(--sio-line)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{store.name}</div>
         )}
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
@@ -64,7 +64,7 @@ export function SellerNav() {
               borderRadius: 999,
               fontSize: 13,
               fontWeight: 600,
-              color: "#cbd5e1",
+              color: "var(--sio-line)",
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.2)",
               cursor: "pointer",
@@ -74,7 +74,7 @@ export function SellerNav() {
             Sign out
           </button>
 
-          <Link href="/" style={{ fontSize: 13, color: "#94a3b8", textDecoration: "none", whiteSpace: "nowrap" }}>
+          <Link href="/" style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none", whiteSpace: "nowrap" }}>
             ← Back to site
           </Link>
         </div>
@@ -109,7 +109,7 @@ export function SellerNav() {
                 borderRadius: 999,
                 fontSize: 13,
                 fontWeight: active ? 700 : 400,
-                color: active ? "var(--sio-ink)" : "#cbd5e1",
+                color: active ? "var(--sio-ink)" : "var(--sio-line)",
                 background: active ? "#fff" : "transparent",
                 textDecoration: "none",
                 whiteSpace: "nowrap",
