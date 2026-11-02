@@ -1,5 +1,21 @@
-import { timingSafeEqual } from "crypto";
 import { rateLimit } from "./rate-limit";
+
+// Node's crypto.timingSafeEqual (and Buffer) aren't available in the Edge
+// Runtime that Next.js Middleware runs on - importing "crypto" there throws
+// at request time, which crashed every single /admin/* page load in
+// production with a generic MIDDLEWARE_INVOCATION_FAILED instead of a
+// proper "wrong key" response. This does the same constant-time comparison
+// (XOR every byte, OR the results together, only compare the final
+// accumulator) using nothing but plain string ops, so it works identically
+// on Edge, Node, and in the browser.
+function timingSafeEqualStr(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
 
 // Minimal shared-secret gate for the pilot's one-person admin tool
 // (app/admin/sellers + app/api/v1/admin/**). There's no admin role/session
@@ -34,10 +50,6 @@ export function isValidAdminKey(key: string | null | undefined, ip: string): boo
   // mismatched byte, which leaks (admittedly faint, over a real network)
   // timing information about how many leading characters of a guess are
   // correct. Same reasoning and pattern as lib/auth/session.ts's signature
-  // check. Lengths are compared first since timingSafeEqual itself requires
-  // equal-length buffers; a length mismatch alone can't meaningfully narrow
-  // down the secret's content the way a byte-by-byte leak could.
-  const a = Buffer.from(key ?? "");
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  // check.
+  return timingSafeEqualStr(key ?? "", expected);
 }
