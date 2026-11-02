@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isValidAdminKey } from "./lib/admin-auth";
 import { clientIp } from "./lib/rate-limit";
+import { verifyAdminSessionToken, createAdminSessionToken, ADMIN_SESSION_COOKIE, ADMIN_SESSION_MAX_AGE_SECONDS } from "./lib/admin-session";
 
 /**
  * Resolves all three storefront access patterns to one internal route:
@@ -46,18 +47,42 @@ const ALLOW_LOCAL_TUNNEL_HOST = process.env.ALLOW_LOCAL_TUNNEL_HOST === "1";
 export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
 
-  // Pilot admin review tool (app/admin/sellers) - shared-secret gate, see
-  // lib/admin-auth.ts. Checked here (not just in the page itself) so an
-  // invalid/missing key gets a real 403 rather than whatever a Server
-  // Component can manage to render with a 200 status.
+  // Pilot admin review tool (app/admin/**) - shared-secret gate, see
+  // lib/admin-auth.ts and lib/admin-session.ts. Checked here (not just in
+  // the page itself) so an unauthenticated visitor gets redirected to
+  // /admin/login rather than whatever a Server Component can manage to
+  // render with a 200 status.
   if (url.pathname.startsWith("/admin")) {
-    if (!isValidAdminKey(url.searchParams.get("key"), clientIp(req))) {
-      return NextResponse.json(
-        { error: "forbidden", message: "Missing or invalid admin key. Append ?key=<ADMIN_SECRET> to the URL." },
-        { status: 403 }
-      );
+    // The login page itself must always be reachable, or there'd be no way
+    // to ever get a session cookie in the first place.
+    if (url.pathname === "/admin/login") return NextResponse.next();
+
+    if (await verifyAdminSessionToken(req.cookies.get(ADMIN_SESSION_COOKIE)?.value)) {
+      return NextResponse.next();
     }
-    return NextResponse.next();
+
+    // Legacy fallback: an old bookmarked ?key=<ADMIN_SECRET> link still
+    // works instead of just breaking - and upgrades itself to a real
+    // session right away, so the key only has to be pasted once more, ever.
+    if (isValidAdminKey(url.searchParams.get("key"), clientIp(req))) {
+      const res = NextResponse.next();
+      const token = await createAdminSessionToken();
+      if (token) {
+        res.cookies.set(ADMIN_SESSION_COOKIE, token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          path: "/",
+          maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
+        });
+      }
+      return res;
+    }
+
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = "/admin/login";
+    loginUrl.search = `?next=${encodeURIComponent(url.pathname)}`;
+    return NextResponse.redirect(loginUrl);
   }
 
   const host = req.headers.get("host") ?? "";

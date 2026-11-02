@@ -1,4 +1,6 @@
-import { rateLimit } from "./rate-limit";
+import type { NextRequest } from "next/server";
+import { rateLimit, clientIp } from "./rate-limit";
+import { verifyAdminSessionToken, ADMIN_SESSION_COOKIE } from "./admin-session";
 
 // Node's crypto.timingSafeEqual (and Buffer) aren't available in the Edge
 // Runtime that Next.js Middleware runs on - importing "crypto" there throws
@@ -18,16 +20,17 @@ function timingSafeEqualStr(a: string, b: string): boolean {
 }
 
 // Minimal shared-secret gate for the pilot's one-person admin tool
-// (app/admin/sellers + app/api/v1/admin/**). There's no admin role/session
-// system anywhere in this codebase (only seller sessions, see
-// lib/auth/session.ts) - building a real one just for the site owner to
-// review a handful of hand-picked sellers would be overkill. Instead,
-// every admin page load and API call must carry `?key=<ADMIN_SECRET>` in
-// the URL (set the ADMIN_SECRET env var - see .env.example). Checked both
-// in middleware.ts (gates /admin/* page loads) and directly inside each
-// /api/v1/admin/** route handler (middleware's matcher excludes all of
-// /api/* for the unrelated tenant-domain rewriting it does, so those
-// routes can't rely on it and must check for themselves).
+// (app/admin/** + app/api/v1/admin/**). There's still no admin role/account
+// system (only seller sessions, see lib/auth/session.ts) - one person
+// reviewing a handful of hand-picked sellers doesn't need one. What changed
+// is *how* that one secret gets presented: instead of pasting
+// ?key=<ADMIN_SECRET> into every URL (fragile - ends up in browser history,
+// server logs, anywhere the link gets pasted, and broke outright the one
+// time a dependency it relied on didn't work on Edge), the site owner now
+// logs in once at /admin/login (see app/api/v1/admin/login/route.ts) and
+// gets a signed session cookie (lib/admin-session.ts) instead. isValidAdminKey
+// below still exists for that login check itself, and as a fallback so an
+// old bookmarked ?key= link still works instead of just breaking.
 //
 // `ip` rate-limits attempts per caller: a single shared secret with no
 // attempt throttling is otherwise brute-forceable with no slowdown.
@@ -52,4 +55,15 @@ export function isValidAdminKey(key: string | null | undefined, ip: string): boo
   // correct. Same reasoning and pattern as lib/auth/session.ts's signature
   // check.
   return timingSafeEqualStr(key ?? "", expected);
+}
+
+// The one check every /admin/* page load (middleware.ts) and every
+// /api/v1/admin/** route handler should use from here on - a valid session
+// cookie first, falling back to the legacy ?key= for old bookmarked links.
+// Both NextRequest (middleware, route handlers) expose the same
+// .cookies/.nextUrl shape this needs.
+export async function isAuthorizedAdminRequest(req: NextRequest): Promise<boolean> {
+  const sessionToken = req.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+  if (await verifyAdminSessionToken(sessionToken)) return true;
+  return isValidAdminKey(req.nextUrl.searchParams.get("key"), clientIp(req));
 }

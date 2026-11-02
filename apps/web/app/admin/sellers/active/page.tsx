@@ -4,12 +4,10 @@ import { getActiveStores, getSuspendedStores, getClosedStores } from "../../../.
 // /admin/sellers (the signup review queue) for a store that's ALREADY
 // active: a shopper complaint or a policy violation found after approval
 // can put it on hold without needing to touch the signup queue at all.
-// Reached as /admin/sellers/active?key=<ADMIN_SECRET> - same shared-secret
-// gate as the rest of /admin/** (see lib/admin-auth.ts, middleware.ts,
-// which rejects anything under /admin with a 403 before this component
-// ever runs).
-export default async function AdminActiveSellersPage({ searchParams }: { searchParams: { key?: string } }) {
-  const key = searchParams.key ?? "";
+// Same session-cookie gate as the rest of /admin/** (see lib/admin-auth.ts,
+// middleware.ts, which redirects to /admin/login before this component
+// ever runs for anyone not already signed in).
+export default async function AdminActiveSellersPage() {
   const [activeStores, suspendedStores, closedStores] = await Promise.all([getActiveStores(), getSuspendedStores(), getClosedStores()]);
 
   return (
@@ -32,7 +30,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
           >
             <div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>
-                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
+                <a href={`/admin/sellers/${s.id}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
                   {s.name}
                 </a>
               </div>
@@ -43,7 +41,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
                 Activated: {s.activatedAt ? new Date(s.activatedAt).toLocaleString("en-IN") : "unknown"}
               </div>
             </div>
-            <form action={`/api/v1/admin/sellers/${s.id}/suspend?key=${encodeURIComponent(key)}&redirect=1`} method="post">
+            <form action={`/api/v1/admin/sellers/${s.id}/suspend?redirect=1`} method="post">
               <button
                 type="submit"
                 style={{ padding: "9px 18px", borderRadius: 10, border: "1px solid var(--sio-error-border)", background: "#fff", color: "var(--sio-error)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
@@ -67,7 +65,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
           >
             <div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>
-                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
+                <a href={`/admin/sellers/${s.id}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
                   {s.name}
                 </a>
               </div>
@@ -76,7 +74,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
               </div>
               <div style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 2 }}>On hold - hidden from shoppers platform-wide.</div>
             </div>
-            <form action={`/api/v1/admin/sellers/${s.id}/reinstate?key=${encodeURIComponent(key)}&redirect=1`} method="post">
+            <form action={`/api/v1/admin/sellers/${s.id}/reinstate?redirect=1`} method="post">
               <button
                 type="submit"
                 style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
@@ -104,7 +102,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
           >
             <div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>
-                <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
+                <a href={`/admin/sellers/${s.id}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
                   {s.name}
                 </a>
               </div>
@@ -113,7 +111,7 @@ export default async function AdminActiveSellersPage({ searchParams }: { searchP
               </div>
               <div style={{ fontSize: 11, color: "var(--sio-muted)", marginTop: 2 }}>Closed by the seller - hidden from shoppers platform-wide.</div>
             </div>
-            <form action={`/api/v1/admin/sellers/${s.id}/reactivate?key=${encodeURIComponent(key)}&redirect=1`} method="post">
+            <form action={`/api/v1/admin/sellers/${s.id}/reactivate?redirect=1`} method="post">
               <button
                 type="submit"
                 style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}

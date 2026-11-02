@@ -2,18 +2,16 @@ import { getAllProducts, getAllStores } from "../../../lib/seed-data";
 
 // Pilot-only individual-listing moderation tool - the narrower alternative
 // to /admin/sellers/active (which holds/reinstates an entire seller) for
-// when only one product is the problem. Reached as
-// /admin/products?key=<ADMIN_SECRET> - same shared-secret gate as the rest
-// of /admin/** (see lib/admin-auth.ts, middleware.ts). No client JS: the
-// search box and status filter are a plain GET <form> (reloads this page
-// with ?q=&status=), same philosophy as the Hold/Unhold buttons below being
-// plain POST <form>s - a pilot tool for one person doesn't need a SPA.
+// when only one product is the problem. Same session-cookie gate as the
+// rest of /admin/** (see lib/admin-auth.ts, middleware.ts). No client JS:
+// the search box and status filter are a plain GET <form> (reloads this
+// page with ?q=&status=), same philosophy as the Hold/Unhold buttons below
+// being plain POST <form>s - a pilot tool for one person doesn't need a SPA.
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: { key?: string; q?: string; status?: string };
+  searchParams: { q?: string; status?: string };
 }) {
-  const key = searchParams.key ?? "";
   const q = searchParams.q?.trim() ?? "";
   const statusFilter = searchParams.status === "live" || searchParams.status === "on_hold" ? searchParams.status : "all";
 
@@ -53,7 +51,6 @@ export default async function AdminProductsPage({
         action="/admin/products"
         style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20, background: "#fff", border: "1px solid var(--sio-cream)", borderRadius: 16, padding: 16 }}
       >
-        <input type="hidden" name="key" value={key} />
         <input
           type="text"
           name="q"
@@ -119,7 +116,7 @@ export default async function AdminProductsPage({
                 </div>
                 <div style={{ fontWeight: 700, minWidth: 70, textAlign: "right" }}>₹{p.basePrice.toLocaleString("en-IN")}</div>
                 <form
-                  action={`/api/v1/admin/products/${p.id}/${isHeld ? "unhold" : "hold"}?key=${encodeURIComponent(key)}&redirect=1${filterQS}`}
+                  action={`/api/v1/admin/products/${p.id}/${isHeld ? "unhold" : "hold"}?redirect=1${filterQS}`}
                   method="post"
                 >
                   <button

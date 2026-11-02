@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { activateStore, getAllStores } from "../../../../../../../lib/seed-data";
-import { isValidAdminKey } from "../../../../../../../lib/admin-auth";
-import { clientIp } from "../../../../../../../lib/rate-limit";
+import { isAuthorizedAdminRequest } from "../../../../../../../lib/admin-auth";
 
 // The ONLY path that flips a "pending_review" store to "active" - called
 // by the site owner from /admin/sellers after manually looking over the
 // GSTIN/PAN/UPI details a seller submitted during onboarding (never from
 // the seller's own onboarding flow - see
-// app/api/v1/seller/stores/[storeId]/submit-for-review). Gated by the same
-// ?key=<ADMIN_SECRET> shared secret as the admin page - see
-// lib/admin-auth.ts; middleware.ts does NOT cover /api/* routes, so this
-// has to check for itself.
+// app/api/v1/seller/stores/[storeId]/submit-for-review). Gated the same
+// way as the admin page itself - see lib/admin-auth.ts; middleware.ts does
+// NOT cover /api/* routes, so this has to check for itself.
 export async function POST(req: NextRequest, { params }: { params: { storeId: string } }) {
-  if (!isValidAdminKey(req.nextUrl.searchParams.get("key"), clientIp(req))) {
-    return NextResponse.json({ error: "forbidden", message: "Missing or invalid admin key." }, { status: 403 });
+  if (!(await isAuthorizedAdminRequest(req))) {
+    return NextResponse.json({ error: "forbidden", message: "Not signed in as admin." }, { status: 403 });
   }
 
   const stores = await getAllStores();
@@ -25,9 +23,10 @@ export async function POST(req: NextRequest, { params }: { params: { storeId: st
 
   // The admin page's Approve button is a plain HTML <form> post (simplest
   // thing that works for a one-person pilot tool, no client JS needed) -
-  // redirect back to the queue instead of dumping JSON in the browser.
+  // redirect back to the queue instead of dumping JSON in the browser. No
+  // key to re-thread anymore - the session cookie travels automatically.
   if (req.nextUrl.searchParams.get("redirect") === "1") {
-    return NextResponse.redirect(new URL(`/admin/sellers?key=${encodeURIComponent(req.nextUrl.searchParams.get("key") ?? "")}`, req.url), 303);
+    return NextResponse.redirect(new URL("/admin/sellers", req.url), 303);
   }
   return NextResponse.json(updated);
 }

@@ -11,9 +11,7 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
 // Dedicated reservation activity page, split out of /admin/customers (the
 // overview dashboard) so a stat tile like "Store visits" or "No-show rate"
 // navigates somewhere real instead of just scrolling the same page.
-export default async function AdminCustomerActivityPage({ searchParams }: { searchParams: { key?: string; status?: string } }) {
-  const key = searchParams.key ?? "";
-  const keyQS = `key=${encodeURIComponent(key)}`;
+export default async function AdminCustomerActivityPage({ searchParams }: { searchParams: { status?: string } }) {
   const statusFilter = searchParams.status;
 
   const [shoppers, reservations] = await Promise.all([getAllShoppers(), getAllReservations()]);
@@ -24,7 +22,7 @@ export default async function AdminCustomerActivityPage({ searchParams }: { sear
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
-      <Link href={`/admin/customers?${keyQS}`} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
+      <Link href={`/admin/customers`} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
         ← Customers &amp; Footfall
       </Link>
       <h1 style={{ fontSize: 24, fontWeight: 700, margin: "8px 0 4px" }}>{filterLabel ? `Activity — ${filterLabel}` : "All activity"}</h1>
@@ -33,7 +31,7 @@ export default async function AdminCustomerActivityPage({ searchParams }: { sear
         {statusFilter && (
           <>
             {" · "}
-            <Link href={`/admin/customers/activity?${keyQS}`} style={{ color: "var(--sio-muted)" }}>
+            <Link href={`/admin/customers/activity`} style={{ color: "var(--sio-muted)" }}>
               clear filter
             </Link>
           </>
@@ -55,14 +53,14 @@ export default async function AdminCustomerActivityPage({ searchParams }: { sear
                 >
                   <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: style.bg, color: style.color, flexShrink: 0 }}>{style.label}</span>
                   {shopperId ? (
-                    <Link href={`/admin/customers/${shopperId}?${keyQS}`} style={{ fontWeight: 600, color: "var(--sio-ink)", textDecoration: "none" }}>
+                    <Link href={`/admin/customers/${shopperId}`} style={{ fontWeight: 600, color: "var(--sio-ink)", textDecoration: "none" }}>
                       {r.shopperName}
                     </Link>
                   ) : (
                     <span style={{ fontWeight: 600 }}>{r.shopperName}</span>
                   )}
                   <span style={{ color: "var(--sio-muted)" }}>at</span>
-                  <Link href={`/admin/sellers/${r.storeId}?${keyQS}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
+                  <Link href={`/admin/sellers/${r.storeId}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
                     {r.storeName}
                   </Link>
                   <span style={{ marginLeft: "auto", color: "var(--sio-muted)", fontSize: 12 }}>

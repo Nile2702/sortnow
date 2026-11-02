@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { FullLogo } from "./LogoBadge";
 
 const TABS = [
@@ -21,11 +21,16 @@ const TABS = [
 // "this isn't the storefront" visual language, not two different kinds of
 // one-off. Each of the 4 admin pages used to build its own copy of this
 // same cross-page nav inline (with the ?key= carried through by hand) -
-// consolidated here once instead.
+// consolidated here once instead, and the key threading itself dropped
+// entirely now that a session cookie travels automatically (see
+// lib/admin-session.ts) - no more manually passing it from link to link.
 export function AdminNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const keyQS = `?key=${encodeURIComponent(searchParams.get("key") ?? "")}`;
+  // The login page has no session yet - showing a nav bar full of
+  // moderation tabs there would be misleading (and clicking one would just
+  // bounce straight back to /admin/login anyway).
+  if (pathname === "/admin/login") return null;
+
   const activeHref = [...TABS]
     .sort((a, b) => b.href.length - a.href.length)
     .find((tab) => pathname === tab.href || pathname.startsWith(`${tab.href}/`))?.href;
@@ -66,7 +71,7 @@ export function AdminNav() {
             return (
               <Link
                 key={tab.href}
-                href={`${tab.href}${keyQS}`}
+                href={tab.href}
                 style={{
                   padding: "7px 12px",
                   borderRadius: 999,
@@ -82,6 +87,24 @@ export function AdminNav() {
             );
           })}
         </nav>
+
+        <form method="post" action="/api/v1/admin/logout" style={{ marginLeft: "auto" }}>
+          <button
+            type="submit"
+            style={{
+              background: "none",
+              border: "1px solid rgba(255,255,255,0.25)",
+              color: "#cbd5e1",
+              borderRadius: 999,
+              padding: "6px 12px",
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Log out
+          </button>
+        </form>
       </div>
     </div>
   );

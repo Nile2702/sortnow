@@ -21,22 +21,15 @@ import { CheckIcon, StarIcon, ArrowUpIcon, ArrowDownIcon, ArrowRightIcon } from 
 // /admin/sellers/active, wanted to click a store and see its plan, product
 // counts, and a short footfall summary in one place instead of having none
 // of that visible from the admin side at all (it previously only existed on
-// the seller's own dashboard, see app/seller/(dashboard)/analytics). Reached
-// as /admin/sellers/<storeId>?key=<ADMIN_SECRET> - same shared-secret gate
-// as the rest of /admin/** (see lib/admin-auth.ts, middleware.ts, which
-// rejects anything under /admin with a 403 before this component ever
-// runs). `storeId` is matched against either the store's id or its slug,
-// same lookup convention as the approve/reject/suspend/reinstate API routes
+// the seller's own dashboard, see app/seller/(dashboard)/analytics). Same
+// session-cookie gate as the rest of /admin/** (see lib/admin-auth.ts,
+// middleware.ts, which redirects to /admin/login before this component ever
+// runs for anyone not already signed in). `storeId` is matched against
+// either the store's id or its slug, same lookup convention as the
+// approve/reject/suspend/reinstate API routes
 // (app/api/v1/admin/sellers/[storeId]/**), so a bookmarked slug-based link
 // keeps working even though every link this codebase generates uses the id.
-export default async function AdminSellerDetailPage({
-  params,
-  searchParams,
-}: {
-  params: { storeId: string };
-  searchParams: { key?: string };
-}) {
-  const key = searchParams.key ?? "";
+export default async function AdminSellerDetailPage({ params }: { params: { storeId: string } }) {
   const stores = await getAllStores();
   const store = stores.find((s) => s.id === params.storeId || s.slug === params.storeId);
 
@@ -44,7 +37,7 @@ export default async function AdminSellerDetailPage({
     return (
       <main style={{ maxWidth: 720, margin: "0 auto", padding: "28px 20px 60px" }}>
         <p style={{ color: "var(--sio-muted)" }}>No store matches &ldquo;{params.storeId}&rdquo;.</p>
-        <a href={`/admin/sellers/active?key=${encodeURIComponent(key)}`} style={{ color: "var(--sio-ink)" }}>
+        <a href="/admin/sellers/active" style={{ color: "var(--sio-ink)" }}>
           &larr; Back to active sellers
         </a>
       </main>
@@ -82,8 +75,6 @@ export default async function AdminSellerDetailPage({
   const TrendArrow = trend === "Up" ? ArrowUpIcon : trend === "Down" ? ArrowDownIcon : ArrowRightIcon;
   const trendColor = trend === "Up" ? "var(--sio-success)" : trend === "Down" ? "var(--sio-error)" : "var(--sio-muted)";
 
-  const keyQS = `?key=${encodeURIComponent(key)}`;
-
   return (
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "28px 20px 60px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 12, marginBottom: 4 }}>
@@ -95,7 +86,7 @@ export default async function AdminSellerDetailPage({
       <p style={{ color: "var(--sio-muted)", marginBottom: 24, fontSize: 14 }}>
         Consolidated view for the site owner - plan, listings, sales, reservation reliability, ratings, and a short
         footfall summary in one place. Use{" "}
-        <a href={`/admin/sellers/active${keyQS}`} style={{ color: "inherit" }}>
+        <a href="/admin/sellers/active" style={{ color: "inherit" }}>
           Active sellers
         </a>{" "}
         to put this store on hold or reinstate it.

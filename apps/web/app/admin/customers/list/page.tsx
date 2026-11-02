@@ -11,10 +11,8 @@ const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 export default async function AdminCustomerListPage({
   searchParams,
 }: {
-  searchParams: { key?: string; q?: string; joined?: string; referred?: string; repeat?: string };
+  searchParams: { q?: string; joined?: string; referred?: string; repeat?: string };
 }) {
-  const key = searchParams.key ?? "";
-  const keyQS = `key=${encodeURIComponent(key)}`;
   const q = (searchParams.q ?? "").trim().toLowerCase();
   const joined = searchParams.joined; // "week" | "month" | undefined
   const referredOnly = searchParams.referred === "1";
@@ -44,7 +42,7 @@ export default async function AdminCustomerListPage({
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 60px" }}>
-      <Link href={`/admin/customers?${keyQS}`} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
+      <Link href={`/admin/customers`} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
         ← Customers &amp; Footfall
       </Link>
       <h1 style={{ fontSize: 24, fontWeight: 700, margin: "8px 0 4px" }}>Customers{filterLabel ? ` — ${filterLabel}` : ""}</h1>
@@ -55,7 +53,6 @@ export default async function AdminCustomerListPage({
       <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
           <form method="get" style={{ display: "flex", gap: 8 }}>
-            <input type="hidden" name="key" value={key} />
             <input
               type="text"
               name="q"
@@ -68,7 +65,7 @@ export default async function AdminCustomerListPage({
             </button>
           </form>
           {filterActive && (
-            <Link href={`/admin/customers/list?${keyQS}`} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
+            <Link href={`/admin/customers/list`} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
               Clear all filters
             </Link>
           )}
@@ -102,7 +99,7 @@ export default async function AdminCustomerListPage({
             {filtered.map((s) => (
               <Link
                 key={s.id}
-                href={`/admin/customers/${s.id}?${keyQS}`}
+                href={`/admin/customers/${s.id}`}
                 className="sio-card"
                 style={{
                   display: "grid",

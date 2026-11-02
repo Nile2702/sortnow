@@ -9,10 +9,7 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
   cancelled: { bg: "var(--sio-cream)", color: "var(--sio-muted)", label: "Cancelled" },
 };
 
-export default async function AdminCustomerDetailPage({ params, searchParams }: { params: { shopperId: string }; searchParams: { key?: string } }) {
-  const key = searchParams.key ?? "";
-  const keyQS = `key=${encodeURIComponent(key)}`;
-
+export default async function AdminCustomerDetailPage({ params }: { params: { shopperId: string } }) {
   const shopper = await getShopperById(params.shopperId);
   if (!shopper) notFound();
 
@@ -23,7 +20,7 @@ export default async function AdminCustomerDetailPage({ params, searchParams }: 
 
   return (
     <main style={{ maxWidth: 820, margin: "0 auto", padding: "28px 20px 60px" }}>
-      <Link href={`/admin/customers?${keyQS}`} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
+      <Link href={`/admin/customers`} style={{ fontSize: 13, color: "var(--sio-muted)", textDecoration: "none" }}>
         ← All customers
       </Link>
       <h1 style={{ fontSize: 24, fontWeight: 700, margin: "8px 0 4px" }}>{shopper.name}</h1>
@@ -62,7 +59,7 @@ export default async function AdminCustomerDetailPage({ params, searchParams }: 
                 <div key={r.id} style={{ border: "1px solid var(--sio-cream)", borderRadius: 10, padding: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
                     <div>
-                      <Link href={`/admin/sellers/${r.storeId}?${keyQS}`} style={{ fontWeight: 700, fontSize: 14, color: "var(--sio-ink)", textDecoration: "none" }}>
+                      <Link href={`/admin/sellers/${r.storeId}`} style={{ fontWeight: 700, fontSize: 14, color: "var(--sio-ink)", textDecoration: "none" }}>
                         {r.storeName}
                       </Link>
                       <div style={{ fontSize: 12, color: "var(--sio-muted)" }}>

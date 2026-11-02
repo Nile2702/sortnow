@@ -3,13 +3,10 @@ import { getStoresPendingReview } from "../../../lib/seed-data";
 // Pilot-only manual seller review queue - the site owner looks over the
 // GSTIN/PAN/UPI a seller typed in during onboarding (never verified by any
 // real KYC provider, see app/seller/(dashboard)/onboarding/page.tsx) and
-// decides whether to activate the store. Reached as
-// /admin/sellers?key=<ADMIN_SECRET> - middleware.ts rejects anything else
-// with a 403 before this component ever runs, so by the time we're here
-// the key (still needed below to carry forward into the Approve/Reject
-// form actions) has already been validated.
-export default async function AdminSellersPage({ searchParams }: { searchParams: { key?: string } }) {
-  const key = searchParams.key ?? "";
+// decides whether to activate the store. middleware.ts redirects anything
+// unauthenticated to /admin/login before this component ever runs - no key
+// to carry forward here anymore, the session cookie travels on its own.
+export default async function AdminSellersPage() {
   const stores = await getStoresPendingReview();
 
   return (
@@ -25,7 +22,7 @@ export default async function AdminSellersPage({ searchParams }: { searchParams:
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
               <div>
                 <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 2 }}>
-                  <a href={`/admin/sellers/${s.id}?key=${encodeURIComponent(key)}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
+                  <a href={`/admin/sellers/${s.id}`} style={{ color: "var(--sio-ink)", textDecoration: "none" }}>
                     {s.name}
                   </a>
                 </h2>
@@ -47,7 +44,7 @@ export default async function AdminSellersPage({ searchParams }: { searchParams:
             </dl>
 
             <div style={{ display: "flex", gap: 10 }}>
-              <form action={`/api/v1/admin/sellers/${s.id}/approve?key=${encodeURIComponent(key)}&redirect=1`} method="post">
+              <form action={`/api/v1/admin/sellers/${s.id}/approve?redirect=1`} method="post">
                 <button
                   type="submit"
                   style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
@@ -55,7 +52,7 @@ export default async function AdminSellersPage({ searchParams }: { searchParams:
                   Approve &amp; activate
                 </button>
               </form>
-              <form action={`/api/v1/admin/sellers/${s.id}/reject?key=${encodeURIComponent(key)}&redirect=1`} method="post">
+              <form action={`/api/v1/admin/sellers/${s.id}/reject?redirect=1`} method="post">
                 <button
                   type="submit"
                   style={{ padding: "10px 20px", borderRadius: 10, border: "1px solid var(--sio-line)", background: "#fff", color: "var(--sio-muted)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}

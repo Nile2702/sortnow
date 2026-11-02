@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { getPlatformCustomerStats } from "../../../lib/seed-data";
 
-// Admin-only footfall analytics overview. Reached as
-// /admin/customers?key=<ADMIN_SECRET> - middleware.ts rejects anything else
-// with a 403 before this component ever runs, so the key (still needed
-// below to carry forward into every link) has already been validated by
-// the time we're here - same pattern as every other app/admin/* page.
+// Admin-only footfall analytics overview. Same session-cookie gate as every
+// other app/admin/* page (see lib/admin-auth.ts, middleware.ts) - no key to
+// carry forward into links anymore, the session cookie travels on its own.
 //
 // "Footfall" here specifically means a reservation actually picked up
 // in-store (status "fulfilled") - this platform's only real signal that a
@@ -20,10 +18,7 @@ import { getPlatformCustomerStats } from "../../../lib/seed-data";
 // page that looks unchanged). The customer list and the reservation
 // activity feed live on their own pages for the same reason a click should
 // go somewhere, not just move the scrollbar.
-export default async function AdminCustomersPage({ searchParams }: { searchParams: { key?: string } }) {
-  const key = searchParams.key ?? "";
-  const keyQS = `key=${encodeURIComponent(key)}`;
-
+export default async function AdminCustomersPage() {
   const stats = await getPlatformCustomerStats();
 
   const maxDaily = Math.max(1, ...stats.dailyFootfall.map((d) => d.count));
@@ -38,22 +33,22 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
-        <StatTile href={`/admin/customers/list?${keyQS}`} value={stats.totalCustomers} label="Total customers" />
-        <StatTile href={`/admin/customers/list?${keyQS}&joined=week`} value={stats.newCustomersThisWeek} label="New this week" />
-        <StatTile href={`/admin/customers/list?${keyQS}&joined=month`} value={stats.newCustomersThisMonth} label="New this month" />
-        <StatTile href={`/admin/customers/list?${keyQS}&referred=1`} value={stats.referredSignupCount} label="Signed up via referral" />
-        <StatTile href={`/admin/customers/activity?${keyQS}`} value={stats.totalReservations} label="Total reservations" />
-        <StatTile href={`/admin/customers/activity?${keyQS}&status=fulfilled`} value={stats.fulfilled} label="Store visits" />
-        <StatTile href={`/admin/customers/activity?${keyQS}&status=pending`} value={stats.pending} label="Pending pickups" />
-        <StatTile href={`/admin/customers/activity?${keyQS}&status=cancelled`} value={stats.cancelled} label="Cancelled" />
+        <StatTile href={`/admin/customers/list`} value={stats.totalCustomers} label="Total customers" />
+        <StatTile href={`/admin/customers/list?joined=week`} value={stats.newCustomersThisWeek} label="New this week" />
+        <StatTile href={`/admin/customers/list?joined=month`} value={stats.newCustomersThisMonth} label="New this month" />
+        <StatTile href={`/admin/customers/list?referred=1`} value={stats.referredSignupCount} label="Signed up via referral" />
+        <StatTile href={`/admin/customers/activity`} value={stats.totalReservations} label="Total reservations" />
+        <StatTile href={`/admin/customers/activity?status=fulfilled`} value={stats.fulfilled} label="Store visits" />
+        <StatTile href={`/admin/customers/activity?status=pending`} value={stats.pending} label="Pending pickups" />
+        <StatTile href={`/admin/customers/activity?status=cancelled`} value={stats.cancelled} label="Cancelled" />
         <StatTile
-          href={`/admin/customers/activity?${keyQS}&status=expired`}
+          href={`/admin/customers/activity?status=expired`}
           value={`${stats.uncollectedPercent}%`}
           label="No-show rate"
           sub={`${stats.expired} expired of ${stats.fulfilled + stats.expired} resolved`}
         />
         <StatTile
-          href={`/admin/customers/list?${keyQS}&repeat=1`}
+          href={`/admin/customers/list?repeat=1`}
           value={`${stats.repeatCustomerPercent}%`}
           label="Repeat-visit rate"
           sub={`${stats.repeatCustomerCount} of ${stats.customersWithAVisit} who've visited`}
@@ -94,7 +89,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
               {stats.topStoresByFootfall.map((s) => (
                 <div key={s.storeId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <Link
-                    href={`/admin/sellers/${s.storeId}?${keyQS}`}
+                    href={`/admin/sellers/${s.storeId}`}
                     style={{ fontSize: 13, width: 140, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--sio-ink)", fontWeight: 600, textDecoration: "none" }}
                   >
                     {s.storeName}
@@ -118,7 +113,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
               {stats.topCities.map((c) => (
                 <div key={c.city} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <Link
-                    href={`/admin/customers/list?${keyQS}&q=${encodeURIComponent(c.city)}`}
+                    href={`/admin/customers/list?q=${encodeURIComponent(c.city)}`}
                     style={{ fontSize: 13, width: 140, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--sio-ink)", textDecoration: "none" }}
                   >
                     {c.city}
@@ -136,14 +131,14 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
 
       <div style={{ display: "flex", gap: 12 }}>
         <Link
-          href={`/admin/customers/list?${keyQS}`}
+          href={`/admin/customers/list`}
           className="sio-card"
           style={{ flex: 1, textAlign: "center", padding: "16px", borderRadius: 16, border: "1px solid var(--sio-cream)", background: "#fff", color: "var(--sio-ink)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
         >
           View all customers →
         </Link>
         <Link
-          href={`/admin/customers/activity?${keyQS}`}
+          href={`/admin/customers/activity`}
           className="sio-card"
           style={{ flex: 1, textAlign: "center", padding: "16px", borderRadius: 16, border: "1px solid var(--sio-cream)", background: "#fff", color: "var(--sio-ink)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
         >
