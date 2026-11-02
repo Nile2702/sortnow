@@ -318,6 +318,23 @@ export default function BulkPhotoUploadPage() {
     }
   }
 
+  // Reverts a single draft's background removal - d.originalImage is the
+  // raw upload, kept untouched by the whole pipeline for exactly this
+  // purpose (see the Draft interface's own comment), so this is just a
+  // state reset, no re-processing involved. Same "Revert to original"
+  // affordance the single-product form (ProductForm.tsx) already has.
+  function handleUndoBackgroundRemoval(localId: string) {
+    const draft = drafts.find((d) => d.localId === localId);
+    if (!draft) return;
+    updateDraft(localId, {
+      image: draft.originalImage,
+      cutoutImage: undefined,
+      bgRemoved: false,
+      selectedBackground: "transparent",
+      autoBackgroundLabel: "",
+    });
+  }
+
   function handleApplyToAll() {
     const applyCount = drafts.filter((d) => d.status === "ready").length;
     setDrafts((ds) =>
@@ -1174,6 +1191,25 @@ export default function BulkPhotoUploadPage() {
                               }}
                             />
                           ))}
+                          {d.bgRemoved && (
+                            <button
+                              type="button"
+                              onClick={() => handleUndoBackgroundRemoval(d.localId)}
+                              disabled={d.backgroundBusy}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "var(--sio-muted)",
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: d.backgroundBusy ? "default" : "pointer",
+                                textDecoration: "underline",
+                                padding: 0,
+                              }}
+                            >
+                              Undo
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
