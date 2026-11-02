@@ -26,10 +26,11 @@ const TABS = [
 // lib/admin-session.ts) - no more manually passing it from link to link.
 export function AdminNav() {
   const pathname = usePathname();
-  // The login page has no session yet - showing a nav bar full of
-  // moderation tabs there would be misleading (and clicking one would just
-  // bounce straight back to /admin/login anyway).
-  if (pathname === "/admin/login") return null;
+  // The login page (and its second-factor step) has no session yet -
+  // showing a nav bar full of moderation tabs there would be misleading
+  // (and clicking one would just bounce straight back to /admin/login
+  // anyway).
+  if (pathname === "/admin/login" || pathname === "/admin/login/verify") return null;
 
   const activeHref = [...TABS]
     .sort((a, b) => b.href.length - a.href.length)

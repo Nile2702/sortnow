@@ -53,9 +53,12 @@ export async function middleware(req: NextRequest) {
   // /admin/login rather than whatever a Server Component can manage to
   // render with a 200 status.
   if (url.pathname.startsWith("/admin")) {
-    // The login page itself must always be reachable, or there'd be no way
-    // to ever get a session cookie in the first place.
-    if (url.pathname === "/admin/login") return NextResponse.next();
+    // The login page itself (and its second-factor step) must always be
+    // reachable, or there'd be no way to ever get a session cookie in the
+    // first place - /admin/login/verify only ever checks its own short-lived
+    // pending-2FA cookie (see app/admin/login/verify/page.tsx), not this
+    // full-session gate.
+    if (url.pathname === "/admin/login" || url.pathname === "/admin/login/verify") return NextResponse.next();
 
     if (await verifyAdminSessionToken(req.cookies.get(ADMIN_SESSION_COOKIE)?.value)) {
       return NextResponse.next();
