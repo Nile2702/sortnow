@@ -33,6 +33,32 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
   const saleActive = !!store.liveSale && new Date(store.liveSale.endsAt).getTime() > Date.now();
   const rating = await getStoreRatingSummary(store.id);
 
+  // Store + BreadcrumbList structured data (schema.org JSON-LD). This page
+  // is already a server component with generateMetadata below, so (unlike
+  // /product/[productId]) there's no separate layout.tsx needed - the data
+  // this needs (store, rating) is already fetched above.
+  const storeUrl = `${SITE_URL}/store/${store.slug}`;
+  const storeJsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    name: store.name,
+    url: storeUrl,
+    address: { "@type": "PostalAddress", addressLocality: store.city, addressRegion: store.localMarket },
+  };
+  // Same zero-review omission rule as the product page - never claim a
+  // rating that doesn't exist.
+  if (rating.count > 0) {
+    storeJsonLd.aggregateRating = { "@type": "AggregateRating", ratingValue: rating.average, reviewCount: rating.count };
+  }
+  const storeBreadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: store.name, item: storeUrl },
+    ],
+  };
+
   // When a category pill is active, replace the normal section layout with
   // one focused grid for that category instead of mixing a filtered view in
   // with an unrelated "New Arrivals" section below it.
@@ -65,6 +91,8 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(storeJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(storeBreadcrumbJsonLd) }} />
       {/* Only sets --store-primary / --store-accent - see lib/theme.ts */}
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <Suspense fallback={null}>

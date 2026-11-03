@@ -56,6 +56,34 @@ export const viewport = {
   themeColor: "#16140f",
 };
 
+// Organization + WebSite structured data (schema.org JSON-LD) for the whole
+// site - this is what lets Google show a sitelinks search box under the
+// site's main result (via WebSite.potentialAction/SearchAction) and attach
+// the brand logo/name to knowledge-panel-style results (via Organization).
+// Rendered as a plain <script> below rather than via next/head - the App
+// Router manages <head> itself (see the `metadata` export above), and
+// Google's own JSON-LD guidance explicitly supports the script living
+// anywhere in the document, <body> included.
+const ORGANIZATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "SORT NOW",
+  url: SITE_URL,
+  logo: `${SITE_URL}/brand/logo.png`,
+};
+
+const WEBSITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "SORT NOW",
+  url: SITE_URL,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${SITE_URL}/search?q={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${heading.variable} ${body.variable} ${accent.variable}`}>
@@ -70,6 +98,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           flexDirection: "column",
         }}
       >
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD) }} />
         <CursorGlow />
         <ScrollToTop />
         <ScrollRevealInit />

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { SITE_URL } from "../../../lib/site-url";
 
 const LABELS: Record<string, string> = { men: "Men", women: "Women", kids: "Kids" };
 
@@ -10,6 +11,21 @@ export async function generateMetadata({ params }: { params: { gender: string } 
   };
 }
 
-export default function CategoryLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default function CategoryLayout({ children, params }: { children: React.ReactNode; params: { gender: string } }) {
+  const label = LABELS[params.gender] ?? "Fashion";
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: label, item: `${SITE_URL}/category/${params.gender}` },
+    ],
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      {children}
+    </>
+  );
 }
