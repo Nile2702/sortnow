@@ -58,18 +58,10 @@ const SLIDES: Slide[] = [
   },
 ];
 
-const PARTICLE_SPECS = [
-  { size: 5, left: "12%", top: "22%", delay: "0s", duration: "6.5s" },
-  { size: 3, left: "78%", top: "18%", delay: "1.2s", duration: "8s" },
-  { size: 4, left: "88%", top: "62%", delay: "0.6s", duration: "7.2s" },
-  { size: 3, left: "20%", top: "72%", delay: "2s", duration: "9s" },
-  { size: 6, left: "55%", top: "12%", delay: "0.4s", duration: "6s" },
-  { size: 3, left: "40%", top: "80%", delay: "1.6s", duration: "7.8s" },
-];
-
 export function HeroSlider() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [hoverArrow, setHoverArrow] = useState<"left" | "right" | null>(null);
 
   useEffect(() => {
     if (paused) return;
@@ -127,9 +119,11 @@ export function HeroSlider() {
         )}
         {/* Darkens a real photo enough for white text to stay readable, same
             job the plain radial gradient below does for a flat color slide -
-            stacked together when both are present. */}
+            stacked together when both are present. Slightly deeper than a
+            bare legibility minimum so headline/CTA contrast holds up across
+            every slide's photo, not just the darkest one. */}
         {slide.image && (
-          <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(8,10,16,0.55)" }} />
+          <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(6,8,14,0.6)" }} />
         )}
         {/* Subtle vignette + spotlight to read as a photographic backdrop rather than a flat gradient */}
         <div
@@ -138,19 +132,9 @@ export function HeroSlider() {
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.12), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.55), transparent 60%)",
+              "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.12), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.6), transparent 60%)",
           }}
         />
-        <div className="sio-grid-overlay" aria-hidden />
-        <div className="sio-scanline" aria-hidden />
-        {PARTICLE_SPECS.map((p, i) => (
-          <span
-            key={i}
-            className="sio-particle"
-            aria-hidden
-            style={{ width: p.size, height: p.size, left: p.left, top: p.top, animationDelay: p.delay, animationDuration: p.duration }}
-          />
-        ))}
 
         {/* Headline block is its own link (the slide's actual destination) -
             kept separate from the two CTA buttons below so neither button
@@ -158,13 +142,14 @@ export function HeroSlider() {
             same slide is invalid HTML and browsers handle it inconsistently). */}
         <Link href={slide.href} style={{ position: "relative", textDecoration: "none", color: "inherit" }}>
           <div
-            className="sio-neon-text"
             style={{
               fontSize: 11,
               letterSpacing: "0.22em",
               fontWeight: 700,
               marginBottom: 18,
               textTransform: "uppercase",
+              opacity: 0.85,
+              textShadow: "0 1px 4px rgba(0,0,0,0.4)",
             }}
           >
             {slide.eyebrow}
@@ -187,14 +172,32 @@ export function HeroSlider() {
               fontWeight: 800,
               lineHeight: 1.08,
               letterSpacing: "-0.01em",
+              textShadow: "0 2px 16px rgba(0,0,0,0.35)",
             }}
           >
             {titleRest} <em style={{ fontFamily: "var(--site-font-accent)", fontStyle: "italic", fontWeight: 600 }}>{titleLastWord}</em>
           </h1>
-          <p style={{ fontSize: 15, opacity: 0.8, marginBottom: 30, maxWidth: 440, fontWeight: 300 }}>{slide.subtitle}</p>
+          <p
+            style={{
+              fontSize: 15,
+              opacity: 0.88,
+              marginBottom: 30,
+              maxWidth: 440,
+              fontWeight: 300,
+              textShadow: "0 1px 6px rgba(0,0,0,0.35)",
+            }}
+          >
+            {slide.subtitle}
+          </p>
         </Link>
+        {/* Matches the site's shared sio-btn-primary pill-CTA convention
+            (same classes as "Add to Sort" on the product page and the
+            review-form submit button) so this hero CTA hovers/presses the
+            same way every other primary action on the site does, instead of
+            being a one-off static button. */}
         <Link
           href={slide.href}
+          className="sio-btn-primary sio-shine-btn"
           style={{
             position: "relative",
             display: "inline-block",
@@ -206,7 +209,6 @@ export function HeroSlider() {
             fontWeight: 700,
             textTransform: "uppercase",
             letterSpacing: "0.02em",
-            borderRadius: 10,
             textDecoration: "none",
           }}
         >
@@ -225,9 +227,10 @@ export function HeroSlider() {
               height: 8,
               borderRadius: 999,
               border: "none",
-              background: i === index ? "#fff" : "rgba(255,255,255,0.5)",
+              background: i === index ? "#fff" : "rgba(255,255,255,0.55)",
+              boxShadow: "0 0 0 1px rgba(0,0,0,0.18)",
               cursor: "pointer",
-              transition: "width 0.3s ease",
+              transition: "width 0.3s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease",
             }}
           />
         ))}
@@ -235,32 +238,42 @@ export function HeroSlider() {
 
       <button
         onClick={() => setIndex((i) => (i - 1 + SLIDES.length) % SLIDES.length)}
+        onMouseEnter={() => setHoverArrow("left")}
+        onMouseLeave={() => setHoverArrow(null)}
         aria-label="Previous slide"
-        style={arrowStyle("left")}
+        style={arrowStyle("left", hoverArrow === "left")}
       >
         ‹
       </button>
-      <button onClick={() => setIndex((i) => (i + 1) % SLIDES.length)} aria-label="Next slide" style={arrowStyle("right")}>
+      <button
+        onClick={() => setIndex((i) => (i + 1) % SLIDES.length)}
+        onMouseEnter={() => setHoverArrow("right")}
+        onMouseLeave={() => setHoverArrow(null)}
+        aria-label="Next slide"
+        style={arrowStyle("right", hoverArrow === "right")}
+      >
         ›
       </button>
     </div>
   );
 }
 
-function arrowStyle(side: "left" | "right"): React.CSSProperties {
+function arrowStyle(side: "left" | "right", hovered: boolean): React.CSSProperties {
   return {
     position: "absolute",
     top: "50%",
     [side]: 16,
-    transform: "translateY(-50%)",
+    transform: `translateY(-50%) scale(${hovered ? 1.08 : 1})`,
     width: 40,
     height: 40,
     borderRadius: "50%",
     border: "none",
-    background: "rgba(255,255,255,0.15)",
+    background: hovered ? "rgba(255,255,255,0.32)" : "rgba(255,255,255,0.15)",
+    backdropFilter: "blur(4px)",
     color: "#fff",
     fontSize: 22,
     cursor: "pointer",
     lineHeight: 1,
+    transition: "background 0.25s ease, transform 0.25s ease",
   };
 }

@@ -661,11 +661,42 @@ function DiscoverPageInner() {
       </section>
 
       <section style={{ marginTop: 44 }}>
-        <h2 style={{ fontSize: 20, marginBottom: 18, fontWeight: 700, textAlign: "center" }}>Why Shop With Us</h2>
+        <h2
+          style={{
+            fontSize: 26,
+            marginBottom: 24,
+            fontWeight: 800,
+            textAlign: "center",
+            fontFamily: "var(--site-font-heading)",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          Why Shop With{" "}
+          <em style={{ fontFamily: "var(--site-font-accent)", fontStyle: "italic", fontWeight: 600 }}>Us</em>
+        </h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
           {WHY_SHOP_WITH_US.map((item) => (
-            <div key={item.title} className="sio-card" style={{ background: "#fff", borderRadius: 16, padding: 22, border: "1px solid var(--sio-cream)", textAlign: "center" }}>
-              <div style={{ marginBottom: 10, color: "var(--sio-ink)", display: "flex", justifyContent: "center" }}>{item.icon}</div>
+            <div
+              key={item.title}
+              className="sio-card"
+              style={{ background: "#fff", borderRadius: 16, padding: "26px 22px", border: "1px solid var(--sio-cream)", textAlign: "center" }}
+            >
+              <div
+                aria-hidden
+                style={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: "50%",
+                  background: "var(--sio-cream)",
+                  color: "var(--sio-ink)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 14px",
+                }}
+              >
+                {item.icon}
+              </div>
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{item.title}</div>
               <p style={{ fontSize: 13, color: "var(--sio-muted)", lineHeight: 1.6, margin: 0 }}>{item.body}</p>
             </div>

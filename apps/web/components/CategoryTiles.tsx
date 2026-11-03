@@ -43,6 +43,9 @@ const CURATED_IMAGES: Record<string, string> = {
 // (see getCategoryTileCounts) rather than a generic placeholder.
 export function CategoryTiles() {
   const [subTiles, setSubTiles] = useState<SubTile[]>([]);
+  // Drives a small photo zoom + arrow-button fill on hover (below) - local
+  // UI state only, doesn't touch TiltCard's own independent 3D tilt.
+  const [hovered, setHovered] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/v1/category-tiles")
@@ -81,6 +84,8 @@ export function CategoryTiles() {
                 <Link
                   href={href}
                   className="sio-card"
+                  onMouseEnter={() => setHovered(i)}
+                  onMouseLeave={() => setHovered((h) => (h === i ? null : h))}
                   style={{
                     position: "relative",
                     display: "block",
@@ -96,7 +101,18 @@ export function CategoryTiles() {
                       src={imageUrl}
                       alt=""
                       aria-hidden
-                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        // Small "zoom in" on hover, same tappable-card energy
+                        // as Myntra/Flipkart's category entry points, layered
+                        // on top of (not instead of) TiltCard's own 3D tilt.
+                        transform: hovered === i ? "scale(1.07)" : "scale(1)",
+                        transition: "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
+                      }}
                     />
                   )}
                   {/* Lightens the upper portion only, where the label/count
@@ -130,12 +146,14 @@ export function CategoryTiles() {
                       width: 34,
                       height: 34,
                       borderRadius: "50%",
-                      background: "rgba(255,255,255,0.92)",
-                      color: "var(--sio-ink)",
+                      background: hovered === i ? "var(--sio-ink)" : "rgba(255,255,255,0.92)",
+                      color: hovered === i ? "#fff" : "var(--sio-ink)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: 16,
+                      transform: hovered === i ? "scale(1.1)" : "scale(1)",
+                      transition: "background 0.25s ease, color 0.25s ease, transform 0.25s ease",
                     }}
                   >
                     →
