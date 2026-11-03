@@ -293,6 +293,25 @@ a:focus-visible,
   }
 }
 
+/* The sort-tabs row and the filter sidebar were both position: sticky
+   unconditionally - harmless in the real two-column desktop layout above
+   (the sidebar scrolls alongside a much taller product grid), but on the
+   single-column mobile layout the sidebar stacks directly above the grid
+   in document order, so a sticky sidebar - "Filters" heading, Category,
+   Type, Price and Size sections, easily taller than one screen - stayed
+   pinned over the product cards scrolling underneath it. Sticky only
+   applies at the desktop breakpoint where the two-column grid is active. */
+@media (min-width: 761px) {
+  .sio-search-sort-tabs {
+    position: sticky;
+    top: 88px;
+  }
+  .sio-search-sidebar {
+    position: sticky;
+    top: 88px;
+  }
+}
+
 /* AI Bulk Upload's per-photo draft card: a fixed 80px thumbnail beside a
    4-column edit grid (title spans full width; gender/subCategory/price/MRP/
    fabric/stock each get a column; description spans full width). On a phone

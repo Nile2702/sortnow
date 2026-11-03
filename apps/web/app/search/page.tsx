@@ -106,6 +106,7 @@ function SearchPageInner() {
       </div>
 
       <div
+        className="sio-search-sort-tabs"
         style={{
           display: "flex",
           gap: 4,
@@ -113,8 +114,6 @@ function SearchPageInner() {
           marginTop: 14,
           marginBottom: 24,
           flexWrap: "wrap",
-          position: "sticky",
-          top: 88,
           zIndex: 15,
           background: "#fff",
         }}
@@ -141,8 +140,8 @@ function SearchPageInner() {
 
       <div className="sio-search-layout" style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 28, alignItems: "start" }}>
         <aside
-          className="sio-card"
-          style={{ background: "#fff", borderRadius: 16, padding: 18, border: "1px solid var(--sio-cream)", position: "sticky", top: 88 }}
+          className="sio-card sio-search-sidebar"
+          style={{ background: "#fff", borderRadius: 16, padding: 18, border: "1px solid var(--sio-cream)" }}
         >
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Filters</div>
 
