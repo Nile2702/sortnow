@@ -186,13 +186,20 @@ function CategoryPageInner() {
         {headingSuffix || genderLabel} {headingSuffix ? `· ${genderLabel}` : ""}
       </h1>
 
-      {/* Mobile (<=760px): the original horizontal pill row, unchanged. */}
+      {/* Mobile (<=760px): a sticky filter bar. The subcategory pill row
+          scrolls horizontally in one line (matching the Myntra/Flipkart/
+          BigBasket pattern) rather than wrapping - with 14 subcategories,
+          a wrapping row stacked 7 lines tall and, being position: sticky,
+          stayed pinned over most of the screen while scrolling, visually
+          overlapping the product grid underneath it. A fixed two-row
+          layout (scrollable pills, then sort/map) keeps this bar's height
+          small and predictable regardless of how many subcategories a
+          given gender has. */}
       <section
         className="sio-card sio-listing-mobile-filters"
         style={{
-          flexWrap: "wrap",
-          gap: 12,
-          alignItems: "center",
+          flexDirection: "column",
+          gap: 10,
           background: "#fff",
           padding: 16,
           borderRadius: 16,
@@ -203,7 +210,16 @@ function CategoryPageInner() {
           zIndex: 15,
         }}
       >
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            flexWrap: "nowrap",
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+            paddingBottom: 2,
+          }}
+        >
           <button onClick={() => setMobileSubCategory("")} style={pillStyle(subCategories.length === 0)}>
             All {genderLabel}
           </button>
@@ -213,9 +229,9 @@ function CategoryPageInner() {
             </button>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
           {!loading && <ExploreOnMapButton products={products} />}
-          <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13 }}>
+          <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 13, marginLeft: "auto" }}>
             <option value="newest">Newest first</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
@@ -303,5 +319,12 @@ function pillStyle(active: boolean): React.CSSProperties {
     cursor: "pointer",
     fontSize: 13,
     fontWeight: 500,
+    // This page's only use of these pills is the mobile sticky filter
+    // bar's horizontally-scrolling row - flexShrink: 0 keeps a long label
+    // like "Jewellery & Accessories" from being squeezed/wrapped onto two
+    // lines by its flex siblings instead of just taking its natural width
+    // in the scrollable row.
+    flexShrink: 0,
+    whiteSpace: "nowrap",
   };
 }
