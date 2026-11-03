@@ -45,6 +45,10 @@ function SearchPageInner() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  // Mobile only - see the toggle button and .sio-search-sidebar's responsive
+  // rules in globals.css. Desktop ignores this entirely and keeps the
+  // sidebar inline/always visible, same as before.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // A new search from the header changes only the URL's `q` (this component
   // stays mounted) - resync every filter from the query string so stale
@@ -57,6 +61,15 @@ function SearchPageInner() {
     setSize(searchParams.get("size") ?? "");
     setSort(searchParams.get("sort") ?? "relevance");
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setFiltersOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [filtersOpen]);
 
   useEffect(() => {
     setLoading(true);
@@ -87,6 +100,7 @@ function SearchPageInner() {
   }
 
   const activeSubCategories = CATEGORY_TREE.find((c) => c.value === gender)?.subCategories ?? [];
+  const activeFilterCount = [gender !== "all", !!subCategory, !!minPrice, !!maxPrice, !!size].filter(Boolean).length;
 
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "20px 16px 48px" }}>
@@ -104,6 +118,54 @@ function SearchPageInner() {
         </h1>
         {!loading && <ExploreOnMapButton products={products} />}
       </div>
+
+      {/* Mobile only (see .sio-search-filter-toggle in globals.css) - the
+          sidebar below renders as a closed-by-default bottom sheet on
+          mobile instead of always sitting open above the results. */}
+      <button
+        type="button"
+        className="sio-search-filter-toggle"
+        onClick={() => setFiltersOpen(true)}
+        style={{
+          display: "none",
+          alignItems: "center",
+          gap: 8,
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "1px solid var(--sio-line)",
+          background: "#fff",
+          color: "var(--sio-ink)",
+          fontWeight: 600,
+          fontSize: 13.5,
+          cursor: "pointer",
+          marginTop: 14,
+          alignSelf: "flex-start",
+        }}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <path d="M4 6h16M7 12h10M10 18h4" />
+        </svg>
+        Filters
+        {activeFilterCount > 0 && (
+          <span
+            style={{
+              minWidth: 18,
+              height: 18,
+              padding: "0 5px",
+              borderRadius: "50%",
+              background: "var(--sio-ink)",
+              color: "#fff",
+              fontSize: 11,
+              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {activeFilterCount}
+          </span>
+        )}
+      </button>
 
       <div
         className="sio-search-sort-tabs"
@@ -138,12 +200,38 @@ function SearchPageInner() {
         ))}
       </div>
 
+      {/* Mobile only - tapping the Filters button above or this backdrop
+          closes the sheet the same way. */}
+      {filtersOpen && (
+        <div
+          className="sio-search-sidebar-backdrop"
+          onClick={() => setFiltersOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       <div className="sio-search-layout" style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 28, alignItems: "start" }}>
         <aside
-          className="sio-card sio-search-sidebar"
+          className={`sio-card sio-search-sidebar${filtersOpen ? " sio-search-sidebar-open" : ""}`}
           style={{ background: "#fff", borderRadius: 16, padding: 18, border: "1px solid var(--sio-cream)" }}
         >
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Filters</div>
+          <div className="sio-search-sidebar-mobile-header">
+            <span style={{ fontSize: 16, fontWeight: 700 }}>Filters</span>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(false)}
+              aria-label="Close filters"
+              style={{ background: "none", border: "none", padding: 6, color: "var(--sio-ink)", cursor: "pointer" }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="sio-search-sidebar-title" style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>
+            Filters
+          </div>
 
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--sio-muted)", marginBottom: 8 }}>
@@ -223,6 +311,17 @@ function SearchPageInner() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="sio-search-sidebar-mobile-footer">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(false)}
+              className="sio-btn-primary"
+              style={{ width: "100%", padding: "13px", border: "none", background: "var(--sio-ink)", color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
+            >
+              Show {loading ? "results" : `${products.length} result${products.length === 1 ? "" : "s"}`}
+            </button>
           </div>
         </aside>
 

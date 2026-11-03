@@ -293,22 +293,96 @@ a:focus-visible,
   }
 }
 
-/* The sort-tabs row and the filter sidebar were both position: sticky
-   unconditionally - harmless in the real two-column desktop layout above
-   (the sidebar scrolls alongside a much taller product grid), but on the
-   single-column mobile layout the sidebar stacks directly above the grid
-   in document order, so a sticky sidebar - "Filters" heading, Category,
-   Type, Price and Size sections, easily taller than one screen - stayed
-   pinned over the product cards scrolling underneath it. Sticky only
-   applies at the desktop breakpoint where the two-column grid is active. */
+/* The sort-tabs row is position: sticky only at the desktop breakpoint -
+   harmless there (it scrolls alongside a much taller product grid next to
+   it), but on the single-column mobile layout it would stack directly
+   above the grid and stay pinned over cards scrolling underneath it. */
 @media (min-width: 761px) {
   .sio-search-sort-tabs {
     position: sticky;
     top: 88px;
   }
+}
+
+/* The filter sidebar: always-visible sticky rail on desktop (unchanged),
+   a closed-by-default bottom sheet on mobile instead of an always-open
+   inline panel - its Category/Type/Price/Size sections are easily taller
+   than one phone screen, so leaving it open by default meant it either
+   pushed the whole results grid far down the page or (before this sheet
+   treatment existed) stayed pinned over the grid as a sticky element. The
+   mobile-only toggle button, backdrop, and the sidebar's own mobile
+   header/footer are hidden on desktop and shown only below the
+   breakpoint; .sio-search-sidebar-open is toggled by React state when the
+   Filters button is tapped. */
+.sio-search-sidebar-backdrop {
+  display: none;
+}
+.sio-search-sidebar-mobile-header,
+.sio-search-sidebar-mobile-footer {
+  display: none;
+}
+
+@media (min-width: 761px) {
   .sio-search-sidebar {
     position: sticky;
     top: 88px;
+  }
+  .sio-search-sidebar-title {
+    display: block;
+  }
+}
+
+@media (max-width: 760px) {
+  .sio-search-filter-toggle {
+    display: inline-flex !important;
+  }
+  .sio-search-sidebar-title {
+    display: none;
+  }
+  .sio-search-sidebar {
+    display: none;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 85vh;
+    overflow-y: auto;
+    z-index: 1000;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.2);
+  }
+  .sio-search-sidebar-open {
+    display: block;
+  }
+  .sio-search-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 999;
+  }
+  .sio-search-sidebar-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--sio-line);
+    /* Sticky within the sheet's own scroll area, not the page, so the
+       close button and result count stay reachable while the filter
+       sections beneath them scroll. */
+    position: sticky;
+    top: 0;
+    background: #fff;
+  }
+  .sio-search-sidebar-mobile-footer {
+    display: block;
+    position: sticky;
+    bottom: 0;
+    margin: 20px -18px -18px;
+    padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+    background: #fff;
+    border-top: 1px solid var(--sio-line);
   }
 }
 
