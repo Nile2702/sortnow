@@ -30,6 +30,25 @@ export interface ProductCardData {
   // own static compareAtPrice markdown, which has no campaign/end time
   // behind it and isn't a "sale" in this sense.
   onSale?: boolean;
+  // Set by lib/seed-data.ts searchProducts() via the bulk getRatingSummaries()
+  // query - absent (not a zeroed-out {average:0,count:0}) for a product with
+  // no reviews yet, so this card can tell "no one has rated this" apart from
+  // "everyone rated this 0 stars" and show a quieter "New" treatment instead
+  // of a misleading "0.0 (0)". Optional so every existing caller that hasn't
+  // been updated to fetch ratings (e.g. the homepage) still compiles as-is.
+  rating?: { average: number; count: number };
+}
+
+// A single small filled star, same path as the product detail page's own
+// <Stars> component (app/product/[productId]/page.tsx) so the rating glyph
+// reads as the same visual language in both places - just one star here,
+// not five, to keep this compact enough for a card's tight rating line.
+function MiniStarIcon({ size = 11 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="var(--sio-bronze)">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
 }
 
 // The one shared product card for every shopper-facing grid (homepage,
@@ -204,6 +223,18 @@ export function ProductCard({
           >
             {product.title}
           </div>
+          {/* Compact rating line (above the price, as on Myntra/Flipkart) -
+              one filled star + the numeric average, not a 5-star row, to
+              keep a listing card's limited vertical space for the price and
+              the distance/ETA line below. Omitted entirely rather than
+              showing "0.0 (0)" when a product has no reviews yet. */}
+          {product.rating && product.rating.count > 0 ? (
+            <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 3, fontSize: 11.5, fontWeight: 600, color: "var(--sio-muted)" }}>
+              <MiniStarIcon size={11} />
+              <span style={{ color: "var(--sio-ink)" }}>{product.rating.average.toFixed(1)}</span>
+              <span>({product.rating.count})</span>
+            </div>
+          ) : null}
           <div style={{ marginTop: 6, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontWeight: 700, fontSize: 14, color: "var(--sio-ink)" }}>₹{product.basePrice.toLocaleString("en-IN")}</span>
             {product.compareAtPrice && product.compareAtPrice > product.basePrice && (
@@ -218,13 +249,31 @@ export function ProductCard({
               or neither), and without this the cards in the same row ended
               up visibly different heights/bottoms depending on which lines
               a given product happened to need. */}
-          <div style={{ marginTop: "auto", paddingTop: 4 }}>
+          <div style={{ marginTop: "auto", paddingTop: 6 }}>
             {product.distanceKm != null && (
-              <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--sio-ink)", display: "flex", alignItems: "center", gap: 3 }}>
-                <PinIcon size={10} /> {product.distanceKm} km away • Try on in {walkingMinutes(product.distanceKm)} mins
+              // Raised from a muted footnote to a bronze pill - this is SORT
+              // NOW's own spin on Zepto/Instamart's delivery-ETA urgency
+              // signal ("try it on in person in 10 mins") adapted for a
+              // fashion O2O marketplace, so it deserves the same visual
+              // weight competitors give their speed cue instead of reading
+              // as the least important line on the card.
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--sio-ink)",
+                  background: "var(--sio-cream)",
+                  padding: "3px 8px",
+                  borderRadius: 999,
+                }}
+              >
+                <PinIcon size={11} /> {product.distanceKm} km away · Try on in {walkingMinutes(product.distanceKm)} mins
               </div>
             )}
-            {lowStock && <div style={{ fontSize: 10.5, color: "var(--sio-error)", fontWeight: 600, marginTop: 3 }}>Only {product.stockRemaining} left</div>}
+            {lowStock && <div style={{ fontSize: 10.5, color: "var(--sio-error)", fontWeight: 600, marginTop: 4 }}>Only {product.stockRemaining} left</div>}
           </div>
         </div>
       </Link>

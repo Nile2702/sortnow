@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
   const subCategories = searchParams.get("subCategories")?.split(",").filter(Boolean);
   const storeIds = searchParams.get("storeIds")?.split(",").filter(Boolean);
   const colors = searchParams.get("colors")?.split(",").filter(Boolean);
+  const sizes = searchParams.get("sizes")?.split(",").filter(Boolean);
   const minDiscount = searchParams.get("minDiscount") ? Number(searchParams.get("minDiscount")) : undefined;
   const minPrice = searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : undefined;
   const maxPrice = searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : undefined;
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
     subCategories,
     storeIds,
     colors,
+    sizes,
     minDiscount,
     minPrice,
     maxPrice,

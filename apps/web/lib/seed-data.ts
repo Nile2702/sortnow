@@ -491,15 +491,21 @@ interface FacetFilters {
   subCategories?: string[];
   storeIds?: string[];
   colors?: string[];
+  // Plural, multi-select facet filtering (checkbox list in the sidebar) -
+  // distinct from the older singular `size` option on getSearchCandidates,
+  // which the homepage's informal filter panel still uses and which narrows
+  // the candidate set itself rather than acting as a togglable facet.
+  sizes?: string[];
   minDiscount?: number;
 }
 
-function applyFacetFilters<T extends SearchCandidate>(candidates: T[], facets: FacetFilters, skip?: "subCategory" | "store" | "color" | "discount"): T[] {
+function applyFacetFilters<T extends SearchCandidate>(candidates: T[], facets: FacetFilters, skip?: "subCategory" | "store" | "color" | "size" | "discount"): T[] {
   const subCats = facets.subCategories?.length ? facets.subCategories : facets.subCategory ? [facets.subCategory] : [];
   return candidates
     .filter((p) => skip === "subCategory" || subCats.length === 0 || subCats.includes(p.subCategory))
     .filter((p) => skip === "store" || !facets.storeIds?.length || facets.storeIds.includes(p.storeId))
     .filter((p) => skip === "color" || !facets.colors?.length || (p.color != null && facets.colors.includes(p.color)))
+    .filter((p) => skip === "size" || !facets.sizes?.length || facets.sizes.some((s) => p.sizes.includes(s)))
     .filter((p) => skip === "discount" || !facets.minDiscount || discountPercent(p) >= facets.minDiscount);
 }
 
@@ -513,6 +519,7 @@ export async function searchProducts(opts: {
   subCategories?: string[];
   storeIds?: string[];
   colors?: string[];
+  sizes?: string[];
   minDiscount?: number;
   minPrice?: number;
   maxPrice?: number;
@@ -531,9 +538,18 @@ export async function searchProducts(opts: {
   else if (searchQuery) results = [...results].sort((a, b) => b.searchScore - a.searchScore || (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
   else results = [...results].sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
 
+  // One bulk rating query for every product in this page of results rather
+  // than one query per card (see getRatingSummaries) - listing pages can
+  // easily show dozens of cards at once, so N+1 here would mean dozens of
+  // round trips just to paint a "4.4 (183)" line.
+  const ratingSummaries = await getRatingSummaries(results.map((p) => p.id));
+
   // costPrice (seller's own purchase cost) must never reach this
   // shopper-facing search result, same reasoning as searchScore itself.
-  return results.map(({ searchScore, costPrice: _costPrice, ...p }) => p);
+  return results.map(({ searchScore, costPrice: _costPrice, ...p }) => ({
+    ...p,
+    rating: ratingSummaries.get(p.id),
+  }));
 }
 
 // Powers the category page's left filter sidebar - one call returns counts
@@ -568,6 +584,20 @@ export async function getProductFacets(
     return counts;
   }
 
+  // Same idea as countBy above, but each product carries several sizes at
+  // once (sizes: string[]) rather than a single value like color/store, so
+  // a product that matches contributes to every one of its sizes' counts
+  // instead of just one key.
+  function countByMulti(items: SearchCandidate[], keyFn: (p: SearchCandidate) => string[]): Map<string, number> {
+    const counts = new Map<string, number>();
+    for (const p of items) {
+      for (const key of keyFn(p)) {
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }
+
   const subCategoryCounts = countBy(
     applyFacetFilters(candidates, opts, "subCategory"),
     (p) => p.subCategory
@@ -579,6 +609,10 @@ export async function getProductFacets(
   const colorCounts = countBy(
     applyFacetFilters(candidates, opts, "color"),
     (p) => p.color
+  );
+  const sizeCounts = countByMulti(
+    applyFacetFilters(candidates, opts, "size"),
+    (p) => p.sizes
   );
   const forDiscount = applyFacetFilters(candidates, opts, "discount");
   const discountTiers = [10, 20, 30, 40, 50].map((minDiscount) => ({
@@ -605,6 +639,9 @@ export async function getProductFacets(
       .map(([id, count]) => ({ id, name: storeNameById.get(id) ?? id, count }))
       .sort((a, b) => b.count - a.count),
     colors: Array.from(colorCounts.entries())
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count),
+    sizes: Array.from(sizeCounts.entries())
       .map(([value, count]) => ({ value, count }))
       .sort((a, b) => b.count - a.count),
     discountTiers,
@@ -2908,6 +2945,27 @@ export async function getRatingSummary(productId: string) {
     count: productReviews.filter((r) => r.rating === star).length,
   }));
   return { average, count, breakdown };
+}
+
+// Bulk counterpart to getRatingSummary above - one query for every product
+// id a listing page is about to render (search results, a category grid,
+// a store page), instead of each ProductCard triggering its own
+// getRatingSummary -> getProductReviews round trip (an N+1 query per page
+// of results). Only returns an entry for products that have at least one
+// review; a product with none is simply absent from the map, which
+// searchProducts() uses to leave `rating` undefined rather than showing a
+// misleading "0.0 (0)" average.
+export async function getRatingSummaries(productIds: string[]): Promise<Map<string, { average: number; count: number }>> {
+  const map = new Map<string, { average: number; count: number }>();
+  if (productIds.length === 0) return map;
+  const rows = await query<any>(
+    `SELECT product_id, AVG(rating) as average, COUNT(*) as count FROM reviews WHERE product_id = ANY($1) GROUP BY product_id`,
+    [productIds]
+  );
+  for (const r of rows) {
+    map.set(r.product_id, { average: Math.round(Number(r.average) * 10) / 10, count: Number(r.count) });
+  }
+  return map;
 }
 
 export async function addReview(productId: string, input: { authorName: string; rating: number; title?: string; comment: string }): Promise<Review> {

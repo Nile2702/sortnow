@@ -22,6 +22,9 @@ interface Product {
   storeSlug: string;
   storeName: string;
   stockRemaining?: number;
+  distanceKm?: number | null;
+  onSale?: boolean;
+  rating?: { average: number; count: number };
 }
 
 function SkeletonCard() {
@@ -44,6 +47,7 @@ function CategoryPageInner() {
   const subCategories = searchParams.get("subCategories") != null ? csv(searchParams.get("subCategories")) : csv(searchParams.get("subCategory"));
   const storeIds = csv(searchParams.get("storeIds"));
   const colors = csv(searchParams.get("colors"));
+  const sizes = csv(searchParams.get("sizes"));
   const minPriceParam = searchParams.get("minPrice");
   const maxPriceParam = searchParams.get("maxPrice");
   const priceRange: [number, number] | null = minPriceParam && maxPriceParam ? [Number(minPriceParam), Number(maxPriceParam)] : null;
@@ -58,7 +62,7 @@ function CategoryPageInner() {
   const genderLabel = GENDER_LABELS[gender] ?? gender;
   const subCats = SUBCATEGORIES[gender] ?? [];
 
-  const filterKey = JSON.stringify({ gender, subCategories, storeIds, colors, priceRange, minDiscount, sort });
+  const filterKey = JSON.stringify({ gender, subCategories, storeIds, colors, sizes, priceRange, minDiscount, sort });
 
   useEffect(() => {
     setLoading(true);
@@ -66,6 +70,7 @@ function CategoryPageInner() {
     if (subCategories.length) params.set("subCategories", subCategories.join(","));
     if (storeIds.length) params.set("storeIds", storeIds.join(","));
     if (colors.length) params.set("colors", colors.join(","));
+    if (sizes.length) params.set("sizes", sizes.join(","));
     if (priceRange) {
       params.set("minPrice", String(priceRange[0]));
       params.set("maxPrice", String(priceRange[1]));
@@ -88,6 +93,7 @@ function CategoryPageInner() {
     if (subCategories.length) params.set("subCategories", subCategories.join(","));
     if (storeIds.length) params.set("storeIds", storeIds.join(","));
     if (colors.length) params.set("colors", colors.join(","));
+    if (sizes.length) params.set("sizes", sizes.join(","));
     if (priceRange) {
       params.set("minPrice", String(priceRange[0]));
       params.set("maxPrice", String(priceRange[1]));
@@ -132,6 +138,9 @@ function CategoryPageInner() {
   }
   function toggleColor(c: string) {
     updateParams({ colors: toggleInList(colors, c).join(",") || undefined });
+  }
+  function toggleSize(s: string) {
+    updateParams({ sizes: toggleInList(sizes, s).join(",") || undefined });
   }
   function setPriceRange(range: [number, number] | null) {
     updateParams({ minPrice: range ? String(range[0]) : undefined, maxPrice: range ? String(range[1]) : undefined });
@@ -230,6 +239,8 @@ function CategoryPageInner() {
             onToggleStore={toggleStore}
             selectedColors={colors}
             onToggleColor={toggleColor}
+            selectedSizes={sizes}
+            onToggleSize={toggleSize}
             priceRange={priceRange}
             onPriceRangeChange={setPriceRange}
             minDiscount={minDiscount}

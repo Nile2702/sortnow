@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
   const subCategories = searchParams.get("subCategories")?.split(",").filter(Boolean);
   const storeIds = searchParams.get("storeIds")?.split(",").filter(Boolean);
   const colors = searchParams.get("colors")?.split(",").filter(Boolean);
+  const sizes = searchParams.get("sizes")?.split(",").filter(Boolean);
   const minDiscount = searchParams.get("minDiscount") ? Number(searchParams.get("minDiscount")) : undefined;
 
   const facets = await getProductFacets({
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
     subCategories,
     storeIds,
     colors,
+    sizes,
     minDiscount,
   });
   return NextResponse.json(facets);

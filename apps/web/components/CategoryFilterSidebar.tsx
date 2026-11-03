@@ -7,6 +7,7 @@ export interface ProductFacets {
   subCategories: { value: string; count: number }[];
   stores: { id: string; name: string; count: number }[];
   colors: { value: string; count: number }[];
+  sizes: { value: string; count: number }[];
   discountTiers: { minDiscount: number; count: number }[];
   priceRange: { min: number; max: number };
 }
@@ -20,6 +21,8 @@ interface Props {
   onToggleStore: (id: string) => void;
   selectedColors: string[];
   onToggleColor: (value: string) => void;
+  selectedSizes: string[];
+  onToggleSize: (value: string) => void;
   priceRange: [number, number] | null;
   onPriceRangeChange: (range: [number, number] | null) => void;
   minDiscount: number | undefined;
@@ -37,6 +40,8 @@ export function CategoryFilterSidebar({
   onToggleStore,
   selectedColors,
   onToggleColor,
+  selectedSizes,
+  onToggleSize,
   priceRange,
   onPriceRangeChange,
   minDiscount,
@@ -86,6 +91,14 @@ export function CategoryFilterSidebar({
           options={facets.colors.map((c) => ({ value: c.value, label: c.value, count: c.count, swatch: colorToSwatch(c.value) }))}
           selected={selectedColors}
           onToggle={onToggleColor}
+        />
+      </FacetSection>
+
+      <FacetSection title="Size">
+        <CheckboxList
+          options={facets.sizes.map((s) => ({ value: s.value, label: s.value, count: s.count }))}
+          selected={selectedSizes}
+          onToggle={onToggleSize}
         />
       </FacetSection>
 
