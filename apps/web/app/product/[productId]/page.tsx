@@ -11,6 +11,7 @@ import { COLOR_CATALOG, allowsMultipleQuantity, MAX_MULTIPLE_QUANTITY } from "..
 import { LogoBadge } from "../../../components/LogoBadge";
 import { ProductCard } from "../../../components/ProductCard";
 import { CheckIcon, CrossIcon, BellIcon } from "../../../components/icons";
+import { SizeChartModal } from "../../../components/SizeChartModal";
 
 interface ColorVariant {
   id: string;
@@ -91,6 +92,41 @@ function ProductStrip({ products }: { products: SimilarProduct[] }) {
   );
 }
 
+// Trust-row icons, drawn inline (rather than added to the shared icons.tsx
+// set) since they're one-off pairings for this specific trust line. Same
+// 24x24 viewBox / currentColor stroke / round caps convention as the shared
+// icon set (see components/icons.tsx) so they sit consistently alongside it.
+function NoOnlinePaymentIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M2 10h20" />
+      <path d="M5 21L21 3" />
+    </svg>
+  );
+}
+
+function HangerIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="4" r="1.5" />
+      <path d="M12 5.5V8" />
+      <path d="M12 8l9 7a2 2 0 0 1-1.2 3.6H4.2A2 2 0 0 1 3 15.5l9-7z" />
+    </svg>
+  );
+}
+
+function StorefrontIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l1.5-5h15L21 9" />
+      <path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0" />
+      <path d="M4 9v11h16V9" />
+      <path d="M10 20v-6h4v6" />
+    </svg>
+  );
+}
+
 function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
     <span style={{ display: "inline-flex", gap: 2 }}>
@@ -117,6 +153,7 @@ export default function ProductDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [hoverZoom, setHoverZoom] = useState<{ x: number; y: number } | null>(null);
   const [size, setSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
@@ -616,9 +653,9 @@ export default function ProductDetailPage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 4, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 28, fontWeight: 600 }}>₹{product.basePrice.toLocaleString("en-IN")}</span>
+            <span style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.01em" }}>₹{product.basePrice.toLocaleString("en-IN")}</span>
             {product.compareAtPrice && (
-              <span style={{ fontSize: 16, color: "var(--sio-muted)" }}>
+              <span style={{ fontSize: 14, color: "var(--sio-muted)", fontWeight: 400 }}>
                 MRP <span style={{ textDecoration: "line-through" }}>₹{product.compareAtPrice.toLocaleString("en-IN")}</span>
               </span>
             )}
@@ -706,8 +743,27 @@ export default function ProductDetailPage() {
 
           {product.sizes?.length > 0 && (
             <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 12, color: "var(--sio-muted)", marginBottom: 10, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                Size
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <div style={{ fontSize: 12, color: "var(--sio-muted)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  Size
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSizeChartOpen(true)}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--sio-ink)",
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    textUnderlineOffset: 3,
+                  }}
+                >
+                  Size Chart
+                </button>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {product.sizes.map((s) => (
@@ -903,12 +959,21 @@ export default function ProductDetailPage() {
               marginBottom: 24,
               borderTop: "1px solid var(--sio-line)",
               borderBottom: "1px solid var(--sio-line)",
-              padding: "14px 0",
+              padding: "18px 0",
             }}
           >
-            <span style={{ flex: 1, textAlign: "center", borderRight: "1px solid var(--sio-line)" }}>No Online Payment</span>
-            <span style={{ flex: 1, textAlign: "center", borderRight: "1px solid var(--sio-line)" }}>Try Before You Buy</span>
-            <span style={{ flex: 1, textAlign: "center" }}>Pay In-Store Only</span>
+            <span style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center", borderRight: "1px solid var(--sio-line)", color: "var(--sio-ink)" }}>
+              <NoOnlinePaymentIcon />
+              <span style={{ color: "var(--sio-muted)" }}>No Online Payment</span>
+            </span>
+            <span style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center", borderRight: "1px solid var(--sio-line)", color: "var(--sio-ink)" }}>
+              <HangerIcon />
+              <span style={{ color: "var(--sio-muted)" }}>Try Before You Buy</span>
+            </span>
+            <span style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center", color: "var(--sio-ink)" }}>
+              <StorefrontIcon />
+              <span style={{ color: "var(--sio-muted)" }}>Pay In-Store Only</span>
+            </span>
           </div>
 
           <button
@@ -1110,6 +1175,8 @@ export default function ProductDetailPage() {
           <ProductStrip products={similar} />
         </section>
       )}
+
+      <SizeChartModal open={sizeChartOpen} onClose={() => setSizeChartOpen(false)} />
 
       {zoomOpen && (
         <div
