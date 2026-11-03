@@ -4,19 +4,47 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CartItem, getCart, removeFromCart, updateQuantity, cartTotal } from "../../lib/cart";
+import { WishlistItem, getWishlist } from "../../lib/wishlist";
 import { allowsMultipleQuantity, MAX_MULTIPLE_QUANTITY } from "../../lib/catalog-constants";
+import { ProductCard, ProductCardData } from "../../components/ProductCard";
 
 export default function CartPage() {
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [similar, setSimilar] = useState<ProductCardData[]>([]);
 
   useEffect(() => {
     setItems(getCart());
+    setWishlist(getWishlist());
   }, []);
 
   function refresh() {
     setItems(getCart());
   }
+
+  // Seeds "You Might Also Like" off whatever's already in the sort, so the
+  // cross-sell is at least contextually related to something the shopper is
+  // already considering, rather than generic/unrelated picks. Keyed off the
+  // first item's productId specifically (not the whole cart) so adding/
+  // removing other lines doesn't keep refetching this strip.
+  const seedProductId = items[0]?.productId;
+  useEffect(() => {
+    if (!seedProductId) {
+      setSimilar([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/v1/products/${seedProductId}/similar`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled) setSimilar(d);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [seedProductId]);
 
   return (
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "8px 16px 40px" }}>
@@ -26,13 +54,90 @@ export default function CartPage() {
       </p>
 
       {items.length === 0 ? (
-        <p>
-          Your sort is empty.{" "}
-          <Link href="/" style={{ color: "var(--sio-ink)" }}>
-            Go find something nearby
-          </Link>
-          .
-        </p>
+        wishlist.length > 0 ? (
+          <div className="sio-fade-in">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                background: "var(--sio-cream)",
+                border: "1px solid var(--sio-line)",
+                borderRadius: 14,
+                padding: "12px 16px",
+                marginBottom: 20,
+                fontSize: 12.5,
+                color: "var(--sio-ink)",
+              }}
+            >
+              <span style={{ fontWeight: 700 }}>No online payment.</span>
+              <span style={{ color: "var(--sio-muted)" }}>Reserve for free, try it on at the store, and pay only if you keep it.</span>
+            </div>
+
+            <p style={{ marginBottom: 16 }}>
+              Your sort is empty, but you've saved {wishlist.length} {wishlist.length === 1 ? "item" : "items"} to your wishlist. Start there:
+            </p>
+
+            <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
+              {wishlist.map((item, i) => (
+                <div key={item.productId} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                  <div style={{ flex: 1, minHeight: 0 }}>
+                    <ProductCard
+                      product={{
+                        id: item.productId,
+                        title: item.title,
+                        basePrice: item.price,
+                        images: [{ url: item.imageUrl }],
+                        storeSlug: item.storeSlug,
+                        storeName: item.storeName,
+                      }}
+                      index={i}
+                    />
+                  </div>
+                  {/* Wishlist items don't carry a size (see lib/wishlist.ts),
+                      so a one-tap "Add to Sort" isn't possible without
+                      guessing one - this sends the shopper to the product
+                      page to pick a size, which already has its own
+                      Add to Sort action. */}
+                  <Link
+                    href={`/product/${item.productId}`}
+                    style={{
+                      marginTop: 8,
+                      padding: "8px 0",
+                      borderRadius: 10,
+                      border: "1px solid var(--sio-line)",
+                      background: "#fff",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textAlign: "center",
+                      textDecoration: "none",
+                      color: "var(--sio-ink)",
+                    }}
+                  >
+                    Choose Size & Add to Sort
+                  </Link>
+                </div>
+              ))}
+            </div>
+
+            <p style={{ marginTop: 20 }}>
+              Or{" "}
+              <Link href="/" style={{ color: "var(--sio-ink)" }}>
+                go find something nearby
+              </Link>
+              .
+            </p>
+          </div>
+        ) : (
+          <p>
+            Your sort is empty.{" "}
+            <Link href="/" style={{ color: "var(--sio-ink)" }}>
+              Go find something nearby
+            </Link>
+            .
+          </p>
+        )
       ) : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -111,6 +216,29 @@ export default function CartPage() {
               Reserve for Pickup
             </button>
           </div>
+
+          {similar.length > 0 && (
+            <section className="sio-fade-in" style={{ marginTop: 40 }}>
+              <h2
+                style={{
+                  fontSize: 20,
+                  fontWeight: 600,
+                  paddingBottom: 14,
+                  borderBottom: "1px solid var(--sio-line)",
+                }}
+              >
+                You Might Also Like
+              </h2>
+              <div
+                className="sio-product-grid"
+                style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 24, marginTop: 20 }}
+              >
+                {similar.map((p, i) => (
+                  <ProductCard key={p.id} product={p} index={i} />
+                ))}
+              </div>
+            </section>
+          )}
         </>
       )}
     </main>

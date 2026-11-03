@@ -18,13 +18,37 @@ export default function WishlistPage() {
       <h1 style={{ fontSize: 24, marginBottom: 20 }}>Your Wishlist</h1>
 
       {items.length === 0 ? (
-        <p>
-          Nothing saved yet. Tap the heart on any product to add it here.{" "}
-          <Link href="/" style={{ color: "var(--sio-ink)" }}>
-            Go find something nearby
+        <div
+          className="sio-fade-in sio-card"
+          style={{
+            textAlign: "center",
+            padding: "40px 24px",
+            borderRadius: 16,
+            border: "1px solid var(--sio-line)",
+            background: "#fff",
+          }}
+        >
+          <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>Nothing saved yet.</p>
+          <p style={{ color: "var(--sio-muted)", fontSize: 13, marginBottom: 20 }}>
+            Tap the heart on anything you like and it'll show up here, ready to reserve whenever you're near the store.
+          </p>
+          <Link
+            href="/"
+            className="sio-shine-btn sio-btn-primary"
+            style={{
+              display: "inline-block",
+              padding: "12px 24px",
+              borderRadius: 999,
+              background: "var(--sio-bronze)",
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            Browse what's nearby
           </Link>
-          .
-        </p>
+        </div>
       ) : (
         <div className="sio-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
           {/* Reuses the one shared ProductCard every other grid on the site
