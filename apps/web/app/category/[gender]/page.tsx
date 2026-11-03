@@ -186,15 +186,15 @@ function CategoryPageInner() {
         {headingSuffix || genderLabel} {headingSuffix ? `· ${genderLabel}` : ""}
       </h1>
 
-      {/* Mobile (<=760px): a sticky filter bar. The subcategory pill row
-          scrolls horizontally in one line (matching the Myntra/Flipkart/
-          BigBasket pattern) rather than wrapping - with 14 subcategories,
-          a wrapping row stacked 7 lines tall and, being position: sticky,
-          stayed pinned over most of the screen while scrolling, visually
-          overlapping the product grid underneath it. A fixed two-row
-          layout (scrollable pills, then sort/map) keeps this bar's height
-          small and predictable regardless of how many subcategories a
-          given gender has. */}
+      {/* Mobile (<=760px): the subcategory pill row scrolls horizontally in
+          one line (matching the Myntra/Flipkart/BigBasket pattern) rather
+          than wrapping across up to 7 lines for a gender with many
+          subcategories. Deliberately NOT position: sticky - a sticky bar,
+          even a compact one, still sits pinned in front of whatever product
+          row scrolls up underneath it, which reads as the filter "staying
+          in the way" while browsing. Scrolling away normally like any
+          other section avoids that entirely; the map/sort controls and the
+          bottom tab bar are still reachable without it. */}
       <section
         className="sio-card sio-listing-mobile-filters"
         style={{
@@ -205,9 +205,6 @@ function CategoryPageInner() {
           borderRadius: 16,
           border: "1px solid var(--sio-cream)",
           marginBottom: 24,
-          position: "sticky",
-          top: 88,
-          zIndex: 15,
         }}
       >
         <div
