@@ -12,6 +12,7 @@ import { getShopperSession, onShopperSessionChange, ShopperSession } from "../li
 import { isMobileAppShellPage, isProductDetailPage } from "../lib/mobile-shell";
 import { LocationPicker } from "./LocationPicker";
 import { MapIcon } from "./icons";
+import { MiniCartDropdown } from "./MiniCartDropdown";
 
 function HeartIcon() {
   return (
@@ -390,10 +391,7 @@ export function SiteHeader() {
             <HeartIcon />
             {wishN > 0 && <CountBadge n={wishN} />}
           </Link>
-          <Link href="/cart" data-tooltip="Your Sort" className="sio-tooltip" style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="Your Sort">
-            <SortIcon />
-            {cartN > 0 && <CountBadge n={cartN} />}
-          </Link>
+          <CartMenu cartN={cartN} />
           <Link href="/reservations" data-tooltip="My Reservations" className="sio-header-reservations sio-tooltip" style={{ color: "var(--sio-ink-soft)", display: "flex", padding: 10 }} aria-label="My Reservations">
             <ReceiptIcon />
           </Link>
@@ -629,6 +627,48 @@ function CategoryMenu({ gender, label, subCategories }: { gender: string; label:
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Hover (desktop) / tap (touch devices that don't hover) preview of the
+// cart contents and running total, mirroring CategoryMenu's open/close
+// pattern above - a short close delay avoids flicker when the cursor
+// crosses the gap between the icon and the panel. Clicking the icon
+// itself still navigates straight to /cart, same as before.
+function CartMenu({ cartN }: { cartN: number }) {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function openNow() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpen(true);
+  }
+
+  function closeSoon() {
+    closeTimer.current = setTimeout(() => setOpen(false), 150);
+  }
+
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
+
+  return (
+    <div style={{ position: "relative" }} onMouseEnter={openNow} onMouseLeave={closeSoon}>
+      <Link
+        href="/cart"
+        data-tooltip="Your Sort"
+        className="sio-tooltip"
+        style={{ position: "relative", color: "var(--sio-ink-soft)", display: "flex", padding: 10 }}
+        aria-label="Your Sort"
+        onClick={() => setOpen(false)}
+        onFocus={openNow}
+        onBlur={closeSoon}
+      >
+        <SortIcon />
+        {cartN > 0 && <CountBadge n={cartN} />}
+      </Link>
+      {open && <MiniCartDropdown onNavigate={() => setOpen(false)} />}
     </div>
   );
 }
