@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CATEGORY_TREE,
   COLOR_CATALOG,
@@ -150,6 +150,14 @@ export function ProductForm({
   // FABRIC_OPTIONS (e.g. "Jamdani Cotton"), which should still show as
   // whatever it actually is, not silently snap to a wrong dropdown value.
   const [fabricIsOther, setFabricIsOther] = useState(() => !!initial?.fabric && !FABRIC_OPTIONS.includes(initial.fabric));
+  // Tracks the fabric value that title/description were last synced against
+  // (see syncFabricInText) - kept up to date after every sync (dropdown
+  // pick, autofill, or a completed "Other" edit on blur) so the "Other"
+  // text input's onBlur always compares against the true last-synced value,
+  // not a per-keystroke one; syncFabricInText expects one discrete old
+  // value and one new one, which a free-text field's own onChange can't
+  // give it on its own.
+  const lastSyncedFabric = useRef<string>(initial?.fabric ?? "");
 
   // A colorway can get its own real photo instead of reusing the main
   // upload for every variant - a seller who's actually photographed each
@@ -528,7 +536,14 @@ export function ProductForm({
       setAutofillError(result?.message ?? "Couldn't suggest details for this photo. Try again.");
       return;
     }
-    if (result.fabric) setFabricIsOther(!FABRIC_OPTIONS.includes(result.fabric));
+    if (result.fabric) {
+      setFabricIsOther(!FABRIC_OPTIONS.includes(result.fabric));
+      // Title/description below are set from this same AI response, so
+      // they already match this fabric - this is the new baseline a later
+      // manual fabric edit should sync FROM, not whatever fabric (if any)
+      // was set before autofill ran.
+      lastSyncedFabric.current = result.fabric;
+    }
     // Only when nothing's picked yet - a seller who already chose one or
     // more colors (e.g. multi-color create flow) keeps their own picks
     // rather than autofill silently narrowing it back down to just one.
@@ -815,6 +830,7 @@ export function ProductForm({
                 title: syncFabricInText(f.title, f.fabric, nextFabric),
                 description: syncFabricInText(f.description, f.fabric, nextFabric),
               }));
+              lastSyncedFabric.current = nextFabric;
             }
           }}
           style={inputStyle()}
@@ -835,6 +851,17 @@ export function ProductForm({
             autoFocus
             value={form.fabric}
             onChange={(e) => update("fabric", e.target.value)}
+            onBlur={() => {
+              const nextFabric = form.fabric;
+              const prevFabric = lastSyncedFabric.current;
+              if (nextFabric === prevFabric) return;
+              setForm((f) => ({
+                ...f,
+                title: syncFabricInText(f.title, prevFabric, nextFabric),
+                description: syncFabricInText(f.description, prevFabric, nextFabric),
+              }));
+              lastSyncedFabric.current = nextFabric;
+            }}
             style={{ ...inputStyle(), marginTop: 8 }}
             placeholder="Enter the fabric, e.g. Jamdani Cotton"
           />
