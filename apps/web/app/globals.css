@@ -486,6 +486,25 @@ body {
   }
 }
 
+/* ClothesRackHero's gentle, asynchronous garment sway - each item gets its
+   own animation-duration/delay (see the component) so the row never swings
+   in unison like a single rigid object, which is what would make it read as
+   decoration rather than genuinely "hanging". Paused on hover so a shopper
+   lining up a click isn't fighting a moving target. */
+@keyframes sio-rack-sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+
+.sio-rack-item:hover {
+  animation-play-state: paused;
+}
+
 @keyframes sio-shimmer {
   0% {
     background-position: -400px 0;
