@@ -15,19 +15,28 @@ export interface RackProduct {
 // A real clothing rack rendered in CSS: a rail, each product hung from it by
 // a small ring + thread, swaying gently and unevenly like garments actually
 // do on a shop floor - the "immersive" hero format referenced from an
-// Instagram reel (an agency's own site, @w.wearebrand), rebuilt here with
-// SORT NOW's own real product photos instead of flat garment cutouts, since
-// that's what the catalog actually has.
+// Instagram reel (an agency's own site, @w.wearebrand).
 //
-// Since these are full lifestyle/model photos (not isolated garment
-// cutouts), a flat rectangular thumbnail never reads as "hanging on a rack"
-// the way a cleanly cut-out garment does - so each card is given a real CSS
-// 3D tilt (perspective + rotateY) instead, as if you're walking past the
-// rack and seeing it at an angle. Clicking (or hovering, on a device with a
-// pointer) turns that item to face the viewer dead-on - like pulling one
-// item forward off the rack to actually look at it - with navigation to the
-// product page held just long enough (see FLIP_MS) for that turn to read as
-// a deliberate action, not a layout jump.
+// Deliberately NOT a product card: no box, no border, no price, no title -
+// just the garment photo itself, given a real CSS 3D tilt (perspective +
+// rotateY) so it reads as viewed from an angle, like walking past the rack.
+// This only works because every photo shown here has already been AI-
+// classified (see app/api/v1/products/rack/route.ts) as a real hanger/
+// mannequin/flat-lay shot on a plain studio background - with no bounding
+// box drawn around it and the section's own background matched to that same
+// white, the photo's own backdrop disappears into the page, reading as a
+// floating cutout without any actual background-removal processing (the
+// client-side tool for that, lib/image-enhance.ts, exists but is a ~45MB
+// model - far too heavy to run in every visitor's browser just for a
+// decorative homepage section). object-fit: contain (not cover) keeps the
+// whole garment and its hanger in frame rather than cropping into a fixed
+// box, which matters more here now that there's no caption to fall back on
+// for context.
+//
+// Clicking (or hovering, on a device with a pointer) turns an item to face
+// the viewer dead-on - like pulling it forward off the rack - with
+// navigation held just long enough (see FLIP_MS) for that turn to read as a
+// deliberate action, not a layout jump.
 const TILT_DEG = 52;
 const PERSPECTIVE_PX = 480;
 const FLIP_MS = 260;
@@ -54,8 +63,8 @@ export function ClothesRackHero({ products }: { products: RackProduct[] }) {
       className="sio-fade-in"
       style={{
         marginBottom: 40,
-        padding: "28px 0 8px",
-        background: "linear-gradient(180deg, var(--sio-cream) 0%, rgba(245,245,246,0) 100%)",
+        padding: "28px 0 16px",
+        background: "#fff",
         borderRadius: 16,
       }}
     >
@@ -84,7 +93,7 @@ export function ClothesRackHero({ products }: { products: RackProduct[] }) {
         <div aria-hidden style={{ position: "absolute", right: 0, top: -1, width: 10, height: 10, borderRadius: "50%", background: "#6b6f78" }} />
       </div>
 
-      {/* perspective on the row, not per-item, so every tilted card shares
+      {/* perspective on the row, not per-item, so every tilted item shares
           one consistent vanishing point - the same reason a real rack of
           angled garments all seem to converge toward one spot when you look
           down it. */}
@@ -96,10 +105,11 @@ export function ClothesRackHero({ products }: { products: RackProduct[] }) {
               key={p.id}
               href={`/product/${p.id}`}
               onClick={(e) => handleClick(e, p.id)}
+              aria-label={p.title}
               className="sio-rack-item"
               style={{
-                flex: "0 0 148px",
-                minWidth: 148,
+                flex: "0 0 168px",
+                minWidth: 168,
                 textDecoration: "none",
                 color: "inherit",
                 display: "flex",
@@ -114,8 +124,9 @@ export function ClothesRackHero({ products }: { products: RackProduct[] }) {
               }}
             >
               {/* Ring threaded onto the rail, plus a short thread down to the
-                  card - the "hanging" cue, kept deliberately simple (no literal
-                  hanger icon) so it reads clearly even at this small size. */}
+                  photo - the "hanging" cue, kept deliberately simple (no
+                  literal hanger icon) so it reads clearly even at this small
+                  size. */}
               <div
                 aria-hidden
                 style={{
@@ -123,47 +134,26 @@ export function ClothesRackHero({ products }: { products: RackProduct[] }) {
                   height: 10,
                   borderRadius: "50%",
                   border: "2px solid var(--sio-ink-soft)",
-                  background: "var(--sio-paper, #fff)",
+                  background: "#fff",
                   marginTop: -1,
                 }}
               />
               <div aria-hidden style={{ width: 2, height: 16, background: "var(--sio-line)" }} />
 
-              <div
-                className="sio-card sio-rack-card"
+              <img
+                src={p.images?.[0]?.url}
+                alt={p.title}
+                loading="lazy"
+                className="sio-rack-card"
                 style={{
                   width: "100%",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  background: "#fff",
-                  boxShadow: active ? "0 16px 28px rgba(22,20,15,0.22)" : "0 10px 20px rgba(22,20,15,0.12)",
+                  height: 240,
+                  objectFit: "contain",
+                  display: "block",
                   transform: `rotateY(${active ? 0 : TILT_DEG}deg)`,
-                  transformStyle: "preserve-3d",
-                  transition: `transform ${FLIP_MS}ms ease, box-shadow ${FLIP_MS}ms ease`,
+                  transition: `transform ${FLIP_MS}ms ease`,
                 }}
-              >
-                <img
-                  src={p.images?.[0]?.url}
-                  alt={p.title}
-                  loading="lazy"
-                  style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }}
-                />
-                <div style={{ padding: "8px 10px 10px" }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      lineHeight: 1.3,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {p.title}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, marginTop: 2 }}>₹{p.basePrice.toLocaleString("en-IN")}</div>
-                </div>
-              </div>
+              />
             </Link>
           );
         })}

@@ -512,7 +512,6 @@ body {
 @media (hover: hover) {
   .sio-rack-card:hover {
     transform: rotateY(0deg) !important;
-    box-shadow: 0 16px 28px rgba(22, 20, 15, 0.22) !important;
   }
 }
 
