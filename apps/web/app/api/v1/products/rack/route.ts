@@ -17,6 +17,14 @@ const CANDIDATE_POOL_SIZE = 24;
 const MAX_NEW_CLASSIFICATIONS_PER_REQUEST = 8;
 const TARGET_COUNT = 10;
 
+// This handler takes no request params, reads no cookies/headers, so
+// Next.js's App Router would otherwise treat it as fully static and cache
+// its response at build time - meaning production would keep serving
+// whatever the newest-arrivals/classification state happened to be at
+// build, never reflecting a product published afterward. force-dynamic
+// makes every request actually re-run this against the live database.
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const candidates = (await searchProducts({ sort: "newest" })).slice(0, CANDIDATE_POOL_SIZE);
   if (candidates.length === 0) return NextResponse.json([]);
