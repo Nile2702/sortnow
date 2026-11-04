@@ -9,7 +9,6 @@ import { LoadingScreen } from "../components/LoadingSpinner";
 import { QUICK_MARKETS, setLocationPref, resolveAreaLabel } from "../lib/location";
 import { HeroSlider } from "../components/HeroSlider";
 import { CategoryTiles } from "../components/CategoryTiles";
-import { ClothesRackHero } from "../components/ClothesRackHero";
 import { ProductCard } from "../components/ProductCard";
 import { StoreRatingBadge } from "../components/StoreRatingBadge";
 import { hashHue } from "../lib/string-hue";
@@ -123,7 +122,6 @@ function DiscoverPageInner() {
   const [newArrivals, setNewArrivals] = useState<SearchProduct[]>([]);
   const [bestDeals, setBestDeals] = useState<SearchProduct[]>([]);
   const [spotlightLoading, setSpotlightLoading] = useState(true);
-  const [rackProducts, setRackProducts] = useState<SearchProduct[]>([]);
 
   // Mirrors whatever location is actually driving this page's search into
   // the shared preference, so the mobile app-style header (rendered outside
@@ -169,19 +167,6 @@ function DiscoverPageInner() {
       })
       .catch(() => {})
       .finally(() => setSpotlightLoading(false));
-  }, []);
-
-  // Separate from the newArrivals/bestDeals fetch above - this one can be
-  // slower on a cold cache (it may trigger a fresh AI classification call
-  // per uncached product, see app/api/v1/products/rack/route.ts), so it
-  // shouldn't hold up anything else on the page. Simply renders nothing
-  // (ClothesRackHero returns null for an empty list) until it resolves or
-  // if no product currently has a hanger/flat-lay shot classified yet.
-  useEffect(() => {
-    fetch(`/api/v1/products/rack`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setRackProducts)
-      .catch(() => {});
   }, []);
 
   const liveSaleStores = stores.filter((s) => isSaleActive(s.liveSale));
@@ -255,7 +240,6 @@ function DiscoverPageInner() {
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "16px 16px 40px" }}>
       <HeroSlider />
-      {rackProducts.length > 0 && <ClothesRackHero products={rackProducts} />}
       <CategoryTiles />
 
       {liveSaleStores.length > 0 && (

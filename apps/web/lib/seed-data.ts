@@ -2968,33 +2968,6 @@ export async function getRatingSummaries(productIds: string[]): Promise<Map<stri
   return map;
 }
 
-// Bulk cache lookup backing the homepage rack's eligibility check (see
-// app/api/v1/products/rack/route.ts) - a product's photo is classified by
-// lib/ai-rack-classify.ts at most once; re-classified only if the product's
-// primary image URL has actually changed since the cached row (a reseller
-// swapping in a different photo shouldn't keep the old classification).
-export async function getRackClassifications(productIds: string[]): Promise<Map<string, { imageUrl: string; isHangerOrFlat: boolean }>> {
-  const map = new Map<string, { imageUrl: string; isHangerOrFlat: boolean }>();
-  if (productIds.length === 0) return map;
-  const rows = await query<any>(
-    `SELECT product_id, image_url, is_hanger_or_flat FROM product_image_classification WHERE product_id = ANY($1)`,
-    [productIds]
-  );
-  for (const r of rows) {
-    map.set(r.product_id, { imageUrl: r.image_url, isHangerOrFlat: r.is_hanger_or_flat });
-  }
-  return map;
-}
-
-export async function setRackClassification(productId: string, imageUrl: string, isHangerOrFlat: boolean): Promise<void> {
-  await execute(
-    `INSERT INTO product_image_classification (product_id, image_url, is_hanger_or_flat, classified_at)
-     VALUES ($1, $2, $3, now())
-     ON CONFLICT (product_id) DO UPDATE SET image_url = EXCLUDED.image_url, is_hanger_or_flat = EXCLUDED.is_hanger_or_flat, classified_at = now()`,
-    [productId, imageUrl, isHangerOrFlat]
-  );
-}
-
 export async function addReview(productId: string, input: { authorName: string; rating: number; title?: string; comment: string }): Promise<Review> {
   const review: Review = {
     id: `rev-custom-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
