@@ -155,7 +155,7 @@ export function HeroSlider() {
             {slide.eyebrow}
           </div>
           {/* Bold sans headline with its own last word dropped into an
-              italic serif (--site-font-accent, Playfair Display) - the
+              italic serif (--site-font-accent, Fraunces) - the
               mixed-typography accent treatment referenced from Huel's own
               homepage, applied consistently across every slide by always
               italicizing the final word rather than hand-picking one per

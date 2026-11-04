@@ -300,6 +300,20 @@ function DiscoverPageInner() {
           marginBottom: 20,
         }}
       >
+        <div
+          style={{
+            width: "100%",
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "var(--sio-muted)",
+            marginBottom: 2,
+          }}
+        >
+          Your location
+        </div>
+
         {geo && (
           <div style={{ width: "100%", fontSize: 12.5, color: "var(--sio-ink)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
             <PinIcon size={13} /> Using your current location
@@ -312,16 +326,21 @@ function DiscoverPageInner() {
             </button>
           </div>
         )}
-        <input
-          value={pincode}
-          onChange={(e) => {
-            setGeo(null);
-            setPincode(e.target.value.replace(/\D/g, "").slice(0, 6));
-          }}
-          placeholder="Enter 6-digit PIN code"
-          maxLength={6}
-          style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 16, width: 200 }}
-        />
+        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+          <span style={{ position: "absolute", left: 14, color: "var(--sio-muted)", pointerEvents: "none", display: "flex" }}>
+            <PinIcon size={14} />
+          </span>
+          <input
+            value={pincode}
+            onChange={(e) => {
+              setGeo(null);
+              setPincode(e.target.value.replace(/\D/g, "").slice(0, 6));
+            }}
+            placeholder="Enter 6-digit PIN code"
+            maxLength={6}
+            style={{ padding: "10px 14px 10px 36px", borderRadius: 10, border: "1px solid var(--sio-line)", fontSize: 16, width: 200 }}
+          />
+        </div>
 
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
           Radius
@@ -337,6 +356,8 @@ function DiscoverPageInner() {
             ))}
           </select>
         </label>
+
+        <div style={{ width: 1, alignSelf: "stretch", background: "var(--sio-line)", margin: "0 2px" }} />
 
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <button

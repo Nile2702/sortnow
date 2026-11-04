@@ -1,4 +1,4 @@
-import { Poppins, Playfair_Display } from "next/font/google";
+import { Outfit, Fraunces } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "../components/SiteHeader";
 import { MobileAppHeader } from "../components/MobileAppHeader";
@@ -12,15 +12,15 @@ import { LocationGate } from "../components/LocationGate";
 import { ServiceWorkerRegister } from "../components/ServiceWorkerRegister";
 import { SITE_URL } from "../lib/site-url";
 
-// Poppins - a bold, geometric sans matching the weight/feel of the brand
-// logo's wordmark, used for both headings and body text.
-const heading = Poppins({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--site-font-heading" });
-const body = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--site-font-body" });
-// A single elegant italic serif word dropped into an otherwise bold
-// sans-serif headline (the homepage hero, the category-tiles section
-// heading) - the same mixed-typography accent pattern used widely across
-// premium DTC sites, picked at the user's request after referencing one.
-const accent = Playfair_Display({ subsets: ["latin"], weight: ["600"], style: ["italic"], variable: "--site-font-accent" });
+// Outfit - a clean modern grotesque, used for both headings and body text.
+const heading = Outfit({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--site-font-heading" });
+const body = Outfit({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--site-font-body" });
+// An editorial soft-serif (less common than Playfair Display, same
+// "elegant accent word" job) dropped into an otherwise clean sans-serif
+// headline (the homepage hero, the category-tiles section heading) - the
+// same mixed-typography accent pattern used widely across premium DTC
+// sites, picked at the user's request after referencing one.
+const accent = Fraunces({ subsets: ["latin"], weight: ["600"], style: ["italic"], variable: "--site-font-accent" });
 
 const SITE_DESCRIPTION =
   "SORT NOW helps you discover fashion from real local boutiques near you by PIN code — browse Men, Women & Kids apparel, filter by size and price, reserve items online, and try them on in-store before you buy. No online payment needed.";
