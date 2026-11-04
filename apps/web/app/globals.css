@@ -505,6 +505,17 @@ body {
   animation-play-state: paused;
 }
 
+/* Hover-to-front, mouse/trackpad only - a touch device has no hover state to
+   "stick" on after a tap, which is exactly why the component also handles
+   the turn-to-front on click/tap directly (see ClothesRackHero's
+   handleClick), not just via this rule. */
+@media (hover: hover) {
+  .sio-rack-card:hover {
+    transform: rotateY(0deg) !important;
+    box-shadow: 0 16px 28px rgba(22, 20, 15, 0.22) !important;
+  }
+}
+
 @keyframes sio-shimmer {
   0% {
     background-position: -400px 0;
