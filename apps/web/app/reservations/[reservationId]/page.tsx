@@ -165,6 +165,27 @@ export default function ReservationDetailPage() {
   const directionsUrl = store ? `https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}` : undefined;
   const storeAddress = store ? [store.localMarket, store.city].filter(Boolean).join(", ") + (store.pincode ? ` - ${store.pincode}` : "") : undefined;
 
+  // Delivery-app-style order tracker. Only two real gates exist in the data
+  // (reserved -> held, then resolved) - there's no separate merchant
+  // "accept" step, so this never implies one. The third node's label/color
+  // reflects whichever real outcome the reservation landed on.
+  const terminalLabel =
+    reservation.status === "fulfilled" ? "Picked up" : reservation.status === "cancelled" ? "Cancelled" : reservation.status === "expired" ? "Expired" : "Pickup";
+  const terminalReached = reservation.status !== "pending";
+  const terminalColor =
+    reservation.status === "fulfilled"
+      ? "var(--sio-success)"
+      : reservation.status === "cancelled"
+        ? "var(--sio-muted)"
+        : reservation.status === "expired"
+          ? "var(--sio-error)"
+          : "var(--sio-line)";
+  const trackerSteps = [
+    { label: "Reserved", reached: true, color: "var(--sio-ink)" },
+    { label: "Held for pickup", reached: true, color: "var(--sio-ink)" },
+    { label: terminalLabel, reached: terminalReached, color: terminalColor },
+  ];
+
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: "40px 16px" }}>
       <div className="sio-fade-in" style={{ textAlign: "center", marginBottom: 24 }}>
@@ -187,6 +208,38 @@ export default function ReservationDetailPage() {
         <p style={{ color: "var(--sio-muted)", fontSize: 14 }}>
           Reservation <strong>{reservation.id}</strong> at <strong>{reservation.storeName}</strong>
         </p>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
+        {trackerSteps.map((step, i) => (
+          <div key={step.label} style={{ display: "flex", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 84 }}>
+              <span
+                className={i === 1 && reservation.status === "pending" ? "sio-breathe" : undefined}
+                style={{
+                  width: 11,
+                  height: 11,
+                  borderRadius: "50%",
+                  background: step.reached ? step.color : "var(--sio-line)",
+                  flexShrink: 0,
+                }}
+              />
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: step.reached ? "var(--sio-ink)" : "var(--sio-muted)", textAlign: "center", lineHeight: 1.3 }}>
+                {step.label}
+              </span>
+            </div>
+            {i < trackerSteps.length - 1 && (
+              <div
+                style={{
+                  width: 40,
+                  height: 2,
+                  marginTop: 5,
+                  background: trackerSteps[i + 1].reached ? trackerSteps[i + 1].color : "var(--sio-line)",
+                }}
+              />
+            )}
+          </div>
+        ))}
       </div>
 
       {reservation.status === "pending" && (

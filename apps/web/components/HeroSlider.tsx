@@ -18,8 +18,8 @@ const SLIDES: Slide[] = [
   {
     href: "/shops",
     eyebrow: "SORT NOW",
-    title: "Real Boutiques, Near You",
-    subtitle: "Discover independent fashion stores in your neighborhood, and try it on before you buy.",
+    title: "Reserve Online, Try It In Store",
+    subtitle: "Pay only if you love it in person — no online payment, ever.",
     cta: "Explore All Shops",
     bg: "linear-gradient(140deg, #16161a 0%, #5c1a14 55%, #16161a 100%)",
     image: "/hero/boutique-rack.jpg",

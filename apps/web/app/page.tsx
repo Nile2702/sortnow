@@ -9,6 +9,7 @@ import { LoadingScreen } from "../components/LoadingSpinner";
 import { QUICK_MARKETS, setLocationPref, resolveAreaLabel } from "../lib/location";
 import { HeroSlider } from "../components/HeroSlider";
 import { CategoryTiles } from "../components/CategoryTiles";
+import { ReservationStepsStrip } from "../components/ReservationStepsStrip";
 import { ProductCard } from "../components/ProductCard";
 import { StoreRatingBadge } from "../components/StoreRatingBadge";
 import { hashHue } from "../lib/string-hue";
@@ -240,6 +241,11 @@ function DiscoverPageInner() {
   return (
     <main style={{ maxWidth: 1440, margin: "0 auto", padding: "16px 16px 40px" }}>
       <HeroSlider />
+
+      <div style={{ marginTop: 16, marginBottom: 20 }}>
+        <ReservationStepsStrip />
+      </div>
+
       <CategoryTiles />
 
       {liveSaleStores.length > 0 && (
