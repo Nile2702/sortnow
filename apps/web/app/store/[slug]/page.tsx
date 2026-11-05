@@ -8,7 +8,7 @@ import { ProductGrid } from "../../../components/ProductGrid";
 import { CategoryNav } from "../../../components/CategoryNav";
 import { TrackPageView } from "../../../components/TrackPageView";
 import { StoreRatingBadge } from "../../../components/StoreRatingBadge";
-import { PinIcon } from "../../../components/icons";
+import { PinIcon, PhoneIcon } from "../../../components/icons";
 import { StoreReviews } from "../../../components/StoreReviews";
 
 interface Props {
@@ -144,6 +144,14 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
                 >
                   Locate on map →
                 </a>
+                {store.phone && (
+                  <a
+                    href={`tel:+91${store.phone}`}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--store-primary, var(--sio-ink))", fontWeight: 600, textDecoration: "none" }}
+                  >
+                    <PhoneIcon size={13} /> Call store
+                  </a>
+                )}
               </div>
             </div>
           ) : (
@@ -161,8 +169,15 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
 export async function generateMetadata({ params }: Props) {
   const store = await getStoreBySlug(params.slug);
   if (!store) return {};
+  const url = `${SITE_URL}/store/${store.slug}`;
+  // Without this, every store page fell back to the root layout's one
+  // static description/OG tags - so a link to any store shared on
+  // WhatsApp or Instagram showed the same generic site-wide preview
+  // instead of that store's own name and location.
+  const description = `Shop ${store.name} on SORT NOW - a real boutique in ${store.localMarket}, ${store.city}. Browse their collection, reserve online, and try it on in-store before you buy.`;
   return {
     title: store.name,
+    description,
     icons: { icon: "/api/store-favicon/" + store.slug },
     // middleware.ts rewrites a seller's own subdomain (and any verified
     // custom domain) to this exact page, so the same storefront is reachable
@@ -171,6 +186,8 @@ export async function generateMetadata({ params }: Props) {
     // Always pointing the canonical tag at the sortnow.in path-based URL,
     // regardless of which host actually served this request, picks one
     // answer consistently.
-    alternates: { canonical: `${SITE_URL}/store/${store.slug}` },
+    alternates: { canonical: url },
+    openGraph: { title: store.name, description, type: "website", url },
+    twitter: { card: "summary", title: store.name, description },
   };
 }

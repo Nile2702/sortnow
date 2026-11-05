@@ -10,7 +10,7 @@ import { getShopperSession } from "../../../lib/shopper-session";
 import { COLOR_CATALOG, allowsMultipleQuantity, MAX_MULTIPLE_QUANTITY } from "../../../lib/catalog-constants";
 import { LogoBadge } from "../../../components/LogoBadge";
 import { ProductCard } from "../../../components/ProductCard";
-import { CheckIcon, CrossIcon, BellIcon } from "../../../components/icons";
+import { CheckIcon, CrossIcon, BellIcon, PhoneIcon, MapIcon } from "../../../components/icons";
 import { SizeChartModal } from "../../../components/SizeChartModal";
 
 interface ColorVariant {
@@ -35,7 +35,7 @@ interface ProductDetail {
   sizes: string[];
   stockRemaining?: number;
   storeSlug: string;
-  store: { name: string; city: string; localMarket: string; pincode: string };
+  store: { name: string; city: string; localMarket: string; pincode: string; latitude: number; longitude: number; phone?: string };
   onSale?: boolean;
   saleEndsAt?: string;
 }
@@ -908,6 +908,49 @@ export default function ProductDetailPage() {
                 {waitlistSubmitting ? "Joining…" : "Notify me"}
               </button>
             </form>
+          )}
+
+          {(product.store.phone || (product.store.latitude && product.store.longitude)) && (
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
+              {product.store.phone && (
+                <a
+                  href={`tel:+91${product.store.phone}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "9px 16px",
+                    borderRadius: 999,
+                    border: "1px solid var(--sio-line)",
+                    color: "var(--sio-ink)",
+                    textDecoration: "none",
+                    fontSize: 13,
+                    fontWeight: 600,
+                  }}
+                >
+                  <PhoneIcon size={14} /> Call store
+                </a>
+              )}
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${product.store.latitude},${product.store.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "9px 16px",
+                  borderRadius: 999,
+                  border: "1px solid var(--sio-line)",
+                  color: "var(--sio-ink)",
+                  textDecoration: "none",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                <MapIcon size={14} /> Get directions
+              </a>
+            </div>
           )}
 
           {/* Distance check - reserve-and-pickup, so this tells shoppers how

@@ -26,5 +26,19 @@ export async function GET(_req: NextRequest, { params }: { params: { productId: 
   // through.
   const { costPrice: _costPrice, ...publicProduct } = product;
   const [withSale] = await applyActiveSales([publicProduct]);
-  return NextResponse.json({ ...withSale, store, colorVariants });
+  // `store` (from getAllStores()) carries the seller's full business record -
+  // decrypted gstin/pan/upiVpa, email, legalBusinessName, etc. This is a
+  // public, unauthenticated route, so only an explicit allow-list of fields
+  // a shopper actually needs (and that are already shown elsewhere on the
+  // storefront) may leave this response - never spread the full record.
+  const publicStore = {
+    name: store.name,
+    city: store.city,
+    localMarket: store.localMarket,
+    pincode: store.pincode,
+    latitude: store.latitude,
+    longitude: store.longitude,
+    phone: store.phone,
+  };
+  return NextResponse.json({ ...withSale, store: publicStore, colorVariants });
 }

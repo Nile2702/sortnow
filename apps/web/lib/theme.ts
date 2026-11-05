@@ -41,6 +41,10 @@ export interface StoreRecord {
   latitude: number;
   longitude: number;
   liveSale?: { headline: string; discountLabel: string; startedAt: string; endsAt: string } | null;
+  // Already present on every row returned by getAllStores() below (see
+  // lib/seed-data.ts's Store/rowToStore) - just not previously exposed on
+  // this narrower type, so callers couldn't show a "Call store" link.
+  phone?: string;
 }
 
 /**
