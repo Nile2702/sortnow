@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FullLogo } from "./LogoBadge";
 import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from "../lib/support-contact";
+import { splitAccentWords, ACCENT_EM_STYLE } from "../lib/text";
 
 const COLUMNS = [
   {
@@ -115,10 +116,13 @@ export function Footer() {
           </p>
         </div>
 
-        {columns.map((col) => (
+        {columns.map((col) => {
+          const { rest, last } = splitAccentWords(col.title);
+          return (
           <div key={col.title} style={{ minWidth: 140 }}>
             <div style={{ fontFamily: "var(--site-font-heading)", fontWeight: 600, fontSize: 13, letterSpacing: "0.04em", textTransform: "uppercase", color: "#fff", marginBottom: 14 }}>
-              {col.title}
+              {rest}
+              <em style={{ ...ACCENT_EM_STYLE, fontWeight: 600 }}>{last}</em>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {col.links.map((l) => (
@@ -136,7 +140,8 @@ export function Footer() {
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       <div
         style={{

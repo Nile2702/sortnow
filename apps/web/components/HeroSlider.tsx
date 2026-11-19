@@ -119,11 +119,12 @@ export function HeroSlider() {
         )}
         {/* Darkens a real photo enough for white text to stay readable, same
             job the plain radial gradient below does for a flat color slide -
-            stacked together when both are present. Slightly deeper than a
-            bare legibility minimum so headline/CTA contrast holds up across
-            every slide's photo, not just the darkest one. */}
+            stacked together when both are present. Kept just dark enough for
+            headline/CTA contrast, not darker - the photo itself is part of
+            what's being sold here, and text legibility is carried the rest
+            of the way by the text-shadows below instead of a heavier scrim. */}
         {slide.image && (
-          <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(6,8,14,0.6)" }} />
+          <div aria-hidden style={{ position: "absolute", inset: 0, background: "rgba(6,8,14,0.46)" }} />
         )}
         {/* Subtle vignette + spotlight to read as a photographic backdrop rather than a flat gradient */}
         <div
@@ -132,7 +133,7 @@ export function HeroSlider() {
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.12), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.6), transparent 60%)",
+              "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.12), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.5), transparent 60%)",
           }}
         />
 
@@ -178,13 +179,14 @@ export function HeroSlider() {
             {titleRest} <em style={{ fontFamily: "var(--site-font-accent)", fontStyle: "italic", fontWeight: 600 }}>{titleLastWord}</em>
           </h1>
           <p
+            className="sio-hero-subtitle"
             style={{
               fontSize: 15,
-              opacity: 0.88,
+              opacity: 0.92,
               marginBottom: 30,
               maxWidth: 440,
               fontWeight: 300,
-              textShadow: "0 1px 6px rgba(0,0,0,0.35)",
+              textShadow: "0 1px 8px rgba(0,0,0,0.55)",
             }}
           >
             {slide.subtitle}
@@ -236,7 +238,12 @@ export function HeroSlider() {
         ))}
       </div>
 
+      {/* Hidden under 640px (see globals.css) - a 40px circle sitting at
+          vertical-center on a narrow screen lands right across the
+          subtitle once it wraps to two lines. Swipe + the dot indicator
+          below are enough affordance on a touch screen anyway. */}
       <button
+        className="sio-hero-arrow"
         onClick={() => setIndex((i) => (i - 1 + SLIDES.length) % SLIDES.length)}
         onMouseEnter={() => setHoverArrow("left")}
         onMouseLeave={() => setHoverArrow(null)}
@@ -246,6 +253,7 @@ export function HeroSlider() {
         ‹
       </button>
       <button
+        className="sio-hero-arrow"
         onClick={() => setIndex((i) => (i + 1) % SLIDES.length)}
         onMouseEnter={() => setHoverArrow("right")}
         onMouseLeave={() => setHoverArrow(null)}

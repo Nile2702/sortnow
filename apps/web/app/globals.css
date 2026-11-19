@@ -188,6 +188,17 @@ a:focus-visible,
   .sio-product-title {
     font-size: 22px !important;
   }
+
+  /* Swipe + the dot indicator are enough navigation affordance on a touch
+     screen - at this width the arrows' vertical-center position overlaps
+     the subtitle once it wraps to two lines. */
+  .sio-hero-arrow {
+    display: none !important;
+  }
+
+  .sio-hero-subtitle {
+    max-width: 280px !important;
+  }
 }
 
 .sio-header-nav {

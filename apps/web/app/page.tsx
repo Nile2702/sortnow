@@ -14,6 +14,7 @@ import { ProductCard } from "../components/ProductCard";
 import { StoreRatingBadge } from "../components/StoreRatingBadge";
 import { hashHue } from "../lib/string-hue";
 import { PinIcon, MapIcon, SparkleIcon, FlameIcon, CompassIcon, StoreIcon, ShirtIcon, CreditCardIcon, WalkIcon, LightningIcon } from "../components/icons";
+import { splitAccentWords, ACCENT_EM_STYLE } from "../lib/text";
 
 interface DiscoveredStore {
   id: string;
@@ -62,6 +63,19 @@ const WHY_SHOP_WITH_US = [
 
 function SkeletonCard({ height = 220 }: { height?: number }) {
   return <div className="sio-skeleton" style={{ borderRadius: 16, height }} />;
+}
+
+// Drops a heading's last word into the editorial serif accent - see
+// lib/text.ts. A tiny component rather than calling splitAccentWords
+// inline at each of this page's several plain headings.
+function Accent({ text }: { text: string }) {
+  const { rest, last } = splitAccentWords(text);
+  return (
+    <>
+      {rest}
+      <em style={ACCENT_EM_STYLE}>{last}</em>
+    </>
+  );
 }
 
 // Curated "collection" row - horizontal scroll rather than a wrapping grid,
@@ -252,7 +266,9 @@ function DiscoverPageInner() {
         <section style={{ marginBottom: 28 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
             <span className="sio-breathe" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sio-error)", display: "inline-block" }} />
-            <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Live Sales Near You</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
+              <Accent text="Live Sales Near You" />
+            </h2>
           </div>
           <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 6 }}>
             {liveSaleStores.map((s) => (
@@ -460,7 +476,9 @@ function DiscoverPageInner() {
         </div>
       </section>
 
-      <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>Stores near you</h2>
+      <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700 }}>
+        <Accent text="Stores near you" />
+      </h2>
       {loading ? (
         <div className="sio-scroll-row" style={{ marginBottom: 44 }}>
           {[1, 2, 3, 4, 5].map((i) => (
@@ -588,7 +606,7 @@ function DiscoverPageInner() {
 
       <section style={{ marginBottom: 44 }}>
         <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-          <SparkleIcon size={19} /> New Arrivals
+          <SparkleIcon size={19} /> <Accent text="New Arrivals" />
         </h2>
         <ProductRow products={newArrivals} loading={spotlightLoading} />
       </section>
@@ -596,7 +614,7 @@ function DiscoverPageInner() {
       {(spotlightLoading || bestDeals.length > 0) && (
         <section style={{ marginBottom: 44 }}>
           <h2 style={{ fontSize: 20, marginBottom: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-            <FlameIcon size={19} /> Best Deals
+            <FlameIcon size={19} /> <Accent text="Best Deals" />
           </h2>
           <ProductRow products={bestDeals} loading={spotlightLoading} />
         </section>
@@ -604,7 +622,7 @@ function DiscoverPageInner() {
 
       <section style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", border: "1px solid var(--sio-cream)" }}>
         <h2 style={{ fontSize: 20, marginBottom: 4, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-          <CompassIcon size={19} /> Shop in Sort
+          <CompassIcon size={19} /> <Accent text="Shop in Sort" />
         </h2>
         <p style={{ fontSize: 13, color: "var(--sio-muted)", marginBottom: 18 }}>
           Sort products across every nearby store
@@ -698,33 +716,48 @@ function DiscoverPageInner() {
             letterSpacing: "-0.01em",
           }}
         >
-          Why Shop With{" "}
-          <em style={{ fontFamily: "var(--site-font-accent)", fontStyle: "italic", fontWeight: 600 }}>Us</em>
+          <Accent text="Why Shop With Us" />
         </h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
-          {WHY_SHOP_WITH_US.map((item) => (
+          {WHY_SHOP_WITH_US.map((item, i) => (
             <div
               key={item.title}
               className="sio-card"
-              style={{ background: "#fff", borderRadius: 16, padding: "26px 22px", border: "1px solid var(--sio-cream)", textAlign: "center" }}
+              style={{ position: "relative", background: "#fff", borderRadius: 16, padding: "26px 22px", border: "1px solid var(--sio-cream)", textAlign: "center" }}
             >
               <div
                 aria-hidden
                 style={{
-                  width: 60,
-                  height: 60,
+                  fontFamily: "var(--site-font-accent)",
+                  fontStyle: "italic",
+                  fontSize: 13,
+                  color: "var(--sio-line)",
+                  position: "absolute",
+                  top: 14,
+                  right: 18,
+                }}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </div>
+              <div
+                aria-hidden
+                style={{
+                  width: 56,
+                  height: 56,
                   borderRadius: "50%",
-                  background: "var(--sio-cream)",
-                  color: "var(--sio-ink)",
+                  background: "var(--sio-ink)",
+                  color: "#fff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  margin: "0 auto 14px",
+                  margin: "0 auto 16px",
                 }}
               >
                 {item.icon}
               </div>
-              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{item.title}</div>
+              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>
+                <Accent text={item.title} />
+              </div>
               <p style={{ fontSize: 13, color: "var(--sio-muted)", lineHeight: 1.6, margin: 0 }}>{item.body}</p>
             </div>
           ))}
