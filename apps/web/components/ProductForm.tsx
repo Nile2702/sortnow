@@ -75,6 +75,12 @@ export function ProductForm({
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  // Submitting a listing with real photos is slow (each photo is
+  // independently content-checked and uploaded server-side - see
+  // app/api/v1/seller/upload/route.ts), and a flat "Saving…" button for
+  // that whole stretch reads as a frozen page. Surfaces which of the three
+  // real phases handleSubmit is actually in right now instead.
+  const [savingStage, setSavingStage] = useState<"photos" | "listing" | null>(null);
   const [saveError, setSaveError] = useState("");
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialImageUrl ?? null);
   const [uploadError, setUploadError] = useState("");
@@ -585,11 +591,21 @@ export function ProductForm({
     }
 
     setSaving(true);
+    setSavingStage("photos");
 
     const mainImage = uploadedImage ?? placeholderDataUrl(form.title || "Product", form.imageColor);
+    // On edit, uploadedImage/additionalImages start out as the product's
+    // existing Cloudinary URLs (initialImageUrl/initialAdditionalImages) -
+    // only a photo the seller actually just picked or re-enhanced in this
+    // session is a data: URL. Resizing and re-uploading an unchanged
+    // https:// URL did real, needless work on every edit regardless of
+    // whether a photo changed at all: a full client+server NSFW re-check
+    // plus a brand new Cloudinary asset (leaving the old one orphaned) for
+    // every existing photo, even on a plain price/stock text edit.
+    const isNewPhoto = (url: string) => url.startsWith("data:");
     const [resizedMainImage, resizedAdditionalImages] = await Promise.all([
-      resizeForStorage(mainImage).catch(() => mainImage),
-      Promise.all(additionalImages.map((url) => resizeForStorage(url).catch(() => url))),
+      isNewPhoto(mainImage) ? resizeForStorage(mainImage).catch(() => mainImage) : Promise.resolve(mainImage),
+      Promise.all(additionalImages.map((url) => (isNewPhoto(url) ? resizeForStorage(url).catch(() => url) : Promise.resolve(url)))),
     ]);
     const resizedColorImages: Record<string, string> = {};
     await Promise.all(
@@ -612,8 +628,8 @@ export function ProductForm({
     let storedColorImages: Record<string, string> = {};
     try {
       [storedMainImage, storedAdditionalImages] = await Promise.all([
-        uploadProductImage(resizedMainImage),
-        Promise.all(resizedAdditionalImages.map(uploadProductImage)),
+        isNewPhoto(resizedMainImage) ? uploadProductImage(resizedMainImage) : Promise.resolve(resizedMainImage),
+        Promise.all(resizedAdditionalImages.map((url) => (isNewPhoto(url) ? uploadProductImage(url) : Promise.resolve(url)))),
       ]);
       const colorEntries = await Promise.all(
         Object.entries(resizedColorImages).map(async ([color, url]) => [color, await uploadProductImage(url)] as const)
@@ -621,6 +637,7 @@ export function ProductForm({
       storedColorImages = Object.fromEntries(colorEntries);
     } catch (err) {
       setSaving(false);
+      setSavingStage(null);
       setSaveError(err instanceof Error ? err.message : "Couldn't upload photo. Try again.");
       return;
     }
@@ -647,6 +664,8 @@ export function ProductForm({
       stockRemaining: Number(form.stockRemaining),
       images: [{ url: storedMainImage }, ...storedAdditionalImages.map((url) => ({ url }))],
     };
+
+    setSavingStage("listing");
 
     let responses: Response[];
     if (mode === "create") {
@@ -697,6 +716,7 @@ export function ProductForm({
       const bodies = await Promise.all(failed.map((r) => r.json().catch(() => null)));
       const messages = bodies.map((b) => (Array.isArray(b?.errors) ? b.errors.join("; ") : b?.message)).filter(Boolean);
       setSaving(false);
+      setSavingStage(null);
       setSaveError(messages[0] || "Couldn't save this product. Check the fields above and try again.");
       return;
     }
@@ -1443,7 +1463,9 @@ export function ProductForm({
         }}
       >
         {saving
-          ? "Saving…"
+          ? savingStage === "listing"
+            ? "Creating your listing…"
+            : "Checking & uploading photos…"
           : mode === "create"
             ? selectedColors.length > 1
               ? `Publish ${selectedColors.length} Products`
