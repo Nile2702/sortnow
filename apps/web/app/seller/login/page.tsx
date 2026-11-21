@@ -152,8 +152,24 @@ export default function SellerLoginPage() {
         @media (max-width: 860px) {
           .seller-login-brand { display: none !important; }
           .seller-login-grid { grid-template-columns: 1fr !important; }
+          .seller-login-mobile-bar { display: flex !important; }
         }
       `}</style>
+
+      {/* Stands in for the brand panel's logo once it's hidden below 860px -
+          without this, a seller on a phone got no logo, no header, nothing
+          identifying the page as SORT NOW above the sign-in form. */}
+      <div
+        className="seller-login-mobile-bar"
+        style={{ display: "none", gridColumn: "1 / -1", alignItems: "center", borderBottom: "1px solid var(--sio-line)" }}
+      >
+        <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none", color: "var(--sio-ink)", padding: "14px 20px" }}>
+          <FullLogo height={30} />
+          <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--sio-muted)", fontWeight: 600 }}>
+            Seller Portal
+          </span>
+        </Link>
+      </div>
 
       <div style={{ display: "contents" }}>
         {/* Left: branding / value props */}
