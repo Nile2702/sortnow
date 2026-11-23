@@ -412,6 +412,12 @@ CREATE TABLE site_visits (
     visitor_id      TEXT NOT NULL,
     path            TEXT NOT NULL,
     referrer        TEXT,
+    -- The visitor's own self-reported area (lib/location.ts's location
+    -- picker, e.g. "Bandra, Mumbai") - only set when they've actually
+    -- chosen one (see getStoredLocationPref), never derived from IP
+    -- address/geolocation. Added by
+    -- scripts/migrate-add-site-visit-location.js.
+    location_label  TEXT,
     occurred_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_site_visits_occurred_at ON site_visits (occurred_at);

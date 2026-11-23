@@ -54,7 +54,7 @@ export default async function AdminVisitorListPage({ searchParams }: { searchPar
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1.6fr 1fr 1fr 0.6fr 1.2fr",
+                gridTemplateColumns: "1.4fr 0.9fr 0.9fr 0.5fr 1fr 1fr",
                 gap: 12,
                 padding: "8px 4px",
                 fontSize: 11,
@@ -68,6 +68,7 @@ export default async function AdminVisitorListPage({ searchParams }: { searchPar
               <span>First seen</span>
               <span>Last seen</span>
               <span>Visits</span>
+              <span>Location</span>
               <span>Last page</span>
             </div>
             {visitors.map((v) => (
@@ -77,7 +78,7 @@ export default async function AdminVisitorListPage({ searchParams }: { searchPar
                 className="sio-card"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1.6fr 1fr 1fr 0.6fr 1.2fr",
+                  gridTemplateColumns: "1.4fr 0.9fr 0.9fr 0.5fr 1fr 1fr",
                   gap: 12,
                   padding: "12px 4px",
                   fontSize: 13,
@@ -90,6 +91,9 @@ export default async function AdminVisitorListPage({ searchParams }: { searchPar
                 <span style={{ color: "var(--sio-muted)" }}>{new Date(v.firstSeen).toLocaleString("en-IN")}</span>
                 <span style={{ color: "var(--sio-muted)" }}>{new Date(v.lastSeen).toLocaleString("en-IN")}</span>
                 <span style={{ fontWeight: 600 }}>{v.visitCount}</span>
+                <span style={{ color: v.locationLabel ? "var(--sio-ink)" : "var(--sio-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {v.locationLabel ?? "Unknown"}
+                </span>
                 <span style={{ color: "var(--sio-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.lastPath}</span>
               </Link>
             ))}

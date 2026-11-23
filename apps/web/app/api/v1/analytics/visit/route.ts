@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   if (!ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   const body = await req.json().catch(() => null);
-  const { visitorId, path, referrer } = body ?? {};
+  const { visitorId, path, referrer, locationLabel } = body ?? {};
   if (typeof visitorId !== "string" || visitorId.length === 0 || visitorId.length > 100) {
     return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   }
@@ -25,7 +25,10 @@ export async function POST(req: NextRequest) {
   if (referrer !== undefined && (typeof referrer !== "string" || referrer.length > 300)) {
     return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   }
+  if (locationLabel !== undefined && (typeof locationLabel !== "string" || locationLabel.length > 100)) {
+    return NextResponse.json({ error: "invalid_input" }, { status: 400 });
+  }
 
-  await trackSiteVisit(visitorId, path, referrer);
+  await trackSiteVisit(visitorId, path, referrer, locationLabel);
   return NextResponse.json({ ok: true });
 }

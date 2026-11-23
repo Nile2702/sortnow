@@ -24,6 +24,7 @@ export default async function AdminVisitorDetailPage({ params }: { params: { vis
         <StatTile value={visitor.totalVisits} label="Total page views" />
         <StatTile value={new Date(visitor.lastSeen).toLocaleDateString("en-IN")} label="Last seen" />
         <StatTile value={new Date(visitor.firstSeen).toLocaleDateString("en-IN")} label="First seen" />
+        <StatTile value={visitor.locationLabel ?? "Unknown"} label="Location (self-reported)" />
       </div>
 
       <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { getOrCreateVisitorId } from "../lib/visitor-id";
+import { getStoredLocationPref } from "../lib/location";
 
 // Site-wide visit log, mounted once in the root layout (see layout.tsx) -
 // distinct from TrackPageView, which only fires on storefront pages and
@@ -16,10 +17,16 @@ export function VisitorTracking() {
   useEffect(() => {
     const visitorId = getOrCreateVisitorId();
     if (!visitorId) return;
+    // The visitor's own self-reported area, if they've actually set one
+    // (getStoredLocationPref, not getLocationPref's always-on display
+    // default) - never derived from their IP address. A visitor who hasn't
+    // touched the location picker yet just logs with no location, rather
+    // than a guessed one.
+    const locationLabel = getStoredLocationPref()?.label;
     fetch("/api/v1/analytics/visit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitorId, path: pathname, referrer: document.referrer || undefined }),
+      body: JSON.stringify({ visitorId, path: pathname, referrer: document.referrer || undefined, locationLabel }),
     }).catch(() => {});
   }, [pathname]);
 

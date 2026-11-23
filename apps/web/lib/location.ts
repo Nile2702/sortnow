@@ -64,6 +64,23 @@ export function getLocationPref(): LocationPref {
   return QUICK_MARKETS[0];
 }
 
+// Unlike getLocationPref() above (always returns a usable default -
+// QUICK_MARKETS[0] - for display), this returns null when the shopper has
+// never actually set one. Used by VisitorTracking.tsx to log a visitor's
+// self-reported area: logging getLocationPref()'s default fallback instead
+// would wrongly tag every visitor who's never touched the location picker
+// as "Bandra, Mumbai".
+export function getStoredLocationPref(): LocationPref | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // Corrupt or inaccessible storage - treated the same as "never set".
+  }
+  return null;
+}
+
 export function setLocationPref(pref: LocationPref) {
   try {
     localStorage.setItem(KEY, JSON.stringify(pref));

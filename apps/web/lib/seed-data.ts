@@ -2777,11 +2777,12 @@ export async function getStoreAnalytics(storeId: string) {
 // ---------------------------------------------------------------------
 const SITE_VISIT_RETENTION_DAYS = 90;
 
-export async function trackSiteVisit(visitorId: string, path: string, referrer?: string): Promise<void> {
-  await query(`INSERT INTO site_visits (visitor_id, path, referrer, occurred_at) VALUES ($1, $2, $3, now())`, [
+export async function trackSiteVisit(visitorId: string, path: string, referrer?: string, locationLabel?: string): Promise<void> {
+  await query(`INSERT INTO site_visits (visitor_id, path, referrer, location_label, occurred_at) VALUES ($1, $2, $3, $4, now())`, [
     visitorId,
     path,
     referrer ?? null,
+    locationLabel ?? null,
   ]);
   // Pruned on every insert rather than a separate scheduled job - this
   // platform has no cron/background-job infrastructure (see the back-in-
@@ -2796,7 +2797,7 @@ export async function trackSiteVisit(visitorId: string, path: string, referrer?:
 const VISITOR_TREND_DAYS = 14;
 
 export async function getVisitorStats() {
-  const [uniqueToday, unique7d, unique30d, pageViews30d, dailyRows, topPathRows, newReturning] = await Promise.all([
+  const [uniqueToday, unique7d, unique30d, pageViews30d, dailyRows, topPathRows, topLocationRows, newReturning] = await Promise.all([
     queryOne<any>(`SELECT COUNT(DISTINCT visitor_id)::int AS count FROM site_visits WHERE occurred_at >= now() - interval '1 day'`),
     queryOne<any>(`SELECT COUNT(DISTINCT visitor_id)::int AS count FROM site_visits WHERE occurred_at >= now() - interval '7 days'`),
     queryOne<any>(`SELECT COUNT(DISTINCT visitor_id)::int AS count FROM site_visits WHERE occurred_at >= now() - interval '30 days'`),
@@ -2812,6 +2813,17 @@ export async function getVisitorStats() {
       `SELECT path, COUNT(*)::int AS count FROM site_visits
        WHERE occurred_at >= now() - interval '30 days'
        GROUP BY path ORDER BY count DESC LIMIT 10`
+    ),
+    // By distinct visitor, not raw row count - location_label is constant
+    // across one visitor's rows (see getVisitorList's comment), so counting
+    // every row would just overweight whoever browsed the most pages.
+    // Visitors with no self-reported location are excluded entirely rather
+    // than counted as "Unknown" - this is a ranked "where are they
+    // actually from" list, not a completeness report.
+    query<any>(
+      `SELECT location_label, COUNT(DISTINCT visitor_id)::int AS count FROM site_visits
+       WHERE occurred_at >= now() - interval '30 days' AND location_label IS NOT NULL
+       GROUP BY location_label ORDER BY count DESC LIMIT 10`
     ),
     // Among visitors active in the last 30 days: "new" = their very first
     // ever recorded visit falls inside those 30 days; "returning" = it
@@ -2853,6 +2865,7 @@ export async function getVisitorStats() {
     returningVisitors30d: newReturning?.returning_count ?? 0,
     dailyUniqueVisitors: Array.from(dailyMap.entries()).map(([date, count]) => ({ date, count })),
     topPaths: topPathRows.map((r: any) => ({ path: r.path as string, count: r.count as number })),
+    topLocations: topLocationRows.map((r: any) => ({ location: r.location_label as string, count: r.count as number })),
   };
 }
 
@@ -2871,24 +2884,31 @@ export async function getVisitorList(windowDays: number) {
        LIMIT 300`,
       [windowDays]
     ),
-    // DISTINCT ON gets each visitor's single most-recent row (for its path)
-    // without a window function - cheap at this table's scale, and reads
-    // more plainly than one combined query would.
+    // DISTINCT ON gets each visitor's single most-recent row (for its path
+    // and location) without a window function - cheap at this table's
+    // scale, and reads more plainly than one combined query would.
+    // location_label carries forward onto every visit once a visitor has
+    // set one (getStoredLocationPref reads the same persisted value on
+    // every page load), so the most recent row's value is already the best
+    // "current known location" signal - no separate lookup needed.
     query<any>(
-      `SELECT DISTINCT ON (visitor_id) visitor_id, path
+      `SELECT DISTINCT ON (visitor_id) visitor_id, path, location_label
        FROM site_visits
        WHERE occurred_at >= now() - ($1 || ' days')::interval
        ORDER BY visitor_id, occurred_at DESC`,
       [windowDays]
     ),
   ]);
-  const lastPathByVisitor = new Map<string, string>(lastPathRows.map((r: any) => [r.visitor_id, r.path]));
+  const lastRowByVisitor = new Map<string, { path: string; locationLabel: string | null }>(
+    lastPathRows.map((r: any) => [r.visitor_id, { path: r.path, locationLabel: r.location_label }])
+  );
   return aggRows.map((r: any) => ({
     visitorId: r.visitor_id as string,
     firstSeen: new Date(r.first_seen).toISOString(),
     lastSeen: new Date(r.last_seen).toISOString(),
     visitCount: r.visit_count as number,
-    lastPath: lastPathByVisitor.get(r.visitor_id) ?? "—",
+    lastPath: lastRowByVisitor.get(r.visitor_id)?.path ?? "—",
+    locationLabel: lastRowByVisitor.get(r.visitor_id)?.locationLabel ?? null,
   }));
 }
 
@@ -2904,17 +2924,28 @@ export async function getVisitorDetail(visitorId: string) {
       `SELECT COUNT(*)::int AS total, MIN(occurred_at) AS first_seen, MAX(occurred_at) AS last_seen FROM site_visits WHERE visitor_id = $1`,
       [visitorId]
     ),
-    query<any>(`SELECT path, referrer, occurred_at FROM site_visits WHERE visitor_id = $1 ORDER BY occurred_at DESC LIMIT 200`, [visitorId]),
+    query<any>(`SELECT path, referrer, location_label, occurred_at FROM site_visits WHERE visitor_id = $1 ORDER BY occurred_at DESC LIMIT 200`, [
+      visitorId,
+    ]),
   ]);
   if (!summary || summary.total === 0) return null;
+  // Rows are newest-first, so the first non-null location_label found is
+  // this visitor's most recently known self-reported area - see
+  // getVisitorList's own comment on why the latest row's value is the
+  // right one to show, not necessarily the very latest row itself (it may
+  // predate the visitor ever setting a location, if their most recent
+  // activity happened to be an older cached page before that).
+  const locationLabel = rows.find((r: any) => r.location_label)?.location_label ?? null;
   return {
     visitorId,
     totalVisits: summary.total as number,
     firstSeen: new Date(summary.first_seen).toISOString(),
     lastSeen: new Date(summary.last_seen).toISOString(),
+    locationLabel: locationLabel as string | null,
     visits: rows.map((r: any) => ({
       path: r.path as string,
       referrer: (r.referrer as string | null) ?? undefined,
+      locationLabel: (r.location_label as string | null) ?? undefined,
       occurredAt: new Date(r.occurred_at).toISOString(),
     })),
   };

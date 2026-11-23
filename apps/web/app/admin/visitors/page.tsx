@@ -12,6 +12,7 @@ export default async function AdminVisitorsPage() {
   const stats = await getVisitorStats();
   const maxDaily = Math.max(1, ...stats.dailyUniqueVisitors.map((d) => d.count));
   const maxPath = Math.max(1, ...stats.topPaths.map((p) => p.count));
+  const maxLocation = Math.max(1, ...stats.topLocations.map((l) => l.count));
   const totalActive30d = stats.newVisitors30d + stats.returningVisitors30d;
   const newPercent = totalActive30d > 0 ? Math.round((stats.newVisitors30d / totalActive30d) * 100) : 0;
 
@@ -61,29 +62,56 @@ export default async function AdminVisitorsPage() {
         )}
       </section>
 
-      <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top pages, last 30 days</h2>
-        {stats.topPaths.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>No visits recorded yet.</p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {stats.topPaths.map((p) => (
-              <div key={p.path} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span
-                  title={p.path}
-                  style={{ fontSize: 13, width: 220, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}
-                >
-                  {p.path}
-                </span>
-                <div style={{ flex: 1, background: "var(--sio-cream)", borderRadius: 999, height: 10, overflow: "hidden" }}>
-                  <div style={{ width: `${(p.count / maxPath) * 100}%`, height: "100%", background: "var(--sio-ink)" }} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
+        <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top pages, last 30 days</h2>
+          {stats.topPaths.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>No visits recorded yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {stats.topPaths.map((p) => (
+                <div key={p.path} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span
+                    title={p.path}
+                    style={{ fontSize: 13, width: 140, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}
+                  >
+                    {p.path}
+                  </span>
+                  <div style={{ flex: 1, background: "var(--sio-cream)", borderRadius: 999, height: 10, overflow: "hidden" }}>
+                    <div style={{ width: `${(p.count / maxPath) * 100}%`, height: "100%", background: "var(--sio-ink)" }} />
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, width: 24, textAlign: "right" }}>{p.count}</span>
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 600, width: 36, textAlign: "right" }}>{p.count}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 24 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Top locations, last 30 days</h2>
+          <p style={{ fontSize: 11.5, color: "var(--sio-muted)", marginBottom: 12 }}>Self-reported by the visitor, never looked up from an IP address.</p>
+          {stats.topLocations.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--sio-muted)" }}>No visitor has set a location yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {stats.topLocations.map((l) => (
+                <div key={l.location} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span
+                    title={l.location}
+                    style={{ fontSize: 13, width: 140, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}
+                  >
+                    {l.location}
+                  </span>
+                  <div style={{ flex: 1, background: "var(--sio-cream)", borderRadius: 999, height: 10, overflow: "hidden" }}>
+                    <div style={{ width: `${(l.count / maxLocation) * 100}%`, height: "100%", background: "var(--sio-ink)" }} />
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, width: 24, textAlign: "right" }}>{l.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
 
       <Link
         href={`/admin/visitors/list`}
