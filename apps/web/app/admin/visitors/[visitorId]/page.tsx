@@ -17,13 +17,13 @@ export default async function AdminVisitorDetailPage({ params }: { params: { vis
       </Link>
       <h1 style={{ fontSize: 20, fontWeight: 700, margin: "8px 0 4px", fontFamily: "monospace" }}>{visitor.visitorId}</h1>
       <p style={{ color: "var(--sio-muted)", marginBottom: 24, fontSize: 14 }}>
-        First seen {new Date(visitor.firstSeen).toLocaleString("en-IN")}
+        First seen {new Date(visitor.firstSeen).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 24 }}>
         <StatTile value={visitor.totalVisits} label="Total page views" />
-        <StatTile value={new Date(visitor.lastSeen).toLocaleDateString("en-IN")} label="Last seen" />
-        <StatTile value={new Date(visitor.firstSeen).toLocaleDateString("en-IN")} label="First seen" />
+        <StatTile value={new Date(visitor.lastSeen).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })} label="Last seen" />
+        <StatTile value={new Date(visitor.firstSeen).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })} label="First seen" />
         <StatTile value={visitor.locationLabel ?? "Unknown"} label="Location (self-reported)" />
       </div>
 
@@ -55,7 +55,7 @@ export default async function AdminVisitorDetailPage({ params }: { params: { vis
                 )}
               </div>
               <span style={{ color: "var(--sio-muted)", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>
-                {new Date(v.occurredAt).toLocaleString("en-IN")}
+                {new Date(v.occurredAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
               </span>
             </div>
           ))}

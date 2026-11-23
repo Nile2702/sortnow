@@ -88,8 +88,8 @@ export default async function AdminVisitorListPage({ searchParams }: { searchPar
                 }}
               >
                 <span style={{ fontWeight: 600, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.visitorId}</span>
-                <span style={{ color: "var(--sio-muted)" }}>{new Date(v.firstSeen).toLocaleString("en-IN")}</span>
-                <span style={{ color: "var(--sio-muted)" }}>{new Date(v.lastSeen).toLocaleString("en-IN")}</span>
+                <span style={{ color: "var(--sio-muted)" }}>{new Date(v.firstSeen).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</span>
+                <span style={{ color: "var(--sio-muted)" }}>{new Date(v.lastSeen).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</span>
                 <span style={{ fontWeight: 600 }}>{v.visitCount}</span>
                 <span style={{ color: v.locationLabel ? "var(--sio-ink)" : "var(--sio-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {v.locationLabel ?? "Unknown"}
