@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getVisitorStats } from "../../../lib/seed-data";
 
 // Admin-only, anonymous site-traffic view - who's visiting the site at all,
@@ -23,12 +24,13 @@ export default async function AdminVisitorsPage() {
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
-        <StatTile value={stats.uniqueVisitorsToday} label="Unique visitors today" />
-        <StatTile value={stats.uniqueVisitors7d} label="Unique visitors, 7 days" />
-        <StatTile value={stats.uniqueVisitors30d} label="Unique visitors, 30 days" />
+        <StatTile href={`/admin/visitors/list?window=today`} value={stats.uniqueVisitorsToday} label="Unique visitors today" />
+        <StatTile href={`/admin/visitors/list?window=7d`} value={stats.uniqueVisitors7d} label="Unique visitors, 7 days" />
+        <StatTile href={`/admin/visitors/list?window=30d`} value={stats.uniqueVisitors30d} label="Unique visitors, 30 days" />
         <StatTile value={stats.totalPageViews30d} label="Page views, 30 days" />
         <StatTile value={stats.avgPageViewsPerVisitor30d} label="Avg. page views / visitor" />
         <StatTile
+          href={`/admin/visitors/list?window=30d`}
           value={`${newPercent}%`}
           label="New visitors, 30 days"
           sub={`${stats.newVisitors30d} new, ${stats.returningVisitors30d} returning`}
@@ -82,16 +84,48 @@ export default async function AdminVisitorsPage() {
           </div>
         )}
       </section>
+
+      <Link
+        href={`/admin/visitors/list`}
+        className="sio-card"
+        style={{
+          display: "block",
+          textAlign: "center",
+          padding: "16px",
+          borderRadius: 16,
+          border: "1px solid var(--sio-cream)",
+          background: "#fff",
+          color: "var(--sio-ink)",
+          fontWeight: 600,
+          fontSize: 14,
+          textDecoration: "none",
+          marginTop: 24,
+        }}
+      >
+        View all visitors →
+      </Link>
     </main>
   );
 }
 
-function StatTile({ value, label, sub }: { value: string | number; label: string; sub?: string }) {
-  return (
-    <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 18 }}>
+function StatTile({ value, label, sub, href }: { value: string | number; label: string; sub?: string; href?: string }) {
+  const content = (
+    <>
       <div style={{ fontSize: 22, fontWeight: 700, color: "var(--sio-ink)" }}>{value}</div>
       <div style={{ fontSize: 12, color: "var(--sio-muted)", marginTop: 2 }}>{label}</div>
       {sub && <div style={{ fontSize: 10.5, color: "var(--sio-muted)", marginTop: 2 }}>{sub}</div>}
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} className="sio-card" style={{ display: "block", background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 18, textDecoration: "none" }}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <div className="sio-card" style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--sio-cream)", padding: 18 }}>
+      {content}
     </div>
   );
 }

@@ -2856,6 +2856,70 @@ export async function getVisitorStats() {
   };
 }
 
+// Every visitor active within the given window, newest-activity-first -
+// backs /admin/visitors/list. Capped at 300 rows (a plain LIMIT, not
+// pagination) - this is a pilot-scale admin tool, same scale assumption as
+// getPlatformCustomerStats' recentReservations slice above.
+export async function getVisitorList(windowDays: number) {
+  const [aggRows, lastPathRows] = await Promise.all([
+    query<any>(
+      `SELECT visitor_id, MIN(occurred_at) AS first_seen, MAX(occurred_at) AS last_seen, COUNT(*)::int AS visit_count
+       FROM site_visits
+       WHERE occurred_at >= now() - ($1 || ' days')::interval
+       GROUP BY visitor_id
+       ORDER BY last_seen DESC
+       LIMIT 300`,
+      [windowDays]
+    ),
+    // DISTINCT ON gets each visitor's single most-recent row (for its path)
+    // without a window function - cheap at this table's scale, and reads
+    // more plainly than one combined query would.
+    query<any>(
+      `SELECT DISTINCT ON (visitor_id) visitor_id, path
+       FROM site_visits
+       WHERE occurred_at >= now() - ($1 || ' days')::interval
+       ORDER BY visitor_id, occurred_at DESC`,
+      [windowDays]
+    ),
+  ]);
+  const lastPathByVisitor = new Map<string, string>(lastPathRows.map((r: any) => [r.visitor_id, r.path]));
+  return aggRows.map((r: any) => ({
+    visitorId: r.visitor_id as string,
+    firstSeen: new Date(r.first_seen).toISOString(),
+    lastSeen: new Date(r.last_seen).toISOString(),
+    visitCount: r.visit_count as number,
+    lastPath: lastPathByVisitor.get(r.visitor_id) ?? "—",
+  }));
+}
+
+// Full visit history for one anonymous visitor id - backs
+// /admin/visitors/[visitorId]. totalVisits/firstSeen/lastSeen are computed
+// across this visitor's entire (unpruned) history, independent of the
+// 200-row cap on the visit log itself below, so a very active visitor's
+// summary numbers stay accurate even once their oldest individual visits
+// have scrolled past the cap.
+export async function getVisitorDetail(visitorId: string) {
+  const [summary, rows] = await Promise.all([
+    queryOne<any>(
+      `SELECT COUNT(*)::int AS total, MIN(occurred_at) AS first_seen, MAX(occurred_at) AS last_seen FROM site_visits WHERE visitor_id = $1`,
+      [visitorId]
+    ),
+    query<any>(`SELECT path, referrer, occurred_at FROM site_visits WHERE visitor_id = $1 ORDER BY occurred_at DESC LIMIT 200`, [visitorId]),
+  ]);
+  if (!summary || summary.total === 0) return null;
+  return {
+    visitorId,
+    totalVisits: summary.total as number,
+    firstSeen: new Date(summary.first_seen).toISOString(),
+    lastSeen: new Date(summary.last_seen).toISOString(),
+    visits: rows.map((r: any) => ({
+      path: r.path as string,
+      referrer: (r.referrer as string | null) ?? undefined,
+      occurredAt: new Date(r.occurred_at).toISOString(),
+    })),
+  };
+}
+
 // Revenue/sales analytics, computed from the in-store billing data (see
 // createBill) rather than the footfall-only analytics above - a separate
 // function/route since the two answer different questions ("who's looking"
