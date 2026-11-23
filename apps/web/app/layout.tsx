@@ -10,6 +10,7 @@ import { ScrollToTop } from "../components/ScrollToTop";
 import { ToastHost } from "../components/ToastHost";
 import { LocationGate } from "../components/LocationGate";
 import { ServiceWorkerRegister } from "../components/ServiceWorkerRegister";
+import { VisitorTracking } from "../components/VisitorTracking";
 import { SITE_URL } from "../lib/site-url";
 
 // Outfit - a clean modern grotesque, used for both headings and body text.
@@ -106,6 +107,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ToastHost />
         <LocationGate />
         <ServiceWorkerRegister />
+        <VisitorTracking />
         <SiteHeader />
         <MobileAppHeader />
         <div style={{ flex: 1, position: "relative" }}>{children}</div>

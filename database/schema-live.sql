@@ -399,6 +399,25 @@ CREATE TABLE analytics_events (
 CREATE INDEX idx_analytics_store_date ON analytics_events (store_id, occurred_at DESC);
 
 -- ---------------------------------------------------------------------
+-- Site-wide visit log (lib/seed-data.ts `trackSiteVisit`/`getVisitorStats`).
+-- Added by scripts/migrate-add-site-visits.js. Distinct from
+-- analytics_events above (per-store, storefront pages only): this covers
+-- every page on the site. visitor_id is a random id the browser generates
+-- for itself and keeps in localStorage (see lib/visitor-id.ts) - nothing
+-- here ties a row to a real identity, and no IP address is ever stored.
+-- Rows older than SITE_VISIT_RETENTION_DAYS are pruned on every insert.
+-- ---------------------------------------------------------------------
+CREATE TABLE site_visits (
+    id              BIGSERIAL PRIMARY KEY,
+    visitor_id      TEXT NOT NULL,
+    path            TEXT NOT NULL,
+    referrer        TEXT,
+    occurred_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_site_visits_occurred_at ON site_visits (occurred_at);
+CREATE INDEX idx_site_visits_visitor_id ON site_visits (visitor_id);
+
+-- ---------------------------------------------------------------------
 -- Reviews (lib/seed-data.ts `Review`, `StoreReview`).
 -- ---------------------------------------------------------------------
 CREATE TABLE reviews (

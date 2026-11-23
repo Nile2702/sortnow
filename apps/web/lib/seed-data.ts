@@ -2766,6 +2766,96 @@ export async function getStoreAnalytics(storeId: string) {
   };
 }
 
+// ---------------------------------------------------------------------
+// Site-wide visit log (database/schema-live.sql's `site_visits` table) -
+// distinct from analytics_events above, which is per-store and only covers
+// storefront page loads. Backs the admin-only "who's visiting the site"
+// view (app/admin/visitors). Never stores a real identity: visitorId is a
+// random id the browser generates for itself (lib/visitor-id.ts), and no
+// IP address is ever written here (a caller's IP is only used transiently,
+// for that route's own rate limiting).
+// ---------------------------------------------------------------------
+const SITE_VISIT_RETENTION_DAYS = 90;
+
+export async function trackSiteVisit(visitorId: string, path: string, referrer?: string): Promise<void> {
+  await query(`INSERT INTO site_visits (visitor_id, path, referrer, occurred_at) VALUES ($1, $2, $3, now())`, [
+    visitorId,
+    path,
+    referrer ?? null,
+  ]);
+  // Pruned on every insert rather than a separate scheduled job - this
+  // platform has no cron/background-job infrastructure (see the back-in-
+  // stock reminder's own comment elsewhere in this file for the same
+  // constraint), so "on write" is the only reliable place to bound this
+  // table's growth, same idea as MAX_ANALYTICS_EVENTS above but a time
+  // window instead of a row count (this table can see far more traffic -
+  // every page on the site, not just storefronts).
+  await query(`DELETE FROM site_visits WHERE occurred_at < now() - ($1 || ' days')::interval`, [SITE_VISIT_RETENTION_DAYS]);
+}
+
+const VISITOR_TREND_DAYS = 14;
+
+export async function getVisitorStats() {
+  const [uniqueToday, unique7d, unique30d, pageViews30d, dailyRows, topPathRows, newReturning] = await Promise.all([
+    queryOne<any>(`SELECT COUNT(DISTINCT visitor_id)::int AS count FROM site_visits WHERE occurred_at >= now() - interval '1 day'`),
+    queryOne<any>(`SELECT COUNT(DISTINCT visitor_id)::int AS count FROM site_visits WHERE occurred_at >= now() - interval '7 days'`),
+    queryOne<any>(`SELECT COUNT(DISTINCT visitor_id)::int AS count FROM site_visits WHERE occurred_at >= now() - interval '30 days'`),
+    queryOne<any>(`SELECT COUNT(*)::int AS count FROM site_visits WHERE occurred_at >= now() - interval '30 days'`),
+    query<any>(
+      `SELECT to_char(date_trunc('day', occurred_at), 'YYYY-MM-DD') AS day, COUNT(DISTINCT visitor_id)::int AS count
+       FROM site_visits
+       WHERE occurred_at >= now() - ($1 || ' days')::interval
+       GROUP BY 1`,
+      [VISITOR_TREND_DAYS]
+    ),
+    query<any>(
+      `SELECT path, COUNT(*)::int AS count FROM site_visits
+       WHERE occurred_at >= now() - interval '30 days'
+       GROUP BY path ORDER BY count DESC LIMIT 10`
+    ),
+    // Among visitors active in the last 30 days: "new" = their very first
+    // ever recorded visit falls inside those 30 days; "returning" = it
+    // doesn't (they were already being seen before this window started).
+    // Bounded by SITE_VISIT_RETENTION_DAYS above - a visitor whose actual
+    // first visit predates the retention window looks "new" the first time
+    // they reappear after their older history has aged out, same as any
+    // retention-windowed analytics tool.
+    queryOne<any>(
+      `WITH first_seen AS (
+         SELECT visitor_id, MIN(occurred_at) AS first_at FROM site_visits GROUP BY visitor_id
+       )
+       SELECT
+         COUNT(*) FILTER (WHERE first_at >= now() - interval '30 days')::int AS new_count,
+         COUNT(*) FILTER (WHERE first_at < now() - interval '30 days')::int AS returning_count
+       FROM first_seen
+       WHERE visitor_id IN (SELECT DISTINCT visitor_id FROM site_visits WHERE occurred_at >= now() - interval '30 days')`
+    ),
+  ]);
+
+  const dailyMap = new Map<string, number>();
+  for (let i = VISITOR_TREND_DAYS - 1; i >= 0; i--) {
+    dailyMap.set(new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10), 0);
+  }
+  for (const row of dailyRows) {
+    if (dailyMap.has(row.day)) dailyMap.set(row.day, row.count);
+  }
+
+  const uniqueVisitors30d = unique30d?.count ?? 0;
+  const totalPageViews30d = pageViews30d?.count ?? 0;
+
+  return {
+    uniqueVisitorsToday: uniqueToday?.count ?? 0,
+    uniqueVisitors7d: unique7d?.count ?? 0,
+    uniqueVisitors30d,
+    totalPageViews30d,
+    avgPageViewsPerVisitor30d: uniqueVisitors30d > 0 ? Math.round((totalPageViews30d / uniqueVisitors30d) * 10) / 10 : 0,
+    newVisitors30d: newReturning?.new_count ?? 0,
+    returningVisitors30d: newReturning?.returning_count ?? 0,
+    dailyUniqueVisitors: Array.from(dailyMap.entries()).map(([date, count]) => ({ date, count })),
+    topPaths: topPathRows.map((r: any) => ({ path: r.path as string, count: r.count as number })),
+  };
+}
+
 // Revenue/sales analytics, computed from the in-store billing data (see
 // createBill) rather than the footfall-only analytics above - a separate
 // function/route since the two answer different questions ("who's looking"
