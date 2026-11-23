@@ -1,7 +1,7 @@
 import { ClipboardIcon, CheckIcon, WalkIcon, ArrowRightIcon } from "./icons";
 
 const STEPS = [
-  { icon: ClipboardIcon, label: "Reserve", detail: "Pick your size online, free" },
+  { icon: ClipboardIcon, label: "Reserve", detail: "Pick your style online, free" },
   { icon: CheckIcon, label: "Store confirms", detail: "The shop holds it for you" },
   { icon: WalkIcon, label: "Visit & try", detail: "Pay only if you keep it" },
 ];
